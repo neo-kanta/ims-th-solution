@@ -1,0 +1,61 @@
+# =============================
+# OS and IDE
+# =============================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# =============================
+# Go
+# =============================
+backend/bin/
+backend/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# =============================
+# Node.js / Frontend
+# =============================
+frontend/node_modules/
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+frontend/.nitro/
+frontend/.cache/
+
+# =============================
+# Environment
+# =============================
+.env
+.env.local
+.env.*.local
+!infra/env/.env.development
+
+# =============================
+# Docker
+# =============================
+docker-compose.override.yml
+
+# =============================
+# Test
+# =============================
+coverage/
+*.cover
+*.prof
+
+# =============================
+# Database
+# =============================
+*.dump
+*.bak
