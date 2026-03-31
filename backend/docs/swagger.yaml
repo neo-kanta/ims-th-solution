@@ -1,4 +1,948 @@
+basePath: /api/v1
+definitions:
+  request.AdminResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    type: object
+  request.ChangePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  request.CreateUserRequest:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        minLength: 3
+        type: string
+    required:
+    - display_name
+    - email
+    - password
+    - username
+    type: object
+  request.LoginRequest:
+    properties:
+      password:
+        minLength: 8
+        type: string
+      recovery_code:
+        description: MFA recovery code (alternative)
+        type: string
+      totp_code:
+        description: MFA TOTP code (if MFA enrolled)
+        type: string
+      username:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  request.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  request.MFADisableRequest:
+    properties:
+      totp_code:
+        type: string
+    required:
+    - totp_code
+    type: object
+  request.MFAVerifyRequest:
+    properties:
+      totp_code:
+        type: string
+    required:
+    - totp_code
+    type: object
+  request.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  response.AuditEventResponse:
+    properties:
+      actor_id:
+        type: string
+      created_at:
+        type: string
+      event_type:
+        type: string
+      id:
+        type: string
+      ip_address:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      target_id:
+        type: string
+      target_type:
+        type: string
+      user_agent:
+        type: string
+    type: object
+  response.AuditListResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/response.AuditEventResponse'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  response.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      force_password_change:
+        type: boolean
+      mfa_required:
+        description: MFA challenge response
+        type: boolean
+      mfa_token:
+        type: string
+      permissions:
+        $ref: '#/definitions/response.PermissionsResp'
+      refresh_token:
+        type: string
+      refresh_token_expires_at:
+        type: string
+      user:
+        $ref: '#/definitions/response.UserResponse'
+    type: object
+  response.MFAEnrollResponse:
+    properties:
+      provisioning_uri:
+        type: string
+      recovery_codes:
+        items:
+          type: string
+        type: array
+    type: object
+  response.MFAStatusResponse:
+    properties:
+      enabled:
+        type: boolean
+      enrolled:
+        type: boolean
+      recovery_codes_left:
+        type: integer
+    type: object
+  response.MeResponse:
+    properties:
+      permissions:
+        $ref: '#/definitions/response.PermissionsResp'
+      user:
+        $ref: '#/definitions/response.UserResponse'
+    type: object
+  response.PermissionsResp:
+    properties:
+      contracts:
+        items:
+          type: string
+        type: array
+      functions:
+        items:
+          type: string
+        type: array
+    type: object
+  response.RefreshResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expires_at:
+        type: string
+    type: object
+  response.SessionResponse:
+    properties:
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      ip_address:
+        type: string
+      last_activity_at:
+        type: string
+      user_agent:
+        type: string
+    type: object
+  response.UserResponse:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      groups:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
 info:
   contact: {}
-paths: {}
+  description: This is the API server for the IMS Thailand solution.
+  title: IMS Thailand API
+  version: "1.0"
+paths:
+  /admin/audit:
+    get:
+      description: Query paginated IAM audit events with filters
+      parameters:
+      - description: Actor UUID
+        in: query
+        name: actor_id
+        type: string
+      - description: Event type (e.g., LOGIN_SUCCESS)
+        in: query
+        name: event_type
+        type: string
+      - description: Target type (e.g., user, session)
+        in: query
+        name: target_type
+        type: string
+      - description: Target ID
+        in: query
+        name: target_id
+        type: string
+      - description: Since datetime (ISO 8601)
+        in: query
+        name: since
+        type: string
+      - description: Until datetime (ISO 8601)
+        in: query
+        name: until
+        type: string
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit (default 50, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.AuditListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Audit Events
+      tags:
+      - Audit
+  /admin/audit/export:
+    get:
+      description: Export audit events matching filter criteria as CSV download
+      parameters:
+      - description: Actor UUID
+        in: query
+        name: actor_id
+        type: string
+      - description: Event type
+        in: query
+        name: event_type
+        type: string
+      - description: Since datetime
+        in: query
+        name: since
+        type: string
+      - description: Until datetime
+        in: query
+        name: until
+        type: string
+      produces:
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: Export Audit Events as CSV
+      tags:
+      - Audit
+  /admin/sessions/{id}/revoke:
+    post:
+      description: Admin revoke any session by ID
+      parameters:
+      - description: Session UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Revoke Any Session (Admin)
+      tags:
+      - Admin
+  /admin/users:
+    post:
+      consumes:
+      - application/json
+      description: Administrative creation of a new IAM user
+      parameters:
+      - description: New User Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create User
+      tags:
+      - Admin
+  /admin/users/{id}/disable:
+    post:
+      description: Disable a specific user account preventing future logins
+      parameters:
+      - description: User UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable User
+      tags:
+      - Admin
+  /admin/users/{id}/enable:
+    post:
+      description: Re-enable a disabled user account
+      parameters:
+      - description: User UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Enable User
+      tags:
+      - Admin
+  /admin/users/{id}/lock:
+    post:
+      description: Immediately lock a user out of the system
+      parameters:
+      - description: User UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Lock User
+      tags:
+      - Admin
+  /admin/users/{id}/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Forcefully reset a user's password and flag it for mandatory change
+        on next login
+      parameters:
+      - description: User UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New Password Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.AdminResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Admin Password Reset
+      tags:
+      - Admin
+  /admin/users/{id}/sessions:
+    get:
+      description: List all active sessions for a specific user (admin only)
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.SessionResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List User Sessions (Admin)
+      tags:
+      - Admin
+  /admin/users/{id}/unlock:
+    post:
+      description: Unlock an account that was either manually or automatically locked
+      parameters:
+      - description: User UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Unlock User
+      tags:
+      - Admin
+  /auth/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change active user's password and revoke active sessions
+      parameters:
+      - description: Change Password Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change Password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return access and refresh tokens. Returns
+        mfa_required if MFA is active.
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke a single refresh token session
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: User Logout
+      tags:
+      - Auth
+  /auth/logout-all:
+    post:
+      description: Revoke all refresh token sessions globally for the user
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout All Sessions
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: Retrieve the profile and permissions of the currently authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.MeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Current User
+      tags:
+      - Auth
+  /auth/mfa/disable:
+    post:
+      consumes:
+      - application/json
+      description: Disable MFA for the current user (requires valid TOTP code)
+      parameters:
+      - description: TOTP Code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.MFADisableRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Disable MFA
+      tags:
+      - MFA
+  /auth/mfa/enroll:
+    post:
+      description: Generate TOTP secret and recovery codes for MFA setup
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.MFAEnrollResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Start MFA Enrollment
+      tags:
+      - MFA
+  /auth/mfa/status:
+    get:
+      description: Get the current MFA enrollment status for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.MFAStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get MFA Status
+      tags:
+      - MFA
+  /auth/mfa/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify TOTP code to complete MFA enrollment and activate
+      parameters:
+      - description: TOTP Code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.MFAVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Verify and Enable MFA
+      tags:
+      - MFA
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Issue a new access token using a refresh token (enforces idle and
+        absolute timeouts)
+      parameters:
+      - description: Refresh Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.RefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh Token
+      tags:
+      - Auth
+  /auth/sessions:
+    get:
+      description: List all active sessions for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.SessionResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List My Sessions
+      tags:
+      - Sessions
+  /auth/sessions/{id}/revoke:
+    post:
+      description: Revoke a specific active session
+      parameters:
+      - description: Session UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Revoke a Session
+      tags:
+      - Sessions
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

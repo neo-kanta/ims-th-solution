@@ -13,14 +13,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
-	iammod "github.com/your-org/ims-th-solution/backend/internal/iam"
-	"github.com/your-org/ims-th-solution/backend/platform/config"
-	"github.com/your-org/ims-th-solution/backend/platform/database"
-	"github.com/your-org/ims-th-solution/backend/platform/logging"
-	"github.com/your-org/ims-th-solution/backend/platform/middleware"
+	iammod "github.com/neo-kanta/ims-th-solution/backend/internal/iam"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/logging"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 
-	_ "github.com/your-org/ims-th-solution/backend/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
+	_ "github.com/neo-kanta/ims-th-solution/backend/docs"
 )
 
 // @title           IMS Thailand API
@@ -63,8 +63,26 @@ func main() {
 		"database", cfg.DBName,
 	)
 
+	// 3b. Run migrations
+	migrationsPath := os.Getenv("MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		migrationsPath = "/app/migrations"
+	}
+	if err := database.RunMigrations(cfg.MigrationDSN(), migrationsPath); err != nil {
+		logger.Error("failed to run database migrations", "error", err)
+		os.Exit(1)
+	}
+	if err := database.EnsureSecureBootstrap(ctx, pool, cfg.Env); err != nil {
+		logger.Error("secure bootstrap guard failed", "error", err)
+		os.Exit(1)
+	}
+
 	// 4. Wire modules
-	iamModule := iammod.NewModule(pool, cfg.JWTSecret)
+	iamModule, err := iammod.NewModule(pool, cfg)
+	if err != nil {
+		logger.Error("failed to initialize IAM module", "error", err)
+		os.Exit(1)
+	}
 
 	// 5. Build router
 	r := chi.NewRouter()
@@ -75,6 +93,7 @@ func main() {
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.Recovery(logger))
 	r.Use(middleware.NewCORS())
+	r.Use(middleware.SecureHeaders)
 
 	// Health check (no auth required)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +106,9 @@ func main() {
 		w.Write([]byte(`{"status":"healthy"}`))
 	})
 
+	// Build key provider for JWT auth middleware (supports rotation)
+	keyProvider := middleware.NewKeyProvider(cfg.JWTKeyID, cfg.JWTSecret, cfg.JWTSecretPrevious)
+
 	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public routes (no auth required)
@@ -94,12 +116,12 @@ func main() {
 
 		// Swagger UI
 		r.Get("/swagger/*", httpSwagger.Handler(
-			httpSwagger.URL("/api/v1/swagger/doc.json"), // The url pointing to API definition
+			httpSwagger.URL("/api/v1/swagger/doc.json"),
 		))
 
 		// Protected routes (auth required)
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(cfg.JWTSecret))
+			r.Use(middleware.Auth(keyProvider, iamModule))
 
 			iamModule.RegisterProtectedRoutes(r)
 
@@ -119,7 +141,6 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Listen for shutdown signals
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
@@ -132,7 +153,6 @@ func main() {
 		}
 	}()
 
-	// Wait for shutdown signal
 	<-done
 	logger.Info("shutting down server...")
 

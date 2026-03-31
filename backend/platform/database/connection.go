@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/your-org/ims-th-solution/backend/platform/config"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 )
 
 // NewPool creates a new PostgreSQL connection pool using pgx.

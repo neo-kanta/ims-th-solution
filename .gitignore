@@ -64,3 +64,5 @@ coverage/
 # local MCP
 # =============================
 *.claude
+mcp/ims-mcp-server/node_modules/
+mcp/ims-mcp-server/build/
