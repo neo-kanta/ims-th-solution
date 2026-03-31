@@ -1,31 +1,31 @@
 package contract
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // WorkflowStateProvider defines the cross-module interface for querying workflow state.
-// Other modules (e.g., investment) use this to check if trading is allowed.
 type WorkflowStateProvider interface {
-	// IsTradeAllowed returns true if the given contract on the given business date
-	// is in a state that allows investment transactions
-	// (i.e., day has started, manager has NOT yet approved).
 	IsTradeAllowed(contractID string, businessDate time.Time) (bool, error)
 }
 
 // PermissionChecker defines the cross-module interface for permission verification.
 type PermissionChecker interface {
-	// HasFunctionPermission checks if the user has the given function permission.
-	HasFunctionPermission(userID string, permissionCode string) (bool, error)
+	HasFunctionPermission(userID uuid.UUID, permissionCode string) (bool, error)
+	HasDataPermission(userID uuid.UUID, contractID string) (bool, error)
+	GetAccessibleContracts(userID uuid.UUID) ([]string, error)
+}
 
-	// HasDataPermission checks if the user has access to the given contract.
-	HasDataPermission(userID string, contractID string) (bool, error)
-
-	// GetAccessibleContracts returns the list of contract IDs the user can access.
-	GetAccessibleContracts(userID string) ([]string, error)
+// LeaveChecker defines the cross-module interface for querying leave status.
+// IAM does NOT own leave state — other modules implement this.
+type LeaveChecker interface {
+	IsOnLeave(userID uuid.UUID, date time.Time) (bool, error)
 }
 
 // AuditLogger defines the cross-module interface for recording audit events.
 type AuditLogger interface {
-	// LogAction records an audit trail entry for a business action.
 	LogAction(entry AuditEntry) error
 }
 
