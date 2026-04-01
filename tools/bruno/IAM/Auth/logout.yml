@@ -1,0 +1,23 @@
+info:
+  name: logout
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{iam-auth}}/logout"
+  body:
+    type: json
+    data: |-
+      {
+        "refresh_token": "{{refresh_token}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

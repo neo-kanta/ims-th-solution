@@ -1,10 +1,13 @@
+name: ims-th-solution
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: ims-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5437:5437"
+    command: -p 5437
     environment:
       POSTGRES_DB: ims_dev
       POSTGRES_USER: ims_app
@@ -12,15 +15,15 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ims_app -d ims_dev"]
+      test: ["CMD-SHELL", "pg_isready -U ims_app -d ims_dev -p 5437"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
     build:
-      context: ../backend
-      dockerfile: ../infra/docker/Dockerfile.backend
+      context: ..
+      dockerfile: infra/docker/Dockerfile.backend
     container_name: ims-backend
     restart: unless-stopped
     ports:

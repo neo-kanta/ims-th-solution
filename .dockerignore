@@ -1,0 +1,23 @@
+# Ignore git
+.git
+.gitignore
+
+# Ignore IDE
+.idea
+.vscode
+.gemini
+
+# Ignore frontend node_modules (not needed for backend build)
+frontend/node_modules
+frontend/.nuxt
+frontend/.output
+
+# Ignore MCP server
+mcp/
+
+# Ignore infra env files (passed at runtime)
+infra/env/
+
+# Ignore documentation
+*.md
+!database/migrations/README.md

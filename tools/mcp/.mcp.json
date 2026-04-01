@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "ims": {
+            "command": "node",
+            "args": [
+                "mcp/ims-mcp-server/build/index.js"
+            ],
+            "env": {
+                "IMS_DB_HOST": "localhost",
+                "IMS_DB_PORT": "5432",
+                "IMS_DB_NAME": "ims_dev",
+                "IMS_DB_USER": "ims_app",
+                "IMS_DB_PASSWORD": "ims_dev_password",
+                "IMS_PROJECT_ROOT": "."
+            }
+        }
+    }
+}

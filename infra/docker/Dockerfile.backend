@@ -6,10 +6,10 @@ RUN apk add --no-cache git ca-certificates
 WORKDIR /app
 
 # Cache dependencies
-COPY go.mod go.sum* ./
+COPY backend/go.mod backend/go.sum* ./
 
 # Build
-COPY . .
+COPY backend/ .
 RUN rm -f go.sum && go mod tidy && go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/server ./cmd/server
 
@@ -21,6 +21,7 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /app/server .
+COPY database/migrations /app/migrations
 
 EXPOSE 8080
 

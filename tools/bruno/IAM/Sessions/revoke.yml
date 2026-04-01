@@ -1,0 +1,15 @@
+info:
+  name: revoke-session
+  type: http
+  seq: 2
+
+http:
+  method: DELETE
+  url: "{{iam-auth}}/sessions/{{session_id}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

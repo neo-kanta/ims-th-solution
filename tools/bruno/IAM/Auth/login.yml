@@ -1,0 +1,42 @@
+info:
+  name: login
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{iam-auth}}/login"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "admin",
+        "password": "admin123",
+        "totp_code": "",
+        "recovery_code": ""
+      }
+
+      // development account
+      // username: admin
+      // password: admin123
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.access_token) {
+          bru.setEnvVar("token", data.access_token, { persist: true });
+        }
+
+        if (data.refresh_token) {
+          bru.setEnvVar("refresh_token", data.refresh_token, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
