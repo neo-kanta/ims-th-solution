@@ -1,0 +1,35 @@
+info:
+  name: refresh
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{iam-auth}}/refresh"
+  body:
+    type: json
+    data: |-
+      {
+        "refresh_token": "{{refresh_token}}"
+      }
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.access_token) {
+          bru.setEnvVar("token", data.access_token, { persist: true });
+        }
+
+        if (data.refresh_token) {
+          bru.setEnvVar("refresh_token", data.refresh_token, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

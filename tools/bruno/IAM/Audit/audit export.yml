@@ -1,0 +1,30 @@
+info:
+  name: audit export
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{iam-audit}}/audit/export?actor_id&event_type&since&until"
+  params:
+    - name: actor_id
+      value: ""
+      type: query
+    - name: event_type
+      value: ""
+      type: query
+    - name: since
+      value: ""
+      type: query
+    - name: until
+      value: ""
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
