@@ -20,6 +20,7 @@ The system enforces pre-trade compliance, approval workflows, delegation rules,
 and permission-based access control across all operations.
 
 **This is NOT:**
+
 - An accounting system (PAM)
 - An order management system (OMS)
 - A portfolio accounting module
@@ -31,13 +32,13 @@ Those are treated as **external systems** with clean integration points.
 
 ## 2. Architecture Overview
 
-| Layer | Technology | Notes |
-|-------|-----------|-------|
-| Frontend | **Nuxt 3** + Vue 3 + TypeScript | SPA with file-based routing |
-| Backend | **Go (Golang)** modular monolith | chi router, domain-driven modules |
-| Database | **PostgreSQL** | Migrations via golang-migrate |
-| Infra | **Docker** + Docker Compose | Single compose for dev |
-| API style | **REST** (JSON) | OpenAPI documented |
+| Layer     | Technology                       | Notes                             |
+| --------- | -------------------------------- | --------------------------------- |
+| Frontend  | **Nuxt 3** + Vue 3 + TypeScript  | SPA with file-based routing       |
+| Backend   | **Go (Golang)** modular monolith | chi router, domain-driven modules |
+| Database  | **PostgreSQL**                   | Migrations via golang-migrate     |
+| Infra     | **Docker** + Docker Compose      | Single compose for dev            |
+| API style | **REST** (JSON)                  | OpenAPI documented                |
 
 **Architecture style:** Containerized Modular Monolith.
 One backend binary, one frontend app, one database — but with strict module boundaries
@@ -54,7 +55,6 @@ ims-th-solution/
 │   ├── internal/               # Domain modules (private to this app)
 │   │   ├── workflow/           # Day-start → manager-approval → closing
 │   │   ├── investment/         # Analysis reports, decisions, execution, review
-│   │   ├── leave_delegation/   # Leave requests, agent/delegation management
 │   │   ├── approval/           # Approval flow config, signing groups/teams
 │   │   ├── permissions/        # Accounts, groups, function/data permissions
 │   │   ├── iam/                # Login, sessions, tokens
@@ -76,7 +76,6 @@ ims-th-solution/
 │   ├── modules/                # Domain feature modules (components, stores, composables, api)
 │   │   ├── workflow/
 │   │   ├── investment/
-│   │   ├── leave-delegation/
 │   │   ├── approval/
 │   │   ├── permissions/
 │   │   ├── notification/
@@ -149,6 +148,7 @@ Investment Day Start → Manager Approval → Transaction Closing → Accounting
 ```
 
 **Critical rules:**
+
 - No investment transactions allowed before Investment Day Start
 - Manager Approval requires all transactions/reviews for that day to be completed first
 - After Manager Approval, fund managers are LOCKED from further transactions
@@ -172,6 +172,7 @@ Full investment lifecycle for domestic and foreign stocks:
 5. **Investment Review** — post-trade review
 
 **Critical validations:**
+
 - Minimum trading unit validation (per market)
 - Price tick validation (per exchange rules)
 - Buy/Sell recommendation must link to an approved analysis report
@@ -183,20 +184,8 @@ Full investment lifecycle for domestic and foreign stocks:
 - Submission must go through approval workflow
 - Support for: single-target order, multi-account single-target order, future batch import
 
-### 4.3 Leave / Delegation / Approval
-
-**This directly affects investment authority — not cosmetic HR logic.**
-
-- Users on approved leave are **restricted from normal login/operations**
-- Delegated users **inherit function permissions AND data (contract) permissions** during leave window
-- Agent (delegate) setup supports **priority-based delegation** (if agent 1 also on leave → agent 2)
-- Up to **6 agents per contract** can be configured
-- Three leave flows: **Leave, Temporary Leave, Leave Cancellation**
-- Leave cancellation review must be done from Supervisor interface
-- Batch agent replacement supported
-- System auto-logout for users on active leave (~100 second warning)
-
 **Approval Workflow:**
+
 - Approval groups: named groups with member lists
 - Approval teams: named teams with member lists
 - Approval flows: configurable sequential or group-based approval chains
@@ -227,35 +216,38 @@ Enterprise-grade, server-side enforced:
 
 ## 5. Naming Conventions
 
-| Artifact | Convention | Example |
-|----------|-----------|---------|
-| Backend module folder | `snake_case` | `leave_delegation/` |
-| Go files | `snake_case.go` | `analysis_report.go` |
-| Go structs | `PascalCase` | `AnalysisReport` |
-| Go interfaces | `PascalCase` + suffix | `AnalysisReportRepository` |
-| API endpoints | `kebab-case`, plural | `GET /api/v1/analysis-reports` |
-| SQL migrations | `<timestamp>_<module>__<desc>.<dir>.sql` | `20260301000001_iam__create_users.up.sql` |
-| SQL tables | `snake_case`, plural, module-prefixed | `investment_analysis_reports` |
-| Frontend module folder | `kebab-case` | `leave-delegation/` |
-| Vue components | `PascalCase.vue` | `AnalysisReportForm.vue` |
-| Pinia stores | `use<Name>Store.ts` | `useInvestmentDecisionStore.ts` |
-| Composables | `use<Name>.ts` | `useWorkflow.ts` |
-| API client files | `<domain>Api.ts` | `investmentApi.ts` |
-| TypeScript types | `<domain>.types.ts` | `investment.types.ts` |
+| Artifact               | Convention                               | Example                                   |
+| ---------------------- | ---------------------------------------- | ----------------------------------------- |
+| Backend module folder  | `snake_case`                             | `leave_delegation/`                       |
+| Go files               | `snake_case.go`                          | `analysis_report.go`                      |
+| Go structs             | `PascalCase`                             | `AnalysisReport`                          |
+| Go interfaces          | `PascalCase` + suffix                    | `AnalysisReportRepository`                |
+| API endpoints          | `kebab-case`, plural                     | `GET /api/v1/analysis-reports`            |
+| SQL migrations         | `<timestamp>_<module>__<desc>.<dir>.sql` | `20260301000001_iam__create_users.up.sql` |
+| SQL tables             | `snake_case`, plural, module-prefixed    | `investment_analysis_reports`             |
+| Frontend module folder | `kebab-case`                             | `leave-delegation/`                       |
+| Vue components         | `PascalCase.vue`                         | `AnalysisReportForm.vue`                  |
+| Pinia stores           | `use<Name>Store.ts`                      | `useInvestmentDecisionStore.ts`           |
+| Composables            | `use<Name>.ts`                           | `useWorkflow.ts`                          |
+| API client files       | `<domain>Api.ts`                         | `investmentApi.ts`                        |
+| TypeScript types       | `<domain>.types.ts`                      | `investment.types.ts`                     |
 
 ---
 
 ## 6. Module Boundary Rules
 
 **ALLOWED imports:**
+
 - Any module → `pkg/types/`, `pkg/enum/`, `pkg/contract/` (shared kernel)
 - Any module → `platform/*` (cross-cutting utilities)
 
 **FORBIDDEN imports:**
+
 - Module A → Module B's `domain/`, `application/`, `infrastructure/`, `transport/` — NEVER
 - Cross-module communication → use `pkg/contract/` interfaces or domain events only
 
 **NEVER do these:**
+
 - Put business logic in HTTP handlers or Vue components
 - Import domain entities into transport layer directly (use DTOs)
 - Skip server-side permission checks
@@ -279,6 +271,7 @@ This system operates on **Thai market business days**, not naive UTC timestamps.
 ## 8. Design Documents (in `docs/` directory)
 
 Read these for deeper context:
+
 - `docs/adr/001-modular-monolith.md` — Why monolith, not microservices
 - `docs/adr/005-folder-structure.md` — Full folder structure rationale (D05 document)
 - `docs/domain/workflow_states.md` — Workflow state machine details
@@ -289,21 +282,21 @@ Read these for deeper context:
 
 ## 9. Technology Versions
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| Go | 1.23+ | Use latest stable |
-| Node.js | 20 LTS+ | For Nuxt build |
-| Nuxt | 3.x | Latest stable |
-| Vue | 3.x | Composition API only |
-| TypeScript | 5.x | Strict mode |
-| PostgreSQL | 16+ | With uuid-ossp extension |
-| Docker | 24+ | |
-| Docker Compose | v2+ | |
-| chi (Go router) | v5 | HTTP router |
-| golang-migrate | v4 | DB migrations |
-| Pinia | 2.x | Vue state management |
-| Tailwind CSS | 3.x | Utility-first CSS |
-| Playwright | latest | E2E testing |
+| Tool            | Version | Notes                    |
+| --------------- | ------- | ------------------------ |
+| Go              | 1.23+   | Use latest stable        |
+| Node.js         | 20 LTS+ | For Nuxt build           |
+| Nuxt            | 3.x     | Latest stable            |
+| Vue             | 3.x     | Composition API only     |
+| TypeScript      | 5.x     | Strict mode              |
+| PostgreSQL      | 16+     | With uuid-ossp extension |
+| Docker          | 24+     |                          |
+| Docker Compose  | v2+     |                          |
+| chi (Go router) | v5      | HTTP router              |
+| golang-migrate  | v4      | DB migrations            |
+| Pinia           | 2.x     | Vue state management     |
+| Tailwind CSS    | 3.x     | Utility-first CSS        |
+| Playwright      | latest  | E2E testing              |
 
 ---
 
@@ -337,6 +330,7 @@ NUXT_PUBLIC_APP_NAME=IMS Thailand
 ## 11. Source Documents
 
 The original business requirements are in these files (in the repo root or `docs/` folder):
+
 - `00_IMSFunctionDescription_WorkflowManagement_V1_1.docx`
 - `01_IMSFunctionDescription_StockInvestmentManagementV1_1.docx`
 - `02_IMSFunctionDescription_Leave_ExpenseApprovalWorkflowManagement_V1_1.docx`

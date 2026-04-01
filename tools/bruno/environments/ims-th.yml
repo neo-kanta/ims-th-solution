@@ -1,0 +1,14 @@
+name: ims-th
+variables:
+  - secret: true
+    name: token
+  - name: iam-admin
+    value: http://localhost:8080/api/v1/admin
+  - name: iam-auth
+    value: http://localhost:8080/api/v1/auth
+  - name: iam-audit
+    value: http://localhost:8080/api/v1/audit
+  - secret: true
+    name: refresh_token
+  - name: iam-mfa
+    value: http://localhost:8080/api/v1/auth/mfa

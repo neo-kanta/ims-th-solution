@@ -1,0 +1,19 @@
+info:
+  name: revoke-session
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{iam-admin}}/sessions/:id/revoke"
+  params:
+    - name: id
+      value: a0000000-0000-0000-0000-000000000001
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

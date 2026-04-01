@@ -1,0 +1,19 @@
+info:
+  name: enable-user
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{iam-admin}}/users/:id/enable"
+  params:
+    - name: id
+      value: a0000000-0000-0000-0000-000000000001
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,26 @@
+info:
+  name: create-user
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{iam-admin}}/users"
+  body:
+    type: json
+    data: |-
+      {
+        "display_name": "neo",
+        "email": "neo.kanta@test.local",
+        "password": "neopass",
+        "username": "urd2000"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

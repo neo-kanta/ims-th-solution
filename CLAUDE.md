@@ -88,6 +88,7 @@ frontend/modules/<DOMAIN>/
 ```
 
 **If you are adding a page (route):**
+
 ```
 frontend/app/pages/<domain>/<feature>/index.vue
 frontend/app/pages/<domain>/<feature>/[id].vue
@@ -95,6 +96,7 @@ frontend/app/pages/<domain>/<feature>/create.vue
 ```
 
 **If you are adding shared UI:**
+
 ```
 frontend/shared/components/ui/      → Base UI primitives (AppButton, AppInput, etc.)
 frontend/shared/components/layout/  → Layout parts (Sidebar, TopBar, etc.)
@@ -105,12 +107,14 @@ frontend/shared/utils/              → Formatters, validators, constants
 ```
 
 **If you are adding a database migration:**
+
 ```
 database/migrations/<YYYYMMDDHHMMSS>_<module>__<description>.up.sql
 database/migrations/<YYYYMMDDHHMMSS>_<module>__<description>.down.sql
 ```
 
 **If you are adding cross-module infrastructure:**
+
 ```
 backend/platform/       → middleware, config, DB helpers, logging, errors, clock
 backend/pkg/types/      → Shared value types (Money, DateRange, Pagination)
@@ -122,20 +126,19 @@ backend/pkg/contract/   → Inter-module interfaces ONLY
 
 ## Module List
 
-| Module | Backend Path | Frontend Path | Database Prefix |
-|--------|-------------|--------------|-----------------|
-| Workflow Management | `internal/workflow/` | `modules/workflow/` | `workflow__` |
-| Stock Investment | `internal/investment/` | `modules/investment/` | `investment__` |
-| Leave & Delegation | `internal/leave_delegation/` | `modules/leave-delegation/` | `leave__` |
-| Approval Workflow | `internal/approval/` | `modules/approval/` | `approval__` |
-| Permissions | `internal/permissions/` | `modules/permissions/` | `permissions__` |
-| Identity & Access | `internal/iam/` | (uses shared/stores/useAuthStore) | `iam__` |
-| Notification | `internal/notification/` | `modules/notification/` | `notification__` |
-| Audit | `internal/audit/` | `modules/audit/` | `audit__` |
-| Market Data | `internal/market_data/` | — | `market_data__` |
-| Reference Data | `internal/reference_data/` | — | `reference__` |
-| Compliance/IRG | `internal/compliance/` | — | `compliance__` |
-| ETL/Integration | `internal/integration/` | — | `integration__` |
+| Module              | Backend Path               | Frontend Path                     | Database Prefix  |
+| ------------------- | -------------------------- | --------------------------------- | ---------------- |
+| Workflow Management | `internal/workflow/`       | `modules/workflow/`               | `workflow__`     |
+| Stock Investment    | `internal/investment/`     | `modules/investment/`             | `investment__`   |
+| Approval Workflow   | `internal/approval/`       | `modules/approval/`               | `approval__`     |
+| Permissions         | `internal/permissions/`    | `modules/permissions/`            | `permissions__`  |
+| Identity & Access   | `internal/iam/`            | (uses shared/stores/useAuthStore) | `iam__`          |
+| Notification        | `internal/notification/`   | `modules/notification/`           | `notification__` |
+| Audit               | `internal/audit/`          | `modules/audit/`                  | `audit__`        |
+| Market Data         | `internal/market_data/`    | —                                 | `market_data__`  |
+| Reference Data      | `internal/reference_data/` | —                                 | `reference__`    |
+| Compliance/IRG      | `internal/compliance/`     | —                                 | `compliance__`   |
+| ETL/Integration     | `internal/integration/`    | —                                 | `integration__`  |
 
 ---
 
@@ -198,32 +201,31 @@ npm install -D typescript @types/node
 ```
 
 Configure `nuxt.config.ts`:
+
 ```typescript
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  srcDir: 'app/',
-  modules: [
-    '@nuxtjs/tailwindcss',
-    '@pinia/nuxt',
-    '@vueuse/nuxt',
-  ],
-  css: ['~/assets/css/main.css'],
+  srcDir: "app/",
+  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt", "@vueuse/nuxt"],
+  css: ["~/assets/css/main.css"],
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1',
-      appName: process.env.NUXT_PUBLIC_APP_NAME || 'IMS Thailand',
+      apiBaseUrl:
+        process.env.NUXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1",
+      appName: process.env.NUXT_PUBLIC_APP_NAME || "IMS Thailand",
     },
   },
   typescript: {
     strict: true,
   },
   tailwindcss: {
-    cssPath: '~/assets/css/main.css',
+    cssPath: "~/assets/css/main.css",
   },
-})
+});
 ```
 
 Create frontend domain module folders:
+
 ```bash
 cd frontend
 for mod in workflow investment leave-delegation approval permissions notification audit; do
@@ -239,10 +241,11 @@ mkdir -p app/pages/{workflow,investment/{analysis,decision,execution,review},lea
 
 ```bash
 cd backend
-go mod init github.com/your-org/ims-th-solution/backend
+go mod init github.com/neo-kanta/ims-th-solution/backend
 ```
 
 Install core dependencies:
+
 ```bash
 go get github.com/go-chi/chi/v5
 go get github.com/go-chi/cors
@@ -256,6 +259,7 @@ go get github.com/joho/godotenv
 ```
 
 Create backend module skeletons:
+
 ```bash
 cd backend
 for mod in workflow investment leave_delegation approval permissions iam notification audit market_data reference_data compliance integration; do
@@ -315,12 +319,14 @@ SQL
 ### Phase 5: Infrastructure
 
 Create `infra/docker-compose.yml`:
+
 ```yaml
 services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5437:5437"
+    command: -p 5437
     environment:
       POSTGRES_DB: ims_dev
       POSTGRES_USER: ims_app
@@ -353,6 +359,7 @@ volumes:
 ```
 
 Create `infra/env/.env.development`:
+
 ```env
 APP_ENV=development
 APP_PORT=8080
@@ -360,7 +367,7 @@ APP_LOG_LEVEL=debug
 APP_JWT_SECRET=dev-secret-change-in-production
 
 DB_HOST=postgres
-DB_PORT=5432
+DB_PORT=5437
 DB_NAME=ims_dev
 DB_USER=ims_app
 DB_PASSWORD=ims_dev_password
@@ -377,23 +384,24 @@ NUXT_PUBLIC_APP_NAME=IMS Thailand
 
 The PoC is being built in this order (from D01 Project Plan):
 
-| Priority | What | Target |
-|----------|------|--------|
-| **P0** | Frontend skeleton (Nuxt 3 + routing + layouts) | Month 1-2 |
-| **P0** | Backend API gateway (chi router + middleware + health check) | Month 1-2 |
-| **P0** | Database schema design + initial migrations | Month 1-2 |
-| **P1** | Permissions module (accounts, groups, function/data permissions) | Month 2-3 |
-| **P1** | IAM module (login, session, JWT) | Month 2-3 |
-| **P2** | Workflow module (day-start through closing) | Month 3-4 |
-| **P2** | ETL / Data integration PoC | Month 2-3 |
-| **P3** | Investment module (4-step flow) | Month 4-6 |
-| **P3** | Leave & delegation module | Month 4-5 |
-| **P4** | Approval workflow | Month 5-6 |
-| **P4** | IRG / compliance hooks | Month 5-6 |
-| **P5** | Notification, audit UI, dashboard polish | Month 6-7 |
-| **P6** | E2E testing, UAT, production deployment | Month 7-8 |
+| Priority | What                                                             | Target    |
+| -------- | ---------------------------------------------------------------- | --------- |
+| **P0**   | Frontend skeleton (Nuxt 3 + routing + layouts)                   | Month 1-2 |
+| **P0**   | Backend API gateway (chi router + middleware + health check)     | Month 1-2 |
+| **P0**   | Database schema design + initial migrations                      | Month 1-2 |
+| **P1**   | Permissions module (accounts, groups, function/data permissions) | Month 2-3 |
+| **P1**   | IAM module (login, session, JWT)                                 | Month 2-3 |
+| **P2**   | Workflow module (day-start through closing)                      | Month 3-4 |
+| **P2**   | ETL / Data integration PoC                                       | Month 2-3 |
+| **P3**   | Investment module (4-step flow)                                  | Month 4-6 |
+| **P3**   | Leave & delegation module                                        | Month 4-5 |
+| **P4**   | Approval workflow                                                | Month 5-6 |
+| **P4**   | IRG / compliance hooks                                           | Month 5-6 |
+| **P5**   | Notification, audit UI, dashboard polish                         | Month 6-7 |
+| **P6**   | E2E testing, UAT, production deployment                          | Month 7-8 |
 
 **When asked to "initialize the project", focus on P0:**
+
 1. Frontend with Nuxt 3, Tailwind, Pinia, layouts, empty pages for all domains
 2. Backend with chi router, health endpoint, CORS, structured logging, config loading
 3. Docker Compose with PostgreSQL
@@ -488,48 +496,48 @@ Every module has an `api/xxxApi.ts` file. Use `$fetch` (Nuxt built-in, based on 
 
 ```typescript
 // modules/workflow/api/workflowApi.ts
-const BASE = '/api/v1'
+const BASE = "/api/v1";
 
 export const workflowApi = {
   getStatus(contractId: string) {
-    return $fetch(`${BASE}/workflow/${contractId}/status`)
+    return $fetch(`${BASE}/workflow/${contractId}/status`);
   },
   startDay(contractId: string, date: string) {
     return $fetch(`${BASE}/workflow/${contractId}/start-day`, {
-      method: 'POST',
+      method: "POST",
       body: { date },
-    })
+    });
   },
-}
+};
 ```
 
 ### Pinia Store Pattern
 
 ```typescript
 // modules/workflow/stores/useWorkflowStore.ts
-import { defineStore } from 'pinia'
-import { workflowApi } from '../api/workflowApi'
-import type { WorkflowStatus } from '../types/workflow.types'
+import { defineStore } from "pinia";
+import { workflowApi } from "../api/workflowApi";
+import type { WorkflowStatus } from "../types/workflow.types";
 
-export const useWorkflowStore = defineStore('workflow', () => {
-  const status = ref<WorkflowStatus | null>(null)
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+export const useWorkflowStore = defineStore("workflow", () => {
+  const status = ref<WorkflowStatus | null>(null);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
 
   async function fetchStatus(contractId: string) {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      status.value = await workflowApi.getStatus(contractId)
+      status.value = await workflowApi.getStatus(contractId);
     } catch (e: any) {
-      error.value = e.data?.message || 'Failed to fetch workflow status'
+      error.value = e.data?.message || "Failed to fetch workflow status";
     } finally {
-      loading.value = false
+      loading.value = false;
     }
   }
 
-  return { status, loading, error, fetchStatus }
-})
+  return { status, loading, error, fetchStatus };
+});
 ```
 
 ### Permission Guard Pattern
@@ -537,17 +545,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
 ```typescript
 // shared/composables/usePermissionGuard.ts
 export function usePermissionGuard() {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
 
   function hasFunction(code: string): boolean {
-    return authStore.permissions.functions.includes(code)
+    return authStore.permissions.functions.includes(code);
   }
 
   function hasContract(contractId: string): boolean {
-    return authStore.permissions.contracts.includes(contractId)
+    return authStore.permissions.contracts.includes(contractId);
   }
 
-  return { hasFunction, hasContract }
+  return { hasFunction, hasContract };
 }
 ```
 
@@ -557,19 +565,19 @@ export function usePermissionGuard() {
 <!-- app/pages/workflow/index.vue -->
 <script setup lang="ts">
 definePageMeta({
-  layout: 'dashboard',
-  middleware: ['auth', 'permission'],
-  meta: { permission: 'WORKFLOW_VIEW' },
-})
+  layout: "dashboard",
+  middleware: ["auth", "permission"],
+  meta: { permission: "WORKFLOW_VIEW" },
+});
 
-const workflowStore = useWorkflowStore()
-const globalStore = useGlobalStore()
+const workflowStore = useWorkflowStore();
+const globalStore = useGlobalStore();
 
 onMounted(() => {
   if (globalStore.activeContractId) {
-    workflowStore.fetchStatus(globalStore.activeContractId)
+    workflowStore.fetchStatus(globalStore.activeContractId);
   }
-})
+});
 </script>
 
 <template>

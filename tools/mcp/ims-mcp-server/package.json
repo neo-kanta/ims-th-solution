@@ -1,0 +1,27 @@
+{
+    "name": "ims-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP Server for IMS Thailand — exposes database, workflow states, domain rules, and project context to Claude Code / Claude.ai",
+    "type": "module",
+    "bin": {
+        "ims-mcp": "./build/index.js"
+    },
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch",
+        "start": "node build/index.js"
+    },
+    "files": [
+        "build"
+    ],
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.1",
+        "pg": "^8.13.1",
+        "zod": "^3.24.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.0",
+        "@types/pg": "^8.11.10",
+        "typescript": "^5.7.0"
+    }
+}
