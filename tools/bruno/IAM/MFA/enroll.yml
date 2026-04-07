@@ -15,7 +15,9 @@ http:
           "string"
         ]
       }
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{iam-auth}}/verify"
+  url: "{{iam-mfa}}/verify"
   body:
     type: json
     data: |-
@@ -14,7 +14,9 @@ http:
       }
 
       // totp code
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true

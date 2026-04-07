@@ -1,4 +1,4 @@
-name: ims-th
+name: ims-th-local
 variables:
   - secret: true
     name: token
