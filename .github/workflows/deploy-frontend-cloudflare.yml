@@ -1,0 +1,46 @@
+name: Deploy Frontend to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend-cloudflare.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-cloudflare
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate static frontend
+        env:
+          NUXT_PUBLIC_API_BASE_URL: ${{ secrets.CLOUDFLARE_NUXT_PUBLIC_API_BASE_URL }}
+          NUXT_PUBLIC_APP_NAME: ${{ secrets.CLOUDFLARE_NUXT_PUBLIC_APP_NAME }}
+        run: npm run generate
+
+      - name: Publish to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy .output/public --project-name "${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}" --branch "${{ github.ref_name }}"
