@@ -5,14 +5,16 @@ info:
 
 http:
   method: POST
-  url: "{{iam-auth}}/disable"
+  url: "{{iam-mfa}}/disable"
   body:
     type: json
     data: |-
       {
         "totp_code": "string"
       }
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true
