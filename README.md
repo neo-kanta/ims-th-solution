@@ -1,219 +1,147 @@
 # IMS Thailand Solution
 
-Enterprise Investment Management System for Thai Market
+IMS Thailand is a modular investment management platform with a Go backend, a Nuxt frontend, PostgreSQL migrations, and local infrastructure for end-to-end development.
 
-> **Status**: Proof of Concept (PoC) | **Phase**: Active Development
+## Current State
 
-IMS Thailand is a modern, modular web application for investment management operations. Built with Go for the backend and Nuxt.js 3 for the frontend, it provides a comprehensive platform for managing investment workflows, approvals, permissions, and compliance.
+- Backend: modular monolith under `backend/internal`
+- Frontend: Nuxt 4 app under `frontend/app`
+- Database: PostgreSQL schema managed through SQL migrations
+- Local infrastructure: Docker Compose from `infra/`
+- Most implemented domain area today: IAM, auth, admin user management, sessions, MFA, and audit-related admin APIs
+- Other backend domain modules exist as reserved scaffolds and boundaries, not as fully implemented features yet
 
-## 🏗 Architecture
+## Tech Stack
 
-- **Backend**: Go 1.23+, modular monolith with `go-chi/chi` routing, `jackc/pgx` for PostgreSQL, JWT authentication, and structured logging
-- **Frontend**: Nuxt.js 3, Vue 3 Composition API, Pinia state management, Tailwind CSS, and i18n (EN/TH/ZH)
-- **Database**: PostgreSQL 16 with migrations and seed data
-- **Infrastructure**: Docker & Docker Compose for local development and deployment
-- **Features**: Light/Dark theme support, multi-language UI, permission-based access control, audit logging
+- Backend: Go, Chi, pgx, Swagger
+- Frontend: Nuxt 4, Vue 3, Pinia, TypeScript
+- Database: PostgreSQL
+- Tooling: Docker Compose, Make, Vitest, Playwright
 
-## ✨ Key Features
+## Repository Layout
 
-- **Workflow Management**: Day-start operations, contract closing, and workflow state management
-- **Investment Operations**: 4-step investment decision and execution flow
-- **Approval Workflows**: Role-based approval routing and delegation
-- **Permission System**: Function-level and data-level (contract) permissions
-- **Multi-Language UI**: English, Thai, and Traditional Chinese support
-- **Theme Support**: Light and Dark theme with system preference detection
-- **Audit Logging**: Comprehensive audit trail for compliance and traceability
-- **Data Integration**: ETL capabilities for market data and reference data
+```text
+ims-th-solution/
+|-- backend/                  # Go API, modular monolith, Swagger generation
+|-- database/                 # SQL migrations and seed files
+|-- docs/                     # Runbooks, ADRs, security docs, API docs
+|-- frontend/                 # Nuxt 4 web application
+|-- infra/                    # Dockerfiles, compose files, env files
+|-- tests/                    # End-to-end tests
+|-- tools/                    # Supporting tooling such as the MCP server
+|-- Makefile                  # Common local development commands
+|-- CLAUDE.md                 # AI/dev assistant guidance
+`-- AIREAD.md                 # Project context notes
+```
 
-## 🚀 Quick Start
+## Quick Start
 
-The project uses a `Makefile` to simplify local development. Make sure you have **Docker**, **Docker Compose**, **Go 1.23+**, **Node.js 18+**, and **npm** installed.
+### Prerequisites
 
-### 1. Start Everything
+- Docker and Docker Compose
+- Go 1.23+
+- Node.js 20+
+- npm 10+
 
-To start the database, backend API, and frontend server:
+### Start the stack
+
+From the repository root:
 
 ```bash
 make dev
 ```
 
-**Available at:**
+This starts PostgreSQL, the backend API, and the frontend dev server.
 
-- 🌐 Frontend: http://localhost:3000
-- 🔌 Backend API: http://localhost:8080
-- 📚 API Docs: http://localhost:8080/swagger/index.html#/
+### Local URLs
 
-### 2. Database Management
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/swagger/index.html`
 
-Reset the database completely (stops containers, wipes data, runs migrations, and seeds):
+## Common Commands
+
+### Development
 
 ```bash
-make db-reset
+make dev
+make dev-backend
+make dev-frontend
 ```
 
-Run pending migrations:
+### Database
 
 ```bash
 make migrate-up
-```
-
-Load initial seed data (includes dev accounts `guest` and `admin`):
-
-```bash
+make migrate-down
+make migrate-new module=iam name=add_mfa_fields
 make seed
+make db-reset
 ```
 
-### 3. Development Accounts
-
-The development environment includes pre-configured user accounts:
-
-| Username | Password   | Role          | Permissions                  |
-| -------- | ---------- | ------------- | ---------------------------- |
-| `admin`  | `admin123` | Administrator | All functions, all contracts |
-| `guest`  | `guest123` | Viewer        | Limited read-only access     |
-
-> ⚠️ **Important**: These credentials are for **local development only**. Use unique, strong passwords in production.
-
-### 4. Other Useful Commands
-
-**Backend Only:**
-
-```bash
-make dev-backend      # Run backend server without Docker
-make build            # Build backend binary
-```
-
-**Frontend Only:**
-
-```bash
-make dev-frontend     # Run frontend dev server (requires backend)
-make build-frontend   # Build frontend for production
-```
-
-**Database Operations:**
-
-```bash
-make migrate-new module=workflow name=add_feature    # Create new migration pair
-make migrate-up                                      # Run pending migrations
-make migrate-down                                    # Rollback last migration
-make db-reset                                        # Full database reset
-```
-
-**Building & Deployment:**
-
-```bash
-make docker-build     # Build Docker images
-make build            # Build backend binary + frontend static
-```
-
-## 🧪 Testing and Quality
-
-Run unit and integration tests (Backend):
+### Quality
 
 ```bash
 make test
-```
-
-Run E2E tests using Playwright:
-
-```bash
+make test-unit
+make test-integration
 make test-e2e
-```
-
-Run linters (Go and Frontend Typecheck):
-
-```bash
 make lint
 ```
 
-## 🔒 Security
+### Build
 
-For a detailed code-first review of the current application security posture, please refer to the [Security Gap Analysis](docs/security_gap_analysis.md).
-
-## 📂 Project Structure
-
-```text
-ims-th-solution/
-├── backend/
-│   ├── cmd/                     # Application entry points
-│   │   ├── server/              # API server
-│   │   ├── migrate/             # Database migrations
-│   │   └── seed/                # Seed data
-│   ├── internal/                # Domain modules (modular monolith)
-│   │   ├── iam/                 # Identity & Access Management
-│   │   ├── permissions/         # Permission system
-│   │   ├── workflow/            # Workflow operations
-│   │   ├── investment/          # Investment management
-│   │   ├── approval/            # Approval workflows
-│   │   ├── audit/               # Audit logging
-│   │   ├── notification/        # Notifications
-│   │   └── compliance/          # Compliance/IRG
-│   ├── platform/                # Cross-cutting concerns
-│   │   ├── middleware/          # HTTP middleware
-│   │   ├── config/              # Configuration
-│   │   ├── database/            # Database helpers
-│   │   ├── logging/             # Structured logging
-│   │   └── errors/              # Error handling
-│   ├── pkg/                     # Shared packages
-│   │   ├── types/               # Shared value types
-│   │   ├── enum/                # Enumerations
-│   │   └── contract/            # Inter-module interfaces
-│   └── api/                     # OpenAPI/Swagger specs
-│
-├── frontend/
-│   ├── app/
-│       ├── pages/               # Nuxt pages
-│       ├── layouts/             # Layout components
-│       ├── middleware/          # Nuxt middleware
-│       ├── plugins/             # Nuxt plugins
-│       └── assets/              # CSS, images
-│
-├── database/
-│   └── migrations/              # SQL migrations
-│
-├── infra/                       # Infrastructure
-│   └── docker/                  # Docker Compose
-│
-├── docs/                        # Documentation
-│   └── adr/                     # Architecture decisions
-│
-├── Makefile                     # Development commands
-├── CLAUDE.md                    # Developer instructions
-└── AIREAD.md                    # Project context
+```bash
+make build
+make docker-build
+make swagger
 ```
 
-## 🎯 Core Modules
+## Module Status
 
-| Module           | Purpose                          | Status         |
-| ---------------- | -------------------------------- | -------------- |
-| **IAM**          | Authentication, Sessions, JWT    | ✅ In Progress |
-| **Permissions**  | Access control (function & data) | ✅ In Progress |
-| **Workflow**     | Day-start, operations, closing   | 🔄 Planning    |
-| **Investment**   | 4-step investment flow           | 🔄 Planning    |
-| **Approval**     | Approval routing                 | 🔄 Planning    |
-| **Audit**        | Compliance logging               | 🔄 Planning    |
-| **Notification** | User notifications               | 🔄 Planning    |
+| Module | Status | Notes |
+| --- | --- | --- |
+| `iam` | Active | Authentication, sessions, MFA, admin user flows, audit/admin APIs |
+| `approval` | Scaffolded | Folder structure and router/repository placeholders only |
+| `audit` | Scaffolded | Reserved boundary; current audit admin listing lives in IAM |
+| `compliance` | Scaffolded | Reserved boundary only |
+| `integration` | Scaffolded | Reserved boundary only |
+| `investment` | Scaffolded | Reserved boundary only |
+| `leave_delegation` | Scaffolded | Reserved boundary only |
+| `market_data` | Scaffolded | Reserved boundary only |
+| `notification` | Scaffolded | Reserved boundary only |
+| `permissions` | Scaffolded | Reserved boundary; current permission checks are handled through IAM and platform middleware |
+| `reference_data` | Scaffolded | Reserved boundary only |
+| `workflow` | Scaffolded | Reserved boundary only |
 
-## 📜 License
+## Frontend Notes
 
-MIT License
+The frontend has been reorganized around real ownership boundaries:
 
-Copyright (c) 2026 neo
+- `app/features/` for feature-owned code
+- `app/shared/ui/` for shared components
+- `app/shared/i18n/` for translations and locale helpers
+- `app/pages/` as thin route shells where possible
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+See [frontend/README.md](C:/Users/kanta/source/repos/ims-th-solution/frontend/README.md) for the frontend-specific layout and conventions.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Database Notes
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- Migration files live in [database/migrations](C:/Users/kanta/source/repos/ims-th-solution/database/migrations)
+- Development seed SQL lives in `database/seeds/`
+- The current seed file is a placeholder template, so do not assume built-in demo accounts unless you have added them yourself
+
+See [database/migrations/README.md](C:/Users/kanta/source/repos/ims-th-solution/database/migrations/README.md) for migration workflow details.
+
+## Additional Documentation
+
+- [Frontend README](C:/Users/kanta/source/repos/ims-th-solution/frontend/README.md)
+- [Migrations README](C:/Users/kanta/source/repos/ims-th-solution/database/migrations/README.md)
+- [MCP Server README](C:/Users/kanta/source/repos/ims-th-solution/tools/mcp/ims-mcp-server/README.md)
+- `docs/SECURITY_CHECKLIST.md`
+- `docs/SECURITY_IMPLEMENTATION.md`
+- `docs/API_DOCUMENTATION.md`
+
+## License
+
+MIT

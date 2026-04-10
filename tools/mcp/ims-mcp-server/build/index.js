@@ -44,7 +44,7 @@ import path from "path";
 // ---------------------------------------------------------------------------
 const DB_CONFIG = {
     host: process.env.IMS_DB_HOST ?? "localhost",
-    port: parseInt(process.env.IMS_DB_PORT ?? "5432", 10),
+    port: parseInt(process.env.IMS_DB_PORT ?? "5437", 10),
     database: process.env.IMS_DB_NAME ?? "ims_dev",
     user: process.env.IMS_DB_USER ?? "ims_app",
     password: process.env.IMS_DB_PASSWORD ?? "ims_dev_password",
