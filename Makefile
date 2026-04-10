@@ -2,7 +2,7 @@
 # Quick commands for development, testing, and deployment.
 
 .PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed db-reset \
-        test test-unit test-integration test-e2e lint build docker-build
+        test test-unit test-integration test-e2e lint build docker-build swagger
 
 # =============================
 # Development
@@ -42,7 +42,9 @@ seed: ## Load seed data
 
 db-reset: ## Drop + recreate + migrate + seed
 	@echo "Resetting database..."
-	cd infra && docker compose down -v
+	cd infra && docker compose stop postgres
+	cd infra && docker compose rm -f postgres
+	docker volume rm ims-th-solution_pgdata || true
 	cd infra && docker compose up -d postgres
 	@sleep 3
 	$(MAKE) migrate-up
@@ -79,6 +81,9 @@ build: ## Build backend binary + frontend static
 
 docker-build: ## Build Docker images
 	cd infra && docker compose build
+
+swagger: ## Generate backend Swagger docs
+	cd backend && swag init -g main.go -d cmd/server,internal/iam -o docs --parseInternal --useStructName
 
 # =============================
 # Help
