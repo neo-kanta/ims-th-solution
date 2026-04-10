@@ -1,6 +1,4 @@
-<script setup lang="ts">
-// Default layout — used for public/auth pages (login, etc.)
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="min-h-screen bg-gray-50">

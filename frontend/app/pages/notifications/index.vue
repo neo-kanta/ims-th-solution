@@ -41,18 +41,21 @@ const unreadCount = computed(() => notifications.filter(n => !n.read).length)
 
 <template>
   <div>
-    <div class="page-header">
-      <div>
+    <AppPageHeader
+      title="My Notifications"
+      description="System alerts and events routed to you based on your role and subscriptions"
+    >
+      <template #eyebrow>
         <div class="breadcrumb" style="margin-bottom:4px;"><span>Notifications</span></div>
-        <h1 class="page-title">My Notifications</h1>
-        <p class="page-desc">System alerts and events routed to you based on your role and subscriptions</p>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span v-if="unreadCount>0" class="badge badge-error">{{ unreadCount }} unread</span>
-        <button class="btn btn-secondary btn-sm">Mark All Read</button>
-        <NuxtLink to="/settings/notifications" class="btn btn-secondary btn-sm">Notification Settings</NuxtLink>
-      </div>
-    </div>
+      </template>
+      <template #actions>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span v-if="unreadCount>0" class="badge badge-error">{{ unreadCount }} unread</span>
+          <button class="btn btn-secondary btn-sm">Mark All Read</button>
+          <NuxtLink to="/settings/notifications" class="btn btn-secondary btn-sm">Notification Settings</NuxtLink>
+        </div>
+      </template>
+    </AppPageHeader>
 
     <div class="grid-4" style="margin-bottom:16px;">
       <div class="stat-card"><div class="stat-card-label">Total</div><div class="stat-card-value">{{ notifications.length }}</div><div class="stat-card-meta">All time today</div></div>

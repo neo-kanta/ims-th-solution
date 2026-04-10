@@ -1,16 +1,14 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 definePageMeta({
-  layout: 'dashboard',
-  middleware: ['auth', 'permission'],
-  meta: { permission: 'INVESTMENT_VIEW' },
-})
+  layout: "dashboard",
+  middleware: ["auth", "permission"],
+  permission: "INVESTMENT_VIEW",
+});
 </script>
 
 <template>
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Execution Orders</h1>
-    <div class="card">
-      <p class="text-gray-500">Execution Orders — coming soon.</p>
-    </div>
-  </div>
+  <AppRoutePlaceholder
+    title-key="placeholders.executionOrders.title"
+    description-key="placeholders.executionOrders.description"
+  />
 </template>

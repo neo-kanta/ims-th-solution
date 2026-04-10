@@ -1,28 +1,33 @@
-/**
- * Auth plugin — client-side only
- *
- * Initializes authentication on app startup:
- * 1. Restores session from localStorage
- * 2. Sets up token refresh schedule
- * 3. Adds authorization header to all API requests
- */
-export default defineNuxtPlugin(() => {
-  const authStore = useAuthStore()
+import { isPublicRouteMeta } from "../shared/routing/routeAccess";
 
-  // Restore session on app initialization
-  authStore.restoreSession()
+export default defineNuxtPlugin(async () => {
+  const authStore = useAuthStore();
+  const route = useRoute();
 
-  // Setup $fetch interceptor to attach auth token to requests
-  const $fetch = useAsyncData
-
-  if (process.client) {
-    // Add auth token to all API requests
-    const originalFetch = globalThis.$fetch
-
-    if (originalFetch) {
-      // We can't easily intercept $fetch globally in Nuxt 3, so we rely on
-      // the nuxt.config.ts to handle auth headers via interceptors.
-      // This is a placeholder for documentation.
-    }
+  if (!authStore.isAuthenticated || authStore.user) {
+    return;
   }
-})
+
+  const restored = await authStore.restoreSession();
+
+  if (restored) {
+    return;
+  }
+
+  const publicRoutes = [
+    "/auth/login",
+    "/auth/register",
+    "/auth/forgot-password",
+    "/auth/mfa-setup",
+  ];
+
+  const isPublicRoute =
+    isPublicRouteMeta(route.meta)
+    || publicRoutes.some((candidate) => route.path.startsWith(candidate));
+
+  if (!isPublicRoute) {
+    await navigateTo(
+      `/auth/login?reason=session_restore_failed&redirect=${encodeURIComponent(route.fullPath)}`,
+    );
+  }
+});
