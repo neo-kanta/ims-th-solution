@@ -113,17 +113,20 @@ const providerBadge = (s: string) => s === 'OPERATIONAL' ? 'badge-success' : s =
 
 <template>
   <div>
-    <div class="page-header">
-      <div>
+    <AppPageHeader
+      title="Jobs & Integration Health"
+      description="Scheduled worker status, run history, and external provider connectivity"
+    >
+      <template #eyebrow>
         <div class="breadcrumb" style="margin-bottom:4px;"><span>System</span><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">Jobs & Integration</span></div>
-        <h1 class="page-title">Jobs & Integration Health</h1>
-        <p class="page-desc">Scheduled worker status, run history, and external provider connectivity</p>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span class="badge" :class="overallHealth.badge" style="font-size:11px;">System {{ overallHealth.label }}</span>
-        <button class="btn btn-secondary btn-sm">Refresh</button>
-      </div>
-    </div>
+      </template>
+      <template #actions>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="badge" :class="overallHealth.badge" style="font-size:11px;">System {{ overallHealth.label }}</span>
+          <button class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+      </template>
+    </AppPageHeader>
 
     <div class="grid-4" style="margin-bottom:16px;">
       <div class="stat-card"><div class="stat-card-label">Active Workers</div><div class="stat-card-value" style="color:#059669;">{{ workers.filter(w=>w.status==='RUNNING').length }}</div><div class="stat-card-meta">of {{ workers.length }} total</div></div>

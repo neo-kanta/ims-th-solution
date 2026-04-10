@@ -1,16 +1,33 @@
 ﻿<script setup lang="ts">
 definePageMeta({
-  layout: 'dashboard',
-  middleware: ['auth', 'permission'],
-  meta: { permission: 'WORKFLOW_VIEW' },
-})
+  layout: "dashboard",
+  middleware: ["auth", "permission"],
+  permission: "WORKFLOW_VIEW",
+});
+
+const { t } = useI18n();
 </script>
 
 <template>
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Workflow Operations</h1>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ t("navigation.workflow") }}</h1>
+        <p class="page-subtitle">{{ t("workflow.subtitle") }}</p>
+      </div>
+    </div>
+
     <div class="card">
-      <p class="text-gray-500">Workflow Operations — coming soon.</p>
+      <div class="card-body">
+        <p class="text-secondary">{{ t("dashboard.noData") }}</p>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.page {
+  display: grid;
+  gap: var(--space-7);
+}
+</style>

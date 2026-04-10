@@ -6,6 +6,8 @@
 .idea
 .vscode
 .gemini
+.claude
+.gocache
 
 # Ignore frontend node_modules (not needed for backend build)
 frontend/node_modules
