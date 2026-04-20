@@ -8,7 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/valueobject"
@@ -18,12 +19,15 @@ import (
 // ChangePasswordCommand allows a user to update their own password.
 type ChangePasswordCommand struct {
 	userRepo    domain.UserRepository
-	auditSvc    *appservice.AuditService
+	auditSvc    auditdomain.Recorder
 	sessionRepo domain.SessionRepository
 }
 
 // NewChangePasswordCommand creates a new ChangePasswordCommand.
-func NewChangePasswordCommand(userRepo domain.UserRepository, auditSvc *appservice.AuditService, sessionRepo domain.SessionRepository) *ChangePasswordCommand {
+func NewChangePasswordCommand(userRepo domain.UserRepository, auditSvc auditdomain.Recorder, sessionRepo domain.SessionRepository) *ChangePasswordCommand {
+	if auditSvc == nil {
+		auditSvc = auditdomain.NopRecorder{}
+	}
 	return &ChangePasswordCommand{
 		userRepo:    userRepo,
 		auditSvc:    auditSvc,
@@ -76,7 +80,7 @@ func (c *ChangePasswordCommand) Execute(ctx context.Context, input ChangePasswor
 	}
 
 	// 5. Audit
-	c.auditSvc.Record(ctx, &input.UserID, entity.AuditPasswordChange, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
+	c.auditSvc.Record(ctx, &input.UserID, auditentity.AuditPasswordChange, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
 
 	return nil
 }

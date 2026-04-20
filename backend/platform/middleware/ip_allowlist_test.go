@@ -63,14 +63,12 @@ func TestIPAllowlist_SupportsBareIPAddress(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	// Exact match
 	req := httptest.NewRequest("GET", "/", nil)
 	req.RemoteAddr = "192.168.1.100:9999"
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Different IP
 	req2 := httptest.NewRequest("GET", "/", nil)
 	req2.RemoteAddr = "192.168.1.101:9999"
 	w2 := httptest.NewRecorder()
@@ -106,7 +104,10 @@ func TestIPAllowlist_MultipleCIDRs(t *testing.T) {
 	}
 }
 
-func TestIPAllowlist_UsesXForwardedFor(t *testing.T) {
+func TestIPAllowlist_UsesXForwardedFor_WithTrustedProxy(t *testing.T) {
+	middleware.SetTrustedProxies(middleware.NewTrustedProxyConfig([]string{"1.2.3.4"}))
+	defer middleware.SetTrustedProxies(middleware.NewTrustedProxyConfig(nil))
+
 	handler := middleware.IPAllowlist([]string{"10.0.0.0/8"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -117,6 +118,21 @@ func TestIPAllowlist_UsesXForwardedFor(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestIPAllowlist_IgnoresXForwardedFor_WithoutTrustedProxy(t *testing.T) {
+	middleware.SetTrustedProxies(middleware.NewTrustedProxyConfig(nil))
+
+	handler := middleware.IPAllowlist([]string{"10.0.0.0/8"})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "1.2.3.4:1234"
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestIPAllowlist_SkipsInvalidCIDRs(t *testing.T) {

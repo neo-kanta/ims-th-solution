@@ -6,19 +6,23 @@ import (
 
 	"github.com/google/uuid"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
-	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
 )
 
 // LogoutCommand revokes a refresh token session on logout.
 type LogoutCommand struct {
 	sessionRepo domain.SessionRepository
-	auditSvc    *appservice.AuditService
+	auditSvc    auditdomain.Recorder
 }
 
 // NewLogoutCommand creates a LogoutCommand.
-func NewLogoutCommand(sessionRepo domain.SessionRepository, auditSvc *appservice.AuditService) *LogoutCommand {
+func NewLogoutCommand(sessionRepo domain.SessionRepository, auditSvc auditdomain.Recorder) *LogoutCommand {
+	if auditSvc == nil {
+		auditSvc = auditdomain.NopRecorder{}
+	}
 	return &LogoutCommand{
 		sessionRepo: sessionRepo,
 		auditSvc:    auditSvc,
@@ -49,7 +53,7 @@ func (c *LogoutCommand) Execute(ctx context.Context, input LogoutInput) error {
 	}
 
 	// Audit logout
-	c.auditSvc.Record(ctx, &input.UserID, "LOGOUT", "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
+	c.auditSvc.Record(ctx, &input.UserID, auditentity.AuditLogout, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
 
 	return nil
 }

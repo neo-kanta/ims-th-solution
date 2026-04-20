@@ -2,16 +2,21 @@ package iam
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/command"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/query"
 	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/infrastructure/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/infrastructure/persistence"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/transport/handler"
@@ -20,33 +25,77 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )
 
+// AdminRouteRegistrar allows external modules to mount admin-scoped routes under IAM security.
+type AdminRouteRegistrar interface {
+	RegisterAdminRoutes(
+		r chi.Router,
+		permissionChecker middleware.PermissionChecker,
+		exportLimiter middleware.RateLimiter,
+		exportPolicy middleware.RateLimitPolicy,
+	)
+}
+
 // Module is the IAM (Identity and Access Management) module.
 type Module struct {
-	authHandler    *handler.AuthHandler
-	mfaHandler     *handler.MFAHandler
-	sessionHandler *handler.SessionHandler
-	auditHandler   *handler.AuditHandler
-	adminHandler   *handler.AdminHandler
-	userRepo       domain.UserRepository
-	permsFetcher   domain.PermissionsFetcher
-	clock          clock.Clock
-	rateLimiter    *middleware.RateLimiter
-	authzSvc       *appservice.AuthorizationService
-	sessionSvc     *appservice.SessionService
-	adminCIDRs     []string
+	authHandler      *handler.AuthHandler
+	mfaHandler       *handler.MFAHandler
+	sessionHandler   *handler.SessionHandler
+	adminHandler     *handler.AdminHandler
+	userRepo         domain.UserRepository
+	permsFetcher     domain.PermissionsFetcher
+	clock            clock.Clock
+	authzSvc         *appservice.AuthorizationService
+	sessionSvc       *appservice.SessionService
+	adminCIDRs       []string
+	auditAdminRoutes AdminRouteRegistrar
+
+	// Rate limiters (one per policy tier)
+	globalLimiter       middleware.RateLimiter
+	loginLimiter        middleware.RateLimiter
+	refreshLimiter      middleware.RateLimiter
+	refreshTokenLimiter middleware.RateLimiter
+	sensitiveLimiter    middleware.RateLimiter
+	adminLimiter        middleware.RateLimiter
+	exportLimiter       middleware.RateLimiter
+
+	// Rate limit policies
+	globalPolicy       middleware.RateLimitPolicy
+	loginPolicy        middleware.RateLimitPolicy
+	refreshPolicy      middleware.RateLimitPolicy
+	refreshTokenPolicy middleware.RateLimitPolicy
+	sensitivePolicy    middleware.RateLimitPolicy
+	adminPolicy        middleware.RateLimitPolicy
+	exportPolicy       middleware.RateLimitPolicy
+
+	// Auth middleware configuration
+	keyProvider       middleware.KeyProvider
+	keyID             string
+	jwtSecret         string
+	jwtSecretPrevious string
 }
 
 // NewModule creates a new IAM module, wiring all dependencies.
-func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig) (*Module, error) {
+// redisClient may be nil when RATE_LIMIT_BACKEND is "memory".
+func NewModule(
+	pool *pgxpool.Pool,
+	cfg *config.AppConfig,
+	redisClient *redis.Client,
+	auditRecorder auditdomain.Recorder,
+	auditAdminRoutes AdminRouteRegistrar,
+) (*Module, error) {
 	clk := clock.RealClock{}
+	if auditRecorder == nil {
+		auditRecorder = auditdomain.NopRecorder{}
+	}
+
+	// Configure trusted proxies globally
+	middleware.SetTrustedProxies(middleware.NewTrustedProxyConfig(cfg.TrustedProxies))
 
 	// Infrastructure
 	userRepo := persistence.NewPostgresUserRepository(pool)
 	sessionRepo := persistence.NewPostgresSessionRepository(pool)
-	auditRepo := persistence.NewPostgresAuditRepository(pool)
 	mfaRepo := persistence.NewPostgresMFARepository(pool)
 	permsFetcher := adapter.NewPermissionsFetcher(pool)
-	auditSvc := appservice.NewAuditService(auditRepo)
 	authzSvc := appservice.NewAuthorizationService(permsFetcher)
 	sessionSvc := appservice.NewSessionService(sessionRepo)
 
@@ -65,6 +114,15 @@ func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig) (*Module, error) {
 		tokenSvc = application.NewTokenServiceWithKeyRing(cfg.JWTKeyID, cfg.JWTSecret, "", "", clk)
 	}
 
+	// Lockout policy from config
+	lockoutPolicy := entity.LockoutPolicy{
+		MaxFailedAttempts: cfg.LoginMaxFailedAttempts,
+		LockoutDuration:   cfg.LoginLockoutDuration,
+	}
+	if lockoutPolicy.MaxFailedAttempts <= 0 {
+		lockoutPolicy = entity.DefaultLockoutPolicy()
+	}
+
 	// Session policy
 	sessionPolicy := command.SessionPolicy{
 		IdleTimeout:      cfg.SessionIdleTimeout,
@@ -72,92 +130,173 @@ func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig) (*Module, error) {
 		MaxConcurrent:    cfg.SessionMaxConcurrent,
 		ConcurrentMode:   cfg.SessionConcurrentMode,
 		PasswordMaxAge:   cfg.PasswordMaxAge(),
+		LockoutPolicy:    lockoutPolicy,
 	}
 
 	// Application services
-	loginCmd := command.NewLoginCommand(userRepo, sessionRepo, mfaRepo, permsFetcher, tokenSvc, totpSvc, mfaChallengeSvc, auditSvc, clk, sessionPolicy, cfg.MFAForcedForAdmin)
-	refreshCmd := command.NewRefreshTokenCommand(userRepo, sessionRepo, tokenSvc, auditSvc, clk, cfg.SessionIdleTimeout)
-	logoutCmd := command.NewLogoutCommand(sessionRepo, auditSvc)
-	logoutAllCmd := command.NewLogoutAllCommand(sessionRepo, auditSvc)
-	changePassCmd := command.NewChangePasswordCommand(userRepo, auditSvc, sessionRepo)
-	adminUserCmd := command.NewAdminUserCommand(userRepo, auditSvc, clk)
-	mfaCmd := command.NewMFAEnrollCommand(mfaRepo, userRepo, auditSvc, totpSvc)
+	loginCmd := command.NewLoginCommand(userRepo, sessionRepo, mfaRepo, permsFetcher, tokenSvc, totpSvc, mfaChallengeSvc, auditRecorder, clk, sessionPolicy, cfg.MFAForcedForAdmin)
+	refreshCmd := command.NewRefreshTokenCommand(userRepo, sessionRepo, tokenSvc, auditRecorder, clk, cfg.SessionIdleTimeout)
+	logoutCmd := command.NewLogoutCommand(sessionRepo, auditRecorder)
+	logoutAllCmd := command.NewLogoutAllCommand(sessionRepo, auditRecorder)
+	changePassCmd := command.NewChangePasswordCommand(userRepo, auditRecorder, sessionRepo)
+	adminUserCmd := command.NewAdminUserCommand(userRepo, auditRecorder, clk)
+	mfaCmd := command.NewMFAEnrollCommand(mfaRepo, userRepo, auditRecorder, totpSvc)
 	getMeQry := query.NewGetMeQuery(userRepo, permsFetcher)
 	listSessionsQry := query.NewListSessionsQuery(sessionRepo)
-	listAuditQry := query.NewListAuditEventsQuery(auditRepo)
+	listUsersQry := query.NewListUsersQuery(userRepo)
 
-	// Rate limiter
-	rateLimiter := middleware.NewRateLimiter(cfg.RateLimitLoginPerIP, cfg.RateLimitLoginWindow)
+	// Rate limit policies
+	globalPolicy := middleware.RateLimitPolicy{Name: "global", Max: cfg.RateLimitGlobalPerIP, Window: cfg.RateLimitGlobalWindow}
+	loginPolicy := middleware.RateLimitPolicy{Name: "login", Max: cfg.RateLimitLoginPerIP, Window: cfg.RateLimitLoginWindow}
+	refreshPolicy := middleware.RateLimitPolicy{Name: "refresh", Max: cfg.RateLimitRefreshPerIP, Window: cfg.RateLimitRefreshWindow}
+	refreshTokenPolicy := middleware.RateLimitPolicy{Name: "refresh_token", Max: 10, Window: 15 * time.Minute}
+	sensitivePolicy := middleware.RateLimitPolicy{Name: "sensitive", Max: cfg.RateLimitSensitiveMax, Window: cfg.RateLimitSensitiveWindow}
+	adminPolicy := middleware.RateLimitPolicy{Name: "admin", Max: cfg.RateLimitAdminMax, Window: cfg.RateLimitAdminWindow}
+	exportPolicy := middleware.RateLimitPolicy{Name: "export", Max: cfg.RateLimitExportMax, Window: cfg.RateLimitExportWindow}
+
+	// Rate limiters (one per tier — each has its own window/max)
+	newLimiter := func(window time.Duration, max int) middleware.RateLimiter {
+		if cfg.RateLimitBackend == "redis" && redisClient != nil {
+			return middleware.NewRedisRateLimiter(redisClient, window, max)
+		}
+		return middleware.NewInMemoryRateLimiter(window, max)
+	}
+	globalLimiter := newLimiter(globalPolicy.Window, globalPolicy.Max)
+	loginLimiter := newLimiter(loginPolicy.Window, loginPolicy.Max)
+	refreshLimiter := newLimiter(refreshPolicy.Window, refreshPolicy.Max)
+	refreshTokenLimiter := newLimiter(refreshTokenPolicy.Window, refreshTokenPolicy.Max)
+	sensitiveLimiter := newLimiter(sensitivePolicy.Window, sensitivePolicy.Max)
+	adminLimiter := newLimiter(adminPolicy.Window, adminPolicy.Max)
+	exportLimiter := newLimiter(exportPolicy.Window, exportPolicy.Max)
+
+	// Per IP+username login limiter (prevents distributed brute force against one account)
+	loginUserPolicy := middleware.RateLimitPolicy{Name: "login_user", Max: cfg.RateLimitLoginPerUser, Window: cfg.RateLimitLoginWindow}
+	loginUserLimiter := newLimiter(loginUserPolicy.Window, loginUserPolicy.Max)
 
 	// Transport
-	authHandler := handler.NewAuthHandler(loginCmd, refreshCmd, logoutCmd, logoutAllCmd, changePassCmd, getMeQry)
-	mfaHandler := handler.NewMFAHandler(mfaCmd)
+	authHandler := handler.NewAuthHandler(loginCmd, refreshCmd, logoutCmd, logoutAllCmd, changePassCmd, getMeQry, loginLimiter, loginPolicy, loginUserLimiter, loginUserPolicy, refreshTokenLimiter, refreshTokenPolicy)
+	mfaHandler := handler.NewMFAHandler(mfaCmd, cfg.Env == "development" || cfg.Env == "test")
 	sessionHandler := handler.NewSessionHandler(listSessionsQry, sessionRepo)
-	auditHandler := handler.NewAuditHandler(listAuditQry)
-	adminHandler := handler.NewAdminHandler(adminUserCmd)
+	adminHandler := handler.NewAdminHandler(adminUserCmd, listUsersQry)
+
+	// Create key provider for auth middleware
+	keyProvider := middleware.NewKeyProvider(cfg.JWTKeyID, cfg.JWTSecret, cfg.JWTSecretPrevious)
 
 	return &Module{
-		authHandler:    authHandler,
-		mfaHandler:     mfaHandler,
-		sessionHandler: sessionHandler,
-		auditHandler:   auditHandler,
-		adminHandler:   adminHandler,
-		userRepo:       userRepo,
-		permsFetcher:   permsFetcher,
-		clock:          clk,
-		rateLimiter:    rateLimiter,
-		authzSvc:       authzSvc,
-		sessionSvc:     sessionSvc,
-		adminCIDRs:     cfg.AdminIPAllowlist,
+		authHandler:      authHandler,
+		mfaHandler:       mfaHandler,
+		sessionHandler:   sessionHandler,
+		adminHandler:     adminHandler,
+		userRepo:         userRepo,
+		permsFetcher:     permsFetcher,
+		clock:            clk,
+		authzSvc:         authzSvc,
+		sessionSvc:       sessionSvc,
+		adminCIDRs:       cfg.AdminIPAllowlist,
+		auditAdminRoutes: auditAdminRoutes,
+
+		globalLimiter:       globalLimiter,
+		loginLimiter:        loginLimiter,
+		refreshLimiter:      refreshLimiter,
+		refreshTokenLimiter: refreshTokenLimiter,
+		sensitiveLimiter:    sensitiveLimiter,
+		adminLimiter:        adminLimiter,
+		exportLimiter:       exportLimiter,
+
+		globalPolicy:       globalPolicy,
+		loginPolicy:        loginPolicy,
+		refreshPolicy:      refreshPolicy,
+		refreshTokenPolicy: refreshTokenPolicy,
+		sensitivePolicy:    sensitivePolicy,
+		adminPolicy:        adminPolicy,
+		exportPolicy:       exportPolicy,
+
+		keyProvider:       keyProvider,
+		keyID:             cfg.JWTKeyID,
+		jwtSecret:         cfg.JWTSecret,
+		jwtSecretPrevious: cfg.JWTSecretPrevious,
 	}, nil
 }
 
-// RegisterPublicRoutes mounts open endpoints that do NOT require authentication.
-func (m *Module) RegisterPublicRoutes(r chi.Router) {
-	// Login with rate limiting
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.LoginRateLimit(m.rateLimiter))
-		r.Post("/auth/login", m.authHandler.Login)
-	})
-	r.Post("/auth/refresh", m.authHandler.RefreshToken)
+// GlobalRateLimitMiddleware returns the global per-IP rate limiter middleware.
+// Intended to be applied at the top-level router in main.go.
+func (m *Module) GlobalRateLimitMiddleware() func(http.Handler) http.Handler {
+	return middleware.RateLimit(m.globalLimiter, m.globalPolicy)
 }
 
-// RegisterProtectedRoutes mounts endpoints that require a valid JWT.
-func (m *Module) RegisterProtectedRoutes(r chi.Router) {
-	r.Get("/auth/me", m.authHandler.GetMe)
-	r.Post("/auth/logout", m.authHandler.Logout)
-	r.Post("/auth/logout-all", m.authHandler.LogoutAll)
-	r.Post("/auth/change-password", m.authHandler.ChangePassword)
+// SetupRoutes configures all IAM routes with proper middleware scoping.
+// Rate limiting is applied per tier:
+//   - PUBLIC: /auth/login (login limiter), /auth/refresh (refresh limiter)
+//   - PROTECTED: auth, MFA, session endpoints (JWT required; sensitive ops get stricter limits)
+//   - ADMIN: admin operations (JWT + IP allowlist + permission checks + admin limiter)
+func (m *Module) SetupRoutes(r chi.Router) {
+	// ==== PUBLIC ROUTES (no authentication required) ====
+	// Login with login-specific rate limiting
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RateLimit(m.loginLimiter, m.loginPolicy))
+		r.Post("/auth/login", m.authHandler.Login)
+	})
 
-	// MFA endpoints
-	r.Post("/auth/mfa/enroll", m.mfaHandler.Enroll)
-	r.Post("/auth/mfa/verify", m.mfaHandler.Verify)
-	r.Post("/auth/mfa/disable", m.mfaHandler.Disable)
-	r.Get("/auth/mfa/status", m.mfaHandler.Status)
+	// Refresh with refresh-specific rate limiting
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RateLimit(m.refreshLimiter, m.refreshPolicy))
+		r.Post("/auth/refresh", m.authHandler.RefreshToken)
+	})
+
+	// ==== PROTECTED ROUTES (JWT required) ====
+	protectedRouter := chi.NewRouter()
+	protectedRouter.Use(middleware.Auth(m.keyProvider, m))
+
+	// Standard auth endpoints (covered by global limiter only)
+	protectedRouter.Get("/auth/me", m.authHandler.GetMe)
+	protectedRouter.Post("/auth/logout", m.authHandler.Logout)
+	protectedRouter.Post("/auth/logout-all", m.authHandler.LogoutAll)
+
+	// Sensitive auth endpoints (stricter per-user rate limiting)
+	protectedRouter.Group(func(r chi.Router) {
+		r.Use(middleware.RateLimitByUser(m.sensitiveLimiter, m.sensitivePolicy))
+		r.Post("/auth/change-password", m.authHandler.ChangePassword)
+	})
+
+	// MFA endpoints — verify and disable are sensitive (TOTP brute-force risk)
+	protectedRouter.Post("/auth/mfa/enroll", m.mfaHandler.Enroll)
+	protectedRouter.Get("/auth/mfa/status", m.mfaHandler.Status)
+	protectedRouter.Get("/auth/mfa/dev/totp-code", m.mfaHandler.DevTOTPCode)
+	protectedRouter.Group(func(r chi.Router) {
+		r.Use(middleware.RateLimitByUser(m.sensitiveLimiter, m.sensitivePolicy))
+		r.Post("/auth/mfa/verify", m.mfaHandler.Verify)
+		r.Post("/auth/mfa/disable", m.mfaHandler.Disable)
+	})
 
 	// Session management
-	r.Get("/auth/sessions", m.sessionHandler.ListMySessions)
-	r.Post("/auth/sessions/{id}/revoke", m.sessionHandler.RevokeSession)
+	protectedRouter.Get("/auth/sessions", m.sessionHandler.ListMySessions)
+	protectedRouter.Post("/auth/sessions/{id}/revoke", m.sessionHandler.RevokeSession)
 
-	// Admin operations require IAM_ADMIN permission
-	r.Route("/admin", func(r chi.Router) {
-		r.Use(middleware.IPAllowlist(m.adminCIDRs))
+	// ==== ADMIN ROUTES (JWT + IP allowlist + admin rate limiter + permission checks) ====
+	protectedRouter.Route("/admin", func(adminRouter chi.Router) {
+		adminRouter.Use(middleware.IPAllowlist(m.adminCIDRs))
+		adminRouter.Use(middleware.RateLimitByUser(m.adminLimiter, m.adminPolicy))
 
-		r.With(middleware.RequirePermission(m, "IAM_USER_CREATE")).Post("/users", m.adminHandler.CreateUser)
-		r.With(middleware.RequirePermission(m, "IAM_USER_DEACTIVATE")).Post("/users/{id}/disable", m.adminHandler.DisableUser)
-		r.With(middleware.RequirePermission(m, "IAM_USER_DEACTIVATE")).Post("/users/{id}/enable", m.adminHandler.EnableUser)
-		r.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/lock", m.adminHandler.LockUser)
-		r.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/unlock", m.adminHandler.UnlockUser)
-		r.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/reset-password", m.adminHandler.ResetPassword)
+		// User management
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_VIEW")).Get("/users", m.adminHandler.ListUsers)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_CREATE")).Post("/users", m.adminHandler.CreateUser)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_DEACTIVATE")).Post("/users/{id}/disable", m.adminHandler.DisableUser)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_DEACTIVATE")).Post("/users/{id}/enable", m.adminHandler.EnableUser)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/lock", m.adminHandler.LockUser)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/unlock", m.adminHandler.UnlockUser)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/users/{id}/reset-password", m.adminHandler.ResetPassword)
 
 		// Admin session management
-		r.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Get("/users/{id}/sessions", m.sessionHandler.AdminListUserSessions)
-		r.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/sessions/{id}/revoke", m.sessionHandler.AdminRevokeSession)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Get("/users/{id}/sessions", m.sessionHandler.AdminListUserSessions)
+		adminRouter.With(middleware.RequirePermission(m, "IAM_USER_UPDATE")).Post("/sessions/{id}/revoke", m.sessionHandler.AdminRevokeSession)
 
-		// Audit log query + export
-		r.With(middleware.RequirePermission(m, "IAM_AUDIT_VIEW")).Get("/audit", m.auditHandler.ListAuditEvents)
-		r.With(middleware.RequirePermission(m, "IAM_AUDIT_VIEW")).Get("/audit/export", m.auditHandler.ExportAuditCSV)
+		if m.auditAdminRoutes != nil {
+			m.auditAdminRoutes.RegisterAdminRoutes(adminRouter, m, m.exportLimiter, m.exportPolicy)
+		}
 	})
+
+	// Mount protected router
+	r.Mount("/", protectedRouter)
 }
 
 // IsUserActive implements the platform's UserStatusChecker interface.

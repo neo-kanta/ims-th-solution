@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/dto"
 	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
@@ -19,6 +19,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/clock"
 	apperrors "github.com/neo-kanta/ims-th-solution/backend/platform/errors"
+	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )
 
 // SessionPolicy holds configurable session limits.
@@ -28,21 +29,22 @@ type SessionPolicy struct {
 	MaxConcurrent    int
 	ConcurrentMode   string
 	PasswordMaxAge   time.Duration
+	LockoutPolicy    entity.LockoutPolicy
 }
 
 // LoginCommand handles user authentication with lockout, MFA, session policy, and audit.
 type LoginCommand struct {
-	userRepo        domain.UserRepository
-	sessionRepo     domain.SessionRepository
-	mfaRepo         domain.MFARepository
-	permsFetcher    domain.PermissionsFetcher
-	tokenService    *application.TokenService
-	totpService     *application.TOTPService
-	mfaChallengeSvc *appservice.MFAChallengeService
-	auditService    *appservice.AuditService
-	clock           clock.Clock
-	sessionPolicy   SessionPolicy
-	enforceAdminMFA bool
+	userRepo          domain.UserRepository
+	sessionRepo       domain.SessionRepository
+	mfaRepo           domain.MFARepository
+	permsFetcher      domain.PermissionsFetcher
+	tokenService      *application.TokenService
+	totpService       *application.TOTPService
+	mfaChallengeSvc   *appservice.MFAChallengeService
+	auditService      auditdomain.Recorder
+	clock             clock.Clock
+	sessionPolicy     SessionPolicy
+	mfaForcedForAdmin bool
 }
 
 // NewLoginCommand creates a LoginCommand with its dependencies.
@@ -54,23 +56,26 @@ func NewLoginCommand(
 	tokenService *application.TokenService,
 	totpService *application.TOTPService,
 	mfaChallengeSvc *appservice.MFAChallengeService,
-	auditService *appservice.AuditService,
+	auditService auditdomain.Recorder,
 	clk clock.Clock,
 	policy SessionPolicy,
-	enforceAdminMFA bool,
+	mfaForcedForAdmin bool,
 ) *LoginCommand {
+	if auditService == nil {
+		auditService = auditdomain.NopRecorder{}
+	}
 	return &LoginCommand{
-		userRepo:        userRepo,
-		sessionRepo:     sessionRepo,
-		mfaRepo:         mfaRepo,
-		permsFetcher:    permsFetcher,
-		tokenService:    tokenService,
-		totpService:     totpService,
-		mfaChallengeSvc: mfaChallengeSvc,
-		auditService:    auditService,
-		clock:           clk,
-		sessionPolicy:   policy,
-		enforceAdminMFA: enforceAdminMFA,
+		userRepo:          userRepo,
+		sessionRepo:       sessionRepo,
+		mfaRepo:           mfaRepo,
+		permsFetcher:      permsFetcher,
+		tokenService:      tokenService,
+		totpService:       totpService,
+		mfaChallengeSvc:   mfaChallengeSvc,
+		auditService:      auditService,
+		clock:             clk,
+		sessionPolicy:     policy,
+		mfaForcedForAdmin: mfaForcedForAdmin,
 	}
 }
 
@@ -101,11 +106,11 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 
 	if allowed, reason := user.IsLoginAllowed(now); !allowed {
 		c.auditLoginFailure(ctx, &user.ID, input, reason)
-		return nil, apperrors.NewBusinessError(apperrors.CodeForbidden, reason)
+		return nil, apperrors.NewBusinessError(apperrors.CodeUnauthorized, "invalid username or password")
 	}
 
 	if err := valueobject.CheckPassword(user.PasswordHash, input.Password); err != nil {
-		user.RecordFailedLogin(now)
+		user.RecordFailedLogin(now, c.sessionPolicy.LockoutPolicy)
 		if updateErr := c.userRepo.Update(ctx, user); updateErr != nil {
 			slog.Error("failed to update user after failed login", "error", updateErr, "user_id", user.ID)
 		}
@@ -126,10 +131,7 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 		slog.Error("failed to check MFA enrollment", "error", err, "user_id", user.ID)
 	}
 
-	if c.enforceAdminMFA && userHasPrivilegedIAMPermissions(functions) && (mfaEnrollment == nil || !mfaEnrollment.IsActive()) {
-		c.auditLoginFailure(ctx, &user.ID, input, "privileged account requires MFA enrollment")
-		return nil, apperrors.NewBusinessError(apperrors.CodeForbidden, "privileged IAM account requires MFA enrollment before login is allowed")
-	}
+	restrictedSession := false
 
 	if mfaEnrollment != nil && mfaEnrollment.IsActive() {
 		if input.TOTPCode == "" && input.RecoveryCode == "" {
@@ -158,7 +160,7 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 				c.auditMFAFailure(ctx, user, input)
 				return nil, apperrors.NewBusinessError(apperrors.CodeUnauthorized, "invalid MFA code")
 			}
-			c.recordAudit(ctx, &user.ID, entity.AuditMFAChallengeOK, "user", user.ID.String(), input, nil)
+			c.recordAudit(ctx, &user.ID, auditentity.AuditMFAChallengeOK, "user", user.ID.String(), input, nil)
 		} else if input.RecoveryCode != "" {
 			codes, err := c.mfaRepo.FindUnusedRecoveryCodes(ctx, user.ID)
 			if err != nil {
@@ -172,14 +174,20 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 			if err := c.mfaRepo.UseRecoveryCode(ctx, matched.ID); err != nil {
 				slog.Error("failed to mark recovery code as used", "error", err)
 			}
-			c.recordAudit(ctx, &user.ID, entity.AuditMFARecoveryUsed, "user", user.ID.String(), input, nil)
+			c.recordAudit(ctx, &user.ID, auditentity.AuditMFARecoveryUsed, "user", user.ID.String(), input, nil)
 		}
+	}
+
+	// Privileged users without MFA get restricted tokens until they enroll.
+	// This enforces MFA for admin accounts when MFA_FORCED_FOR_ADMIN=true.
+	if c.mfaForcedForAdmin && (mfaEnrollment == nil || !mfaEnrollment.IsActive()) && len(functions) > 0 {
+		restrictedSession = true
 	}
 
 	forceChange := user.ForcePasswordChange
 	if c.sessionPolicy.PasswordMaxAge > 0 && user.IsPasswordExpired(now, c.sessionPolicy.PasswordMaxAge) {
 		forceChange = true
-		c.recordAudit(ctx, &user.ID, entity.AuditPasswordExpired, "user", user.ID.String(), input, nil)
+		c.recordAudit(ctx, &user.ID, auditentity.AuditPasswordExpired, "user", user.ID.String(), input, nil)
 	}
 
 	if c.sessionPolicy.MaxConcurrent > 0 {
@@ -213,7 +221,7 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 		return nil, fmt.Errorf("creating session: %w", err)
 	}
 
-	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSession(user.ID, session.ID)
+	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSessionWithRestriction(user.ID, session.ID, restrictedSession)
 	if err != nil {
 		return nil, fmt.Errorf("generating access token: %w", err)
 	}
@@ -236,6 +244,8 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 		RefreshToken:          refreshTokenRaw,
 		RefreshTokenExpiresAt: session.ExpiresAt,
 		ForcePasswordChange:   forceChange,
+		MFAEnrollmentRequired: restrictedSession,
+		RestrictedSession:     restrictedSession,
 		User: dto.UserProfile{
 			ID:          user.ID.String(),
 			Username:    user.Username,
@@ -252,7 +262,7 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 
 // auditLoginSuccess records a successful login event.
 func (c *LoginCommand) auditLoginSuccess(ctx context.Context, user *entity.User, input LoginInput) {
-	c.recordAudit(ctx, &user.ID, entity.AuditLoginSuccess, "user", user.ID.String(), input, nil)
+	c.recordAudit(ctx, &user.ID, auditentity.AuditLoginSuccess, "user", user.ID.String(), input, nil)
 }
 
 // auditLoginFailure records a failed login attempt.
@@ -261,51 +271,27 @@ func (c *LoginCommand) auditLoginFailure(ctx context.Context, userID *uuid.UUID,
 	if userID != nil {
 		targetID = userID.String()
 	}
-	c.recordAudit(ctx, userID, entity.AuditLoginFailure, "user", targetID, input, map[string]interface{}{"reason": reason})
+	c.recordAudit(ctx, userID, auditentity.AuditLoginFailure, "user", targetID, input, map[string]interface{}{"reason": reason})
 }
 
 // auditAccountLocked records an account lockout event.
 func (c *LoginCommand) auditAccountLocked(ctx context.Context, user *entity.User, input LoginInput) {
-	c.recordAudit(ctx, &user.ID, entity.AuditAccountLocked, "user", user.ID.String(), input, map[string]interface{}{
+	c.recordAudit(ctx, &user.ID, auditentity.AuditAccountLocked, "user", user.ID.String(), input, map[string]interface{}{
 		"failed_attempts": user.FailedLoginAttempts,
 	})
 }
 
 // auditMFAFailure records a failed MFA challenge.
 func (c *LoginCommand) auditMFAFailure(ctx context.Context, user *entity.User, input LoginInput) {
-	c.recordAudit(ctx, &user.ID, entity.AuditMFAChallengeFail, "user", user.ID.String(), input, nil)
+	c.recordAudit(ctx, &user.ID, auditentity.AuditMFAChallengeFail, "user", user.ID.String(), input, nil)
 }
 
 func (c *LoginCommand) recordAudit(ctx context.Context, actorID *uuid.UUID, eventType, targetType, targetID string, input LoginInput, extra map[string]interface{}) {
 	c.auditService.Record(ctx, actorID, eventType, targetType, targetID, input.IPAddress, input.UserAgent, extra)
 }
 
-func userHasPrivilegedIAMPermissions(functions []string) bool {
-	for _, perm := range functions {
-		if strings.HasPrefix(perm, "IAM_") {
-			return true
-		}
-	}
-	return false
-}
-
-// ExtractIPAddress extracts the client IP from the HTTP request, stripping ports.
+// ExtractIPAddress extracts the client IP from the HTTP request.
+// Delegates to middleware.GetClientIP which respects trusted proxy configuration.
 func ExtractIPAddress(r *http.Request) string {
-	var ip string
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		ips := strings.Split(forwarded, ",")
-		ip = strings.TrimSpace(ips[0])
-	} else if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-		ip = realIP
-	} else {
-		ip = r.RemoteAddr
-	}
-
-	if strings.Contains(ip, ":") {
-		host, _, err := net.SplitHostPort(ip)
-		if err == nil {
-			return host
-		}
-	}
-	return ip
+	return middleware.GetClientIP(r)
 }

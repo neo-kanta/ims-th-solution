@@ -78,12 +78,22 @@ func TestUser_RecordFailedLogin(t *testing.T) {
 		assert.Nil(t, user.LockedUntil)
 	})
 
-	t.Run("locks account at max attempts", func(t *testing.T) {
-		user := entity.User{IsActive: true, FailedLoginAttempts: entity.MaxFailedLoginAttempts - 1}
+	t.Run("locks account at max attempts with default policy", func(t *testing.T) {
+		user := entity.User{IsActive: true, FailedLoginAttempts: entity.DefaultMaxFailedLoginAttempts - 1}
 		user.RecordFailedLogin(now)
-		assert.Equal(t, entity.MaxFailedLoginAttempts, user.FailedLoginAttempts)
+		assert.Equal(t, entity.DefaultMaxFailedLoginAttempts, user.FailedLoginAttempts)
 		assert.NotNil(t, user.LockedUntil)
 		assert.True(t, user.LockedUntil.After(now))
+	})
+
+	t.Run("locks account at custom policy threshold", func(t *testing.T) {
+		policy := entity.LockoutPolicy{MaxFailedAttempts: 3, LockoutDuration: 10 * time.Minute}
+		user := entity.User{IsActive: true, FailedLoginAttempts: 2}
+		user.RecordFailedLogin(now, policy)
+		assert.Equal(t, 3, user.FailedLoginAttempts)
+		assert.NotNil(t, user.LockedUntil)
+		expected := now.Add(10 * time.Minute)
+		assert.Equal(t, expected, *user.LockedUntil)
 	})
 }
 

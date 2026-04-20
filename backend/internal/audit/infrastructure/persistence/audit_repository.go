@@ -6,8 +6,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
-	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 )
 
 // PostgresAuditRepository implements domain.AuditRepository.
@@ -64,12 +64,12 @@ func (r *PostgresAuditRepository) List(ctx context.Context, filter domain.AuditF
 		argIdx++
 	}
 	if filter.Since != nil {
-		where += fmt.Sprintf(" AND created_at >= $%d::timestamptz", argIdx)
+		where += fmt.Sprintf(" AND created_at >= $%d", argIdx)
 		args = append(args, *filter.Since)
 		argIdx++
 	}
 	if filter.Until != nil {
-		where += fmt.Sprintf(" AND created_at <= $%d::timestamptz", argIdx)
+		where += fmt.Sprintf(" AND created_at <= $%d", argIdx)
 		args = append(args, *filter.Until)
 		argIdx++
 	}
@@ -85,7 +85,7 @@ func (r *PostgresAuditRepository) List(ctx context.Context, filter domain.AuditF
 		       host(ip_address), user_agent, metadata, created_at
 		FROM iam_audit_events
 		WHERE %s
-		ORDER BY created_at DESC
+		ORDER BY created_at DESC, id DESC
 		LIMIT $%d OFFSET $%d
 	`, where, argIdx, argIdx+1)
 	args = append(args, filter.Limit, filter.Offset)
@@ -114,6 +114,16 @@ func (r *PostgresAuditRepository) List(ctx context.Context, filter domain.AuditF
 	if events == nil {
 		events = []entity.AuditEvent{}
 	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterating audit events: %w", err)
+	}
 
 	return events, total, nil
+}
+
+func nullableString(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
 }

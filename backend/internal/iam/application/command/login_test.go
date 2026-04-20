@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
 	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
@@ -26,9 +27,11 @@ func (r *loginTestUserRepo) FindByUsername(ctx context.Context, username string)
 	}
 	return nil, nil
 }
-func (r *loginTestUserRepo) FindByID(ctx context.Context, id uuid.UUID) (*entity.User, error) { return nil, nil }
-func (r *loginTestUserRepo) Create(ctx context.Context, user *entity.User) error               { return nil }
-func (r *loginTestUserRepo) Update(ctx context.Context, user *entity.User) error               { return nil }
+func (r *loginTestUserRepo) FindByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+	return nil, nil
+}
+func (r *loginTestUserRepo) Create(ctx context.Context, user *entity.User) error { return nil }
+func (r *loginTestUserRepo) Update(ctx context.Context, user *entity.User) error { return nil }
 func (r *loginTestUserRepo) SoftDelete(ctx context.Context, id uuid.UUID, deletedBy uuid.UUID) error {
 	return nil
 }
@@ -45,14 +48,20 @@ func (r *loginTestSessionRepo) FindByTokenHash(ctx context.Context, tokenHash st
 func (r *loginTestSessionRepo) FindByID(ctx context.Context, id uuid.UUID) (*entity.Session, error) {
 	return nil, nil
 }
-func (r *loginTestSessionRepo) RevokeByID(ctx context.Context, id uuid.UUID) error                         { return nil }
-func (r *loginTestSessionRepo) RevokeByIDWithReason(ctx context.Context, id uuid.UUID, reason string) error { return nil }
-func (r *loginTestSessionRepo) RevokeByFamily(ctx context.Context, family uuid.UUID) error                  { return nil }
-func (r *loginTestSessionRepo) RevokeAllForUser(ctx context.Context, userID uuid.UUID) error                { return nil }
+func (r *loginTestSessionRepo) RevokeByID(ctx context.Context, id uuid.UUID) error { return nil }
+func (r *loginTestSessionRepo) RevokeByIDWithReason(ctx context.Context, id uuid.UUID, reason string) error {
+	return nil
+}
+func (r *loginTestSessionRepo) RevokeByFamily(ctx context.Context, family uuid.UUID) error {
+	return nil
+}
+func (r *loginTestSessionRepo) RevokeAllForUser(ctx context.Context, userID uuid.UUID) error {
+	return nil
+}
 func (r *loginTestSessionRepo) RevokeAllForUserWithReason(ctx context.Context, userID uuid.UUID, reason string) error {
 	return nil
 }
-func (r *loginTestSessionRepo) DeleteExpired(ctx context.Context) (int64, error)                   { return 0, nil }
+func (r *loginTestSessionRepo) DeleteExpired(ctx context.Context) (int64, error) { return 0, nil }
 func (r *loginTestSessionRepo) ListActiveForUser(ctx context.Context, userID uuid.UUID) ([]entity.Session, error) {
 	return nil, nil
 }
@@ -62,7 +71,9 @@ func (r *loginTestSessionRepo) CountActiveForUser(ctx context.Context, userID uu
 func (r *loginTestSessionRepo) RevokeOldestForUser(ctx context.Context, userID uuid.UUID, reason string) error {
 	return nil
 }
-func (r *loginTestSessionRepo) UpdateLastActivity(ctx context.Context, sessionID uuid.UUID) error { return nil }
+func (r *loginTestSessionRepo) UpdateLastActivity(ctx context.Context, sessionID uuid.UUID) error {
+	return nil
+}
 
 type loginTestMFARepo struct {
 	enrollment *entity.MFAEnrollment
@@ -83,8 +94,10 @@ func (r *loginTestMFARepo) StoreRecoveryCodes(ctx context.Context, codes []entit
 func (r *loginTestMFARepo) FindUnusedRecoveryCodes(ctx context.Context, userID uuid.UUID) ([]entity.MFARecoveryCode, error) {
 	return nil, nil
 }
-func (r *loginTestMFARepo) UseRecoveryCode(ctx context.Context, codeID uuid.UUID) error     { return nil }
-func (r *loginTestMFARepo) DeleteRecoveryCodes(ctx context.Context, userID uuid.UUID) error { return nil }
+func (r *loginTestMFARepo) UseRecoveryCode(ctx context.Context, codeID uuid.UUID) error { return nil }
+func (r *loginTestMFARepo) DeleteRecoveryCodes(ctx context.Context, userID uuid.UUID) error {
+	return nil
+}
 
 type loginTestPerms struct {
 	functions []string
@@ -96,13 +109,6 @@ func (p *loginTestPerms) GetUserFunctionPermissions(ctx context.Context, userID 
 }
 func (p *loginTestPerms) GetUserDataPermissions(ctx context.Context, userID uuid.UUID) ([]string, error) {
 	return p.contracts, nil
-}
-
-type loginTestAuditRepo struct{}
-
-func (r *loginTestAuditRepo) Record(ctx context.Context, event *entity.AuditEvent) error { return nil }
-func (r *loginTestAuditRepo) List(ctx context.Context, filter domain.AuditFilter) ([]entity.AuditEvent, int, error) {
-	return nil, 0, nil
 }
 
 func TestLoginCommand_ReturnsMFAChallengeWhenRequired(t *testing.T) {
@@ -120,7 +126,7 @@ func TestLoginCommand_ReturnsMFAChallengeWhenRequired(t *testing.T) {
 		application.NewTokenService("test-secret", clk),
 		nil,
 		appservice.NewMFAChallengeService("test-secret", clk),
-		appservice.NewAuditService(&loginTestAuditRepo{}),
+		auditdomain.NopRecorder{},
 		clk,
 		SessionPolicy{},
 		false,
@@ -138,7 +144,7 @@ func TestLoginCommand_ReturnsMFAChallengeWhenRequired(t *testing.T) {
 	}
 }
 
-func TestLoginCommand_BlocksPrivilegedUserWithoutMFAWhenRequired(t *testing.T) {
+func TestLoginCommand_AllowsRestrictedPrivilegedBootstrapSessionWithoutMFA(t *testing.T) {
 	hash, err := valueobject.HashPassword("StrongPass123")
 	if err != nil {
 		t.Fatalf("hash password: %v", err)
@@ -153,7 +159,7 @@ func TestLoginCommand_BlocksPrivilegedUserWithoutMFAWhenRequired(t *testing.T) {
 		application.NewTokenService("test-secret", clk),
 		nil,
 		appservice.NewMFAChallengeService("test-secret", clk),
-		appservice.NewAuditService(&loginTestAuditRepo{}),
+		auditdomain.NopRecorder{},
 		clk,
 		SessionPolicy{},
 		true,
@@ -163,7 +169,13 @@ func TestLoginCommand_BlocksPrivilegedUserWithoutMFAWhenRequired(t *testing.T) {
 		Username: "admin",
 		Password: "StrongPass123",
 	})
-	if err == nil || result != nil {
-		t.Fatal("expected privileged login without MFA enrollment to fail")
+	if err != nil {
+		t.Fatalf("expected restricted privileged login to succeed, got %v", err)
+	}
+	if !result.MFAEnrollmentRequired || !result.RestrictedSession {
+		t.Fatal("expected restricted bootstrap session with MFA enrollment requirement")
+	}
+	if result.AccessToken == "" || result.RefreshToken == "" {
+		t.Fatal("expected tokens for restricted bootstrap session")
 	}
 }

@@ -104,3 +104,19 @@ func TestTokenService_GenerateAccessTokenForSession(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, sessionID.String(), claims.SessionID)
 }
+
+func TestTokenService_GenerateRestrictedAccessTokenForSession(t *testing.T) {
+	clk := clock.FixedClock{FixedTime: time.Now().UTC()}
+	svc := application.NewTokenService("test-secret-key-at-least-32-bytes", clk)
+
+	userID := uuid.New()
+	sessionID := uuid.New()
+
+	token, _, err := svc.GenerateAccessTokenForSessionWithRestriction(userID, sessionID, true)
+	require.NoError(t, err)
+
+	claims, err := svc.ValidateAccessToken(token)
+	require.NoError(t, err)
+	assert.True(t, claims.Restricted)
+	assert.Equal(t, sessionID.String(), claims.SessionID)
+}

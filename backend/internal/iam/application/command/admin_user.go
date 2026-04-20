@@ -6,7 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/valueobject"
@@ -16,17 +17,20 @@ import (
 
 // AdminUserCommand handles all administrative actions for users.
 type AdminUserCommand struct {
-	userRepo  domain.UserRepository
-	auditSvc  *appservice.AuditService
-	clock     clock.Clock
+	userRepo domain.UserRepository
+	auditSvc auditdomain.Recorder
+	clock    clock.Clock
 }
 
 // NewAdminUserCommand creates a new AdminUserCommand.
-func NewAdminUserCommand(userRepo domain.UserRepository, auditSvc *appservice.AuditService, clock clock.Clock) *AdminUserCommand {
+func NewAdminUserCommand(userRepo domain.UserRepository, auditSvc auditdomain.Recorder, clock clock.Clock) *AdminUserCommand {
+	if auditSvc == nil {
+		auditSvc = auditdomain.NopRecorder{}
+	}
 	return &AdminUserCommand{
-		userRepo:  userRepo,
-		auditSvc:  auditSvc,
-		clock:     clock,
+		userRepo: userRepo,
+		auditSvc: auditSvc,
+		clock:    clock,
 	}
 }
 
@@ -76,7 +80,7 @@ func (c *AdminUserCommand) CreateUser(ctx context.Context, input CreateUserInput
 	}
 
 	// 4. Audit
-	c.recordAudit(ctx, input.AdminID, entity.AuditUserCreated, newID.String(), input.IPAddress, input.UserAgent, nil)
+	c.recordAudit(ctx, input.AdminID, auditentity.AuditUserCreated, newID.String(), input.IPAddress, input.UserAgent, nil)
 
 	return newID, nil
 }
@@ -103,33 +107,54 @@ func (c *AdminUserCommand) SetUserStatus(ctx context.Context, input SetUserStatu
 	now := c.clock.Now()
 	var eventType string
 
+	oldActive := user.IsActive
+	oldLocked := user.LockedUntil
+	oldFailedAttempts := user.FailedLoginAttempts
+
 	switch input.Action {
 	case "disable":
 		user.IsActive = false
-		eventType = entity.AuditUserDeactivated
+		eventType = auditentity.AuditUserDeactivated
 	case "enable":
 		user.IsActive = true
-		eventType = entity.AuditUserUpdated
+		// Clear lock state so re-enabled account is fully usable.
+		// If admin wants user locked, they should lock separately.
+		user.LockedUntil = nil
+		user.FailedLoginAttempts = 0
+		eventType = auditentity.AuditUserActivated
 	case "lock":
 		lockUntil := now.AddDate(100, 0, 0)
 		user.LockedUntil = &lockUntil
-		eventType = entity.AuditAccountLocked
+		eventType = auditentity.AuditAccountLocked
 	case "unlock":
 		user.LockedUntil = nil
 		user.FailedLoginAttempts = 0
-		eventType = entity.AuditAccountUnlocked
+		eventType = auditentity.AuditAccountUnlocked
 	default:
-		return apperrors.NewBusinessError("bad_request", "invalid action")
+		return apperrors.NewBusinessError("bad_request", "invalid action: must be disable, enable, lock, or unlock")
 	}
 
 	user.UpdatedAt = now
 	user.UpdatedBy = &input.AdminID
 
 	if err := c.userRepo.Update(ctx, user); err != nil {
-		return fmt.Errorf("updating user status: %w", err)
+		return apperrors.NewBusinessError("bad_request", fmt.Sprintf("failed to update user status: %v", err))
 	}
 
-	c.recordAudit(ctx, input.AdminID, eventType, user.ID.String(), input.IPAddress, input.UserAgent, map[string]interface{}{"action": input.Action})
+	// Build audit metadata with old/new state
+	meta := map[string]interface{}{
+		"action":              input.Action,
+		"old_is_active":       oldActive,
+		"new_is_active":       user.IsActive,
+		"old_failed_attempts": oldFailedAttempts,
+	}
+	if oldLocked != nil {
+		meta["old_locked_until"] = oldLocked.Format("2006-01-02T15:04:05Z")
+	}
+	if user.LockedUntil != nil {
+		meta["new_locked_until"] = user.LockedUntil.Format("2006-01-02T15:04:05Z")
+	}
+	c.recordAudit(ctx, input.AdminID, eventType, user.ID.String(), input.IPAddress, input.UserAgent, meta)
 
 	return nil
 }
@@ -170,7 +195,7 @@ func (c *AdminUserCommand) ResetPassword(ctx context.Context, input ResetPasswor
 		return fmt.Errorf("updating user password: %w", err)
 	}
 
-	c.recordAudit(ctx, input.AdminID, entity.AuditPasswordChange, user.ID.String(), input.IPAddress, input.UserAgent, map[string]interface{}{"forced_by_admin": true})
+	c.recordAudit(ctx, input.AdminID, auditentity.AuditPasswordChange, user.ID.String(), input.IPAddress, input.UserAgent, map[string]interface{}{"forced_by_admin": true})
 
 	return nil
 }

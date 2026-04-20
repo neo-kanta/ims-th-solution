@@ -21,6 +21,7 @@ type UserRepository interface {
 // UserFilter defines filtering options for listing users.
 type UserFilter struct {
 	IsActive *bool
+	IsLocked *bool
 	Search   string
 	Offset   int
 	Limit    int
@@ -58,32 +59,6 @@ type MFARepository interface {
 	FindUnusedRecoveryCodes(ctx context.Context, userID uuid.UUID) ([]entity.MFARecoveryCode, error)
 	UseRecoveryCode(ctx context.Context, codeID uuid.UUID) error
 	DeleteRecoveryCodes(ctx context.Context, userID uuid.UUID) error
-}
-
-// AuditRepository defines persistence operations for IAM audit events.
-type AuditRepository interface {
-	Record(ctx context.Context, event *entity.AuditEvent) error
-	List(ctx context.Context, filter AuditFilter) ([]entity.AuditEvent, int, error)
-}
-
-// AuditFilter defines filtering options for listing audit events.
-type AuditFilter struct {
-	ActorID    *uuid.UUID
-	EventType  string
-	TargetType string
-	TargetID   string
-	Since      *string
-	Until      *string
-	Offset     int
-	Limit      int
-}
-
-// RateLimitRepository defines persistence for login rate limiting.
-type RateLimitRepository interface {
-	RecordAttempt(ctx context.Context, ipAddress string, username string, success bool) error
-	CountRecentFailures(ctx context.Context, ipAddress string, window string) (int, error)
-	CountRecentFailuresByUser(ctx context.Context, ipAddress string, username string, window string) (int, error)
-	PurgeOld(ctx context.Context, olderThan string) (int64, error)
 }
 
 // PermissionsFetcher provides user permissions from the permissions module.

@@ -35,11 +35,50 @@ type AppConfig struct {
 	MFAEncryptionKey  string // AES-256 key for encrypting MFA secrets (hex-encoded, 64 chars)
 	MFAForcedForAdmin bool   // Require MFA for IAM_ADMIN users
 
-	// IAM: Rate limiting
-	RateLimitLoginPerIP     int           // Max failed logins per IP within window (default: 20)
-	RateLimitLoginPerUser   int           // Max failed logins per IP+username within window (default: 5)
-	RateLimitLoginWindow    time.Duration // Rate limit window (default: 15m)
-	RateLimitCleanupEnabled bool          // Enable periodic cleanup of old attempts
+	// Rate limiting: Global
+	RateLimitGlobalPerIP  int           // Max requests per IP across all endpoints (default: 200)
+	RateLimitGlobalWindow time.Duration // Global rate limit window (default: 1m)
+
+	// Rate limiting: Login
+	RateLimitLoginPerIP   int           // Max login attempts per IP within window (default: 20)
+	RateLimitLoginPerUser int           // Max login attempts per IP+username within window (default: 5)
+	RateLimitLoginWindow  time.Duration // Login rate limit window (default: 15m)
+
+	// Rate limiting: Refresh
+	RateLimitRefreshPerIP  int           // Max refresh attempts per IP (default: 30)
+	RateLimitRefreshWindow time.Duration // Refresh rate limit window (default: 15m)
+
+	// Rate limiting: Sensitive (change-password, MFA verify/disable)
+	RateLimitSensitiveMax    int           // Max sensitive ops per user (default: 5)
+	RateLimitSensitiveWindow time.Duration // Sensitive rate limit window (default: 15m)
+
+	// Rate limiting: Admin
+	RateLimitAdminMax    int           // Max admin requests per user (default: 60)
+	RateLimitAdminWindow time.Duration // Admin rate limit window (default: 1m)
+
+	// Rate limiting: Export
+	RateLimitExportMax    int           // Max export requests per user (default: 5)
+	RateLimitExportWindow time.Duration // Export rate limit window (default: 1h)
+
+	// Rate limiting: Infrastructure
+	RateLimitBackend string // "memory" or "redis" (default: memory)
+
+	// Redis
+	RedisAddr         string        // Redis address (default: localhost:6379)
+	RedisPassword     string        // Redis password (default: empty)
+	RedisDB           int           // Redis database number (default: 0)
+	RedisTLSEnabled   bool          // Enable TLS for Redis connection (default: false)
+	RedisDialTimeout  time.Duration // Dial timeout (default: 5s)
+	RedisReadTimeout  time.Duration // Read timeout (default: 3s)
+	RedisWriteTimeout time.Duration // Write timeout (default: 3s)
+	RedisPoolSize     int           // Connection pool size (default: 10)
+
+	// IAM: Account lockout
+	LoginMaxFailedAttempts int           // Failed attempts before lockout (default: 10)
+	LoginLockoutDuration   time.Duration // How long account stays locked (default: 30m)
+
+	// IAM: Trusted proxies
+	TrustedProxies []string // CIDR ranges of trusted reverse proxies
 
 	// IAM: Password policy
 	PasswordMaxAgeDays int // Password expiration in days (0 = disabled, default: 0)
@@ -51,12 +90,13 @@ type AppConfig struct {
 
 	// IAM: IP allowlisting
 	AdminIPAllowlist []string // CIDR ranges allowed for admin routes (empty = disabled)
+
+	// CORS
+	CORSAllowedOrigins []string // Allowed CORS origins (empty = localhost dev defaults)
 }
 
 // Load reads configuration from environment variables.
-// It attempts to load a .env file if present but does not fail if absent (production uses real env vars).
 func Load() (*AppConfig, error) {
-	// Best-effort .env loading — ignore error if file doesn't exist
 	_ = godotenv.Load()
 	maxConns, _ := strconv.Atoi(getEnvOrDefault("DB_MAX_CONNECTIONS", "25"))
 
@@ -82,13 +122,52 @@ func Load() (*AppConfig, error) {
 		// MFA
 		MFAIssuerName:     getEnvOrDefault("MFA_ISSUER_NAME", "IMS Thailand"),
 		MFAEncryptionKey:  os.Getenv("MFA_ENCRYPTION_KEY"),
-		MFAForcedForAdmin: parseBool("MFA_FORCED_FOR_ADMIN", true),
+		MFAForcedForAdmin: parseBool("MFA_FORCED_FOR_ADMIN", false),
 
-		// Rate limiting
-		RateLimitLoginPerIP:     parseInt("RATE_LIMIT_LOGIN_PER_IP", 20),
-		RateLimitLoginPerUser:   parseInt("RATE_LIMIT_LOGIN_PER_USER", 5),
-		RateLimitLoginWindow:    parseDuration("RATE_LIMIT_LOGIN_WINDOW", "15m"),
-		RateLimitCleanupEnabled: parseBool("RATE_LIMIT_CLEANUP_ENABLED", true),
+		// Rate limiting: Global
+		RateLimitGlobalPerIP:  parseInt("RATE_LIMIT_GLOBAL_PER_IP", 200),
+		RateLimitGlobalWindow: parseDuration("RATE_LIMIT_GLOBAL_WINDOW", "1m"),
+
+		// Rate limiting: Login
+		RateLimitLoginPerIP:   parseInt("RATE_LIMIT_LOGIN_PER_IP", 20),
+		RateLimitLoginPerUser: parseInt("RATE_LIMIT_LOGIN_PER_USER", 5),
+		RateLimitLoginWindow:  parseDuration("RATE_LIMIT_LOGIN_WINDOW", "1m"),
+
+		// Rate limiting: Refresh
+		RateLimitRefreshPerIP:  parseInt("RATE_LIMIT_REFRESH_PER_IP", 30),
+		RateLimitRefreshWindow: parseDuration("RATE_LIMIT_REFRESH_WINDOW", "15m"),
+
+		// Rate limiting: Sensitive
+		RateLimitSensitiveMax:    parseInt("RATE_LIMIT_SENSITIVE_MAX", 5),
+		RateLimitSensitiveWindow: parseDuration("RATE_LIMIT_SENSITIVE_WINDOW", "15m"),
+
+		// Rate limiting: Admin
+		RateLimitAdminMax:    parseInt("RATE_LIMIT_ADMIN_MAX", 60),
+		RateLimitAdminWindow: parseDuration("RATE_LIMIT_ADMIN_WINDOW", "1m"),
+
+		// Rate limiting: Export
+		RateLimitExportMax:    parseInt("RATE_LIMIT_EXPORT_MAX", 5),
+		RateLimitExportWindow: parseDuration("RATE_LIMIT_EXPORT_WINDOW", "1h"),
+
+		// Rate limiting: Infrastructure
+		RateLimitBackend: getEnvOrDefault("RATE_LIMIT_BACKEND", "memory"),
+
+		// Redis
+		RedisAddr:         getEnvOrDefault("REDIS_ADDR", "localhost:6379"),
+		RedisPassword:     os.Getenv("REDIS_PASSWORD"),
+		RedisDB:           parseInt("REDIS_DB", 0),
+		RedisTLSEnabled:   parseBool("REDIS_TLS_ENABLED", false),
+		RedisDialTimeout:  parseDuration("REDIS_DIAL_TIMEOUT", "5s"),
+		RedisReadTimeout:  parseDuration("REDIS_READ_TIMEOUT", "3s"),
+		RedisWriteTimeout: parseDuration("REDIS_WRITE_TIMEOUT", "3s"),
+		RedisPoolSize:     parseInt("REDIS_POOL_SIZE", 10),
+
+		// Account lockout
+		LoginMaxFailedAttempts: parseInt("LOGIN_MAX_FAILED_ATTEMPTS", 10),
+		LoginLockoutDuration:   parseDuration("LOGIN_LOCKOUT_DURATION", "30m"),
+
+		// Trusted proxies
+		TrustedProxies: parseStringSlice("TRUSTED_PROXIES"),
 
 		// Password policy
 		PasswordMaxAgeDays: parseInt("PASSWORD_MAX_AGE_DAYS", 0),
@@ -100,6 +179,9 @@ func Load() (*AppConfig, error) {
 
 		// IP allowlisting
 		AdminIPAllowlist: parseStringSlice("ADMIN_IP_ALLOWLIST"),
+
+		// CORS
+		CORSAllowedOrigins: parseStringSlice("CORS_ALLOWED_ORIGINS"),
 	}
 
 	if cfg.JWTSecret == "" && cfg.Env != "development" {

@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -138,8 +139,17 @@ func (r *PostgresUserRepository) List(ctx context.Context, filter domain.UserFil
 		args = append(args, *filter.IsActive)
 		argIdx++
 	}
+	if filter.IsLocked != nil {
+		if *filter.IsLocked {
+			where += fmt.Sprintf(" AND u.locked_until IS NOT NULL AND u.locked_until > $%d", argIdx)
+		} else {
+			where += fmt.Sprintf(" AND (u.locked_until IS NULL OR u.locked_until <= $%d)", argIdx)
+		}
+		args = append(args, time.Now().UTC())
+		argIdx++
+	}
 	if filter.Search != "" {
-		where += fmt.Sprintf(" AND (u.username ILIKE $%d OR u.display_name ILIKE $%d)", argIdx, argIdx)
+		where += fmt.Sprintf(" AND (u.username ILIKE $%d OR u.display_name ILIKE $%d OR u.email ILIKE $%d)", argIdx, argIdx, argIdx)
 		args = append(args, "%"+filter.Search+"%")
 		argIdx++
 	}
@@ -185,6 +195,15 @@ func (r *PostgresUserRepository) List(ctx context.Context, filter domain.UserFil
 	}
 	if users == nil {
 		users = []entity.User{}
+	}
+
+	// Load groups for each user
+	for i := range users {
+		groups, err := r.loadUserGroups(ctx, users[i].ID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("loading groups for user %s: %w", users[i].ID, err)
+		}
+		users[i].Groups = groups
 	}
 
 	return users, total, nil

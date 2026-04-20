@@ -1,44 +1,69 @@
-# Module: IAM (Identity and Access Management)
+# Module: iam
 
-The IAM module provides a standalone identity foundation for the IMS platform. It handles user authentication, session management, fine-grained authorization, and administrative user lifecycle.
+The IAM module is the most implemented backend module in this repository.
 
-## 🏛 Architecture (DDD)
+It currently owns:
 
-The module follows a layered Domain-Driven Design (DDD) approach:
+- login and token issuance
+- refresh and logout flows
+- MFA enrollment and verification support
+- authenticated profile/session queries
+- admin user lifecycle operations
+- admin session management
 
-- **`domain/`**: The core of the module.
-  - `entity/`: `User` (aggregate root), `Session`, `AuditEvent`.
-  - `valueobject/`: `Credentials` (hashing/validation).
-  - `repository.go`: Interfaces for data persistence.
-- **`application/`**: Orchestrates domain logic to fulfill use cases.
-  - `command/`: Write operations (Login, Refresh, Logout, Admin actions).
-  - `query/`: Read-only operations (Get Profile, Permissions).
-  - `token_service.go`: JWT generation and management.
-- **`infrastructure/`**: Implementation of domain interfaces.
-  - `persistence/`: PostgreSQL implementations for User, Session, and Audit repositories.
-  - `adapter/`: Bridges to other modules or systems (e.g., `PermissionsFetcher`).
-- **`transport/`**: External entry points (HTTP).
-  - `handler/`: `AuthHandler` and `AdminHandler` mapping HTTP to application commands.
-  - `dto/`: Request and Response data structures with Swagger annotations.
-- **`module.go`**: The composition root that wires all dependencies.
+## Current Status
 
-## 🔐 Key Security Constraints
+This module is active and wired into the running backend.
 
-- **Passwords**: Hashed with `bcrypt` (cost 12), enforced minimum length (8), and common password blocklist.
-- **Sessions**: JWT access tokens (15m) + Server-side Refresh Tokens with **Rotation** and **Token Family Breach Detection**.
-- **Authorization**:
-  - **Stateless + Stateful**: JWT signature validation is supplemented by a synchronous database "Active Status" recheck on every protected request.
-  - **RBAC**: Function permissions (e.g., `IAM_ADMIN`) and contract-based Data Scopes.
-- **Audit**: Every security-sensitive mutation (login, lock, password change) is recorded in an immutable audit log with IP and UserAgent tracing.
+Compared with the other `backend/internal/*` modules, `iam` is not just a scaffold. It already contains application logic, persistence implementations, transport handlers, tests, and module wiring.
 
-## 🚀 Key Components
+## Directory Structure
 
-- **`LoginCommand`**: Handles credentials, lockouts, session creation, and initial permission hydration.
-- **`AdminUserCommand`**: Centralized administrative lifecycle (Create, Lock/Unlock, Disable/Enable, Reset Password).
-- **`Auth middleware`**: Injected via the `iam.Module` implementing `UserStatusChecker` and `PermissionChecker` adapters.
+```text
+iam/
+|-- application/
+|   |-- command/          # Login, logout, admin actions, password flows
+|   |-- dto/
+|   |-- query/            # Me, users, sessions
+|   `-- service/          # Authorization, session, MFA challenge helpers
+|-- domain/
+|   |-- entity/
+|   |-- valueobject/
+|   `-- repository.go
+|-- infrastructure/
+|   |-- adapter/
+|   `-- persistence/
+|-- jobs/
+|-- permission/
+|-- transport/
+|   |-- dto/
+|   `-- handler/
+|-- module.go
+`-- README.md
+```
 
-## 📡 API Groups
+## Key Files
 
-- **Public**: `/auth/login`, `/auth/refresh`
-- **Self-Service**: `/auth/me`, `/auth/logout`, `/auth/logout-all`, `/auth/change-password`
-- **Admin**: `/admin/users/**` (Requires `IAM_ADMIN`)
+- `application/command/login.go`
+- `application/command/admin_user.go`
+- `application/command/refresh_token.go`
+- `application/query/get_me.go`
+- `application/query/list_users.go`
+- `application/query/list_sessions.go`
+- `transport/handler/auth_handler.go`
+- `transport/handler/admin_handler.go`
+- `transport/handler/session_handler.go`
+- `transport/handler/mfa_handler.go`
+- `module.go`
+
+## Security Notes
+
+- Password and credential rules live in the domain/value-object layer
+- Access tokens are issued here and validated by platform middleware
+- Session and MFA persistence live under `infrastructure/persistence/`
+- Admin and auth-sensitive actions are the current source of most backend security behavior
+
+## Boundary Notes
+
+- audit trail querying, export, event persistence, and event definitions now belong to the dedicated `audit` module
+- IAM emits audit records through an audit recorder port and remains responsible only for identity and access behavior

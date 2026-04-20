@@ -7,32 +7,36 @@ import (
 
 	"github.com/google/uuid"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
-	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
 )
 
 // MFAEnrollCommand handles MFA enrollment, verification, and disabling.
 type MFAEnrollCommand struct {
-	mfaRepo   domain.MFARepository
-	userRepo  domain.UserRepository
-	auditSvc  *appservice.AuditService
-	totpSvc   *application.TOTPService
+	mfaRepo  domain.MFARepository
+	userRepo domain.UserRepository
+	auditSvc auditdomain.Recorder
+	totpSvc  *application.TOTPService
 }
 
 // NewMFAEnrollCommand creates a new MFAEnrollCommand.
 func NewMFAEnrollCommand(
 	mfaRepo domain.MFARepository,
 	userRepo domain.UserRepository,
-	auditSvc *appservice.AuditService,
+	auditSvc auditdomain.Recorder,
 	totpSvc *application.TOTPService,
 ) *MFAEnrollCommand {
+	if auditSvc == nil {
+		auditSvc = auditdomain.NopRecorder{}
+	}
 	return &MFAEnrollCommand{
-		mfaRepo:   mfaRepo,
-		userRepo:  userRepo,
-		auditSvc:  auditSvc,
-		totpSvc:   totpSvc,
+		mfaRepo:  mfaRepo,
+		userRepo: userRepo,
+		auditSvc: auditSvc,
+		totpSvc:  totpSvc,
 	}
 }
 
@@ -85,7 +89,7 @@ func (c *MFAEnrollCommand) Enroll(ctx context.Context, input EnrollInput) (*Enro
 	}
 
 	// Audit
-	c.recordAudit(ctx, &input.UserID, entity.AuditMFAEnrolled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
+	c.recordAudit(ctx, &input.UserID, auditentity.AuditMFAEnrolled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
 
 	return &EnrollResult{
 		ProvisioningURI: provisioningURI,
@@ -116,7 +120,7 @@ func (c *MFAEnrollCommand) Verify(ctx context.Context, input VerifyInput) error 
 		return fmt.Errorf("validating TOTP code: %w", err)
 	}
 	if !valid {
-		c.recordAudit(ctx, &input.UserID, entity.AuditMFAChallengeFail, "user", input.UserID.String(), input.IPAddress, input.UserAgent,
+		c.recordAudit(ctx, &input.UserID, auditentity.AuditMFAChallengeFail, "user", input.UserID.String(), input.IPAddress, input.UserAgent,
 			map[string]interface{}{"reason": "invalid code during enrollment verification"})
 		return fmt.Errorf("invalid TOTP code")
 	}
@@ -125,7 +129,7 @@ func (c *MFAEnrollCommand) Verify(ctx context.Context, input VerifyInput) error 
 		return fmt.Errorf("enabling MFA: %w", err)
 	}
 
-	c.recordAudit(ctx, &input.UserID, entity.AuditMFAEnabled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
+	c.recordAudit(ctx, &input.UserID, auditentity.AuditMFAEnabled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
 	return nil
 }
 
@@ -163,7 +167,7 @@ func (c *MFAEnrollCommand) Disable(ctx context.Context, input DisableInput) erro
 		slog.Error("failed to delete recovery codes", "error", err)
 	}
 
-	c.recordAudit(ctx, &input.UserID, entity.AuditMFADisabled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
+	c.recordAudit(ctx, &input.UserID, auditentity.AuditMFADisabled, "user", input.UserID.String(), input.IPAddress, input.UserAgent, nil)
 	return nil
 }
 
@@ -176,7 +180,7 @@ func (c *MFAEnrollCommand) AdminDisable(ctx context.Context, adminID uuid.UUID, 
 		slog.Error("failed to delete recovery codes", "error", err)
 	}
 
-	c.recordAudit(ctx, &adminID, entity.AuditMFADisabled, "user", targetUserID.String(), ipAddress, userAgent,
+	c.recordAudit(ctx, &adminID, auditentity.AuditMFADisabled, "user", targetUserID.String(), ipAddress, userAgent,
 		map[string]interface{}{"admin_action": true})
 	return nil
 }
@@ -186,6 +190,11 @@ type MFAStatusResult struct {
 	Enrolled          bool `json:"enrolled"`
 	Enabled           bool `json:"enabled"`
 	RecoveryCodesLeft int  `json:"recovery_codes_left"`
+}
+
+// DevTOTPCodeResult returns the current TOTP code for development/test workflows.
+type DevTOTPCodeResult struct {
+	TOTPCode string `json:"totp_code"`
 }
 
 // GetStatus returns the current MFA status for a user.
@@ -207,6 +216,25 @@ func (c *MFAEnrollCommand) GetStatus(ctx context.Context, userID uuid.UUID) (*MF
 	}
 
 	return result, nil
+}
+
+// GetDevelopmentTOTPCode returns the current TOTP code for the caller's enrolled secret.
+// This must only be exposed behind development/test-only transport wiring.
+func (c *MFAEnrollCommand) GetDevelopmentTOTPCode(ctx context.Context, userID uuid.UUID) (*DevTOTPCodeResult, error) {
+	enrollment, err := c.mfaRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("finding MFA enrollment: %w", err)
+	}
+	if enrollment == nil {
+		return nil, fmt.Errorf("MFA enrollment not found; please enroll first")
+	}
+
+	code, err := c.totpSvc.GenerateCurrentCode(enrollment.SecretEncrypted)
+	if err != nil {
+		return nil, fmt.Errorf("generating development TOTP code: %w", err)
+	}
+
+	return &DevTOTPCodeResult{TOTPCode: code}, nil
 }
 
 func (c *MFAEnrollCommand) recordAudit(ctx context.Context, actorID *uuid.UUID, eventType, targetType, targetID, ipAddress, userAgent string, metadata map[string]interface{}) {

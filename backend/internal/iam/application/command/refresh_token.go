@@ -8,9 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	auditentity "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/dto"
-	appservice "github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/domain/entity"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/clock"
@@ -20,12 +21,12 @@ import (
 // RefreshTokenCommand handles token refresh with rotation, breach detection,
 // idle timeout enforcement, and absolute session lifetime.
 type RefreshTokenCommand struct {
-	userRepo      domain.UserRepository
-	sessionRepo   domain.SessionRepository
-	tokenService  *application.TokenService
-	auditService  *appservice.AuditService
-	clock         clock.Clock
-	idleTimeout   time.Duration
+	userRepo     domain.UserRepository
+	sessionRepo  domain.SessionRepository
+	tokenService *application.TokenService
+	auditService auditdomain.Recorder
+	clock        clock.Clock
+	idleTimeout  time.Duration
 }
 
 // NewRefreshTokenCommand creates a RefreshTokenCommand.
@@ -33,10 +34,13 @@ func NewRefreshTokenCommand(
 	userRepo domain.UserRepository,
 	sessionRepo domain.SessionRepository,
 	tokenService *application.TokenService,
-	auditService *appservice.AuditService,
+	auditService auditdomain.Recorder,
 	clk clock.Clock,
 	idleTimeout time.Duration,
 ) *RefreshTokenCommand {
+	if auditService == nil {
+		auditService = auditdomain.NopRecorder{}
+	}
 	return &RefreshTokenCommand{
 		userRepo:     userRepo,
 		sessionRepo:  sessionRepo,
@@ -91,14 +95,14 @@ func (c *RefreshTokenCommand) Execute(ctx context.Context, input RefreshInput) (
 	// 4. Check absolute session lifetime
 	if session.IsAbsoluteExpired(now) {
 		_ = c.sessionRepo.RevokeByIDWithReason(ctx, session.ID, entity.RevokeReasonAbsoluteTimeout)
-		c.auditSessionTimeout(ctx, session, input, entity.AuditSessionAbsTimeout)
+		c.auditSessionTimeout(ctx, session, input, auditentity.AuditSessionAbsTimeout)
 		return nil, apperrors.NewBusinessError(apperrors.CodeUnauthorized, "session has exceeded maximum lifetime; please login again")
 	}
 
 	// 5. Check idle timeout
 	if c.idleTimeout > 0 && session.IsIdle(now, c.idleTimeout) {
 		_ = c.sessionRepo.RevokeByIDWithReason(ctx, session.ID, entity.RevokeReasonIdleTimeout)
-		c.auditSessionTimeout(ctx, session, input, entity.AuditSessionIdleTimeout)
+		c.auditSessionTimeout(ctx, session, input, auditentity.AuditSessionIdleTimeout)
 		return nil, apperrors.NewBusinessError(apperrors.CodeUnauthorized, "session expired due to inactivity; please login again")
 	}
 
@@ -123,11 +127,11 @@ func (c *RefreshTokenCommand) Execute(ctx context.Context, input RefreshInput) (
 		ID:                uuid.New(),
 		UserID:            user.ID,
 		RefreshTokenHash:  newRefreshHash,
-		TokenFamily:       session.TokenFamily, // same family
+		TokenFamily:       session.TokenFamily,
 		IPAddress:         input.IPAddress,
 		UserAgent:         input.UserAgent,
 		ExpiresAt:         now.Add(entity.RefreshTokenTTL),
-		AbsoluteExpiresAt: session.AbsoluteExpiresAt, // preserve original absolute expiry
+		AbsoluteExpiresAt: session.AbsoluteExpiresAt,
 		LastActivityAt:    now,
 	}
 	if err := c.sessionRepo.Create(ctx, newSession); err != nil {
@@ -152,7 +156,7 @@ func (c *RefreshTokenCommand) Execute(ctx context.Context, input RefreshInput) (
 }
 
 func (c *RefreshTokenCommand) auditBreachDetected(ctx context.Context, session *entity.Session, input RefreshInput) {
-	c.auditService.Record(ctx, &session.UserID, entity.AuditBreachDetected, "session", session.TokenFamily.String(), input.IPAddress, input.UserAgent, map[string]interface{}{
+	c.auditService.Record(ctx, &session.UserID, auditentity.AuditBreachDetected, "session", session.TokenFamily.String(), input.IPAddress, input.UserAgent, map[string]interface{}{
 		"session_id":   session.ID.String(),
 		"token_family": session.TokenFamily.String(),
 	})
@@ -163,5 +167,5 @@ func (c *RefreshTokenCommand) auditSessionTimeout(ctx context.Context, session *
 }
 
 func (c *RefreshTokenCommand) auditTokenRefresh(ctx context.Context, userID uuid.UUID, input RefreshInput) {
-	c.auditService.Record(ctx, &userID, entity.AuditTokenRefresh, "user", userID.String(), input.IPAddress, input.UserAgent, nil)
+	c.auditService.Record(ctx, &userID, auditentity.AuditTokenRefresh, "user", userID.String(), input.IPAddress, input.UserAgent, nil)
 }

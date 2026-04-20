@@ -16,12 +16,16 @@ import (
 
 // MFAHandler handles MFA-related HTTP endpoints.
 type MFAHandler struct {
-	mfaCmd *command.MFAEnrollCommand
+	mfaCmd           *command.MFAEnrollCommand
+	allowDevTOTPCode bool
 }
 
 // NewMFAHandler creates a new MFAHandler.
-func NewMFAHandler(mfaCmd *command.MFAEnrollCommand) *MFAHandler {
-	return &MFAHandler{mfaCmd: mfaCmd}
+func NewMFAHandler(mfaCmd *command.MFAEnrollCommand, allowDevTOTPCode bool) *MFAHandler {
+	return &MFAHandler{
+		mfaCmd:           mfaCmd,
+		allowDevTOTPCode: allowDevTOTPCode,
+	}
 }
 
 // Enroll handles POST /auth/mfa/enroll.
@@ -166,6 +170,39 @@ func (h *MFAHandler) Status(w http.ResponseWriter, r *http.Request) {
 		Enrolled:          status.Enrolled,
 		Enabled:           status.Enabled,
 		RecoveryCodesLeft: status.RecoveryCodesLeft,
+	})
+}
+
+// DevTOTPCode handles GET /auth/mfa/dev/totp-code.
+// @Summary Get Current TOTP Code (Dev Only)
+// @Description Development/test-only helper to retrieve the current TOTP code for the authenticated user
+// @Tags MFA
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} response.MFADevTOTPCodeResponse
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /auth/mfa/dev/totp-code [get]
+func (h *MFAHandler) DevTOTPCode(w http.ResponseWriter, r *http.Request) {
+	if !h.allowDevTOTPCode {
+		httputil.NotFound(w, "resource not found")
+		return
+	}
+
+	userID, err := getUserID(r)
+	if err != nil {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+
+	result, err := h.mfaCmd.GetDevelopmentTOTPCode(r.Context(), userID)
+	if err != nil {
+		httputil.BadRequest(w, err.Error())
+		return
+	}
+
+	httputil.OK(w, response.MFADevTOTPCodeResponse{
+		TOTPCode: result.TOTPCode,
 	})
 }
 

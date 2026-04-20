@@ -10,7 +10,6 @@ import (
 )
 
 // RunMigrations applies all pending SQL migrations from the given directory.
-// It uses the URL-style DSN required by golang-migrate.
 func RunMigrations(databaseURL, migrationsPath string) error {
 	sourceURL := fmt.Sprintf("file://%s", migrationsPath)
 

@@ -6,11 +6,27 @@ import (
 	"github.com/google/uuid"
 )
 
-// MaxFailedLoginAttempts is the number of failed attempts before account lockout.
-const MaxFailedLoginAttempts = 10
+// DefaultMaxFailedLoginAttempts is the default number of failed attempts before account lockout.
+// Override at runtime via LockoutPolicy.
+const DefaultMaxFailedLoginAttempts = 10
 
-// LockoutDuration is how long an account stays locked after max failed attempts.
-const LockoutDuration = 30 * time.Minute
+// DefaultLockoutDuration is the default lockout window.
+// Override at runtime via LockoutPolicy.
+const DefaultLockoutDuration = 30 * time.Minute
+
+// LockoutPolicy holds configurable lockout thresholds.
+type LockoutPolicy struct {
+	MaxFailedAttempts int
+	LockoutDuration   time.Duration
+}
+
+// DefaultLockoutPolicy returns the default lockout policy.
+func DefaultLockoutPolicy() LockoutPolicy {
+	return LockoutPolicy{
+		MaxFailedAttempts: DefaultMaxFailedLoginAttempts,
+		LockoutDuration:   DefaultLockoutDuration,
+	}
+}
 
 // User is the aggregate root for identity and access management.
 type User struct {
@@ -68,10 +84,15 @@ func (u *User) IsLocked(now time.Time) bool {
 
 // RecordFailedLogin increments the lockout state machine.
 // If the threshold is reached, it sets a future LockedUntil timestamp.
-func (u *User) RecordFailedLogin(now time.Time) {
+// Uses the provided policy; pass DefaultLockoutPolicy() if no override is needed.
+func (u *User) RecordFailedLogin(now time.Time, policy ...LockoutPolicy) {
+	p := DefaultLockoutPolicy()
+	if len(policy) > 0 {
+		p = policy[0]
+	}
 	u.FailedLoginAttempts++
-	if u.FailedLoginAttempts >= MaxFailedLoginAttempts {
-		lockUntil := now.Add(LockoutDuration)
+	if u.FailedLoginAttempts >= p.MaxFailedAttempts {
+		lockUntil := now.Add(p.LockoutDuration)
 		u.LockedUntil = &lockUntil
 	}
 }

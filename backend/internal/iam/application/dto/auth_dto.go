@@ -12,8 +12,10 @@ type LoginResult struct {
 	User                  UserProfile     `json:"user,omitempty"`
 	Permissions           UserPermissions `json:"permissions,omitempty"`
 	// MFA challenge fields
-	MFARequired bool   `json:"mfa_required,omitempty"`
-	MFAToken    string `json:"mfa_token,omitempty"` // opaque token for MFA step
+	MFARequired           bool   `json:"mfa_required,omitempty"`
+	MFAToken              string `json:"mfa_token,omitempty"` // opaque token for MFA step
+	MFAEnrollmentRequired bool   `json:"mfa_enrollment_required,omitempty"`
+	RestrictedSession     bool   `json:"restricted_session,omitempty"`
 }
 
 // UserProfile represents the current user's identity information.

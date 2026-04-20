@@ -21,6 +21,10 @@ func RequirePermission(checker PermissionChecker, code string) func(http.Handler
 				httputil.Unauthorized(w, "not authenticated")
 				return
 			}
+			if claims.Restricted {
+				httputil.Forbidden(w, "MFA enrollment is required before privileged access is allowed")
+				return
+			}
 
 			hasPerm, err := checker.HasFunctionPermission(r.Context(), claims.Subject, code)
 			if err != nil {
