@@ -23,12 +23,13 @@ import (
 
 // ComplianceHandler bundles all IRG HTTP endpoints.
 type ComplianceHandler struct {
-	preTradeCmd      *command.RunPreTradeCheckHandler
-	postTradeCmd     *command.RunPostTradeCheckHandler
-	overrideCmd      *command.OverrideBreachHandler
-	checkGroupQry    *query.GetCheckGroupHandler
-	listBreachesQry  *query.ListBreachesHandler
-	listInstancesQry *query.ListRuleInstancesHandler
+	preTradeCmd       *command.RunPreTradeCheckHandler
+	postTradeCmd      *command.RunPostTradeCheckHandler
+	overrideCmd       *command.OverrideBreachHandler
+	createInstanceCmd *command.CreateRuleInstanceHandler
+	checkGroupQry     *query.GetCheckGroupHandler
+	listBreachesQry   *query.ListBreachesHandler
+	listInstancesQry  *query.ListRuleInstancesHandler
 }
 
 // NewComplianceHandler wires all handlers together.
@@ -36,17 +37,19 @@ func NewComplianceHandler(
 	preTradeCmd *command.RunPreTradeCheckHandler,
 	postTradeCmd *command.RunPostTradeCheckHandler,
 	overrideCmd *command.OverrideBreachHandler,
+	createInstanceCmd *command.CreateRuleInstanceHandler,
 	checkGroupQry *query.GetCheckGroupHandler,
 	listBreachesQry *query.ListBreachesHandler,
 	listInstancesQry *query.ListRuleInstancesHandler,
 ) *ComplianceHandler {
 	return &ComplianceHandler{
-		preTradeCmd:      preTradeCmd,
-		postTradeCmd:     postTradeCmd,
-		overrideCmd:      overrideCmd,
-		checkGroupQry:    checkGroupQry,
-		listBreachesQry:  listBreachesQry,
-		listInstancesQry: listInstancesQry,
+		preTradeCmd:       preTradeCmd,
+		postTradeCmd:      postTradeCmd,
+		overrideCmd:       overrideCmd,
+		createInstanceCmd: createInstanceCmd,
+		checkGroupQry:     checkGroupQry,
+		listBreachesQry:   listBreachesQry,
+		listInstancesQry:  listInstancesQry,
 	}
 }
 
@@ -336,6 +339,117 @@ func writeOverrideError(w http.ResponseWriter, err error) {
 		// Server-side failure: persist the detail in server logs via the
 		// recovery/logger middleware, but do not leak internals to the client.
 		httputil.InternalError(w, "failed to commit override")
+	}
+}
+
+// ============================================================
+// POST /compliance/rules
+// ============================================================
+
+// createRuleInstanceRequest is the JSON body accepted by RunCreateRuleInstance.
+//
+// Field naming follows the snake_case convention used across the compliance
+// API. `parameters` is a raw JSON document — the handler does not decode it
+// beyond validating that it is well-formed JSON; the application layer then
+// checks it against the rule type's ParameterSchema.
+type createRuleInstanceRequest struct {
+	RuleTypeID    string          `json:"rule_type_id"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description,omitempty"`
+	Parameters    json.RawMessage `json:"parameters"`
+	EffectiveFrom string          `json:"effective_from"`          // "2006-01-02"
+	EffectiveTo   *string         `json:"effective_to,omitempty"`  // "2006-01-02" or null
+	IsActive      *bool           `json:"is_active,omitempty"`     // defaults to true
+	ChangeReason  string          `json:"change_reason,omitempty"` // "initial creation" if blank
+}
+
+// CreateRuleInstance handles POST /compliance/rules.
+//
+// Permission: IRG_EDIT_RULE_INSTANCE (enforced at the router). The actor UUID
+// is taken from the auth context — never from the request body — so callers
+// cannot impersonate another user when stamping created_by.
+func (h *ComplianceHandler) CreateRuleInstance(w http.ResponseWriter, r *http.Request) {
+	var req createRuleInstanceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.BadRequest(w, "invalid request body: "+err.Error())
+		return
+	}
+
+	claims := platformmw.GetUserClaims(r.Context())
+	if claims == nil {
+		httputil.Unauthorized(w, "authentication required")
+		return
+	}
+	actorID, err := uuid.Parse(claims.Subject)
+	if err != nil {
+		httputil.Unauthorized(w, "invalid user claims")
+		return
+	}
+
+	from, err := time.Parse("2006-01-02", req.EffectiveFrom)
+	if err != nil {
+		httputil.BadRequest(w, "invalid effective_from, expected YYYY-MM-DD")
+		return
+	}
+	var to *time.Time
+	if req.EffectiveTo != nil && *req.EffectiveTo != "" {
+		parsed, err := time.Parse("2006-01-02", *req.EffectiveTo)
+		if err != nil {
+			httputil.BadRequest(w, "invalid effective_to, expected YYYY-MM-DD")
+			return
+		}
+		to = &parsed
+	}
+
+	// Default IsActive to true when the caller omits the field — a common
+	// case for typical rule admin flows. Explicit false stages the instance
+	// for later activation.
+	active := true
+	if req.IsActive != nil {
+		active = *req.IsActive
+	}
+
+	result, err := h.createInstanceCmd.Handle(r.Context(), command.CreateRuleInstanceRequest{
+		RuleTypeID:    req.RuleTypeID,
+		Name:          req.Name,
+		Description:   req.Description,
+		Parameters:    req.Parameters,
+		EffectiveFrom: from,
+		EffectiveTo:   to,
+		IsActive:      active,
+		ChangeReason:  req.ChangeReason,
+		CreatedBy:     actorID,
+	})
+	if err != nil {
+		writeCreateRuleInstanceError(w, err)
+		return
+	}
+
+	httputil.Created(w, result)
+}
+
+// writeCreateRuleInstanceError maps domain errors to HTTP responses.
+//
+// Explicit branches — the default returns 500 with a generic message to avoid
+// leaking internal DB details; the typed errors above are client-safe.
+//
+//   - *ErrInvalidCreateRuleRequest → 400 (missing/bad field).
+//   - *ErrRuleTypeNotFound         → 422 (caller referenced an unregistered rule type).
+//   - *ErrParameterValidation      → 400 (parameters fail the rule's JSON Schema).
+//   - anything else                → 500.
+func writeCreateRuleInstanceError(w http.ResponseWriter, err error) {
+	var invalid *command.ErrInvalidCreateRuleRequest
+	var noType *domain.ErrRuleTypeNotFound
+	var badParams *domain.ErrParameterValidation
+	switch {
+	case errors.As(err, &invalid):
+		httputil.BadRequest(w, err.Error())
+	case errors.As(err, &noType):
+		httputil.UnprocessableEntity(w, err.Error())
+	case errors.As(err, &badParams):
+		httputil.BadRequest(w, err.Error())
+	default:
+		httputil.InternalError(w, "failed to create rule instance")
 	}
 }
 

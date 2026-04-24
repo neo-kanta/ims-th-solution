@@ -21,6 +21,7 @@ import (
 	// Self-registering rule packages — must be blank-imported to run init().
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/cash"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/concentration"
+	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/credit"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/quantity"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/ratio"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/restriction"
@@ -29,9 +30,10 @@ import (
 
 // Module owns the IRG compliance pipeline, rule administration, and breach management.
 type Module struct {
-	handler          *handler.ComplianceHandler
-	registry         *spi.RuleRegistry
+	handler           *handler.ComplianceHandler
+	registry          *spi.RuleRegistry
 	permissionChecker platformmw.PermissionChecker
+	contractAdapter   *transport.ComplianceContractAdapter
 }
 
 // NewModule constructs the full compliance module with Postgres-backed repositories
@@ -51,7 +53,7 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 		&adapter.NopMarketDataAdapter{},
 		&adapter.NopInstrumentClassificationAdapter{},
 		&adapter.NopCreditRatingAdapter{},
-		&adapter.NopRestrictionListAdapter{},
+		adapter.NewPostgresRestrictionListAdapter(pool),
 		&adapter.NopTradeHistoryAdapter{},
 		&adapter.NopCalendarAdapter{},
 		&adapter.NopPortfolioMetadataAdapter{},
@@ -62,9 +64,10 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 	pipeline := engine.NewPipeline(registry, bindingRepo, checkRepo, breachRepo, fetcher)
 
 	// Application layer — commands
-	preTradeCmd  := command.NewRunPreTradeCheckHandler(pipeline, registry)
-	postTradeCmd := command.NewRunPostTradeCheckHandler(pipeline, registry)
-	overrideCmd  := command.NewOverrideBreachHandler(overrideRepo)
+	preTradeCmd       := command.NewRunPreTradeCheckHandler(pipeline, registry)
+	postTradeCmd      := command.NewRunPostTradeCheckHandler(pipeline, registry)
+	overrideCmd       := command.NewOverrideBreachHandler(overrideRepo)
+	createInstanceCmd := command.NewCreateRuleInstanceHandler(instanceRepo, registry)
 
 	// Application layer — queries
 	checkGroupQry    := query.NewGetCheckGroupHandler(checkRepo, breachRepo)
@@ -76,15 +79,20 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 		preTradeCmd,
 		postTradeCmd,
 		overrideCmd,
+		createInstanceCmd,
 		checkGroupQry,
 		listBreachesQry,
 		listInstancesQry,
 	)
 
+	// Cross-module contract adapter (investment OMS, workflow close gate).
+	contractAdapter := transport.NewComplianceContractAdapter(preTradeCmd, pipeline, registry)
+
 	return &Module{
 		handler:           h,
 		registry:          registry,
 		permissionChecker: permChecker,
+		contractAdapter:   contractAdapter,
 	}
 }
 
@@ -108,8 +116,21 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 			r.Use(platformmw.RequirePermission(m.permissionChecker, "IRG_OVERRIDE_BREACH"))
 			r.Post("/compliance/breaches/{breachID}/override", m.handler.OverrideBreach)
 		})
-		// Pre/post-trade checks are invoked by the OMS layer (WORKFLOW_EXECUTE permission).
+		// Rule-instance authoring: creating a new rule instance (TypeID +
+		// parameters + effective window) requires dedicated edit rights so the
+		// general VIEW role cannot silently spawn active rules.
 		r.Group(func(r chi.Router) {
+			r.Use(platformmw.RequirePermission(m.permissionChecker, "IRG_EDIT_RULE_INSTANCE"))
+			r.Post("/compliance/rules", m.handler.CreateRuleInstance)
+		})
+		// Pre/post-trade checks are primarily invoked by the OMS layer via the
+		// in-process contract adapter, but the HTTP endpoints remain reachable
+		// for operator tooling and manual replay. Gate them with
+		// WORKFLOW_EXECUTE — the same permission that authorises trade
+		// submission — so no caller without execute rights can trigger a
+		// compliance record write.
+		r.Group(func(r chi.Router) {
+			r.Use(platformmw.RequirePermission(m.permissionChecker, "WORKFLOW_EXECUTE"))
 			r.Post("/compliance/checks/pre-trade", m.handler.RunPreTradeCheck)
 			r.Post("/compliance/checks/post-trade", m.handler.RunPostTradeCheck)
 		})
@@ -122,4 +143,13 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 // Registry returns the live SPI rule registry (used by the OMS module for internal calls).
 func (m *Module) Registry() *spi.RuleRegistry {
 	return m.registry
+}
+
+// ContractAdapter returns the cross-module contract adapter. External modules
+// (investment, workflow) consume this via pkg/contract interfaces only.
+func (m *Module) ContractAdapter() *transport.ComplianceContractAdapter {
+	if m == nil {
+		return nil
+	}
+	return m.contractAdapter
 }

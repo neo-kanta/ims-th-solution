@@ -24,7 +24,7 @@ type PostTradeCheckRequest struct {
 // PostTradeCheckResponse is returned from the post-trade handler.
 type PostTradeCheckResponse struct {
 	CheckGroupID    uuid.UUID       `json:"check_group_id"`
-	Verdict         vo.Verdict      `json:"verdict"` // informational — does NOT block
+	Verdict         vo.Verdict      `json:"verdict"`
 	RulesEvaluated  int             `json:"rules_evaluated"`
 	TotalDurationMs int64           `json:"total_duration_ms"`
 	Breaches        []BreachSummary `json:"breaches,omitempty"`
@@ -66,7 +66,7 @@ func (h *RunPostTradeCheckHandler) Handle(ctx context.Context, req PostTradeChec
 		Actor:         req.Actor,
 		PortfolioID:   req.PortfolioID,
 		ContractID:    req.ContractID,
-		ProposedOrder: nil, // post-trade: no order
+		ProposedOrder: nil,
 	}
 
 	scopes := buildScopes(req.PortfolioID, req.ContractID)

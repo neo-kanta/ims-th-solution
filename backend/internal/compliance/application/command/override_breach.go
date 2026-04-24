@@ -45,7 +45,7 @@ func NewOverrideBreachHandler(overrideRepo domain.OverrideRepository) *OverrideB
 //   - *domain.ErrBreachNotFound        — no breach with the supplied ID.
 //   - *domain.ErrBreachNotOpen         — breach is not in OPEN status.
 //   - *domain.ErrOverrideAlreadyExists — a concurrent request already overrode
-//                                        this breach (caught by UNIQUE(breach_id)).
+//     this breach (caught by UNIQUE(breach_id)).
 func (h *OverrideBreachHandler) Handle(ctx context.Context, req OverrideBreachRequest) (*entity.Override, error) {
 	if req.BreachID == uuid.Nil {
 		return nil, &domain.ErrInvalidOverrideRequest{Field: "breach_id"}
@@ -57,7 +57,6 @@ func (h *OverrideBreachHandler) Handle(ctx context.Context, req OverrideBreachRe
 		return nil, &domain.ErrInvalidOverrideRequest{Field: "overridden_by"}
 	}
 
-	// Single UTC timestamp shared between override.CreatedAt and breach.ResolvedAt.
 	now := time.Now().UTC()
 	override := &entity.Override{
 		ID:            uuid.New(),

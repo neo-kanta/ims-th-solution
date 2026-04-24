@@ -1,0 +1,33 @@
+info:
+  name: get-check-group
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{compliance-base-url}}/checks/:groupID"
+  params:
+    - name: groupID
+      value: "{{compliance-check-group-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const firstBreach = data?.breaches?.[0];
+
+        if (firstBreach?.ID || firstBreach?.id) {
+          bru.setEnvVar("compliance-breach-id", firstBreach.ID || firstBreach.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

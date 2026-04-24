@@ -16,13 +16,12 @@ import (
 
 // PreTradeCheckRequest is the inbound request from the order management layer.
 type PreTradeCheckRequest struct {
-	CheckGroupID uuid.UUID // caller-supplied idempotency key; engine generates one if zero
+	CheckGroupID uuid.UUID
 	PortfolioID  uuid.UUID
 	ContractID   uuid.UUID
 	BusinessDate time.Time
-	Actor        string // user ID who triggered the check
+	Actor        string
 
-	// Proposed order fields
 	OrderID  uuid.UUID
 	Ticker   string
 	Side     vo.OrderSide
@@ -35,7 +34,7 @@ type PreTradeCheckRequest struct {
 // PreTradeCheckResponse is the result returned to the OMS / caller.
 type PreTradeCheckResponse struct {
 	CheckGroupID    uuid.UUID       `json:"check_group_id"`
-	Verdict         vo.Verdict      `json:"verdict"` // PRE-TRADE: PASS allows order to proceed
+	Verdict         vo.Verdict      `json:"verdict"`
 	RulesEvaluated  int             `json:"rules_evaluated"`
 	TotalDurationMs int64           `json:"total_duration_ms"`
 	Breaches        []BreachSummary `json:"breaches,omitempty"`
@@ -93,7 +92,6 @@ func (h *RunPreTradeCheckHandler) Handle(ctx context.Context, req PreTradeCheckR
 		},
 	}
 
-	// Scopes for binding resolution: portfolio-specific + contract + global.
 	scopes := buildScopes(req.PortfolioID, req.ContractID)
 
 	output, err := h.pipeline.RunCheck(ctx, input, scopes)
@@ -109,7 +107,6 @@ func (h *RunPreTradeCheckHandler) Handle(ctx context.Context, req PreTradeCheckR
 	}
 
 	for _, b := range output.Breaches {
-		// Look up overridable flag from registry.
 		overridable := true
 		if meta, ok := h.registry.Get(b.RuleTypeID); ok {
 			overridable = meta.Metadata().Overridable

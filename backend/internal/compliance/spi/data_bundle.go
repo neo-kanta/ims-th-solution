@@ -168,12 +168,24 @@ func (s *ClassificationSnapshot) MarshalJSON() ([]byte, error) {
 
 // --- Credit ratings ---
 
-// CreditRatingSnapshot holds credit ratings keyed by issuer.
+// CreditRatingSnapshot holds credit ratings keyed by issuer. Each issuer may
+// have zero or more agency-specific ratings; rules that care about split
+// ratings (e.g. credit.min_rating) walk the slice and apply the configured
+// agency-priority / split-rating policy.
 type CreditRatingSnapshot struct {
-	Ratings map[string]CreditRating `json:"ratings"`
+	Ratings map[string][]CreditRating `json:"ratings"`
 }
 
-// CreditRating holds a single issuer's credit rating.
+// ForIssuer returns the list of ratings recorded for the issuer, or nil when
+// none are present. The returned slice must not be mutated by callers.
+func (s *CreditRatingSnapshot) ForIssuer(issuer string) []CreditRating {
+	if s == nil || s.Ratings == nil {
+		return nil
+	}
+	return s.Ratings[issuer]
+}
+
+// CreditRating holds a single agency's rating for an issuer.
 type CreditRating struct {
 	Rating string    `json:"rating"`
 	Agency string    `json:"agency"`
@@ -182,19 +194,61 @@ type CreditRating struct {
 
 // --- Restriction lists ---
 
-// RestrictionSnapshot holds blacklist, whitelist, and gray list data.
+// RestrictionSnapshot holds restriction list data across all list types.
+//
+// Four enforced list types are supported (see RestrictionListType constants):
+//   - BLACKLIST  — hard block, not overridable
+//   - WHITELIST  — only permit listed tickers (if HasWhitelist)
+//   - ALERT      — allow with WARN-level breach (overridable)
+//   - DISPOSAL   — block BUY, allow SELL (wind-down instructions)
+//
+// The legacy fields (Blacklisted / Whitelisted / HasWhitelist / GrayListed)
+// remain populated for backwards compatibility with rules that pre-date the
+// unified list-enforcement rule.
 type RestrictionSnapshot struct {
 	Blacklisted  map[string]RestrictionEntry `json:"blacklisted"`
 	Whitelisted  map[string]bool             `json:"whitelisted"`
 	HasWhitelist bool                        `json:"has_whitelist"`
 	GrayListed   map[string]RestrictionEntry `json:"gray_listed"`
+
+	// Alerted carries entries whose list_type is ALERT. Hits produce a
+	// WARN-level breach that traders acknowledge but does not hard-block.
+	Alerted map[string]RestrictionEntry `json:"alerted"`
+
+	// Disposal carries entries marked for wind-down: BUY is blocked, SELL
+	// is explicitly permitted.
+	Disposal map[string]RestrictionEntry `json:"disposal"`
+}
+
+// RestrictionListType enumerates the recognised list_type values persisted in
+// compliance_restriction_list_entries. Rule parameters reference these names
+// directly so the database enum and the rule configuration stay in sync.
+type RestrictionListType string
+
+const (
+	RestrictionListTypeBlacklist RestrictionListType = "BLACKLIST"
+	RestrictionListTypeWhitelist RestrictionListType = "WHITELIST"
+	RestrictionListTypeAlert     RestrictionListType = "ALERT"
+	RestrictionListTypeDisposal  RestrictionListType = "DISPOSAL"
+	RestrictionListTypeGray      RestrictionListType = "GRAYLIST" // legacy alias of ALERT
+)
+
+// IsValid reports whether the list type is recognised.
+func (t RestrictionListType) IsValid() bool {
+	switch t {
+	case RestrictionListTypeBlacklist, RestrictionListTypeWhitelist,
+		RestrictionListTypeAlert, RestrictionListTypeDisposal, RestrictionListTypeGray:
+		return true
+	default:
+		return false
+	}
 }
 
 // RestrictionEntry is a single restriction list entry.
 type RestrictionEntry struct {
 	Ticker   string `json:"ticker"`
 	Reason   string `json:"reason"`
-	ListType string `json:"list_type"` // BLACKLIST, GRAYLIST
+	ListType string `json:"list_type"` // BLACKLIST, WHITELIST, ALERT, DISPOSAL, GRAYLIST
 	Source   string `json:"source"`    // GLOBAL, CONTRACT, REGULATORY
 }
 

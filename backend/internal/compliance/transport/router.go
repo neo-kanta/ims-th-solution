@@ -20,6 +20,7 @@ import (
 //	GET    /compliance/breaches                      → ListBreaches
 //	POST   /compliance/breaches/{breachID}/override  → OverrideBreach
 //	GET    /compliance/rules                         → ListRuleInstances
+//	POST   /compliance/rules                         → CreateRuleInstance
 func RegisterRoutes(r chi.Router, h *handler.ComplianceHandler) {
 	r.Route("/compliance", func(r chi.Router) {
 		// Check execution (OMS calls these)
@@ -33,6 +34,7 @@ func RegisterRoutes(r chi.Router, h *handler.ComplianceHandler) {
 
 		// Rule administration
 		r.Get("/rules", h.ListRuleInstances)
+		r.Post("/rules", h.CreateRuleInstance)
 	})
 }
 

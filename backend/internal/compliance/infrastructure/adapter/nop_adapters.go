@@ -111,7 +111,7 @@ func (a *NopCreditRatingAdapter) GetRatings(
 	tickers []string,
 ) (*spi.CreditRatingSnapshot, error) {
 	return &spi.CreditRatingSnapshot{
-		Ratings: make(map[string]spi.CreditRating),
+		Ratings: make(map[string][]spi.CreditRating),
 	}, nil
 }
 
