@@ -1,16 +1,17 @@
-﻿# Module: reference_data
+# Module: reference_data
 
-Reference Data — currencies, markets, instruments, Thai holidays.
+This module is the reserved backend boundary for stable reference datasets.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- markets
+- currencies
+- instruments
+- holiday calendars
+- static lookup and normalization data
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+It currently provides the standard folder layout and placeholder files, but no implemented reference-data services.

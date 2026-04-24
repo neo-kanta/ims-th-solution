@@ -1,16 +1,24 @@
-﻿# Module: permissions
+# Module: permissions
 
-Permissions Management — accounts, groups, function permissions, data permissions.
+This module is the reserved backend boundary for a dedicated permissions subsystem.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- accounts and groups
+- function-level rights
+- data-scope and contract permissions
+- permission administration workflows
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+Important:
+
+- route and repository placeholders exist here
+- current permission checks in the running application are still enforced through IAM and platform middleware
+- this folder should be treated as a future extraction target, not the current source of truth
+
+## Guidance
+
+If you start implementing this module for real, move responsibility deliberately instead of duplicating permission logic in both `iam` and `permissions`.

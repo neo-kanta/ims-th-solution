@@ -1,16 +1,16 @@
-﻿# Module: notification
+# Module: notification
 
-Notification — settings, message templates, per-contract config.
+This module is the reserved backend boundary for notifications.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- user notification preferences
+- templates and delivery orchestration
+- contract- or workflow-specific alerts
+- future email, in-app, or async delivery pipelines
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+The directory exists to reserve a clean module boundary, but no concrete delivery logic or notification API is implemented here yet.
