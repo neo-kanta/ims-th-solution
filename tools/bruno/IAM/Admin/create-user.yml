@@ -10,14 +10,34 @@ http:
     type: json
     data: |-
       {
-        "display_name": "neo",
-        "email": "neo.kanta@test.local",
-        "password": "neopass",
-        "username": "urd2000"
+        "display_name": "nanaju",
+        "email": "nanaju.move@test.local",
+        "password": "nanajupassword",
+        "username": "nanaju"
       }
   auth:
     type: bearer
     token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const body = req.getBody();
+        const raw = body?.data || "{}";
+        const data = JSON.parse(raw);
+
+        if (data.password) {
+          bru.setEnvVar("user_password", data.password, { persist: true });
+        }
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || [];
+
+        if (data.id) {
+          bru.setEnvVar("user_id", data.id, { persist: true });
+        }
 
 settings:
   encodeUrl: true

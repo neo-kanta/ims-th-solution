@@ -13,14 +13,9 @@ import (
 )
 
 const (
-	// AccessTokenExpiry is the short-lived JWT validity (15 minutes).
 	AccessTokenExpiry = 15 * time.Minute
-
-	// TokenIssuer is the iss claim value.
-	TokenIssuer = "ims-th"
-
-	// TokenAudience is the aud claim value.
-	TokenAudience = "ims-th-api"
+	TokenIssuer       = "ims-th"
+	TokenAudience     = "ims-th-api"
 )
 
 // SigningKey represents a single key in the key ring.
@@ -30,9 +25,9 @@ type SigningKey struct {
 }
 
 // AccessTokenClaims are the minimal JWT claims (no permissions, no groups).
-// Per RFC 8725: only sub, jti, iss, aud, iat, exp.
 type AccessTokenClaims struct {
-	SessionID string `json:"sid,omitempty"`
+	SessionID  string `json:"sid,omitempty"`
+	Restricted bool   `json:"rst,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -72,11 +67,16 @@ func NewTokenServiceWithKeyRing(activeKID string, activeSecret string, previousK
 
 // GenerateAccessToken creates a short-lived JWT (15m) with kid header for key rotation.
 func (s *TokenService) GenerateAccessToken(userID uuid.UUID) (string, time.Time, error) {
-	return s.GenerateAccessTokenForSession(userID, uuid.Nil)
+	return s.GenerateAccessTokenForSessionWithRestriction(userID, uuid.Nil, false)
 }
 
 // GenerateAccessTokenForSession creates a short-lived JWT bound to a server-side session when provided.
 func (s *TokenService) GenerateAccessTokenForSession(userID uuid.UUID, sessionID uuid.UUID) (string, time.Time, error) {
+	return s.GenerateAccessTokenForSessionWithRestriction(userID, sessionID, false)
+}
+
+// GenerateAccessTokenForSessionWithRestriction creates a short-lived JWT with optional restricted-session semantics.
+func (s *TokenService) GenerateAccessTokenForSessionWithRestriction(userID uuid.UUID, sessionID uuid.UUID, restricted bool) (string, time.Time, error) {
 	now := s.clock.Now()
 	expiresAt := now.Add(AccessTokenExpiry)
 
@@ -93,6 +93,7 @@ func (s *TokenService) GenerateAccessTokenForSession(userID uuid.UUID, sessionID
 	if sessionID != uuid.Nil {
 		claims.SessionID = sessionID.String()
 	}
+	claims.Restricted = restricted
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = s.activeKey.KID
@@ -106,7 +107,6 @@ func (s *TokenService) GenerateAccessTokenForSession(userID uuid.UUID, sessionID
 }
 
 // ValidateAccessToken parses and validates a JWT string.
-// It tries the active key first, then falls back to previous keys for rotation support.
 func (s *TokenService) ValidateAccessToken(tokenString string) (*AccessTokenClaims, error) {
 	claims := &AccessTokenClaims{}
 
@@ -168,7 +168,6 @@ func (s *TokenService) GenerateRefreshToken() string {
 }
 
 // HashRefreshToken returns the SHA-256 hex digest of a refresh token.
-// We never store the plaintext refresh token.
 func HashRefreshToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])

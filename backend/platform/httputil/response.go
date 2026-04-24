@@ -62,6 +62,12 @@ func NotFound(w http.ResponseWriter, message string) {
 	JSON(w, http.StatusNotFound, ErrorResponse{Error: message})
 }
 
+// Conflict writes a 409 error response. Used when a request conflicts with
+// the current state of the target resource (e.g. duplicate override, stale state).
+func Conflict(w http.ResponseWriter, message string) {
+	JSON(w, http.StatusConflict, ErrorResponse{Error: message})
+}
+
 // InternalError writes a 500 error response.
 func InternalError(w http.ResponseWriter, message string) {
 	JSON(w, http.StatusInternalServerError, ErrorResponse{Error: message})

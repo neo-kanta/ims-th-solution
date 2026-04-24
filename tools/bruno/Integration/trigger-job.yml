@@ -1,0 +1,36 @@
+info:
+  name: trigger-job
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{integration-etl}}/jobs/trigger"
+  body:
+    type: json
+    data: |-
+      {
+        "job_type": "MARKET_PRICE",
+        "business_date": "{{etl_business_date}}",
+        "force": false
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("etl_job_id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

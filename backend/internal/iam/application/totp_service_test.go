@@ -101,3 +101,19 @@ func TestTOTPService_UsedRecoveryCodeDoesNotMatch(t *testing.T) {
 	matched := svc.VerifyRecoveryCode(plaintextCodes[0], hashedCodes)
 	assert.Nil(t, matched, "used recovery code should not match")
 }
+
+func TestTOTPService_GenerateCurrentCode(t *testing.T) {
+	svc, err := application.NewTOTPService(testEncKeyHex, "TestIMS")
+	require.NoError(t, err)
+
+	encrypted, _, err := svc.GenerateSecret("testuser")
+	require.NoError(t, err)
+
+	code, err := svc.GenerateCurrentCode(encrypted)
+	require.NoError(t, err)
+	assert.Len(t, code, 6)
+
+	valid, err := svc.ValidateCode(encrypted, code)
+	require.NoError(t, err)
+	assert.True(t, valid)
+}

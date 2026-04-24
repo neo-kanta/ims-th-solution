@@ -8,9 +8,22 @@ http:
   url: "{{iam-admin}}/users/:id/sessions"
   params:
     - name: id
-      value: a0000000-0000-0000-0000-000000000001
+      value: "{{user_id}}"
       type: path
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || [];
+
+        if (data[0]?.id) {
+          bru.setEnvVar("session_id", data[0].id, { persist: true });
+        }
 
 settings:
   encodeUrl: true

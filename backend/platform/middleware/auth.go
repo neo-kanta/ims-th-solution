@@ -11,14 +11,13 @@ import (
 type contextKey string
 
 const (
-	// UserContextKey is the context key for the authenticated user's claims.
 	UserContextKey contextKey = "user"
 )
 
 // UserClaims represents the minimal JWT claims for an authenticated user.
-// Only contains sub (user ID) via RegisteredClaims — no permissions, no groups.
 type UserClaims struct {
-	SessionID string `json:"sid,omitempty"`
+	SessionID  string `json:"sid,omitempty"`
+	Restricted bool   `json:"rst,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -77,7 +76,6 @@ func NewKeyProvider(activeKID string, activeSecret string, previousSecret string
 }
 
 // Auth returns a middleware that validates JWT tokens with iss/aud enforcement and checks active status.
-// Supports key rotation via kid header lookup.
 func Auth(keyProvider KeyProvider, checker UserStatusChecker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

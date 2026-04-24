@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 
+	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/command"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/application/query"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam/transport/dto/request"
@@ -19,12 +23,18 @@ import (
 
 // AuthHandler handles HTTP requests for authentication endpoints.
 type AuthHandler struct {
-	loginCmd          *command.LoginCommand
-	refreshCmd        *command.RefreshTokenCommand
-	logoutCmd         *command.LogoutCommand
-	logoutAllCmd      *command.LogoutAllCommand
-	changePasswordCmd *command.ChangePasswordCommand
-	getMeQry          *query.GetMeQuery
+	loginCmd            *command.LoginCommand
+	refreshCmd          *command.RefreshTokenCommand
+	logoutCmd           *command.LogoutCommand
+	logoutAllCmd        *command.LogoutAllCommand
+	changePasswordCmd   *command.ChangePasswordCommand
+	getMeQry            *query.GetMeQuery
+	loginLimiter        middleware.RateLimiter
+	loginPolicy         middleware.RateLimitPolicy
+	loginUserLimiter    middleware.RateLimiter // per IP+username rate limiter (nil = disabled)
+	loginUserPolicy     middleware.RateLimitPolicy
+	refreshTokenLimiter middleware.RateLimiter // per-token rate limiter (nil = disabled)
+	refreshTokenPolicy  middleware.RateLimitPolicy
 }
 
 // NewAuthHandler creates an AuthHandler with its dependencies.
@@ -35,14 +45,26 @@ func NewAuthHandler(
 	logoutAllCmd *command.LogoutAllCommand,
 	changePasswordCmd *command.ChangePasswordCommand,
 	getMeQry *query.GetMeQuery,
+	loginLimiter middleware.RateLimiter,
+	loginPolicy middleware.RateLimitPolicy,
+	loginUserLimiter middleware.RateLimiter,
+	loginUserPolicy middleware.RateLimitPolicy,
+	refreshTokenLimiter middleware.RateLimiter,
+	refreshTokenPolicy middleware.RateLimitPolicy,
 ) *AuthHandler {
 	return &AuthHandler{
-		loginCmd:          loginCmd,
-		refreshCmd:        refreshCmd,
-		logoutCmd:         logoutCmd,
-		logoutAllCmd:      logoutAllCmd,
-		changePasswordCmd: changePasswordCmd,
-		getMeQry:          getMeQry,
+		loginCmd:            loginCmd,
+		refreshCmd:          refreshCmd,
+		logoutCmd:           logoutCmd,
+		logoutAllCmd:        logoutAllCmd,
+		changePasswordCmd:   changePasswordCmd,
+		getMeQry:            getMeQry,
+		loginLimiter:        loginLimiter,
+		loginPolicy:         loginPolicy,
+		loginUserLimiter:    loginUserLimiter,
+		loginUserPolicy:     loginUserPolicy,
+		refreshTokenLimiter: refreshTokenLimiter,
+		refreshTokenPolicy:  refreshTokenPolicy,
 	}
 }
 
@@ -73,6 +95,26 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Per IP+username rate limiting — prevents distributed brute force against a single account.
+	// This is checked here (not middleware) because the username is in the request body.
+	clientIP := middleware.GetClientIP(r)
+	if h.loginUserLimiter != nil {
+		key := fmt.Sprintf("rl:login_user:%s:%s", clientIP, strings.ToLower(req.Username))
+		allowed, _, retryAfter, err := h.loginUserLimiter.Allow(r.Context(), key)
+		if err != nil {
+			httputil.InternalError(w, "rate limit check failed")
+			return
+		}
+		if !allowed {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfter))
+			httputil.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+				"error":       "too many login attempts for this account",
+				"retry_after": retryAfter,
+			})
+			return
+		}
+	}
+
 	result, err := h.loginCmd.Execute(r.Context(), command.LoginInput{
 		Username:     req.Username,
 		Password:     req.Password,
@@ -96,12 +138,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.resetLoginRateLimits(r.Context(), clientIP, req.Username)
+
 	httputil.OK(w, response.LoginResponse{
 		AccessToken:           result.AccessToken,
 		AccessTokenExpiresAt:  result.AccessTokenExpiresAt,
 		RefreshToken:          result.RefreshToken,
 		RefreshTokenExpiresAt: result.RefreshTokenExpiresAt,
 		ForcePasswordChange:   result.ForcePasswordChange,
+		MFAEnrollmentRequired: result.MFAEnrollmentRequired,
+		RestrictedSession:     result.RestrictedSession,
 		User: response.UserResponse{
 			ID:          result.User.ID,
 			Username:    result.User.Username,
@@ -114,6 +160,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			Contracts: result.Permissions.Contracts,
 		},
 	})
+}
+
+func (h *AuthHandler) resetLoginRateLimits(ctx context.Context, clientIP string, username string) {
+	if h.loginLimiter != nil {
+		key := fmt.Sprintf("rl:%s:%s", h.loginPolicy.Name, clientIP)
+		_ = h.loginLimiter.Reset(ctx, key)
+	}
+	if h.loginUserLimiter != nil {
+		key := fmt.Sprintf("rl:%s:%s:%s", h.loginUserPolicy.Name, clientIP, strings.ToLower(username))
+		_ = h.loginUserLimiter.Reset(ctx, key)
+	}
 }
 
 // RefreshToken handles POST /auth/refresh.
@@ -141,6 +198,25 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 			"details": fieldErrors,
 		})
 		return
+	}
+
+	// Per-token rate limiting — prevents token stuffing on stolen refresh tokens
+	if h.refreshTokenLimiter != nil {
+		tokenHash := application.HashRefreshToken(req.RefreshToken)
+		key := fmt.Sprintf("rl:refresh_token:%s", tokenHash)
+		allowed, _, retryAfter, err := h.refreshTokenLimiter.Allow(r.Context(), key)
+		if err != nil {
+			httputil.InternalError(w, "rate limit check failed")
+			return
+		}
+		if !allowed {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfter))
+			httputil.JSON(w, http.StatusTooManyRequests, map[string]interface{}{
+				"error":       "too many refresh attempts for this token",
+				"retry_after": retryAfter,
+			})
+			return
+		}
 	}
 
 	result, err := h.refreshCmd.Execute(r.Context(), command.RefreshInput{

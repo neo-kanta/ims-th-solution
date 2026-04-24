@@ -5,12 +5,14 @@ info:
 
 http:
   method: POST
-  url: "{{iam-admin}}/user/:id/unlock"
+  url: "{{iam-admin}}/users/:id/unlock"
   params:
     - name: id
-      value: a0000000-0000-0000-0000-000000000001
+      value: "{{user_id}}"
       type: path
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true

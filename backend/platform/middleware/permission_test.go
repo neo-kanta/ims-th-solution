@@ -43,6 +43,12 @@ func TestRequirePermission(t *testing.T) {
 			mockHasPerm:    false,
 			expectedStatus: http.StatusForbidden,
 		},
+		{
+			name:           "Restricted Session",
+			claims:         &middleware.UserClaims{Restricted: true},
+			mockHasPerm:    true,
+			expectedStatus: http.StatusForbidden,
+		},
 	}
 
 	for _, tt := range tests {

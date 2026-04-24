@@ -1,16 +1,22 @@
-﻿# Module: compliance
+# Module: compliance
 
-Compliance/IRG — blacklist/whitelist, investment ratio, instrument restriction hooks.
+This module is the reserved backend boundary for compliance and IRG-related rules.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- blacklist and whitelist checks
+- product and instrument restrictions
+- ratio and mandate validation
+- compliance hooks around investment decisions and execution
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+It currently provides folder structure and placeholder wiring points, but no real domain logic, persistence, or routes.
+
+## Notes
+
+- keep cross-cutting compliance decisions here once implemented
+- avoid mixing future compliance rules directly into `investment` handlers
+- update this README when the first real rule set lands

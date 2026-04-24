@@ -1,14 +1,86 @@
 name: ims-th-local
 variables:
+  - name: server-base-url
+    value: http://localhost:8080
+  - name: integration-etl
+    value: http://localhost:8080/api/v1/etl
   - secret: true
     name: token
+  - secret: true
+    name: mfa_token
   - name: iam-admin
     value: http://localhost:8080/api/v1/admin
   - name: iam-auth
     value: http://localhost:8080/api/v1/auth
   - name: iam-audit
-    value: http://localhost:8080/api/v1/audit
+    value: http://localhost:8080/api/v1/admin
   - secret: true
     name: refresh_token
   - name: iam-mfa
     value: http://localhost:8080/api/v1/auth/mfa
+  - secret: true
+    name: totp_code
+  - name: session_id
+    value: a8ecebcc-98a9-471e-a3b2-aeed48a6169e
+  - name: etl_job_id
+    value: ""
+  - name: feed_id
+    value: ""
+  - name: etl_business_date
+    value: 2026-04-17
+  - name: import_file_path
+    value: ""
+  - name: user_id
+    value: dbc135c9-1f28-4ce9-b222-5c96f2ad8e8d
+  - secret: true
+    name: user_password
+  - secret: true
+    name: admin_id
+  - name: mfa-provisioning-uri
+    value: ""
+  - name: mfa-recovery-codes-left
+    value: ""
+  - name: mfa-enrolled
+    value: ""
+  - name: mfa-enabled
+    value: ""
+  - name: compliance-base-url
+    value: http://localhost:8080/api/v1/compliance
+  - name: compliance-portfolio-id
+    value: ""
+  - name: compliance-contract-id
+    value: ""
+  - name: compliance-order-id
+    value: ""
+  - name: compliance-check-group-id
+    value: ""
+  - name: compliance-breach-id
+    value: ""
+  - name: compliance-business-date
+    value: 2026-04-23
+  - name: compliance-rule-type-id
+    value: ""
+  - name: compliance-status
+    value: OPEN
+  - name: compliance-is-active
+    value: ""
+  - name: compliance-offset
+    value: "0"
+  - name: compliance-limit
+    value: "50"
+  - name: compliance-ticker
+    value: PTT
+  - name: compliance-side
+    value: BUY
+  - name: compliance-quantity
+    value: "100"
+  - name: compliance-price
+    value: "32.50"
+  - name: compliance-currency
+    value: THB
+  - name: compliance-exchange
+    value: SET
+  - name: compliance-override-reason
+    value: Approved by compliance officer after manual review.
+  - name: compliance-approved-by
+    value: ""

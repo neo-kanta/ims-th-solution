@@ -236,7 +236,7 @@ func (r *PostgresSessionRepository) RevokeOldestForUser(ctx context.Context, use
 // UpdateLastActivity updates the last_activity_at timestamp for a session.
 func (r *PostgresSessionRepository) UpdateLastActivity(ctx context.Context, sessionID uuid.UUID) error {
 	_, err := r.pool.Exec(ctx,
-		`UPDATE iam_sessions SET last_activity_at = NOW() WHERE id = $1 AND is_revoked = false`,
+		`UPDATE iam_sessions SET last_activity_at = NOW() WHERE id = $1 AND is_revoked = false AND (last_activity_at IS NULL OR last_activity_at < NOW() - interval '60 seconds')`,
 		sessionID,
 	)
 	if err != nil {

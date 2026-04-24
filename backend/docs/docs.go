@@ -9,7 +9,15 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "termsOfService": "https://example.com/terms",
+        "contact": {
+            "name": "Support Team",
+            "email": "support@example.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -22,7 +30,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Query paginated IAM audit events with filters",
+                "description": "Query paginated audit events with filters",
                 "produces": [
                     "application/json"
                 ],
@@ -84,7 +92,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.AuditListResponse"
+                            "$ref": "#/definitions/AuditListResponse"
                         }
                     },
                     "401": {
@@ -194,6 +202,75 @@ const docTemplate = `{
             }
         },
         "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Paginated user list for admin management with filtering",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List Users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search by username, display name, or email",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by active status (true/false)",
+                        "name": "is_active",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by locked status (true/false)",
+                        "name": "is_locked",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/AdminUserListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -218,7 +295,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CreateUserRequest"
+                            "$ref": "#/definitions/CreateUserRequest"
                         }
                     }
                 ],
@@ -448,7 +525,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.AdminResetPasswordRequest"
+                            "$ref": "#/definitions/AdminResetPasswordRequest"
                         }
                     }
                 ],
@@ -510,7 +587,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/response.SessionResponse"
+                                "$ref": "#/definitions/SessionResponse"
                             }
                         }
                     },
@@ -616,7 +693,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.ChangePasswordRequest"
+                            "$ref": "#/definitions/ChangePasswordRequest"
                         }
                     }
                 ],
@@ -661,7 +738,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.LoginRequest"
+                            "$ref": "#/definitions/LoginRequest"
                         }
                     }
                 ],
@@ -669,7 +746,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.LoginResponse"
+                            "$ref": "#/definitions/LoginResponse"
                         }
                     },
                     "400": {
@@ -721,7 +798,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.LogoutRequest"
+                            "$ref": "#/definitions/LogoutRequest"
                         }
                     }
                 ],
@@ -794,11 +871,50 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.MeResponse"
+                            "$ref": "#/definitions/MeResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/dev/totp-code": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Development/test-only helper to retrieve the current TOTP code for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MFA"
+                ],
+                "summary": "Get Current TOTP Code (Dev Only)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MFADevTOTPCodeResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -832,7 +948,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.MFADisableRequest"
+                            "$ref": "#/definitions/MFADisableRequest"
                         }
                     }
                 ],
@@ -876,7 +992,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.MFAEnrollResponse"
+                            "$ref": "#/definitions/MFAEnrollResponse"
                         }
                     },
                     "401": {
@@ -908,7 +1024,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.MFAStatusResponse"
+                            "$ref": "#/definitions/MFAStatusResponse"
                         }
                     },
                     "401": {
@@ -946,7 +1062,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.MFAVerifyRequest"
+                            "$ref": "#/definitions/MFAVerifyRequest"
                         }
                     }
                 ],
@@ -991,7 +1107,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.RefreshRequest"
+                            "$ref": "#/definitions/RefreshRequest"
                         }
                     }
                 ],
@@ -999,7 +1115,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/response.RefreshResponse"
+                            "$ref": "#/definitions/RefreshResponse"
                         }
                     },
                     "400": {
@@ -1047,7 +1163,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/response.SessionResponse"
+                                "$ref": "#/definitions/SessionResponse"
                             }
                         }
                     },
@@ -1112,10 +1228,615 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/etl/feeds": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List configured ETL feed sources",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "List ETL Feeds",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/feeds/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an ETL feed source configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "Update ETL Feed",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Feed UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Feed update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateFeedRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a CSV file for ETL import processing",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "Import ETL File",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Import file (CSV)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Import target",
+                        "name": "import_target",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "business_date",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/jobs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List ETL jobs with optional filters for job type, business date, and status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "List ETL Jobs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Job status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page index (default 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ListJobsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/jobs/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Manually trigger an ETL job for a business date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "Trigger ETL Job",
+                "parameters": [
+                    {
+                        "description": "Job trigger payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TriggerJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/jobs/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a single ETL job with associated file import records when applicable",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "Get ETL Job Detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Job UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JobDetailResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/market-prices": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List market price snapshots with optional ticker and date filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "List Market Prices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Ticker",
+                        "name": "ticker",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page index (default 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MarketPriceListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/etl/nav-snapshots": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List NAV snapshots with optional fund code and date filters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ETL"
+                ],
+                "summary": "List NAV Snapshots",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund code",
+                        "name": "fund_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page index (default 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/NAVSnapshotListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check backend, database, and Redis health status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health Check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/HealthResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/HealthResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "request.AdminResetPasswordRequest": {
+        "AdminResetPasswordRequest": {
             "type": "object",
             "required": [
                 "new_password"
@@ -1127,117 +1848,77 @@ const docTemplate = `{
                 }
             }
         },
-        "request.ChangePasswordRequest": {
+        "AdminUserListResponse": {
             "type": "object",
-            "required": [
-                "new_password",
-                "old_password"
-            ],
             "properties": {
-                "new_password": {
-                    "type": "string"
+                "limit": {
+                    "type": "integer"
                 },
-                "old_password": {
-                    "type": "string"
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AdminUserResponse"
+                    }
                 }
             }
         },
-        "request.CreateUserRequest": {
+        "AdminUserResponse": {
             "type": "object",
-            "required": [
-                "display_name",
-                "email",
-                "password",
-                "username"
-            ],
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "display_name": {
                     "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
-                "password": {
-                    "type": "string",
-                    "minLength": 8
+                "failed_login_attempts": {
+                    "type": "integer"
+                },
+                "force_password_change": {
+                    "type": "boolean"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_locked": {
+                    "type": "boolean"
+                },
+                "last_login_at": {
+                    "type": "string"
+                },
+                "locked_until": {
+                    "type": "string"
+                },
+                "password_changed_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 },
                 "username": {
-                    "type": "string",
-                    "minLength": 3
-                }
-            }
-        },
-        "request.LoginRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string",
-                    "minLength": 8
-                },
-                "recovery_code": {
-                    "description": "MFA recovery code (alternative)",
-                    "type": "string"
-                },
-                "totp_code": {
-                    "description": "MFA TOTP code (if MFA enrolled)",
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3
-                }
-            }
-        },
-        "request.LogoutRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
                     "type": "string"
                 }
             }
         },
-        "request.MFADisableRequest": {
-            "type": "object",
-            "required": [
-                "totp_code"
-            ],
-            "properties": {
-                "totp_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.MFAVerifyRequest": {
-            "type": "object",
-            "required": [
-                "totp_code"
-            ],
-            "properties": {
-                "totp_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.RefreshRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "response.AuditEventResponse": {
+        "AuditEventResponse": {
             "type": "object",
             "properties": {
                 "actor_id": {
@@ -1270,13 +1951,13 @@ const docTemplate = `{
                 }
             }
         },
-        "response.AuditListResponse": {
+        "AuditListResponse": {
             "type": "object",
             "properties": {
                 "events": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/response.AuditEventResponse"
+                        "$ref": "#/definitions/AuditEventResponse"
                     }
                 },
                 "limit": {
@@ -1290,7 +1971,210 @@ const docTemplate = `{
                 }
             }
         },
-        "response.LoginResponse": {
+        "ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreateUserRequest": {
+            "type": "object",
+            "required": [
+                "display_name",
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string",
+                    "minLength": 3
+                }
+            }
+        },
+        "ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {},
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "FileImportDTO": {
+            "type": "object",
+            "properties": {
+                "error_detail": {
+                    "type": "string"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "import_target": {
+                    "type": "string"
+                },
+                "inserted": {
+                    "type": "integer"
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "total_rows": {
+                    "type": "integer"
+                }
+            }
+        },
+        "HealthResponse": {
+            "type": "object",
+            "properties": {
+                "database": {
+                    "type": "string"
+                },
+                "redis": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "JobDTO": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration_ms": {
+                    "type": "integer"
+                },
+                "error_summary": {
+                    "type": "string"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "job_type": {
+                    "type": "string"
+                },
+                "records_fail": {
+                    "type": "integer"
+                },
+                "records_in": {
+                    "type": "integer"
+                },
+                "records_ok": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "triggered_by": {
+                    "type": "string"
+                }
+            }
+        },
+        "JobDetailResult": {
+            "type": "object",
+            "properties": {
+                "file_imports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FileImportDTO"
+                    }
+                },
+                "job": {
+                    "$ref": "#/definitions/JobDTO"
+                }
+            }
+        },
+        "ListJobsResult": {
+            "type": "object",
+            "properties": {
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/JobDTO"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "mfa_token": {
+                    "description": "MFA challenge token returned after password step",
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "recovery_code": {
+                    "description": "MFA recovery code (alternative)",
+                    "type": "string"
+                },
+                "totp_code": {
+                    "description": "MFA TOTP code (if MFA enrolled)",
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
+                }
+            }
+        },
+        "LoginResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -1302,6 +2186,9 @@ const docTemplate = `{
                 "force_password_change": {
                     "type": "boolean"
                 },
+                "mfa_enrollment_required": {
+                    "type": "boolean"
+                },
                 "mfa_required": {
                     "description": "MFA challenge response",
                     "type": "boolean"
@@ -1310,7 +2197,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "permissions": {
-                    "$ref": "#/definitions/response.PermissionsResp"
+                    "$ref": "#/definitions/PermissionsResp"
                 },
                 "refresh_token": {
                     "type": "string"
@@ -1318,12 +2205,45 @@ const docTemplate = `{
                 "refresh_token_expires_at": {
                     "type": "string"
                 },
+                "restricted_session": {
+                    "type": "boolean"
+                },
                 "user": {
-                    "$ref": "#/definitions/response.UserResponse"
+                    "$ref": "#/definitions/UserResponse"
                 }
             }
         },
-        "response.MFAEnrollResponse": {
+        "LogoutRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "MFADevTOTPCodeResponse": {
+            "type": "object",
+            "properties": {
+                "totp_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "MFADisableRequest": {
+            "type": "object",
+            "required": [
+                "totp_code"
+            ],
+            "properties": {
+                "totp_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "MFAEnrollResponse": {
             "type": "object",
             "properties": {
                 "provisioning_uri": {
@@ -1337,7 +2257,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.MFAStatusResponse": {
+        "MFAStatusResponse": {
             "type": "object",
             "properties": {
                 "enabled": {
@@ -1351,18 +2271,127 @@ const docTemplate = `{
                 }
             }
         },
-        "response.MeResponse": {
+        "MFAVerifyRequest": {
             "type": "object",
+            "required": [
+                "totp_code"
+            ],
             "properties": {
-                "permissions": {
-                    "$ref": "#/definitions/response.PermissionsResp"
-                },
-                "user": {
-                    "$ref": "#/definitions/response.UserResponse"
+                "totp_code": {
+                    "type": "string"
                 }
             }
         },
-        "response.PermissionsResp": {
+        "MarketPriceDTO": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fetched_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "ticker": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarketPriceListResult": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "prices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MarketPriceDTO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "MeResponse": {
+            "type": "object",
+            "properties": {
+                "permissions": {
+                    "$ref": "#/definitions/PermissionsResp"
+                },
+                "user": {
+                    "$ref": "#/definitions/UserResponse"
+                }
+            }
+        },
+        "NAVSnapshotDTO": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fetched_at": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "nav_value": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                }
+            }
+        },
+        "NAVSnapshotListResult": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "snapshots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/NAVSnapshotDTO"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PermissionsResp": {
             "type": "object",
             "properties": {
                 "contracts": {
@@ -1379,7 +2408,18 @@ const docTemplate = `{
                 }
             }
         },
-        "response.RefreshResponse": {
+        "RefreshRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefreshResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -1396,7 +2436,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.SessionResponse": {
+        "SessionResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -1419,7 +2459,42 @@ const docTemplate = `{
                 }
             }
         },
-        "response.UserResponse": {
+        "TriggerJobRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "job_type"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "force": {
+                    "type": "boolean"
+                },
+                "job_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateFeedRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserResponse": {
             "type": "object",
             "properties": {
                 "display_name": {
@@ -1445,6 +2520,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
+            "description": "JWT Bearer Token. Format: \"Bearer \u003ctoken\u003e\"",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -1454,12 +2530,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.0.0",
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
-	Schemes:          []string{},
+	Schemes:          []string{"http", "https"},
 	Title:            "IMS Thailand API",
-	Description:      "This is the API server for the IMS Thailand solution.",
+	Description:      "Enterprise Investment Management System API with financial-grade security",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

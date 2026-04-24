@@ -6,22 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// MFA audit event type constants.
-const (
-	AuditMFAEnrolled        = "MFA_ENROLLED"
-	AuditMFAVerified        = "MFA_VERIFIED"
-	AuditMFAEnabled         = "MFA_ENABLED"
-	AuditMFADisabled        = "MFA_DISABLED"
-	AuditMFAChallengeOK     = "MFA_CHALLENGE_SUCCESS"
-	AuditMFAChallengeFail   = "MFA_CHALLENGE_FAILURE"
-	AuditMFARecoveryUsed    = "MFA_RECOVERY_CODE_USED"
-	AuditSessionIdleTimeout = "SESSION_IDLE_TIMEOUT"
-	AuditSessionAbsTimeout  = "SESSION_ABSOLUTE_TIMEOUT"
-	AuditSessionConcurrent  = "SESSION_CONCURRENT_EVICTED"
-	AuditRateLimitBlocked   = "RATE_LIMIT_BLOCKED"
-	AuditPasswordExpired    = "PASSWORD_EXPIRED"
-)
-
 // MFAEnrollment represents a user's MFA enrollment (currently TOTP only).
 type MFAEnrollment struct {
 	ID              uuid.UUID

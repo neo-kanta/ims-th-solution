@@ -83,12 +83,11 @@ docker-build: ## Build Docker images
 	cd infra && docker compose build
 
 swagger: ## Generate backend Swagger docs
-	cd backend && swag init -g main.go -d cmd/server,internal/iam -o docs --parseInternal --useStructName
+	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go -d . -o docs --parseInternal --useStructName
 
 # =============================
 # Help
 # =============================
-
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'

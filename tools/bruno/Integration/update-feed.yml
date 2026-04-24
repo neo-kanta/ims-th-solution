@@ -1,0 +1,43 @@
+info:
+  name: update-feed
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{integration-etl}}/feeds/:id"
+  params:
+    - name: id
+      value: "{{feed_id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated feed name",
+        "is_active": true,
+        "config": "eyJhcGlfa2V5IjoidXBkYXRlLW1lIn0="
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("feed_id", data.id, { persist: true });
+        }
+
+docs: |-
+  `config` is currently decoded by the API as a byte slice, so send it as a base64-encoded JSON string.
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

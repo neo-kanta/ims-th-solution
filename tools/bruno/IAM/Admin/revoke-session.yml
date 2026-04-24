@@ -8,9 +8,11 @@ http:
   url: "{{iam-admin}}/sessions/:id/revoke"
   params:
     - name: id
-      value: a0000000-0000-0000-0000-000000000001
+      value: "{{session_id}}"
       type: path
-  auth: inherit
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true

@@ -89,6 +89,19 @@ func (s *TOTPService) ValidateCode(encryptedSecret string, code string) (bool, e
 	return false, nil
 }
 
+// GenerateCurrentCode returns the current TOTP code for a stored encrypted secret.
+// This is intended for development/test tooling and must not be exposed in production flows.
+func (s *TOTPService) GenerateCurrentCode(encryptedSecret string) (string, error) {
+	secret, err := s.decrypt(encryptedSecret)
+	if err != nil {
+		return "", fmt.Errorf("decrypting TOTP secret: %w", err)
+	}
+
+	now := time.Now().UTC()
+	counter := uint64(now.Unix()) / uint64(totpPeriod)
+	return generateTOTP(secret, counter), nil
+}
+
 // GenerateRecoveryCodes creates a set of single-use recovery codes.
 // Returns the plaintext codes (to show the user) and hashed codes (for storage).
 func (s *TOTPService) GenerateRecoveryCodes(userID uuid.UUID) (plaintextCodes []string, hashedCodes []entity.MFARecoveryCode, err error) {

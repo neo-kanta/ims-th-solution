@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  request.AdminResetPasswordRequest:
+  AdminResetPasswordRequest:
     properties:
       new_password:
         minLength: 8
@@ -8,82 +8,53 @@ definitions:
     required:
     - new_password
     type: object
-  request.ChangePasswordRequest:
+  AdminUserListResponse:
     properties:
-      new_password:
-        type: string
-      old_password:
-        type: string
-    required:
-    - new_password
-    - old_password
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/AdminUserResponse'
+        type: array
     type: object
-  request.CreateUserRequest:
+  AdminUserResponse:
     properties:
+      created_at:
+        type: string
       display_name:
         type: string
       email:
         type: string
-      password:
-        minLength: 8
+      failed_login_attempts:
+        type: integer
+      force_password_change:
+        type: boolean
+      groups:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_locked:
+        type: boolean
+      last_login_at:
+        type: string
+      locked_until:
+        type: string
+      password_changed_at:
+        type: string
+      updated_at:
         type: string
       username:
-        minLength: 3
         type: string
-    required:
-    - display_name
-    - email
-    - password
-    - username
     type: object
-  request.LoginRequest:
-    properties:
-      password:
-        minLength: 8
-        type: string
-      recovery_code:
-        description: MFA recovery code (alternative)
-        type: string
-      totp_code:
-        description: MFA TOTP code (if MFA enrolled)
-        type: string
-      username:
-        maxLength: 100
-        minLength: 3
-        type: string
-    required:
-    - password
-    - username
-    type: object
-  request.LogoutRequest:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  request.MFADisableRequest:
-    properties:
-      totp_code:
-        type: string
-    required:
-    - totp_code
-    type: object
-  request.MFAVerifyRequest:
-    properties:
-      totp_code:
-        type: string
-    required:
-    - totp_code
-    type: object
-  request.RefreshRequest:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  response.AuditEventResponse:
+  AuditEventResponse:
     properties:
       actor_id:
         type: string
@@ -105,11 +76,11 @@ definitions:
       user_agent:
         type: string
     type: object
-  response.AuditListResponse:
+  AuditListResponse:
     properties:
       events:
         items:
-          $ref: '#/definitions/response.AuditEventResponse'
+          $ref: '#/definitions/AuditEventResponse'
         type: array
       limit:
         type: integer
@@ -118,7 +89,144 @@ definitions:
       total:
         type: integer
     type: object
-  response.LoginResponse:
+  ChangePasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  CreateUserRequest:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        minLength: 3
+        type: string
+    required:
+    - display_name
+    - email
+    - password
+    - username
+    type: object
+  ErrorResponse:
+    properties:
+      code:
+        type: string
+      details: {}
+      error:
+        type: string
+    type: object
+  FileImportDTO:
+    properties:
+      error_detail:
+        type: string
+      failed:
+        type: integer
+      file_name:
+        type: string
+      id:
+        type: string
+      import_target:
+        type: string
+      inserted:
+        type: integer
+      skipped:
+        type: integer
+      total_rows:
+        type: integer
+    type: object
+  HealthResponse:
+    properties:
+      database:
+        type: string
+      redis:
+        type: string
+      status:
+        type: string
+    type: object
+  JobDTO:
+    properties:
+      business_date:
+        type: string
+      created_at:
+        type: string
+      duration_ms:
+        type: integer
+      error_summary:
+        type: string
+      finished_at:
+        type: string
+      id:
+        type: string
+      job_type:
+        type: string
+      records_fail:
+        type: integer
+      records_in:
+        type: integer
+      records_ok:
+        type: integer
+      started_at:
+        type: string
+      status:
+        type: string
+      triggered_by:
+        type: string
+    type: object
+  JobDetailResult:
+    properties:
+      file_imports:
+        items:
+          $ref: '#/definitions/FileImportDTO'
+        type: array
+      job:
+        $ref: '#/definitions/JobDTO'
+    type: object
+  ListJobsResult:
+    properties:
+      jobs:
+        items:
+          $ref: '#/definitions/JobDTO'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  LoginRequest:
+    properties:
+      mfa_token:
+        description: MFA challenge token returned after password step
+        type: string
+      password:
+        minLength: 8
+        type: string
+      recovery_code:
+        description: MFA recovery code (alternative)
+        type: string
+      totp_code:
+        description: MFA TOTP code (if MFA enrolled)
+        type: string
+      username:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  LoginResponse:
     properties:
       access_token:
         type: string
@@ -126,21 +234,44 @@ definitions:
         type: string
       force_password_change:
         type: boolean
+      mfa_enrollment_required:
+        type: boolean
       mfa_required:
         description: MFA challenge response
         type: boolean
       mfa_token:
         type: string
       permissions:
-        $ref: '#/definitions/response.PermissionsResp'
+        $ref: '#/definitions/PermissionsResp'
       refresh_token:
         type: string
       refresh_token_expires_at:
         type: string
+      restricted_session:
+        type: boolean
       user:
-        $ref: '#/definitions/response.UserResponse'
+        $ref: '#/definitions/UserResponse'
     type: object
-  response.MFAEnrollResponse:
+  LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  MFADevTOTPCodeResponse:
+    properties:
+      totp_code:
+        type: string
+    type: object
+  MFADisableRequest:
+    properties:
+      totp_code:
+        type: string
+    required:
+    - totp_code
+    type: object
+  MFAEnrollResponse:
     properties:
       provisioning_uri:
         type: string
@@ -149,7 +280,7 @@ definitions:
           type: string
         type: array
     type: object
-  response.MFAStatusResponse:
+  MFAStatusResponse:
     properties:
       enabled:
         type: boolean
@@ -158,14 +289,85 @@ definitions:
       recovery_codes_left:
         type: integer
     type: object
-  response.MeResponse:
+  MFAVerifyRequest:
+    properties:
+      totp_code:
+        type: string
+    required:
+    - totp_code
+    type: object
+  MarketPriceDTO:
+    properties:
+      business_date:
+        type: string
+      currency:
+        type: string
+      fetched_at:
+        type: string
+      id:
+        type: string
+      is_stale:
+        type: boolean
+      price:
+        type: string
+      provider:
+        type: string
+      ticker:
+        type: string
+    type: object
+  MarketPriceListResult:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      prices:
+        items:
+          $ref: '#/definitions/MarketPriceDTO'
+        type: array
+      total:
+        type: integer
+    type: object
+  MeResponse:
     properties:
       permissions:
-        $ref: '#/definitions/response.PermissionsResp'
+        $ref: '#/definitions/PermissionsResp'
       user:
-        $ref: '#/definitions/response.UserResponse'
+        $ref: '#/definitions/UserResponse'
     type: object
-  response.PermissionsResp:
+  NAVSnapshotDTO:
+    properties:
+      business_date:
+        type: string
+      currency:
+        type: string
+      fetched_at:
+        type: string
+      fund_code:
+        type: string
+      id:
+        type: string
+      is_stale:
+        type: boolean
+      nav_value:
+        type: string
+      provider:
+        type: string
+    type: object
+  NAVSnapshotListResult:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      snapshots:
+        items:
+          $ref: '#/definitions/NAVSnapshotDTO'
+        type: array
+      total:
+        type: integer
+    type: object
+  PermissionsResp:
     properties:
       contracts:
         items:
@@ -176,7 +378,14 @@ definitions:
           type: string
         type: array
     type: object
-  response.RefreshResponse:
+  RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  RefreshResponse:
     properties:
       access_token:
         type: string
@@ -187,7 +396,7 @@ definitions:
       refresh_token_expires_at:
         type: string
     type: object
-  response.SessionResponse:
+  SessionResponse:
     properties:
       created_at:
         type: string
@@ -202,7 +411,30 @@ definitions:
       user_agent:
         type: string
     type: object
-  response.UserResponse:
+  TriggerJobRequest:
+    properties:
+      business_date:
+        type: string
+      force:
+        type: boolean
+      job_type:
+        type: string
+    required:
+    - business_date
+    - job_type
+    type: object
+  UpdateFeedRequest:
+    properties:
+      config:
+        items:
+          type: integer
+        type: array
+      is_active:
+        type: boolean
+      name:
+        type: string
+    type: object
+  UserResponse:
     properties:
       display_name:
         type: string
@@ -219,14 +451,20 @@ definitions:
     type: object
 host: localhost:8080
 info:
-  contact: {}
-  description: This is the API server for the IMS Thailand solution.
+  contact:
+    email: support@example.com
+    name: Support Team
+  description: Enterprise Investment Management System API with financial-grade security
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://example.com/terms
   title: IMS Thailand API
-  version: "1.0"
+  version: 1.0.0
 paths:
   /admin/audit:
     get:
-      description: Query paginated IAM audit events with filters
+      description: Query paginated audit events with filters
       parameters:
       - description: Actor UUID
         in: query
@@ -266,7 +504,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.AuditListResponse'
+            $ref: '#/definitions/AuditListResponse'
         "401":
           description: Unauthorized
           schema:
@@ -339,6 +577,51 @@ paths:
       tags:
       - Admin
   /admin/users:
+    get:
+      description: Paginated user list for admin management with filtering
+      parameters:
+      - description: Search by username, display name, or email
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status (true/false)
+        in: query
+        name: is_active
+        type: string
+      - description: Filter by locked status (true/false)
+        in: query
+        name: is_locked
+        type: string
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AdminUserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Users
+      tags:
+      - Admin
     post:
       consumes:
       - application/json
@@ -349,7 +632,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CreateUserRequest'
+          $ref: '#/definitions/CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -502,7 +785,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.AdminResetPasswordRequest'
+          $ref: '#/definitions/AdminResetPasswordRequest'
       produces:
       - application/json
       responses:
@@ -544,7 +827,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/response.SessionResponse'
+              $ref: '#/definitions/SessionResponse'
             type: array
         "400":
           description: Bad Request
@@ -612,7 +895,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.ChangePasswordRequest'
+          $ref: '#/definitions/ChangePasswordRequest'
       produces:
       - application/json
       responses:
@@ -645,14 +928,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.LoginRequest'
+          $ref: '#/definitions/LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.LoginResponse'
+            $ref: '#/definitions/LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -682,7 +965,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.LogoutRequest'
+          $ref: '#/definitions/LogoutRequest'
       produces:
       - application/json
       responses:
@@ -731,7 +1014,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.MeResponse'
+            $ref: '#/definitions/MeResponse'
         "401":
           description: Unauthorized
           schema:
@@ -742,6 +1025,32 @@ paths:
       summary: Get Current User
       tags:
       - Auth
+  /auth/mfa/dev/totp-code:
+    get:
+      description: Development/test-only helper to retrieve the current TOTP code
+        for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MFADevTOTPCodeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get Current TOTP Code (Dev Only)
+      tags:
+      - MFA
   /auth/mfa/disable:
     post:
       consumes:
@@ -753,7 +1062,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.MFADisableRequest'
+          $ref: '#/definitions/MFADisableRequest'
       produces:
       - application/json
       responses:
@@ -783,7 +1092,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.MFAEnrollResponse'
+            $ref: '#/definitions/MFAEnrollResponse'
         "401":
           description: Unauthorized
           schema:
@@ -803,7 +1112,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.MFAStatusResponse'
+            $ref: '#/definitions/MFAStatusResponse'
         "401":
           description: Unauthorized
           schema:
@@ -825,7 +1134,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.MFAVerifyRequest'
+          $ref: '#/definitions/MFAVerifyRequest'
       produces:
       - application/json
       responses:
@@ -858,14 +1167,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.RefreshRequest'
+          $ref: '#/definitions/RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.RefreshResponse'
+            $ref: '#/definitions/RefreshResponse'
         "400":
           description: Bad Request
           schema:
@@ -894,7 +1203,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/response.SessionResponse'
+              $ref: '#/definitions/SessionResponse'
             type: array
         "401":
           description: Unauthorized
@@ -940,8 +1249,405 @@ paths:
       summary: Revoke a Session
       tags:
       - Sessions
+  /etl/feeds:
+    get:
+      description: List configured ETL feed sources
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List ETL Feeds
+      tags:
+      - ETL
+  /etl/feeds/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an ETL feed source configuration
+      parameters:
+      - description: Feed UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Feed update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateFeedRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update ETL Feed
+      tags:
+      - ETL
+  /etl/import:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a CSV file for ETL import processing
+      parameters:
+      - description: Import file (CSV)
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Import target
+        in: formData
+        name: import_target
+        required: true
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: formData
+        name: business_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Import ETL File
+      tags:
+      - ETL
+  /etl/jobs:
+    get:
+      description: List ETL jobs with optional filters for job type, business date,
+        and status
+      parameters:
+      - description: Job type
+        in: query
+        name: type
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: date
+        type: string
+      - description: Job status
+        in: query
+        name: status
+        type: string
+      - description: Page index (default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ListJobsResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List ETL Jobs
+      tags:
+      - ETL
+  /etl/jobs/{id}:
+    get:
+      description: Retrieve a single ETL job with associated file import records when
+        applicable
+      parameters:
+      - description: Job UUID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JobDetailResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get ETL Job Detail
+      tags:
+      - ETL
+  /etl/jobs/trigger:
+    post:
+      consumes:
+      - application/json
+      description: Manually trigger an ETL job for a business date
+      parameters:
+      - description: Job trigger payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/TriggerJobRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Trigger ETL Job
+      tags:
+      - ETL
+  /etl/market-prices:
+    get:
+      description: List market price snapshots with optional ticker and date filters
+      parameters:
+      - description: Ticker
+        in: query
+        name: ticker
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: date
+        type: string
+      - description: Start business date (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: End business date (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Page index (default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MarketPriceListResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Market Prices
+      tags:
+      - ETL
+  /etl/nav-snapshots:
+    get:
+      description: List NAV snapshots with optional fund code and date filters
+      parameters:
+      - description: Fund code
+        in: query
+        name: fund_code
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: date
+        type: string
+      - description: Start business date (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: End business date (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Page index (default 0)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/NAVSnapshotListResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List NAV Snapshots
+      tags:
+      - ETL
+  /health:
+    get:
+      description: Check backend, database, and Redis health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/HealthResponse'
+      summary: Health Check
+      tags:
+      - System
+schemes:
+- http
+- https
 securityDefinitions:
   BearerAuth:
+    description: 'JWT Bearer Token. Format: "Bearer <token>"'
     in: header
     name: Authorization
     type: apiKey

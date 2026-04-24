@@ -12,156 +12,208 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	iammod "github.com/neo-kanta/ims-th-solution/backend/internal/iam"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/audit"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/iam"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/logging"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 
-	httpSwagger "github.com/swaggo/http-swagger"
 	_ "github.com/neo-kanta/ims-th-solution/backend/docs"
 )
 
 // @title           IMS Thailand API
-// @version         1.0
-// @description     This is the API server for the IMS Thailand solution.
+// @version         1.0.0
+// @description     Enterprise Investment Management System API with financial-grade security
+// @termsOfService  https://example.com/terms
+// @contact.name    Support Team
+// @contact.email   support@example.com
+// @license.name    MIT
+// @license.url     https://opensource.org/licenses/MIT
 // @host            localhost:8080
-// @BasePath        /api/v1
+// @basePath        /api/v1
+// @schemes         http https
+//
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
-
+// @description JWT Bearer Token. Format: "Bearer <token>"
 func main() {
-	// 1. Load configuration
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("failed to load config", "error", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
 		os.Exit(1)
 	}
 
-	// 2. Create structured logger
 	logger := logging.NewLogger(cfg.LogLevel)
 	slog.SetDefault(logger)
 
-	logger.Info("starting IMS backend",
-		"env", cfg.Env,
-		"port", cfg.Port,
-	)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// 3. Connect to database
-	ctx := context.Background()
 	pool, err := database.NewPool(ctx, cfg)
 	if err != nil {
-		logger.Error("failed to connect to database", "error", err)
+		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
 	}
 	defer pool.Close()
 
-	logger.Info("database connected",
-		"host", cfg.DBHost,
-		"database", cfg.DBName,
-	)
-
-	// 3b. Run migrations
-	migrationsPath := os.Getenv("MIGRATIONS_PATH")
-	if migrationsPath == "" {
-		migrationsPath = "/app/migrations"
-	}
-	if err := database.RunMigrations(cfg.MigrationDSN(), migrationsPath); err != nil {
-		logger.Error("failed to run database migrations", "error", err)
-		os.Exit(1)
-	}
 	if err := database.EnsureSecureBootstrap(ctx, pool, cfg.Env); err != nil {
-		logger.Error("secure bootstrap guard failed", "error", err)
+		slog.Error("Secure bootstrap check failed", "error", err)
 		os.Exit(1)
 	}
 
-	// 4. Wire modules
-	iamModule, err := iammod.NewModule(pool, cfg)
+	var redisClient *redis.Client
+	if cfg.RateLimitBackend == "redis" {
+		rc, err := database.NewRedisClient(ctx, cfg)
+		if err != nil {
+			slog.Error("Failed to connect to Redis (required for RATE_LIMIT_BACKEND=redis)", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("Redis Action...")
+		redisClient = rc
+		defer redisClient.Close()
+	}
+
+	auditModule := audit.NewModule(pool)
+
+	iamModule, err := iam.NewModule(pool, cfg, redisClient, auditModule.Recorder(), auditModule)
 	if err != nil {
-		logger.Error("failed to initialize IAM module", "error", err)
+		slog.Error("Failed to initialize IAM module", "error", err)
 		os.Exit(1)
 	}
 
-	// 5. Build router
+	// Module
+	complianceModule := compliance.NewModule(pool, iamModule)
+	// Workflow consumes the compliance post-trade verifier via pkg/contract,
+	// so TRANSACTION_CLOSED transitions refuse while BLOCK-level breaches
+	// remain open.
+	workflowModule := workflow.NewModule(pool, iamModule, complianceModule.ContractAdapter())
+	// Investment consumes the compliance pre-trade checker via pkg/contract.
+	investmentModule := investment.NewModule(complianceModule.ContractAdapter())
+	healthHandler := NewHealthHandler(pool, redisClient)
+
 	r := chi.NewRouter()
 
-	// Global middleware stack
 	r.Use(chimw.RequestID)
-	r.Use(chimw.RealIP)
 	r.Use(middleware.Logger(logger))
 	r.Use(middleware.Recovery(logger))
-	r.Use(middleware.NewCORS())
+	r.Use(middleware.NewCORS(cfg.CORSAllowedOrigins))
 	r.Use(middleware.SecureHeaders)
+	r.Use(iamModule.GlobalRateLimitMiddleware())
 
-	// Health check (no auth required)
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		if err := database.HealthCheck(r.Context(), pool); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte(`{"status":"unhealthy","error":"database connection failed"}`))
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"healthy"}`))
-	})
+	r.Get("/health", healthHandler.Get)
 
-	// Build key provider for JWT auth middleware (supports rotation)
-	keyProvider := middleware.NewKeyProvider(cfg.JWTKeyID, cfg.JWTSecret, cfg.JWTSecretPrevious)
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	))
 
-	// API v1 routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public routes (no auth required)
-		iamModule.RegisterPublicRoutes(r)
-
-		// Swagger UI
-		r.Get("/swagger/*", httpSwagger.Handler(
-			httpSwagger.URL("/api/v1/swagger/doc.json"),
-		))
-
-		// Protected routes (auth required)
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(keyProvider, iamModule))
-
-			iamModule.RegisterProtectedRoutes(r)
-
-			// TODO: Mount other module protected routes
-			// workflowModule.RegisterRoutes(r)
-			// investmentModule.RegisterRoutes(r)
-			// permissionsModule.RegisterRoutes(r)
-		})
+		iamModule.SetupRoutes(r)
+		complianceModule.RegisterRoutes(r)
+		workflowModule.RegisterRoutes(r)
+		investmentModule.RegisterRoutes(r)
 	})
 
-	// 6. Start server with graceful shutdown
-	srv := &http.Server{
-		Addr:         ":" + cfg.Port,
+	addr := fmt.Sprintf(":%s", cfg.Port)
+	slog.Info("Starting server", "address", addr)
+
+	server := &http.Server{
+		Addr:         addr,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
-
 	go func() {
-		logger.Info("server listening", "addr", srv.Addr)
-		logger.Info("Swagger UI available at", "url", fmt.Sprintf("http://localhost:%s/api/v1/swagger/index.html", cfg.Port))
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("server error", "error", err)
-			os.Exit(1)
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+		<-sigint
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			slog.Error("Server shutdown error", "error", err)
 		}
 	}()
 
-	<-done
-	logger.Info("shutting down server...")
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Error("Server error", "error", err)
+		os.Exit(1)
+	}
+}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// HealthHandler handles system-level utility endpoints.
+type HealthHandler struct {
+	pool        *pgxpool.Pool
+	redisClient *redis.Client
+}
 
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		logger.Error("server forced shutdown", "error", err)
+type HealthResponse struct {
+	Status   string `json:"status"`
+	Database string `json:"database"`
+	Redis    string `json:"redis"`
+}
+
+// NewHealthHandler creates a new HealthHandler.
+func NewHealthHandler(pool *pgxpool.Pool, redisClient *redis.Client) *HealthHandler {
+	return &HealthHandler{
+		pool:        pool,
+		redisClient: redisClient,
+	}
+}
+
+// Get handles GET /health.
+// @Summary Health Check
+// @Description Check backend, database, and Redis health status
+// @Tags System
+// @Produce json
+// @Success 200 {object} HealthResponse
+// @Success 503 {object} HealthResponse
+// @Router /health [get]
+func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	dbErr := database.HealthCheck(r.Context(), h.pool)
+	var redisStatus string
+	if h.redisClient != nil {
+		if err := database.RedisHealthCheck(r.Context(), h.redisClient); err != nil {
+			redisStatus = "unhealthy"
+		} else {
+			redisStatus = "ok"
+		}
+	} else {
+		redisStatus = "not_configured"
 	}
 
-	logger.Info("server stopped")
+	resp := HealthResponse{
+		Status:   "ok",
+		Database: boolToHealth(dbErr == nil),
+		Redis:    redisStatus,
+	}
+
+	if dbErr != nil || redisStatus == "unhealthy" {
+		resp.Status = "unhealthy"
+		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	fmt.Fprintf(w, `{"status":"%s","database":"%s","redis":"%s"}`, resp.Status, resp.Database, resp.Redis)
+}
+
+func boolToHealth(ok bool) string {
+	if ok {
+		return "ok"
+	}
+	return "unhealthy"
 }

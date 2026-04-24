@@ -1,0 +1,28 @@
+info:
+  name: override-breach
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{compliance-base-url}}/breaches/:breachID/override"
+  params:
+    - name: breachID
+      value: "{{compliance-breach-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "{{compliance-override-reason}}",
+        "approved_by": "{{compliance-approved-by}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

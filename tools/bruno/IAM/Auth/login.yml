@@ -10,10 +10,11 @@ http:
     type: json
     data: |-
       {
-        "username": "admin",
+        "mfa_token": "",
         "password": "admin123",
+        "recovery_code": "",
         "totp_code": "",
-        "recovery_code": ""
+        "username": "admin"
       }
 
       // development account
@@ -26,6 +27,10 @@ runtime:
       code: |-
         const body = res.getBody();
         const data = body?.data || {};
+
+        if (data.mfa_token) {
+          bru.setEnvVar("mfa_token", data.mfa_token, { persist: true });
+        }
 
         if (data.access_token) {
           bru.setEnvVar("token", data.access_token, { persist: true });
