@@ -1,14 +1,14 @@
 info:
-  name: unlock-user
+  name: get-job-detail
   type: http
-  seq: 8
+  seq: 2
 
 http:
-  method: POST
-  url: "{{iam-admin}}/users/:id/unlock"
+  method: GET
+  url: "{{integration-etl}}/jobs/:id"
   params:
     - name: id
-      value: "{{user_id}}"
+      value: "{{etl_job_id}}"
       type: path
   auth:
     type: bearer

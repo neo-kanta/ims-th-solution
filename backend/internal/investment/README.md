@@ -1,16 +1,20 @@
-﻿# Module: investment
+# Module: investment
 
-Stock Investment Management — analysis reports, decisions, execution, review.
+This module is the reserved backend boundary for investment operations.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- analysis artifacts
+- investment decisions
+- execution requests
+- post-trade review and lifecycle state
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+The frontend has dashboard and placeholder investment pages, but the backend investment module itself is not implemented yet beyond the standard folder and placeholder file structure.
+
+## Implementation Reminder
+
+Keep investment workflow state and business invariants here once the module becomes active instead of spreading them across transport handlers.

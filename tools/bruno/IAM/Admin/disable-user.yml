@@ -8,7 +8,7 @@ http:
   url: "{{iam-admin}}/users/:id/disable"
   params:
     - name: id
-      value: a0000000-0000-0000-0000-000000000001
+      value: "{{user_id}}"
       type: path
   auth:
     type: bearer
