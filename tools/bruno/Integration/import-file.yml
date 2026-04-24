@@ -1,0 +1,41 @@
+info:
+  name: import-file
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{integration-etl}}/import"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        value: "{{import_file_path}}"
+        type: file
+      - name: import_target
+        value: SECURITY_MASTER
+      - name: business_date
+        value: "{{etl_business_date}}"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.job_id) {
+          bru.setEnvVar("etl_job_id", data.job_id, { persist: true });
+        }
+
+docs: |-
+  `file` should point to a local CSV file path.
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

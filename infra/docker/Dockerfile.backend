@@ -5,24 +5,37 @@ RUN apk add --no-cache git ca-certificates
 
 WORKDIR /app
 
-# Cache dependencies
-COPY backend/go.mod backend/go.sum* ./
-
 # Build
 COPY backend/ .
-RUN rm -f go.sum && go mod tidy && go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/migrate ./cmd/migrate
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/seed ./cmd/seed
 
 # ===== Runtime stage =====
-FROM alpine:3.19
+FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata wget
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
 COPY --from=builder /app/server .
+COPY --from=builder /app/migrate .
+COPY --from=builder /app/seed .
 COPY database/migrations /app/migrations
+COPY database/seeds /app/seeds
+
+RUN chmod +x /app/server /app/migrate /app/seed
 
 EXPOSE 8080
 
-CMD ["./server"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+	CMD wget -qO- http://localhost:8080/health || exit 1
+
+USER appuser
+
+ENV MIGRATIONS_PATH=/app/migrations
+ENV SEEDS_PATH=/app/seeds
+
+CMD ["/bin/sh", "-c", "/app/migrate up && /app/seed && exec /app/server"]
