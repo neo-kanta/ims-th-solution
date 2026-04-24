@@ -19,6 +19,8 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/audit"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/logging"
@@ -87,9 +89,15 @@ func main() {
 		slog.Error("Failed to initialize IAM module", "error", err)
 		os.Exit(1)
 	}
-	// Compliance / IRG module
-	complianceModule := compliance.NewModule(pool, iamModule)
 
+	// Module
+	complianceModule := compliance.NewModule(pool, iamModule)
+	// Workflow consumes the compliance post-trade verifier via pkg/contract,
+	// so TRANSACTION_CLOSED transitions refuse while BLOCK-level breaches
+	// remain open.
+	workflowModule := workflow.NewModule(pool, iamModule, complianceModule.ContractAdapter())
+	// Investment consumes the compliance pre-trade checker via pkg/contract.
+	investmentModule := investment.NewModule(complianceModule.ContractAdapter())
 	healthHandler := NewHealthHandler(pool, redisClient)
 
 	r := chi.NewRouter()
@@ -110,6 +118,8 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		iamModule.SetupRoutes(r)
 		complianceModule.RegisterRoutes(r)
+		workflowModule.RegisterRoutes(r)
+		investmentModule.RegisterRoutes(r)
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

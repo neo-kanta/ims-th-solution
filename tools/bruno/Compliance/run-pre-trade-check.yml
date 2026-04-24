@@ -1,0 +1,47 @@
+info:
+  name: run-pre-trade-check
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{compliance-base-url}}/checks/pre-trade"
+  body:
+    type: json
+    data: |-
+      {
+        "portfolio_id": "{{compliance-portfolio-id}}",
+        "contract_id": "{{compliance-contract-id}}",
+        "business_date": "{{compliance-business-date}}",
+        "order_id": "{{compliance-order-id}}",
+        "ticker": "{{compliance-ticker}}",
+        "side": "{{compliance-side}}",
+        "quantity": "{{compliance-quantity}}",
+        "price": "{{compliance-price}}",
+        "currency": "{{compliance-currency}}",
+        "exchange": "{{compliance-exchange}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.check_group_id) {
+          bru.setEnvVar("compliance-check-group-id", data.check_group_id, { persist: true });
+        }
+
+        if (data.breaches?.[0]?.breach_id) {
+          bru.setEnvVar("compliance-breach-id", data.breaches[0].breach_id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
