@@ -1,0 +1,44 @@
+info:
+  name: execute-transition
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{workflow-base-url}}/:contractId/transitions"
+  params:
+    - name: contractId
+      value: "{{workflow-contract-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "businessDate": "{{workflow-business-date}}",
+        "action": "{{workflow-action}}",
+        "reason": "{{workflow-reason}}",
+        "zeroTransactionAttestation": {{workflow-zero-transaction-attestation}},
+        "attestationReason": "{{workflow-attestation-reason}}",
+        "notes": "{{workflow-notes}}",
+        "idempotencyKey": "{{workflow-idempotency-key}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data?.contractId) {
+          bru.setEnvVar("workflow-contract-id", data.contractId, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

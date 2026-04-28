@@ -92,13 +92,13 @@ func main() {
 
 	// Module
 	complianceModule := compliance.NewModule(pool, iamModule)
-	// Workflow consumes the compliance post-trade verifier via pkg/contract,
-	// so TRANSACTION_CLOSED transitions refuse while BLOCK-level breaches
-	// remain open.
 	workflowModule := workflow.NewModule(pool, iamModule, complianceModule.ContractAdapter())
-	// Investment consumes the compliance pre-trade checker via pkg/contract.
 	investmentModule := investment.NewModule(complianceModule.ContractAdapter())
 	healthHandler := NewHealthHandler(pool, redisClient)
+
+	schedulerCtx, stopScheduler := context.WithCancel(context.Background())
+	defer stopScheduler()
+	workflowModule.StartScheduler(schedulerCtx, time.Hour)
 
 	r := chi.NewRouter()
 
@@ -117,9 +117,14 @@ func main() {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		iamModule.SetupRoutes(r)
-		complianceModule.RegisterRoutes(r)
-		workflowModule.RegisterRoutes(r)
-		investmentModule.RegisterRoutes(r)
+
+		r.Group(func(r chi.Router) {
+			r.Use(iamModule.AuthMiddleware())
+
+			complianceModule.RegisterRoutes(r)
+			workflowModule.RegisterRoutes(r)
+			investmentModule.RegisterRoutes(r)
+		})
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
@@ -137,6 +142,8 @@ func main() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
+
+		stopScheduler()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
