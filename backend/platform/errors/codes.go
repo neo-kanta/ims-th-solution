@@ -25,7 +25,7 @@ const (
 	CodeDataScopeViolation = "DATA_SCOPE_VIOLATION"
 
 	// Workflow-specific
-	CodeDayNotStarted         = "DAY_NOT_STARTED"
+	CodeDayNotStarted          = "DAY_NOT_STARTED"
 	CodeManagerAlreadyApproved = "MANAGER_ALREADY_APPROVED"
 	CodeTransactionLocked      = "TRANSACTION_LOCKED"
 

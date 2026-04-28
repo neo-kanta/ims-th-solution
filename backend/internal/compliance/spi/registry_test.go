@@ -101,7 +101,7 @@ func TestSeverity_CapVerdict(t *testing.T) {
 		{vo.SeverityBlock, vo.VerdictBlock, vo.VerdictBlock},
 		{vo.SeverityBlock, vo.VerdictWarn, vo.VerdictWarn},
 		{vo.SeverityBlock, vo.VerdictPass, vo.VerdictPass},
-		{vo.SeverityWarn, vo.VerdictBlock, vo.VerdictWarn},  // cap BLOCK → WARN
+		{vo.SeverityWarn, vo.VerdictBlock, vo.VerdictWarn}, // cap BLOCK → WARN
 		{vo.SeverityWarn, vo.VerdictWarn, vo.VerdictWarn},
 		{vo.SeverityWarn, vo.VerdictPass, vo.VerdictPass},
 		{vo.SeverityMonitor, vo.VerdictBlock, vo.VerdictPass}, // monitor: always PASS

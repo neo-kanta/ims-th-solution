@@ -5,13 +5,13 @@ package valueobject
 type WorkflowAction string
 
 const (
-	ActionOpenDay                WorkflowAction = "OPEN_DAY"
-	ActionCancelDayStart         WorkflowAction = "CANCEL_DAY_START"
-	ActionApprove                WorkflowAction = "APPROVE"
-	ActionCancelApproval         WorkflowAction = "CANCEL_APPROVAL"
-	ActionCloseTransactions      WorkflowAction = "CLOSE_TRANSACTIONS"
-	ActionCancelTransactionClose WorkflowAction = "CANCEL_TRANSACTION_CLOSE"
-	ActionCloseAccounting        WorkflowAction = "CLOSE_ACCOUNTING"
+	ActionOpenDay                 WorkflowAction = "OPEN_DAY"
+	ActionCancelDayStart          WorkflowAction = "CANCEL_DAY_START"
+	ActionApprove                 WorkflowAction = "APPROVE"
+	ActionCancelApproval          WorkflowAction = "CANCEL_APPROVAL"
+	ActionCloseTransactions       WorkflowAction = "CLOSE_TRANSACTIONS"
+	ActionCancelTransactionClose  WorkflowAction = "CANCEL_TRANSACTION_CLOSE"
+	ActionCloseAccounting         WorkflowAction = "CLOSE_ACCOUNTING"
 	ActionRollbackAccountingClose WorkflowAction = "ROLLBACK_ACCOUNTING_CLOSE"
 )
 

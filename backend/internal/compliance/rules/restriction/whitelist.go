@@ -53,8 +53,8 @@ func (r *WhitelistRule) Evaluate(
 ) (spi.EvalResult, error) {
 	if input.ProposedOrder == nil {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "restriction.whitelist: no proposed order to evaluate",
+			Verdict:  vo.VerdictPass,
+			Message:  "restriction.whitelist: no proposed order to evaluate",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_no_order"}},
 		}, nil
 	}

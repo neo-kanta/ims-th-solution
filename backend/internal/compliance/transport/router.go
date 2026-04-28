@@ -1,4 +1,4 @@
-﻿// Package transport wires the compliance module's HTTP routes.
+// Package transport wires the compliance module's HTTP routes.
 package transport
 
 import (

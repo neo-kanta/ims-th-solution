@@ -130,11 +130,11 @@ func (a *ComplianceContractAdapter) RunPostTradeVerification(
 
 	checkGroupID := uuid.New()
 	input := spi.CheckInput{
-		CheckGroupID:  checkGroupID,
-		Timing:        vo.TimingPostTrade,
-		BusinessDate:  businessDate.UTC(),
-		Actor:         "workflow:close_transactions",
-		ContractID:    contractID,
+		CheckGroupID: checkGroupID,
+		Timing:       vo.TimingPostTrade,
+		BusinessDate: businessDate.UTC(),
+		Actor:        "workflow:close_transactions",
+		ContractID:   contractID,
 		// PortfolioID left as uuid.Nil — scan is contract-wide.
 		ProposedOrder: nil,
 	}

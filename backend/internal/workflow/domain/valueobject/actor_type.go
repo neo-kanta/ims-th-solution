@@ -15,7 +15,7 @@ const (
 // metadata, then threaded through to command handlers and transition records.
 type ActorContext struct {
 	UserID    uuid.UUID
-	Username  string   // snapshot of display name at transition time
+	Username  string // snapshot of display name at transition time
 	ActorType ActorType
 	RequestID string   // X-Request-Id header value from chi middleware
 	Roles     []string // group/role codes from JWT "rls" claim
