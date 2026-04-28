@@ -15,9 +15,14 @@ const (
 )
 
 // UserClaims represents the minimal JWT claims for an authenticated user.
+// JWT claim names: sid=session_id, rst=restricted, usr=username,
+// rls=role/group codes. These short names are a stable contract once
+// shipped — do not rename.
 type UserClaims struct {
-	SessionID  string `json:"sid,omitempty"`
-	Restricted bool   `json:"rst,omitempty"`
+	SessionID  string   `json:"sid,omitempty"`
+	Restricted bool     `json:"rst,omitempty"`
+	Username   string   `json:"usr,omitempty"`
+	Roles      []string `json:"rls,omitempty"`
 	jwt.RegisteredClaims
 }
 

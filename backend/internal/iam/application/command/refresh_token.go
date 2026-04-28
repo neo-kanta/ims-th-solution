@@ -139,7 +139,9 @@ func (c *RefreshTokenCommand) Execute(ctx context.Context, input RefreshInput) (
 	}
 
 	// 9. Generate a new access token bound to the active session.
-	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSession(user.ID, newSession.ID)
+	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSessionWithProfile(
+		user.ID, newSession.ID, false, user.Username, user.Groups,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("generating access token: %w", err)
 	}
