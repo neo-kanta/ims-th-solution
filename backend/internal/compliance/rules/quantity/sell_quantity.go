@@ -72,15 +72,15 @@ func (r *SellQuantityRule) Evaluate(
 ) (spi.EvalResult, error) {
 	if input.ProposedOrder == nil {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "quantity.sell_available: no proposed order",
+			Verdict:  vo.VerdictPass,
+			Message:  "quantity.sell_available: no proposed order",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_no_order"}},
 		}, nil
 	}
 	if input.ProposedOrder.Side != vo.OrderSideSell {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "quantity.sell_available: not a sell order",
+			Verdict:  vo.VerdictPass,
+			Message:  "quantity.sell_available: not a sell order",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_buy"}},
 		}, nil
 	}
@@ -93,8 +93,8 @@ func (r *SellQuantityRule) Evaluate(
 	// Short selling explicitly permitted — skip check.
 	if p.AllowShortSell {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "short selling is enabled for this portfolio — quantity check skipped",
+			Verdict:  vo.VerdictPass,
+			Message:  "short selling is enabled for this portfolio — quantity check skipped",
 			Evidence: vo.Evidence{Metrics: map[string]string{"allow_short_sell": "true"}},
 		}, nil
 	}
@@ -102,8 +102,8 @@ func (r *SellQuantityRule) Evaluate(
 	if data.Positions == nil {
 		// Fail-closed.
 		return spi.EvalResult{
-			Verdict: vo.VerdictBlock,
-			Message: "position data unavailable — blocking sell as fail-safe",
+			Verdict:  vo.VerdictBlock,
+			Message:  "position data unavailable — blocking sell as fail-safe",
 			Evidence: vo.Evidence{Metrics: map[string]string{"error": "positions_unavailable"}},
 		}, nil
 	}

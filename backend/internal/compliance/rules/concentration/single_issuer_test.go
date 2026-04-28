@@ -72,9 +72,9 @@ func TestSingleIssuer_NoBreach(t *testing.T) {
 		[]spi.InstrumentClassification{{Ticker: "AAA", Issuer: "CORP_A", ParentEntity: "CORP_A"}},
 	)
 	input := spi.CheckInput{
-		PortfolioID: uuid.New(),
-		ContractID:  uuid.New(),
-		BusinessDate: time.Now(),
+		PortfolioID:   uuid.New(),
+		ContractID:    uuid.New(),
+		BusinessDate:  time.Now(),
 		ProposedOrder: buyOrder("AAA", 100, 5000), // adds 500_000 → 5.5M / 100M = 5.5%
 	}
 

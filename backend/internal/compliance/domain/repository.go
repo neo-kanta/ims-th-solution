@@ -46,9 +46,9 @@ type RuleBindingRepository interface {
 // ResolvedBinding is the result of resolving applicable bindings.
 // It includes the binding, its associated rule instance, and the current parameter version.
 type ResolvedBinding struct {
-	Binding         entity.RuleBinding
-	RuleInstance    entity.RuleInstance
-	CurrentVersion  entity.RuleInstanceVersion
+	Binding        entity.RuleBinding
+	RuleInstance   entity.RuleInstance
+	CurrentVersion entity.RuleInstanceVersion
 }
 
 // BindingFilter defines filtering options for listing bindings.

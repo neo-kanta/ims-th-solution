@@ -23,10 +23,10 @@ const (
 // Zero-transaction days: when IsZeroTransaction is true, AttestationReason must
 // be at least 30 characters (enforced by the approval policy, not this struct).
 type ApprovalRecord struct {
-	ID           uuid.UUID
+	ID            uuid.UUID
 	WorkflowDayID uuid.UUID
-	ContractID   uuid.UUID
-	BusinessDate time.Time
+	ContractID    uuid.UUID
+	BusinessDate  time.Time
 
 	// Approver snapshot — captured at approval time, immutable thereafter
 	ApproverID       uuid.UUID
