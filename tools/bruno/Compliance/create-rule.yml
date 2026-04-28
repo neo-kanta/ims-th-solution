@@ -1,0 +1,42 @@
+info:
+  name: create-rule
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{compliance-base-url}}/rules"
+  body:
+    type: json
+    data: |-
+      {
+        "rule_type_id": "{{compliance-rule-type-id}}",
+        "name": "{{compliance-rule-name}}",
+        "description": "{{compliance-rule-description}}",
+        "parameters": {{compliance-rule-parameters}},
+        "effective_from": "{{compliance-effective-from}}",
+        "effective_to": "{{compliance-effective-to}}",
+        "is_active": true,
+        "change_reason": "{{compliance-change-reason}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const instance = body?.data?.instance || {};
+        const typeID = instance?.RuleTypeID || instance?.rule_type_id;
+
+        if (typeID) {
+          bru.setEnvVar("compliance-rule-type-id", typeID, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
