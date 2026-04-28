@@ -68,6 +68,13 @@ func Conflict(w http.ResponseWriter, message string) {
 	JSON(w, http.StatusConflict, ErrorResponse{Error: message})
 }
 
+// UnprocessableEntity writes a 422 error response. Used when the request is
+// syntactically valid but references an entity/state the server cannot act on
+// (e.g. an unregistered rule type ID).
+func UnprocessableEntity(w http.ResponseWriter, message string) {
+	JSON(w, http.StatusUnprocessableEntity, ErrorResponse{Error: message})
+}
+
 // InternalError writes a 500 error response.
 func InternalError(w http.ResponseWriter, message string) {
 	JSON(w, http.StatusInternalServerError, ErrorResponse{Error: message})

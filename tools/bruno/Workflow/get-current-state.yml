@@ -1,0 +1,36 @@
+info:
+  name: get-current-state
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{workflow-base-url}}/:contractId"
+  params:
+    - name: businessDate
+      value: "{{workflow-business-date}}"
+      type: query
+    - name: contractId
+      value: "{{workflow-contract-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const allowed = data?.allowedActions || [];
+
+        if (allowed.length > 0) {
+          bru.setEnvVar("workflow-action", allowed[0], { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

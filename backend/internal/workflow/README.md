@@ -1,16 +1,24 @@
-﻿# Module: workflow
+# Module: workflow
 
-Workflow Management — day-start, manager-approval, transaction-closing, accounting-closing.
+This module is the reserved backend boundary for day-level workflow orchestration.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- day-start and day-close procedures
+- workflow state transitions
+- operational guardrails around stage progression
+- approval and execution checkpoints
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+The frontend dashboard currently shows a mocked workflow overview, but this backend module does not yet contain real workflow orchestration logic.
+
+## Implementation Guidance
+
+When the module becomes active:
+
+- keep stage transition rules here
+- expose explicit APIs for workflow state inspection and transition attempts
+- avoid embedding workflow rules directly inside unrelated modules

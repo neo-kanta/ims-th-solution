@@ -1,0 +1,32 @@
+info:
+  name: run-scheduler-once
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{workflow-scheduler-base-url}}/run-once"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const runs = body?.data || [];
+        const first = Array.isArray(runs) ? runs[0] : null;
+
+        if (first?.id) {
+          bru.setEnvVar("workflow-scheduler-run-id", first.id, { persist: true });
+        }
+        if (first?.status) {
+          bru.setEnvVar("workflow-scheduler-run-status", first.status, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
