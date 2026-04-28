@@ -1,16 +1,16 @@
-﻿# Module: integration
+# Module: integration
 
-ETL/Integration — import/export adapters for market data, OMS, PAM.
+This module is the reserved backend boundary for external-system integrations and ETL workflows.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- inbound and outbound adapters
+- scheduled imports and exports
+- reconciliation support
+- integration-specific retry and mapping logic
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+It is not yet an active runtime module and currently exists to reserve ownership boundaries for future work.

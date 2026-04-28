@@ -361,3 +361,8 @@ func (m *Module) TouchSessionActivity(ctx context.Context, sessionID string) err
 	}
 	return m.sessionSvc.TouchSessionActivity(ctx, sid)
 }
+
+// For other Moudle interfaces (e.g. AdminRouteRegistrar), see the respective method implementations below.
+func (m *Module) AuthMiddleware() func(http.Handler) http.Handler {
+	return middleware.Auth(m.keyProvider, m)
+}

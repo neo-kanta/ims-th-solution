@@ -1,16 +1,15 @@
-﻿# Module: market_data
+# Module: market_data
 
-Market Data — market data integration adapter (stub for PoC).
+This module is the reserved backend boundary for market-data ingestion and lookup support.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- reference market prices
+- import adapters and ingestion jobs
+- validation and normalization of market-data payloads
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+No ingestion logic, storage implementation, or transport API has been built here yet.

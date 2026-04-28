@@ -10,6 +10,25 @@ http:
     type: bearer
     token: "{{token}}"
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (typeof data.enrolled !== "undefined") {
+          bru.setEnvVar("mfa-enrolled", String(data.enrolled), { persist: true });
+        }
+
+        if (typeof data.enabled !== "undefined") {
+          bru.setEnvVar("mfa-enabled", String(data.enabled), { persist: true });
+        }
+
+        if (typeof data.recovery_codes_left !== "undefined") {
+          bru.setEnvVar("mfa-recovery-codes-left", String(data.recovery_codes_left), { persist: true });
+        }
+
 settings:
   encodeUrl: true
   timeout: 0

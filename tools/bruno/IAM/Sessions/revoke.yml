@@ -4,9 +4,15 @@ info:
   seq: 2
 
 http:
-  method: DELETE
-  url: "{{iam-auth}}/sessions/{{session_id}}"
-  auth: inherit
+  method: POST
+  url: "{{iam-auth}}/sessions/:session_id/revoke"
+  params:
+    - name: session_id
+      value: "{{session_id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
 
 settings:
   encodeUrl: true

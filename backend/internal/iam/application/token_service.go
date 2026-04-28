@@ -25,9 +25,13 @@ type SigningKey struct {
 }
 
 // AccessTokenClaims are the minimal JWT claims (no permissions, no groups).
+// Claim names mirror platform/middleware.UserClaims and are a stable
+// on-the-wire contract: sid, rst, usr, rls.
 type AccessTokenClaims struct {
-	SessionID  string `json:"sid,omitempty"`
-	Restricted bool   `json:"rst,omitempty"`
+	SessionID  string   `json:"sid,omitempty"`
+	Restricted bool     `json:"rst,omitempty"`
+	Username   string   `json:"usr,omitempty"`
+	Roles      []string `json:"rls,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -77,6 +81,23 @@ func (s *TokenService) GenerateAccessTokenForSession(userID uuid.UUID, sessionID
 
 // GenerateAccessTokenForSessionWithRestriction creates a short-lived JWT with optional restricted-session semantics.
 func (s *TokenService) GenerateAccessTokenForSessionWithRestriction(userID uuid.UUID, sessionID uuid.UUID, restricted bool) (string, time.Time, error) {
+	return s.GenerateAccessTokenForSessionWithProfile(userID, sessionID, restricted, "", nil)
+}
+
+// GenerateAccessTokenForSessionWithProfile creates a short-lived JWT and embeds
+// the caller's username and role/group codes into the access token. Username
+// and roles populate the "usr" / "rls" claims read by platform middleware and
+// downstream modules (workflow audit trail, maker-checker self-approval guard).
+//
+// Roles may be nil/empty: downstream features that depend on roles must
+// degrade gracefully rather than reject the call.
+func (s *TokenService) GenerateAccessTokenForSessionWithProfile(
+	userID uuid.UUID,
+	sessionID uuid.UUID,
+	restricted bool,
+	username string,
+	roles []string,
+) (string, time.Time, error) {
 	now := s.clock.Now()
 	expiresAt := now.Add(AccessTokenExpiry)
 
@@ -94,6 +115,8 @@ func (s *TokenService) GenerateAccessTokenForSessionWithRestriction(userID uuid.
 		claims.SessionID = sessionID.String()
 	}
 	claims.Restricted = restricted
+	claims.Username = username
+	claims.Roles = roles
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token.Header["kid"] = s.activeKey.KID

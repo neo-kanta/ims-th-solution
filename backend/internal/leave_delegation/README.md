@@ -1,16 +1,15 @@
-﻿# Module: leave_delegation
+# Module: leave_delegation
 
-Leave and Delegation Management — leave requests, agent/delegation, priority-based assignment.
+This module is the reserved backend boundary for leave and delegation management.
 
-## Key Domain Rules
+## Intended Scope
 
-TODO: Document key domain rules and business constraints for this module.
+- leave requests and leave periods
+- temporary delegates and agent assignment
+- priority-based or role-based fallback ownership
 
-## Layer Structure
+## Current Status
 
-- `domain/` — Entities, value objects, events, policies, repository interface
-- `application/` — Command handlers (writes), query handlers (reads), DTOs
-- `infrastructure/` — SQL persistence, external adapters
-- `transport/` — HTTP handlers, request/response DTOs, validators, routes
-- `jobs/` — Background/scheduled tasks
-- `permission/` — Module permission code declarations
+This module is scaffolded only.
+
+It contains the expected folder layout and placeholder wiring files, but there is no active runtime behavior yet.

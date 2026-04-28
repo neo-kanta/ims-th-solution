@@ -5,12 +5,18 @@ info:
 
 http:
   method: GET
-  url: "{{iam-audit}}/audit/export?actor_id&event_type&since&until"
+  url: "{{iam-audit}}/audit/export?actor_id&event_type&target_type&target_id&since&until"
   params:
     - name: actor_id
       value: ""
       type: query
     - name: event_type
+      value: ""
+      type: query
+    - name: target_type
+      value: ""
+      type: query
+    - name: target_id
       value: ""
       type: query
     - name: since

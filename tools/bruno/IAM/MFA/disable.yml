@@ -10,11 +10,19 @@ http:
     type: json
     data: |-
       {
-        "totp_code": "string"
+        "totp_code": "{{totp_code}}"
       }
   auth:
     type: bearer
     token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.getStatus() === 204) {
+          bru.setEnvVar("mfa-enabled", "false", { persist: true });
+        }
 
 settings:
   encodeUrl: true

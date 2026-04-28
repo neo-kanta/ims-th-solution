@@ -6,18 +6,25 @@ info:
 http:
   method: POST
   url: "{{iam-mfa}}/enroll"
-  body:
-    type: json
-    data: |-
-      {
-        "provisioning_uri": "string",
-        "recovery_codes": [
-          "string"
-        ]
-      }
   auth:
     type: bearer
     token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const recoveryCodes = data?.recovery_codes || [];
+
+        if (data.provisioning_uri) {
+          bru.setEnvVar("mfa-provisioning-uri", data.provisioning_uri, { persist: true });
+        }
+
+        if (recoveryCodes.length > 0) {
+          bru.setEnvVar("mfa-recovery-codes-left", String(recoveryCodes.length), { persist: true });
+        }
 
 settings:
   encodeUrl: true

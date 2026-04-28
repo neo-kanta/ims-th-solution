@@ -221,7 +221,9 @@ func (c *LoginCommand) Execute(ctx context.Context, input LoginInput) (*dto.Logi
 		return nil, fmt.Errorf("creating session: %w", err)
 	}
 
-	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSessionWithRestriction(user.ID, session.ID, restrictedSession)
+	accessToken, accessExpiresAt, err := c.tokenService.GenerateAccessTokenForSessionWithProfile(
+		user.ID, session.ID, restrictedSession, user.Username, user.Groups,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("generating access token: %w", err)
 	}
