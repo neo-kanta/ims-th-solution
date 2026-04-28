@@ -121,7 +121,7 @@ jobs:
             $DOCKER ps
             $DOCKER logs --tail 100 "${CONTAINER_NAME}-new"
 
-            curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/swagger/index.html" >/dev/null
+            curl -fsS "http://127.0.0.1:${HOST_PORT}/health" >/dev/null
 
             $DOCKER rename "${CONTAINER_NAME}-new" "$CONTAINER_NAME"
             trap - ERR
