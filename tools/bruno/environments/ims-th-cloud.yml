@@ -38,6 +38,152 @@ variables:
     value: ""
   - name: mfa-enabled
     value: ""
+  - name: investment-base-url
+    value: "{{base-url}}investment"
+  - name: market-data-base-url
+    value: "{{base-url}}market-data"
+  - name: market-data-symbol
+    value: AAPL
+  - name: market-data-history-limit
+    value: "30"
+  - name: market-data-last-symbol
+    value: ""
+  - name: market-data-last-provider
+    value: ""
+  - name: market-data-last-price
+    value: ""
+  - name: market-data-last-close
+    value: ""
+  - name: investment-page
+    value: "1"
+  - name: investment-limit
+    value: "50"
+  - name: investment-fund-id
+    value: ""
+  - name: investment-fund-version
+    value: "1"
+  - name: investment-portfolio-id
+    value: ""
+  - name: investment-portfolio-version
+    value: "1"
+  - name: investment-instrument-id
+    value: ""
+  - name: investment-transaction-id
+    value: ""
+  - name: investment-reversal-transaction-id
+    value: ""
+  - name: investment-price-id
+    value: ""
+  - name: investment-valuation-id
+    value: ""
+  - name: investment-asset-class-id
+    value: ""
+  - name: investment-asset-subtype-id
+    value: ""
+  - name: investment-sector-id
+    value: ""
+  - name: investment-fund-category-id
+    value: ""
+  - name: investment-region-id
+    value: ""
+  - name: investment-country-id
+    value: ""
+  - name: investment-style-id
+    value: ""
+  - name: investment-fund-code
+    value: BRUNO-FUND-001
+  - name: investment-fund-name
+    value: Bruno Sample Fund
+  - name: investment-fund-short-name
+    value: Bruno Fund
+  - name: investment-fund-status
+    value: ACTIVE
+  - name: investment-portfolio-code
+    value: BRUNO-PORT-001
+  - name: investment-portfolio-name
+    value: Bruno Sample Portfolio
+  - name: investment-portfolio-description
+    value: Created from Bruno for investment module testing.
+  - name: investment-portfolio-status
+    value: ACTIVE
+  - name: investment-instrument-ticker
+    value: BRUNO
+  - name: investment-instrument-name
+    value: Bruno Sample Instrument
+  - name: investment-instrument-status
+    value: ACTIVE
+  - name: investment-base-currency
+    value: THB
+  - name: investment-valuation-currency
+    value: THB
+  - name: investment-instrument-currency
+    value: THB
+  - name: investment-primary-exchange
+    value: SET
+  - name: investment-benchmark
+    value: SET TRI
+  - name: investment-risk-profile
+    value: MEDIUM
+  - name: investment-has-units
+    value: "true"
+  - name: investment-external-pam-ref
+    value: BRUNO-PAM-001
+  - name: investment-strategy-code
+    value: TH-EQ
+  - name: investment-tax-lot-method
+    value: AVERAGE
+  - name: investment-lot-size
+    value: "100"
+  - name: investment-tick-size
+    value: "0.01"
+  - name: investment-is-tradable
+    value: "true"
+  - name: investment-business-date
+    value: 2026-04-24
+  - name: investment-inception-date
+    value: 2026-04-24
+  - name: investment-settlement-date
+    value: 2026-04-26
+  - name: investment-from-date
+    value: 2026-01-01
+  - name: investment-to-date
+    value: 2026-12-31
+  - name: investment-price
+    value: "32.50"
+  - name: investment-price-source
+    value: BRUNO
+  - name: investment-provider-ref
+    value: bruno-price-001
+  - name: investment-is-stale
+    value: "false"
+  - name: investment-stale-reason
+    value: ""
+  - name: investment-transaction-type
+    value: BUY
+  - name: investment-side
+    value: BUY
+  - name: investment-quantity
+    value: "100"
+  - name: investment-fees
+    value: "0.00"
+  - name: investment-gross-amount
+    value: "3250.00"
+  - name: investment-net-amount
+    value: "3250.00"
+  - name: investment-fx-rate-to-base
+    value: "1"
+  - name: investment-external-ref
+    value: bruno-txn-001
+  - name: investment-transaction-reason
+    value: Bruno investment module test transaction.
+  - name: investment-reversal-reason
+    value: Bruno reversal test.
+  - name: investment-force-post
+    value: "false"
+  - name: investment-fx-rates
+    value: '{"THB":"1","USD":"36.50"}'
+  - name: investment-total-units
+    value: "1000"
   - name: compliance-base-url
     value: "{{base-url}}compliance"
   - name: compliance-portfolio-id
@@ -65,7 +211,7 @@ variables:
   - name: compliance-change-reason
     value: initial creation from Bruno
   - name: compliance-rule-parameters
-    value: "{\"max_pct\":10,\"exempt_government\":true}"
+    value: '{"max_pct":10,"exempt_government":true}'
   - name: compliance-status
     value: OPEN
   - name: compliance-is-active
@@ -113,7 +259,7 @@ variables:
   - name: workflow-business-date
     value: 2026-04-24
   - name: workflow-action
-    value: OPEN_DAY
+    value: APPROVE
   - name: workflow-reason
     value: Rollback requested with documented operational justification.
   - name: workflow-zero-transaction-attestation
