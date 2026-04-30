@@ -1,0 +1,55 @@
+info:
+  name: post-transaction
+  type: http
+  seq: 25
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/portfolios/:portfolioId/transactions"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "transaction_type": "{{investment-transaction-type}}",
+        "side": "{{investment-side}}",
+        "instrument_id": "{{investment-instrument-id}}",
+        "quantity": "{{investment-quantity}}",
+        "price": "{{investment-price}}",
+        "currency": "{{investment-instrument-currency}}",
+        "fees": "{{investment-fees}}",
+        "gross_amount": "{{investment-gross-amount}}",
+        "net_amount": "{{investment-net-amount}}",
+        "fx_rate_to_base": "{{investment-fx-rate-to-base}}",
+        "business_date": "{{investment-business-date}}",
+        "settlement_date": "{{investment-settlement-date}}",
+        "source_decision_id": null,
+        "source_execution_id": null,
+        "external_ref": "{{investment-external-ref}}",
+        "reason": "{{investment-transaction-reason}}",
+        "force_post": {{investment-force-post}}
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-transaction-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

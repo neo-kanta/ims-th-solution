@@ -1,0 +1,33 @@
+info:
+  name: get-latest-valuation
+  type: http
+  seq: 29
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/portfolios/:portfolioId/valuations/latest"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-valuation-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

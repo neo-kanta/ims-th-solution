@@ -1,0 +1,40 @@
+info:
+  name: get-quote
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{market-data-base-url}}/quote"
+  params:
+    - name: symbol
+      value: "{{market-data-symbol}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const quote = body?.data || {};
+
+        if (quote.symbol) {
+          bru.setEnvVar("market-data-last-symbol", quote.symbol, { persist: true });
+        }
+
+        if (quote.provider) {
+          bru.setEnvVar("market-data-last-provider", quote.provider, { persist: true });
+        }
+
+        if (quote.price) {
+          bru.setEnvVar("market-data-last-price", quote.price, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,40 @@
+info:
+  name: list-funds
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/funds?page&limit"
+  params:
+    - name: page
+      value: "{{investment-page}}"
+      type: query
+    - name: limit
+      value: "{{investment-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const item = body?.data?.items?.[0] || {};
+
+        if (item.id) {
+          bru.setEnvVar("investment-fund-id", item.id, { persist: true });
+        }
+
+        if (item.version !== undefined) {
+          bru.setEnvVar("investment-fund-version", String(item.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

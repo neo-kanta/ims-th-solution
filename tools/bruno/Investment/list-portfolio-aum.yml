@@ -1,0 +1,34 @@
+info:
+  name: list-portfolio-aum
+  type: http
+  seq: 32
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/portfolios/:portfolioId/aum?from&to&page&limit"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+    - name: from
+      value: "{{investment-from-date}}"
+      type: query
+    - name: to
+      value: "{{investment-to-date}}"
+      type: query
+    - name: page
+      value: "{{investment-page}}"
+      type: query
+    - name: limit
+      value: "{{investment-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

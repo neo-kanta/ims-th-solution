@@ -1,0 +1,45 @@
+info:
+  name: update-portfolio
+  type: http
+  seq: 19
+
+http:
+  method: PATCH
+  url: "{{investment-base-url}}/portfolios/:portfolioId"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "expected_version": {{investment-portfolio-version}},
+        "name": "{{investment-portfolio-name}}",
+        "description": "{{investment-portfolio-description}}",
+        "strategy_code": "{{investment-strategy-code}}",
+        "benchmark": "{{investment-benchmark}}",
+        "risk_profile": "{{investment-risk-profile}}",
+        "status": "{{investment-portfolio-status}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.version !== undefined) {
+          bru.setEnvVar("investment-portfolio-version", String(data.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

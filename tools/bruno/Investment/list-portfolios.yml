@@ -1,0 +1,46 @@
+info:
+  name: list-portfolios
+  type: http
+  seq: 14
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/portfolios?fund_id&status&page&limit"
+  params:
+    - name: fund_id
+      value: "{{investment-fund-id}}"
+      type: query
+    - name: status
+      value: "{{investment-portfolio-status}}"
+      type: query
+    - name: page
+      value: "{{investment-page}}"
+      type: query
+    - name: limit
+      value: "{{investment-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const item = body?.data?.items?.[0] || {};
+
+        if (item.id) {
+          bru.setEnvVar("investment-portfolio-id", item.id, { persist: true });
+        }
+
+        if (item.version !== undefined) {
+          bru.setEnvVar("investment-portfolio-version", String(item.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

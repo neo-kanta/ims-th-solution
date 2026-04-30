@@ -1,0 +1,28 @@
+info:
+  name: delete-fund
+  type: http
+  seq: 34
+
+http:
+  method: DELETE
+  url: "{{investment-base-url}}/funds/:fundId"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "expected_version": {{investment-fund-version}}
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
