@@ -84,7 +84,7 @@ func (p *Pipeline) RunCheck(ctx context.Context, input spi.CheckInput, scopes []
 		sj := resolved[j].Binding.Scope.Type.Specificity()
 		if si != sj {
 			return si > sj
-		} 
+		}
 		return resolved[i].Binding.Priority < resolved[j].Binding.Priority
 	})
 

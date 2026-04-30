@@ -1,4 +1,4 @@
-﻿// Package compliance wires the IRG (Investment Regulation Guard) module.
+// Package compliance wires the IRG (Investment Regulation Guard) module.
 //
 // Blank imports below trigger each rule package's init() → spi.Register(),
 // loading all rule evaluators into the global registry before the engine starts.
@@ -42,9 +42,9 @@ type Module struct {
 func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Module {
 	// Repositories
 	instanceRepo := persistence.NewPostgresRuleInstanceRepository(pool)
-	bindingRepo  := persistence.NewPostgresRuleBindingRepository(pool)
-	checkRepo    := persistence.NewPostgresCheckRecordRepository(pool)
-	breachRepo   := persistence.NewPostgresBreachRepository(pool)
+	bindingRepo := persistence.NewPostgresRuleBindingRepository(pool)
+	checkRepo := persistence.NewPostgresCheckRecordRepository(pool)
+	breachRepo := persistence.NewPostgresBreachRepository(pool)
 	overrideRepo := persistence.NewPostgresOverrideRepository(pool)
 
 	// Port adapters (Nop stubs for PoC)
@@ -64,14 +64,14 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 	pipeline := engine.NewPipeline(registry, bindingRepo, checkRepo, breachRepo, fetcher)
 
 	// Application layer — commands
-	preTradeCmd       := command.NewRunPreTradeCheckHandler(pipeline, registry)
-	postTradeCmd      := command.NewRunPostTradeCheckHandler(pipeline, registry)
-	overrideCmd       := command.NewOverrideBreachHandler(overrideRepo)
+	preTradeCmd := command.NewRunPreTradeCheckHandler(pipeline, registry)
+	postTradeCmd := command.NewRunPostTradeCheckHandler(pipeline, registry)
+	overrideCmd := command.NewOverrideBreachHandler(overrideRepo)
 	createInstanceCmd := command.NewCreateRuleInstanceHandler(instanceRepo, registry)
 
 	// Application layer — queries
-	checkGroupQry    := query.NewGetCheckGroupHandler(checkRepo, breachRepo)
-	listBreachesQry  := query.NewListBreachesHandler(breachRepo)
+	checkGroupQry := query.NewGetCheckGroupHandler(checkRepo, breachRepo)
+	listBreachesQry := query.NewListBreachesHandler(breachRepo)
 	listInstancesQry := query.NewListRuleInstancesHandler(instanceRepo, registry)
 
 	// Transport

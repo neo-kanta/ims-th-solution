@@ -1,4 +1,4 @@
-﻿// Package workflow wires the Workflow Management module.
+// Package workflow wires the Workflow Management module.
 //
 // Workflow owns the per-contract, per-business-date state machine with four
 // checkpoints (DAY_OPEN → MANAGER_APPROVED → TRANSACTION_CLOSED → ACCOUNTING_CLOSED)

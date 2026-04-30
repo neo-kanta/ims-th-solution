@@ -77,15 +77,15 @@ func (r *AvailabilityRule) Evaluate(
 	// Only meaningful for BUY orders.
 	if input.ProposedOrder == nil {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "cash.availability: no proposed order",
+			Verdict:  vo.VerdictPass,
+			Message:  "cash.availability: no proposed order",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_no_order"}},
 		}, nil
 	}
 	if input.ProposedOrder.Side != vo.OrderSideBuy {
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "cash.availability: sell orders do not require cash",
+			Verdict:  vo.VerdictPass,
+			Message:  "cash.availability: sell orders do not require cash",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_sell"}},
 		}, nil
 	}
@@ -97,8 +97,8 @@ func (r *AvailabilityRule) Evaluate(
 
 	if data.NAV == nil {
 		return spi.EvalResult{
-			Verdict: vo.VerdictBlock,
-			Message: "NAV / cash data unavailable — blocking as fail-safe",
+			Verdict:  vo.VerdictBlock,
+			Message:  "NAV / cash data unavailable — blocking as fail-safe",
 			Evidence: vo.Evidence{Metrics: map[string]string{"error": "nav_data_unavailable"}},
 		}, nil
 	}
@@ -109,12 +109,12 @@ func (r *AvailabilityRule) Evaluate(
 	remainingCash := availableCash.Sub(tradeValue)
 
 	metrics := map[string]string{
-		"available_cash":        availableCash.StringFixed(2),
-		"reserved_cash":         data.NAV.ReservedCash.StringFixed(2),
-		"trade_value":           tradeValue.StringFixed(2),
-		"cash_after_trade":      remainingCash.StringFixed(2),
-		"nav":                   nav.StringFixed(2),
-		"min_cash_buffer_pct":   p.MinCashBufferPct.StringFixed(4),
+		"available_cash":      availableCash.StringFixed(2),
+		"reserved_cash":       data.NAV.ReservedCash.StringFixed(2),
+		"trade_value":         tradeValue.StringFixed(2),
+		"cash_after_trade":    remainingCash.StringFixed(2),
+		"nav":                 nav.StringFixed(2),
+		"min_cash_buffer_pct": p.MinCashBufferPct.StringFixed(4),
 	}
 	references := map[string]string{
 		"ticker": input.ProposedOrder.Ticker,

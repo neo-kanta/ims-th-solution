@@ -6,7 +6,7 @@ import "fmt"
 // forbidden (wrong current state) or blocked by a guard condition.
 // The transport layer maps this to HTTP 422 Unprocessable Entity.
 type ErrInvalidTransition struct {
-	Code            string         // e.g. "WORKFLOW_NOT_BUSINESS_DAY"
+	Code            string // e.g. "WORKFLOW_NOT_BUSINESS_DAY"
 	CurrentState    string
 	AttemptedAction string
 	Reason          string

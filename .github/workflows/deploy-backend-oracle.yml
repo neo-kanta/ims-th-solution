@@ -86,15 +86,30 @@ jobs:
             DOCKER_NETWORK="${{ secrets.ORACLE_DOCKER_NETWORK }}"
             GHCR_USER="${{ secrets.GHCR_DEPLOY_USERNAME }}"
             GHCR_TOKEN="${{ secrets.GHCR_DEPLOY_TOKEN }}"
+            DOCKER="sudo docker"
 
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-            docker pull "$IMAGE"
+            if ! sudo docker info >/dev/null 2>&1; then
+              echo "Docker is not accessible for the SSH user on the Oracle host."
+              echo "Make sure Docker is installed and that the user can run sudo docker commands."
+              exit 1
+            fi
 
-            docker network inspect "$DOCKER_NETWORK" >/dev/null 2>&1 || docker network create "$DOCKER_NETWORK"
+            cleanup_failed_deploy() {
+              $DOCKER logs --tail 100 "${CONTAINER_NAME}-new" || true
+              $DOCKER rm -f "${CONTAINER_NAME}-new" >/dev/null 2>&1 || true
+            }
 
-            docker rm -f "${CONTAINER_NAME}-new" >/dev/null 2>&1 || true
+            trap cleanup_failed_deploy ERR
 
-            docker run -d \
+            echo "$GHCR_TOKEN" | $DOCKER login ghcr.io -u "$GHCR_USER" --password-stdin
+            $DOCKER pull "$IMAGE"
+
+            $DOCKER network inspect "$DOCKER_NETWORK" >/dev/null 2>&1 || $DOCKER network create "$DOCKER_NETWORK"
+
+            $DOCKER rm -f "${CONTAINER_NAME}-new" >/dev/null 2>&1 || true
+            $DOCKER rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+
+            $DOCKER run -d \
               --name "${CONTAINER_NAME}-new" \
               --network "$DOCKER_NETWORK" \
               --restart unless-stopped \
@@ -103,12 +118,12 @@ jobs:
               "$IMAGE"
 
             sleep 10
-            docker ps
-            docker logs --tail 100 "${CONTAINER_NAME}-new"
+            $DOCKER ps
+            $DOCKER logs --tail 100 "${CONTAINER_NAME}-new"
 
-            curl -fsS "http://127.0.0.1:${HOST_PORT}/api/v1/swagger/index.html" >/dev/null
+            curl -fsS "http://127.0.0.1:${HOST_PORT}/health" >/dev/null
 
-            docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-            docker rename "${CONTAINER_NAME}-new" "$CONTAINER_NAME"
+            $DOCKER rename "${CONTAINER_NAME}-new" "$CONTAINER_NAME"
+            trap - ERR
 
-            docker image prune -f
+            $DOCKER image prune -f

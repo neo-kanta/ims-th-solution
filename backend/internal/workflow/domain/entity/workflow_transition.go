@@ -14,10 +14,10 @@ import (
 // Every transition — including cancellations and rollbacks — appends a new row.
 // This table is the forensic source of truth for "who did what, when, and why".
 type WorkflowTransition struct {
-	ID           uuid.UUID
+	ID            uuid.UUID
 	WorkflowDayID uuid.UUID
-	ContractID   uuid.UUID
-	BusinessDate time.Time
+	ContractID    uuid.UUID
+	BusinessDate  time.Time
 
 	FromState vo.WorkflowState
 	ToState   vo.WorkflowState

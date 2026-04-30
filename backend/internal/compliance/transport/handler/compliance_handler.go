@@ -17,8 +17,8 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/valueobject"
-	platformmw "github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
+	platformmw "github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )
 
 // ComplianceHandler bundles all IRG HTTP endpoints.

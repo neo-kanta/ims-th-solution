@@ -71,7 +71,7 @@ func (e *ErrBreachNotFound) Error() string {
 // ErrBreachNotOpen indicates the target breach is not in OPEN status and cannot be overridden.
 // The breach may already be OVERRIDDEN (duplicate request) or RESOLVED (state changed).
 type ErrBreachNotOpen struct {
-	BreachID     string
+	BreachID      string
 	CurrentStatus string
 }
 

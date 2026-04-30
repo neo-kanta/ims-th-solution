@@ -58,8 +58,8 @@ func (r *BlacklistRule) Evaluate(
 	if input.ProposedOrder == nil {
 		// No order to check — periodic scans are not meaningful for this rule.
 		return spi.EvalResult{
-			Verdict: vo.VerdictPass,
-			Message: "restriction.blacklist: no proposed order to evaluate",
+			Verdict:  vo.VerdictPass,
+			Message:  "restriction.blacklist: no proposed order to evaluate",
 			Evidence: vo.Evidence{Metrics: map[string]string{"check": "skipped_no_order"}},
 		}, nil
 	}
