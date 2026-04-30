@@ -93,6 +93,13 @@ type AppConfig struct {
 
 	// CORS
 	CORSAllowedOrigins []string // Allowed CORS origins (empty = localhost dev defaults)
+
+	// Market data providers
+	MarketDataPrimaryProvider  string
+	MarketDataFallbackProvider string
+	AlphaVantageAPIKey         string
+	MarketDataHTTPTimeout      time.Duration
+	MarketDataCacheTTL         time.Duration
 }
 
 // Load reads configuration from environment variables.
@@ -182,6 +189,13 @@ func Load() (*AppConfig, error) {
 
 		// CORS
 		CORSAllowedOrigins: parseStringSlice("CORS_ALLOWED_ORIGINS"),
+
+		// Market data providers
+		MarketDataPrimaryProvider:  strings.ToLower(getEnvOrDefault("MARKET_DATA_PRIMARY_PROVIDER", "alpha_vantage")),
+		MarketDataFallbackProvider: strings.ToLower(getEnvOrDefault("MARKET_DATA_FALLBACK_PROVIDER", "yahoo")),
+		AlphaVantageAPIKey:         os.Getenv("ALPHA_VANTAGE_API_KEY"),
+		MarketDataHTTPTimeout:      time.Duration(parseInt("MARKET_DATA_HTTP_TIMEOUT_SECONDS", 15)) * time.Second,
+		MarketDataCacheTTL:         time.Duration(parseInt("MARKET_DATA_CACHE_TTL_SECONDS", 900)) * time.Second,
 	}
 
 	if cfg.JWTSecret == "" && cfg.Env != "development" {

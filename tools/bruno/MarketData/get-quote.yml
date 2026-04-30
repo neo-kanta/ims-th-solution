@@ -5,10 +5,13 @@ info:
 
 http:
   method: GET
-  url: "{{market-data-base-url}}/quote"
+  url: "{{market-data-base-url}}/quote?symbol={{market-data-symbol}}&provider={{market-data-provider}}"
   params:
     - name: symbol
       value: "{{market-data-symbol}}"
+      type: query
+    - name: provider
+      value: "{{market-data-provider}}"
       type: query
   auth:
     type: bearer

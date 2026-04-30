@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{market-data-base-url}}/history"
+  url: "{{market-data-base-url}}/history?symbol={{market-data-symbol}}&limit={{market-data-history-limit}}"
   params:
     - name: symbol
       value: "{{market-data-symbol}}"

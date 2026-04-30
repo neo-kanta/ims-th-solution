@@ -1,0 +1,34 @@
+info:
+  name: list-fund-aum
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/funds/:fundId/aum"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+    - name: from
+      value: "{{investment-from-date}}"
+      type: query
+    - name: to
+      value: "{{investment-to-date}}"
+      type: query
+    - name: page
+      value: "{{investment-page}}"
+      type: query
+    - name: limit
+      value: "{{investment-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
