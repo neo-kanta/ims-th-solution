@@ -7,7 +7,7 @@ import type {
   AdminUserListPayload,
   AdminUserStatusAction,
   CreateAdminUserInput,
-} from "../types/admin.types";
+} from "../admin.types";
 
 const ADMIN_BASE = "/admin";
 

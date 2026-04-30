@@ -1,7 +1,7 @@
 import { useApi } from "~/composables/useApi";
 import type { ApiResponse } from "~/types/api.types";
 
-import type { AuditFilters, AuditListPayload } from "../types/audit.types";
+import type { AuditFilters, AuditListPayload } from "../audit.types";
 
 const ADMIN_BASE = "/admin";
 
@@ -50,6 +50,16 @@ export const auditApi = {
     return apiFetch<ApiResponse<AuditListPayload>>(`${ADMIN_BASE}/audit`, {
       method: "GET",
       query: buildAuditQuery(filters),
+    });
+  },
+
+  exportEvents(filters: AuditFilters = {}) {
+    const { apiFetch } = useApi();
+
+    return apiFetch<Blob>(`${ADMIN_BASE}/audit/export`, {
+      method: "GET",
+      query: buildAuditQuery(filters),
+      responseType: "blob",
     });
   },
 };
