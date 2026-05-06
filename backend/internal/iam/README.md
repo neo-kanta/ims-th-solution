@@ -67,3 +67,14 @@ iam/
 
 - audit trail querying, export, event persistence, and event definitions now belong to the dedicated `audit` module
 - IAM emits audit records through an audit recorder port and remains responsible only for identity and access behavior
+
+## System Actors
+
+Two stable system users are seeded by migration `20260506000003_iam__seed_system_actors`:
+
+| ID                                       | Username             | Purpose                                           |
+| ---------------------------------------- | -------------------- | ------------------------------------------------- |
+| `00000000-0000-0000-0000-000000000001`   | `system.market_data` | Phase 5 market-data ingestion writer              |
+| `00000000-0000-0000-0000-000000000002`   | `system.scheduler`   | ValuationRunner and other scheduled-job invokers  |
+
+Both rows carry `password_hash = '!system'` (a sentinel that cannot match any bcrypt-verified credential), `is_active = true`, and `force_password_change = false`. They MUST NOT be assigned to permission groups; their authority comes from the calling subsystem rather than from a function-permission grant. The bcrypt comparator rejects the sentinel hash as malformed, so login attempts against these usernames fail naturally without any special-case branch.
