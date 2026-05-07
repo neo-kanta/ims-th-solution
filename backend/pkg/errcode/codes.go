@@ -51,8 +51,12 @@ const (
 	CodeCannotReverseReversal = "CANNOT_REVERSE_REVERSAL"
 
 	// ─── Lifecycle blocking conditions ───────────────────────────────────
-	CodeFundHasActivePortfolios = "FUND_HAS_ACTIVE_PORTFOLIOS"
+	CodeFundHasActivePortfolios  = "FUND_HAS_ACTIVE_PORTFOLIOS"
 	CodePortfolioHasOpenActivity = "PORTFOLIO_HAS_OPEN_ACTIVITY"
+	CodeIncompleteFundValuation  = "INCOMPLETE_FUND_VALUATION"
+
+	// ─── Authorization ───────────────────────────────────────────────────
+	CodeForbidden = "FORBIDDEN"
 
 	// ─── Catch-all ───────────────────────────────────────────────────────
 	CodeInternal = "INTERNAL_ERROR"
@@ -68,8 +72,10 @@ func All() []string {
 		CodeComplianceRejected,
 		CodeDecisionNotDraft,
 		CodeDecisionNotFound,
+		CodeForbidden,
 		CodeFundHasActivePortfolios,
 		CodeFundNotFound,
+		CodeIncompleteFundValuation,
 		CodeInstrumentNotFound,
 		CodeInstrumentNotMapped,
 		CodeInternal,

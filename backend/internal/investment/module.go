@@ -51,6 +51,7 @@ type Module struct {
 	postTxn       *command.PostTransactionHandler
 	reverseTxn    *command.ReverseTransactionHandler
 	postPrice     *command.PostPriceSnapshotHandler
+	fundAUM       *command.ComputeFundAUMHandler
 
 	submitDecision *command.SubmitDecisionForExecutionHandler
 
@@ -128,6 +129,7 @@ func NewModule(
 		pool, m.txns, m.projector, workflow, m.auditAdapter, nil,
 	)
 	m.postPrice = command.NewPostPriceSnapshotHandler(pool, m.prices, m.instruments, m.auditAdapter, nil)
+	m.fundAUM = command.NewComputeFundAUMHandler(pool, m.funds, m.portfolios, m.valuation, m.auditAdapter, nil)
 
 	// Existing decision-submit pipeline (compliance pre-trade gate).
 	// Persistence for the Decision aggregate is not yet implemented; keep
@@ -142,6 +144,7 @@ func NewModule(
 		m.prices, m.valuation, m.taxonomy,
 		m.fundCmd, m.portfolioCmd, m.instrumentCmd,
 		m.postTxn, m.reverseTxn, m.postPrice,
+		m.fundAUM,
 		m.valuationRun,
 	)
 
@@ -240,6 +243,12 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationRun))
 			r.Post("/portfolios/{id}/valuations/run", h.RunValuation)
+		})
+
+		// ── Fund AUM aggregation ────────────────────────────────────────
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeFundAUMCompute))
+			r.Post("/funds/{id}/aum/compute", h.ComputeFundAUM)
 		})
 	})
 }

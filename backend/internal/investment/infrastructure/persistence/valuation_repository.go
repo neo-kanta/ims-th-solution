@@ -111,6 +111,29 @@ func (r *PostgresValuationRepository) GetByID(ctx context.Context, id uuid.UUID)
 	return v, r.loadHoldingLines(ctx, v)
 }
 
+// GetByPortfolioBusinessDate returns the valuation snapshot for the exact
+// (portfolio_id, business_date, source) tuple, or nil-no-error when missing.
+// Used by ComputeFundAUMHandler to assert all portfolios under a fund have a
+// snapshot for the same business date.
+func (r *PostgresValuationRepository) GetByPortfolioBusinessDate(
+	ctx context.Context,
+	portfolioID uuid.UUID,
+	businessDate time.Time,
+	source vo.ValuationSource,
+) (*entity.ValuationSnapshot, error) {
+	row := r.pool.QueryRow(ctx,
+		valuationSelect+`
+		 WHERE portfolio_id = $1 AND business_date = $2 AND source = $3
+		 ORDER BY created_at DESC LIMIT 1`,
+		portfolioID, businessDate, string(source),
+	)
+	v, err := scanValuation(row)
+	if err != nil || v == nil {
+		return v, err
+	}
+	return v, r.loadHoldingLines(ctx, v)
+}
+
 func (r *PostgresValuationRepository) List(ctx context.Context, portfolioID uuid.UUID, from, to time.Time, page, limit int) ([]*entity.ValuationSnapshot, int, error) {
 	if limit <= 0 {
 		limit = 50
@@ -274,6 +297,40 @@ const aumSelect = `
 	       aum, valuation_ccy, source,
 	       created_at, created_by
 	FROM investment__aum_snapshots`
+
+// GetAUM returns the AUM snapshot for an exact (scope, business_date, source)
+// tuple, or nil-no-error when missing. The fund-AUM compute handler uses this
+// for idempotency: if a snapshot already exists for today, return it as-is.
+func (r *PostgresValuationRepository) GetAUM(
+	ctx context.Context,
+	scopeType vo.AumScopeType,
+	scopeID uuid.UUID,
+	businessDate time.Time,
+	source vo.ValuationSource,
+) (*entity.AUMSnapshot, error) {
+	row := r.pool.QueryRow(ctx,
+		aumSelect+`
+		 WHERE scope_type = $1 AND scope_id = $2 AND business_date = $3 AND source = $4
+		 LIMIT 1`,
+		string(scopeType), scopeID, businessDate, string(source),
+	)
+	var a entity.AUMSnapshot
+	var scopeStr, sourceStr string
+	err := row.Scan(
+		&a.ID, &scopeStr, &a.ScopeID, &a.BusinessDate,
+		&a.AUM, &a.ValuationCcy, &sourceStr,
+		&a.CreatedAt, &a.CreatedBy,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scanning aum: %w", err)
+	}
+	a.ScopeType = vo.AumScopeType(scopeStr)
+	a.Source = vo.ValuationSource(sourceStr)
+	return &a, nil
+}
 
 func (r *PostgresValuationRepository) ListAUM(ctx context.Context, scopeType vo.AumScopeType, scopeID uuid.UUID, from, to time.Time, page, limit int) ([]*entity.AUMSnapshot, int, error) {
 	if limit <= 0 {

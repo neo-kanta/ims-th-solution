@@ -112,8 +112,12 @@ func DefaultStatus(code string) int {
 		CodePostTradeBlocked,
 		CodeInstrumentNotMapped,
 		CodePriceCurrencyMismatch,
-		CodeUnitisedNotSupported:
+		CodeUnitisedNotSupported,
+		CodeIncompleteFundValuation:
 		return http.StatusUnprocessableEntity
+
+	case CodeForbidden:
+		return http.StatusForbidden
 
 	case CodeInternal:
 		return http.StatusInternalServerError

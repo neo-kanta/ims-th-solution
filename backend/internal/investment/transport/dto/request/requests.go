@@ -163,3 +163,10 @@ type RunValuationRequest struct {
 	FxRates      map[string]string `json:"fx_rates"`
 	TotalUnits   string            `json:"total_units"`
 }
+
+// ComputeFundAUMRequest is the JSON body for
+// POST /investment/funds/{id}/aum/compute. Aggregates all portfolio AUMs
+// under the fund into a single fund-scoped snapshot for the business date.
+type ComputeFundAUMRequest struct {
+	BusinessDate string `json:"business_date" validate:"required"`
+}

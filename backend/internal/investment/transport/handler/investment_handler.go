@@ -49,6 +49,7 @@ type InvestmentHandler struct {
 	postTxn       *command.PostTransactionHandler
 	reverseTxn    *command.ReverseTransactionHandler
 	postPrice     *command.PostPriceSnapshotHandler
+	fundAUM       *command.ComputeFundAUMHandler
 	valuationRun  *service.ValuationRunner
 }
 
@@ -70,6 +71,7 @@ func NewInvestmentHandler(
 	postTxn *command.PostTransactionHandler,
 	reverseTxn *command.ReverseTransactionHandler,
 	postPrice *command.PostPriceSnapshotHandler,
+	fundAUM *command.ComputeFundAUMHandler,
 	valuationRun *service.ValuationRunner,
 ) *InvestmentHandler {
 	return &InvestmentHandler{
@@ -79,6 +81,7 @@ func NewInvestmentHandler(
 		prices: prices, valuation: valuation, taxonomy: taxonomy,
 		fundCmd: fundCmd, portfolioCmd: portfolioCmd, instrumentCmd: instrumentCmd,
 		postTxn: postTxn, reverseTxn: reverseTxn, postPrice: postPrice,
+		fundAUM:      fundAUM,
 		valuationRun: valuationRun,
 	}
 }
@@ -1158,6 +1161,60 @@ func (h *InvestmentHandler) ListFundAUM(w http.ResponseWriter, r *http.Request) 
 	}
 	h.listAUM(w, r, vo.AumScopeFund, fundID)
 }
+// ComputeFundAUM aggregates per-portfolio AUM into a fund-level snapshot for
+// the requested business date. Idempotent on (fund, date, source=INTERNAL).
+func (h *InvestmentHandler) ComputeFundAUM(w http.ResponseWriter, r *http.Request) {
+	if h.fundAUM == nil {
+		httputil.InternalError(w, "fund aum compute not wired")
+		return
+	}
+	fundID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid fund id")
+		return
+	}
+	var req request.ComputeFundAUMRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.BadRequest(w, "invalid JSON body")
+		return
+	}
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+	if !hasFundAccess(r.Context(), h.pc, fundID) {
+		httputil.Forbidden(w, "no access to this fund")
+		return
+	}
+	bizDate, err := parseDate(req.BusinessDate)
+	if err != nil {
+		httputil.BadRequest(w, "invalid business_date")
+		return
+	}
+
+	res, err := h.fundAUM.Handle(r.Context(), command.ComputeFundAUMRequest{
+		FundID:       fundID,
+		BusinessDate: bizDate,
+		ActorID:      actor,
+	})
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+
+	out := response.ComputeFundAUMResponse{
+		Snapshot:       response.FromAUM(res.Snapshot),
+		PortfolioCount: res.PortfolioCount,
+		Idempotent:     res.Idempotent,
+	}
+	if !res.Idempotent {
+		httputil.Created(w, out)
+	} else {
+		httputil.OK(w, out)
+	}
+}
+
 func (h *InvestmentHandler) listAUM(w http.ResponseWriter, r *http.Request, scope vo.AumScopeType, scopeID uuid.UUID) {
 	page, limit := paginationParams(r)
 	from, to := dateRangeParams(r)

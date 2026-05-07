@@ -1,6 +1,10 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/errcode"
+)
 
 // ErrFundNotFound signals a fund lookup miss.
 type ErrFundNotFound struct{ FundID string }
@@ -124,4 +128,38 @@ func (e *ErrPortfolioHasOpenActivity) Error() string {
 		"portfolio %s cannot be deleted: %s",
 		e.PortfolioID, e.Detail,
 	)
+}
+
+// ErrIncompleteFundValuation is raised by ComputeFundAUMHandler when not every
+// portfolio under the fund has a valuation_snapshot for the requested
+// business date, or when the existing snapshots disagree on price_set_hash /
+// valuation_ccy. The Reason field is one of:
+//
+//	"MISSING_PORTFOLIO_SNAPSHOT" — at least one portfolio has no snapshot for the date.
+//	"PRICE_SET_HASH_MISMATCH"    — snapshots span more than one price set.
+//	"VALUATION_CCY_MISMATCH"     — snapshots span more than one valuation currency.
+type ErrIncompleteFundValuation struct {
+	FundID       string
+	BusinessDate string
+	Reason       string
+	Detail       string
+}
+
+func (e *ErrIncompleteFundValuation) Error() string {
+	return fmt.Sprintf(
+		"fund %s incomplete valuation for %s (%s): %s",
+		e.FundID, e.BusinessDate, e.Reason, e.Detail,
+	)
+}
+
+// ErrorCode implements errcode.Coded.
+func (*ErrIncompleteFundValuation) ErrorCode() string { return errcode.CodeIncompleteFundValuation }
+
+// ErrorDetails implements errcode.Detailed.
+func (e *ErrIncompleteFundValuation) ErrorDetails() map[string]any {
+	return map[string]any{
+		"fund_id":       e.FundID,
+		"business_date": e.BusinessDate,
+		"reason":        e.Reason,
+	}
 }

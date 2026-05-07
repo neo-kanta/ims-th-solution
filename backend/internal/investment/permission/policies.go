@@ -32,6 +32,7 @@ const (
 	CodeValuationView    = "INVESTMENT_VALUATION_VIEW"
 	CodeValuationRun     = "INVESTMENT_VALUATION_RUN"
 	CodePricePost        = "INVESTMENT_PRICE_POST"
+	CodeFundAUMCompute   = "INVESTMENT_FUND_AUM_COMPUTE"
 )
 
 // All returns every permission code owned by this module.
@@ -68,5 +69,6 @@ func (Provider) Permissions() []contract.PermissionDefinition {
 		{Code: CodeValuationView, Name: "Investment Valuation View", Description: "Read valuation snapshots and holding-line breakdowns."},
 		{Code: CodeValuationRun, Name: "Investment Valuation Run", Description: "Trigger the valuation runner manually."},
 		{Code: CodePricePost, Name: "Investment Price Post", Description: "Manually post a price snapshot (operator authorised, runbook §1 fallback)."},
+		{Code: CodeFundAUMCompute, Name: "Investment Fund AUM Compute", Description: "Aggregate per-portfolio AUM into a fund-level AUM snapshot for a business date."},
 	}
 }

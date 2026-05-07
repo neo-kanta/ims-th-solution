@@ -146,12 +146,14 @@ type ValuationRepository interface {
 	Insert(ctx context.Context, tx pgx.Tx, snap *entity.ValuationSnapshot) error
 	GetLatest(ctx context.Context, portfolioID uuid.UUID, source vo.ValuationSource) (*entity.ValuationSnapshot, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.ValuationSnapshot, error)
+	GetByPortfolioBusinessDate(ctx context.Context, portfolioID uuid.UUID, businessDate time.Time, source vo.ValuationSource) (*entity.ValuationSnapshot, error)
 	List(ctx context.Context, portfolioID uuid.UUID, from, to time.Time, page, limit int) ([]*entity.ValuationSnapshot, int, error)
 
 	InsertNAV(ctx context.Context, tx pgx.Tx, nav *entity.NAVSnapshot) error
 	ListNAV(ctx context.Context, portfolioID uuid.UUID, from, to time.Time, page, limit int) ([]*entity.NAVSnapshot, int, error)
 
 	InsertAUM(ctx context.Context, tx pgx.Tx, aum *entity.AUMSnapshot) error
+	GetAUM(ctx context.Context, scopeType vo.AumScopeType, scopeID uuid.UUID, businessDate time.Time, source vo.ValuationSource) (*entity.AUMSnapshot, error)
 	ListAUM(ctx context.Context, scopeType vo.AumScopeType, scopeID uuid.UUID, from, to time.Time, page, limit int) ([]*entity.AUMSnapshot, int, error)
 }
 

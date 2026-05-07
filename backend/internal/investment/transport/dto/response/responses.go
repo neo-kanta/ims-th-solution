@@ -211,6 +211,16 @@ type PaginatedResponse[T any] struct {
 	Limit int `json:"limit"`
 }
 
+// ComputeFundAUMResponse is the body returned by
+// POST /investment/funds/{id}/aum/compute. `idempotent` is true when a
+// snapshot for (fund, date, source=INTERNAL) already existed and the
+// returned snapshot is the pre-existing row rather than a fresh insert.
+type ComputeFundAUMResponse struct {
+	Snapshot       AUMResponse `json:"snapshot"`
+	PortfolioCount int         `json:"portfolio_count"`
+	Idempotent     bool        `json:"idempotent"`
+}
+
 // FormatDecimal returns "" for nil pointers, otherwise a decimal string.
 // Centralised here so handlers all serialise the same way.
 func FormatDecimal(d *decimal.Decimal) string {
