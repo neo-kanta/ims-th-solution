@@ -94,12 +94,29 @@ type AppConfig struct {
 	// CORS
 	CORSAllowedOrigins []string // Allowed CORS origins (empty = localhost dev defaults)
 
-	// Market data providers
-	MarketDataPrimaryProvider  string
-	MarketDataFallbackProvider string
-	AlphaVantageAPIKey         string
-	MarketDataHTTPTimeout      time.Duration
-	MarketDataCacheTTL         time.Duration
+	// Market data: providers + transport
+	MarketDataPrimaryProvider  string        // primary provider tag (e.g., alpha_vantage)
+	MarketDataFallbackProvider string        // optional fallback provider tag
+	MarketDataHTTPTimeout      time.Duration // per-call HTTP timeout for provider calls
+	MarketDataCacheTTL         time.Duration // in-memory cache TTL for repeated quotes
+
+	// Market data: Alpha Vantage
+	AlphaVantageAPIKey          string        // Alpha Vantage API key. Never logged. REQUIRED in non-development.
+	AlphaVantageRateLimitPerMin int           // Per-minute provider call budget (default: 5 — free tier).
+	AlphaVantageRateLimitPerDay int           // Per-day provider call budget (default: 500 — free tier).
+	AlphaVantageBaseURL         string        // Base URL for the provider (default: https://www.alphavantage.co).
+	AlphaVantageTimeout         time.Duration // Per-call timeout (default: 30s).
+
+	// Market data: ingestion scheduler
+	IngestionScheduleCron string // Cron expression for the ingestion scheduler (default: "0 18 * * 1-5" — 18:00 weekdays).
+
+	// Investment: valuation
+	// ValuationStaleThresholdsByAssetClass maps an asset class code (e.g.
+	// "EQUITY", "FIXED_INCOME") to the maximum age of its inputs (price /
+	// FX) before the runner records investment_valuation_stale_inputs_total
+	// and surfaces the snapshot as stale. Codes match
+	// investment__asset_classes; an unknown code falls back to default 1d.
+	ValuationStaleThresholdsByAssetClass map[string]time.Duration
 }
 
 // Load reads configuration from environment variables.
@@ -190,12 +207,27 @@ func Load() (*AppConfig, error) {
 		// CORS
 		CORSAllowedOrigins: parseStringSlice("CORS_ALLOWED_ORIGINS"),
 
-		// Market data providers
+		// Market data: providers + transport
 		MarketDataPrimaryProvider:  strings.ToLower(getEnvOrDefault("MARKET_DATA_PRIMARY_PROVIDER", "alpha_vantage")),
 		MarketDataFallbackProvider: strings.ToLower(getEnvOrDefault("MARKET_DATA_FALLBACK_PROVIDER", "yahoo")),
-		AlphaVantageAPIKey:         os.Getenv("ALPHA_VANTAGE_API_KEY"),
 		MarketDataHTTPTimeout:      time.Duration(parseInt("MARKET_DATA_HTTP_TIMEOUT_SECONDS", 15)) * time.Second,
 		MarketDataCacheTTL:         time.Duration(parseInt("MARKET_DATA_CACHE_TTL_SECONDS", 900)) * time.Second,
+
+		// Market data: Alpha Vantage
+		AlphaVantageAPIKey:          os.Getenv("ALPHA_VANTAGE_API_KEY"),
+		AlphaVantageRateLimitPerMin: parseInt("ALPHA_VANTAGE_RATE_LIMIT_PER_MIN", 5),
+		AlphaVantageRateLimitPerDay: parseInt("ALPHA_VANTAGE_RATE_LIMIT_PER_DAY", 500),
+		AlphaVantageBaseURL:         getEnvOrDefault("ALPHA_VANTAGE_BASE_URL", "https://www.alphavantage.co"),
+		AlphaVantageTimeout:         parseDuration("ALPHA_VANTAGE_TIMEOUT", "30s"),
+
+		// Market data: ingestion scheduler
+		IngestionScheduleCron: getEnvOrDefault("INGESTION_SCHEDULE_CRON", "0 18 * * 1-5"),
+
+		// Investment: valuation staleness thresholds
+		ValuationStaleThresholdsByAssetClass: parseStaleThresholds(
+			"VALUATION_STALE_THRESHOLDS",
+			"EQUITY=24h,FIXED_INCOME=72h,FUND=24h,ETF=24h,CASH=720h,ALTERNATIVE=720h,DERIVATIVE=24h",
+		),
 	}
 
 	if cfg.JWTSecret == "" && cfg.Env != "development" {
@@ -213,7 +245,41 @@ func Load() (*AppConfig, error) {
 		return nil, fmt.Errorf("MFA_ENCRYPTION_KEY is required in non-development environments")
 	}
 
+	if cfg.AlphaVantageAPIKey == "" && cfg.Env != "development" && cfg.Env != "test" {
+		return nil, fmt.Errorf("ALPHA_VANTAGE_API_KEY is required in non-development environments")
+	}
+
 	return cfg, nil
+}
+
+// MarshalJSON / String redactions for config: AppConfig has no String method
+// today; if one is added, ensure JWTSecret, JWTSecretPrevious, DBPassword,
+// MFAEncryptionKey, RedisPassword, and AlphaVantageAPIKey are NEVER emitted.
+
+// parseStaleThresholds parses a comma-separated list of CODE=DURATION pairs
+// (e.g. "EQUITY=24h,FIXED_INCOME=72h") into a map. Unparseable entries fall
+// back to the default-string values silently — operability metrics are
+// best-effort.
+func parseStaleThresholds(key, defaultVal string) map[string]time.Duration {
+	val := getEnvOrDefault(key, defaultVal)
+	out := map[string]time.Duration{}
+	for _, part := range strings.Split(val, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		eq := strings.IndexByte(part, '=')
+		if eq <= 0 || eq == len(part)-1 {
+			continue
+		}
+		code := strings.ToUpper(strings.TrimSpace(part[:eq]))
+		dur, err := time.ParseDuration(strings.TrimSpace(part[eq+1:]))
+		if err != nil {
+			continue
+		}
+		out[code] = dur
+	}
+	return out
 }
 
 // PasswordMaxAge returns the password max age as a time.Duration.
