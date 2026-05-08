@@ -20,6 +20,8 @@ variables:
     value: "{{base-url}}auth/mfa"
   - secret: true
     name: totp_code
+  - name: session_id
+    value: ""
   - name: etl_job_id
     value: ""
   - name: feed_id
@@ -28,6 +30,12 @@ variables:
     value: 2026-04-17
   - name: import_file_path
     value: ""
+  - name: user_id
+    value: ""
+  - secret: true
+    name: user_password
+  - secret: true
+    name: admin_id
   - secret: true
     name: base-url
   - name: mfa-provisioning-uri
@@ -77,6 +85,8 @@ variables:
   - name: investment-price-id
     value: ""
   - name: investment-valuation-id
+    value: ""
+  - name: investment-fund-aum-id
     value: ""
   - name: investment-asset-class-id
     value: ""
