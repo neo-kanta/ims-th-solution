@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{investment-base-url}}/portfolios/:portfolioId/cash-balances"
+  url: "{{investment-base-url}}/portfolios/:portfolioId/cash"
   params:
     - name: portfolioId
       value: "{{investment-portfolio-id}}"

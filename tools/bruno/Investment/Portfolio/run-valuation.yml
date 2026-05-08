@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{investment-base-url}}/portfolios/:portfolioId/valuations"
+  url: "{{investment-base-url}}/portfolios/:portfolioId/valuations/run"
   params:
     - name: portfolioId
       value: "{{investment-portfolio-id}}"

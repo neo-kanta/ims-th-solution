@@ -4,7 +4,7 @@ info:
   seq: 20
 
 http:
-  method: PATCH
+  method: PUT
   url: "{{investment-base-url}}/instruments/:instrumentId"
   params:
     - name: instrumentId

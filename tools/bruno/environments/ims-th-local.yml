@@ -2,6 +2,8 @@ name: ims-th-local
 variables:
   - name: server-base-url
     value: http://localhost:8080
+  - name: base-url
+    value: http://localhost:8080/api/v1/
   - name: integration-etl
     value: http://localhost:8080/api/v1/etl
   - secret: true
@@ -83,6 +85,8 @@ variables:
   - name: investment-price-id
     value: ""
   - name: investment-valuation-id
+    value: ""
+  - name: investment-fund-aum-id
     value: ""
   - name: investment-asset-class-id
     value: d84937a1-e806-46ce-8eb9-807c8dc5d183
