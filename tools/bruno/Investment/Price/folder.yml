@@ -1,0 +1,6 @@
+info:
+  name: Price
+  type: folder
+
+request:
+  auth: inherit

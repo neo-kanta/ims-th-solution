@@ -65,6 +65,6 @@ coverage/
 # =============================
 *.claude
 tools/mcp/ims-mcp-server/node_modules
-docs
 .gocache
 *.duet
+

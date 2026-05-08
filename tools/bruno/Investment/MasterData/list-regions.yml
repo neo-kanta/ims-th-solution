@@ -1,0 +1,31 @@
+info:
+  name: list-regions
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/reference/regions"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || [];
+        const first = Array.isArray(data) ? data[0] : {};
+        const id = first?.id || first?.ID;
+
+        if (id) {
+          bru.setEnvVar("investment-region-id", id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

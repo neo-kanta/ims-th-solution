@@ -1,0 +1,45 @@
+info:
+  name: update-fund
+  type: http
+  seq: 11
+
+http:
+  method: PATCH
+  url: "{{investment-base-url}}/funds/:fundId"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "expected_version": {{investment-fund-version}},
+        "name": "{{investment-fund-name}}",
+        "short_name": "{{investment-fund-short-name}}",
+        "benchmark": "{{investment-benchmark}}",
+        "risk_profile": "{{investment-risk-profile}}",
+        "status": "{{investment-fund-status}}",
+        "external_pam_ref": "{{investment-external-pam-ref}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.version !== undefined) {
+          bru.setEnvVar("investment-fund-version", String(data.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

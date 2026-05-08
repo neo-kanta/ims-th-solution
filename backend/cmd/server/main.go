@@ -20,6 +20,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
@@ -93,7 +94,14 @@ func main() {
 	// Module
 	complianceModule := compliance.NewModule(pool, iamModule)
 	workflowModule := workflow.NewModule(pool, iamModule, complianceModule.ContractAdapter())
-	investmentModule := investment.NewModule(complianceModule.ContractAdapter())
+	investmentModule := investment.NewModule(
+		pool,
+		complianceModule.ContractAdapter(),
+		workflowModule,
+		iamModule,
+		auditModule.Recorder(),
+	)
+	marketDataModule := marketdata.NewModule(pool, cfg, redisClient)
 	healthHandler := NewHealthHandler(pool, redisClient)
 
 	schedulerCtx, stopScheduler := context.WithCancel(context.Background())
@@ -112,7 +120,7 @@ func main() {
 	r.Get("/health", healthHandler.Get)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -124,6 +132,7 @@ func main() {
 			complianceModule.RegisterRoutes(r)
 			workflowModule.RegisterRoutes(r)
 			investmentModule.RegisterRoutes(r)
+			marketDataModule.RegisterRoutes(r)
 		})
 	})
 

@@ -1,0 +1,52 @@
+info:
+  name: create-portfolio
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/portfolios"
+  body:
+    type: json
+    data: |-
+      {
+        "fund_id": "{{investment-fund-id}}",
+        "code": "{{investment-portfolio-code}}",
+        "name": "{{investment-portfolio-name}}",
+        "description": "{{investment-portfolio-description}}",
+        "base_currency": "{{investment-base-currency}}",
+        "valuation_currency": "{{investment-valuation-currency}}",
+        "strategy_code": "{{investment-strategy-code}}",
+        "style_id": null,
+        "manager_user_id": null,
+        "benchmark": "{{investment-benchmark}}",
+        "risk_profile": "{{investment-risk-profile}}",
+        "inception_date": "{{investment-inception-date}}",
+        "has_units": {{investment-has-units}},
+        "tax_lot_method": "{{investment-tax-lot-method}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-portfolio-id", data.id, { persist: true });
+        }
+
+        if (data.version !== undefined) {
+          bru.setEnvVar("investment-portfolio-version", String(data.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

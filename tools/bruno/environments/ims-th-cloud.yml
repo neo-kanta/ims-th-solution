@@ -44,6 +44,8 @@ variables:
     value: "{{base-url}}market-data"
   - name: market-data-symbol
     value: AAPL
+  - name: market-data-provider
+    value: alpha_vantage
   - name: market-data-history-limit
     value: "30"
   - name: market-data-last-symbol
