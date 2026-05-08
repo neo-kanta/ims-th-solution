@@ -2,7 +2,7 @@
 # Quick commands for development, testing, and deployment.
 
 .PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed db-reset \
-        test test-unit test-integration test-e2e lint build docker-build swagger
+        contract-check test test-unit test-integration test-e2e lint build docker-build swagger
 
 # =============================
 # Development
@@ -49,6 +49,13 @@ db-reset: ## Drop + recreate + migrate + seed
 	@sleep 3
 	$(MAKE) migrate-up
 	$(MAKE) seed
+
+# =============================
+# Contracts
+# =============================
+
+contract-check: ## Verify cross-module contract bindings against the running database
+	cd backend && go run cmd/contract-check/main.go
 
 # =============================
 # Testing

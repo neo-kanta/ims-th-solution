@@ -1,0 +1,48 @@
+info:
+  name: create-instrument
+  type: http
+  seq: 17
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/instruments"
+  body:
+    type: json
+    data: |-
+      {
+        "primary_ticker": "{{investment-instrument-ticker}}",
+        "name": "{{investment-instrument-name}}",
+        "asset_class_id": "{{investment-asset-class-id}}",
+        "asset_subtype_id": "{{investment-asset-subtype-id}}",
+        "currency": "{{investment-instrument-currency}}",
+        "country_id": "{{investment-country-id}}",
+        "region_id": null,
+        "primary_exchange": "{{investment-primary-exchange}}",
+        "sector_id": null,
+        "fund_category_id": null,
+        "lot_size": {{investment-lot-size}},
+        "tick_size": "{{investment-tick-size}}",
+        "attributes": {
+          "source": "bruno"
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-instrument-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

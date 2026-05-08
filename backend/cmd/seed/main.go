@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/logging"
 )
+
+const defaultSeedsDir = "../database/seeds"
 
 func main() {
 	cfg, err := config.Load()
@@ -30,34 +31,20 @@ func main() {
 	}
 	defer pool.Close()
 
-	seedsDir := os.Getenv("SEEDS_PATH")
-	if seedsDir == "" {
-		seedsDir = "../database/seeds"
-	}
-	files, err := filepath.Glob(filepath.Join(seedsDir, "*.sql"))
-	if err != nil {
-		slog.Error("Failed to list seed files", "error", err)
+	catalogs := defaultPermissionCatalogs()
+	if err := upsertPermissionCatalog(ctx, pool, catalogs); err != nil {
+		slog.Error("Failed to upsert permission catalog", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("Permission catalog upserted", "modules", len(catalogs))
 
-	if len(files) == 0 {
-		slog.Info("No seed files found")
-		return
+	seedsDir := os.Getenv("SEEDS_PATH")
+	if seedsDir == "" {
+		seedsDir = defaultSeedsDir
 	}
-
-	for _, file := range files {
-		content, err := os.ReadFile(file)
-		if err != nil {
-			slog.Error("Failed to read seed file", "file", file, "error", err)
-			os.Exit(1)
-		}
-
-		slog.Info("Executing seed file", "file", file)
-		_, err = pool.Exec(ctx, string(content))
-		if err != nil {
-			slog.Error("Failed to execute seed file", "file", file, "error", err)
-			os.Exit(1)
-		}
+	if err := runSQLSeeds(ctx, pool, seedsDir); err != nil {
+		slog.Error("Failed to run SQL seeds", "error", err)
+		os.Exit(1)
 	}
 
 	slog.Info("Database seeded successfully")

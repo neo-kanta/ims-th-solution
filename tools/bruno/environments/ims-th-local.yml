@@ -49,23 +49,25 @@ variables:
   - name: market-data-base-url
     value: http://localhost:8080/api/v1/market-data
   - name: market-data-symbol
-    value: IBM
+    value: AMD
+  - name: market-data-provider
+    value: alpha_vantage
   - name: market-data-history-limit
     value: "30"
   - name: market-data-last-symbol
-    value: IBM
+    value: AMD
   - name: market-data-last-provider
-    value: alpha_vantage
+    value: yahoo
   - name: market-data-last-price
-    value: "233.04"
+    value: "337.11"
   - name: market-data-last-close
-    value: "233.04"
+    value: "337.1099853515625"
   - name: investment-page
     value: "1"
   - name: investment-limit
     value: "50"
   - name: investment-fund-id
-    value: ""
+    value: 0be47c0d-0d8c-4527-9970-2029ff4a0325
   - name: investment-fund-version
     value: "1"
   - name: investment-portfolio-id
@@ -83,19 +85,19 @@ variables:
   - name: investment-valuation-id
     value: ""
   - name: investment-asset-class-id
-    value: 3546cace-fba7-49e8-b3e6-78e9b181f94c
+    value: d84937a1-e806-46ce-8eb9-807c8dc5d183
   - name: investment-asset-subtype-id
-    value: ""
+    value: 4e78a9d6-1f91-4e6d-8098-bafe1816f3e8
   - name: investment-sector-id
-    value: ""
+    value: be6dc15f-f3db-41c1-a9bc-5a8dbe574685
   - name: investment-fund-category-id
-    value: ""
+    value: 4b4d8653-8e8b-41fe-9194-1c0d2b2fc44d
   - name: investment-region-id
-    value: ""
+    value: 083542a1-3268-405f-b978-1bbd3ad71c03
   - name: investment-country-id
-    value: ""
+    value: 9890d92d-4fcd-40f3-9e07-57ed2122ae9b
   - name: investment-style-id
-    value: ""
+    value: 9ccc0fda-7dbe-483c-b9cb-cc6f51ce6886
   - name: investment-fund-code
     value: BRUNO-FUND-001
   - name: investment-fund-name

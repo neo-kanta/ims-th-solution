@@ -1,0 +1,32 @@
+info:
+  name: get-portfolio
+  type: http
+  seq: 14
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/portfolios/:portfolioId"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.version !== undefined) {
+          bru.setEnvVar("investment-portfolio-version", String(data.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
