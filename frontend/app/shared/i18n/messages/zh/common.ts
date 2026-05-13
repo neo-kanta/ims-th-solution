@@ -23,6 +23,10 @@ export const zhCommonMessages = {
     unknown: "未知",
     empty: "暂无数据",
     notAvailable: "-",
+    pagination: {
+      empty: "暂无结果",
+      range: "{start}-{end} / 共 {total}",
+    },
   },
   auth: {
     welcome: "欢迎",

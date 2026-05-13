@@ -42,8 +42,13 @@ const passwordToggleLabel = computed(() =>
     : t("auth.showPassword", "Show password"),
 );
 
+const MIN_PASSWORD_LENGTH = 12;
+
 const canSubmitReset = computed(
-  () => props.canUpdateUsers && !props.resetLoading && newPassword.value.length >= 8,
+  () =>
+    props.canUpdateUsers &&
+    !props.resetLoading &&
+    newPassword.value.length >= MIN_PASSWORD_LENGTH,
 );
 
 watch(
@@ -64,13 +69,29 @@ watch(
   },
 );
 
+const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+
+function lockedUntilLabel(user: AdminUser): string {
+  if (!user.locked_until) {
+    return t("common.notAvailable");
+  }
+  const date = new Date(user.locked_until);
+  if (Number.isNaN(date.getTime())) {
+    return user.locked_until;
+  }
+  if (date.getTime() > Date.now() + TEN_YEARS_MS) {
+    return t("settings.status.lockedIndefinitely");
+  }
+  return props.formatDateTime(user.locked_until);
+}
+
 function requestResetPassword() {
   if (!props.user || props.resetLoading) {
     return;
   }
 
-  if (newPassword.value.length < 8) {
-    resetFieldError.value = "Use at least 8 characters.";
+  if (newPassword.value.length < MIN_PASSWORD_LENGTH) {
+    resetFieldError.value = t("settings.console.otherAccounts.validationPassword");
     return;
   }
 
@@ -114,14 +135,20 @@ function requestResetPassword() {
           </div>
           <div>
             <dt>{{ t("settings.details.lockedUntil") }}</dt>
-            <dd>{{ formatDateTime(user.locked_until) }}</dd>
+            <dd>{{ lockedUntilLabel(user) }}</dd>
           </div>
           <div>
-            <dt>Password change</dt>
-            <dd>{{ user.force_password_change ? "Required" : "Current" }}</dd>
+            <dt>{{ t("settings.console.accountDetail.passwordChange") }}</dt>
+            <dd>
+              {{
+                user.force_password_change
+                  ? t("settings.console.accountDetail.required")
+                  : t("settings.console.accountDetail.current")
+              }}
+            </dd>
           </div>
           <div>
-            <dt>Updated</dt>
+            <dt>{{ t("settings.console.accountDetail.updated") }}</dt>
             <dd>{{ formatDateTime(user.updated_at) }}</dd>
           </div>
         </dl>
@@ -130,7 +157,9 @@ function requestResetPassword() {
           v-if="canDeactivateUsers || canUpdateUsers"
           class="settings-action-block"
         >
-          <div class="settings-action-block__title">Account controls</div>
+          <div class="settings-action-block__title">
+            {{ t("settings.console.accountDetail.accountControls") }}
+          </div>
           <div class="settings-action-grid">
             <AppButton
               v-if="canDeactivateUsers"
@@ -184,6 +213,9 @@ function requestResetPassword() {
           <div class="settings-action-block__title">
             {{ t("settings.actions.resetPassword") }}
           </div>
+          <p class="settings-action-block__hint">
+            {{ t("settings.console.accountDetail.resetPasswordHint") }}
+          </p>
           <div
             class="form-group"
             :class="{ 'field-error': resetFieldError || resetError }"
@@ -296,7 +328,7 @@ function requestResetPassword() {
                   {{ t("settings.lastActivity", { date: formatDateTime(session.last_activity_at) }) }}
                 </div>
                 <div class="settings-record-secondary">
-                  Expires {{ formatDateTime(session.expires_at) }}
+                  {{ t("settings.console.accountDetail.expires", { date: formatDateTime(session.expires_at) }) }}
                 </div>
               </div>
               <AppButton
@@ -317,9 +349,11 @@ function requestResetPassword() {
     <div v-else class="settings-user-detail__empty">
       <AppIcon name="accounts" size="lg" />
       <div>
-        <h2 class="settings-panel__title">No account selected</h2>
+        <h2 class="settings-panel__title">
+          {{ t("settings.console.accountDetail.noAccountSelected") }}
+        </h2>
         <p class="settings-panel__subtitle">
-          Select a user to review status, sessions, and controlled actions.
+          {{ t("settings.console.accountDetail.noAccountSelectedSubtitle") }}
         </p>
       </div>
     </div>
@@ -479,5 +513,12 @@ function requestResetPassword() {
   .settings-session {
     flex-direction: column;
   }
+}
+
+.settings-action-block__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
 }
 </style>

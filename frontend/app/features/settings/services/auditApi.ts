@@ -1,12 +1,23 @@
-import { useApi } from "~/composables/useApi";
-import type { ApiResponse } from "~/types/api.types";
+import {
+  unwrapOpenApiResponse,
+  useOpenApiClient,
+} from "~/api/openapi";
+import type { paths } from "~/api/ims-api";
 
-import type { AuditFilters, AuditListPayload } from "../audit.types";
+import type { AuditEvent, AuditFilters, AuditListPayload } from "../audit.types";
 
-const ADMIN_BASE = "/admin";
+type AuditQuery = NonNullable<
+  paths["/admin/audit"]["get"]["parameters"]["query"]
+>;
+type AuditExportQuery = NonNullable<
+  paths["/admin/audit/export"]["get"]["parameters"]["query"]
+>;
+type AuditListResponse =
+  paths["/admin/audit"]["get"]["responses"][200]["content"]["application/json"];
+type AuditEventResponse = AuditListResponse["events"][number];
 
 export function buildAuditQuery(filters: AuditFilters = {}) {
-  const query: Record<string, string | number> = {};
+  const query: AuditQuery = {};
 
   if (filters.actor_id?.trim()) {
     query.actor_id = filters.actor_id.trim();
@@ -43,23 +54,72 @@ export function buildAuditQuery(filters: AuditFilters = {}) {
   return query;
 }
 
-export const auditApi = {
-  listEvents(filters: AuditFilters = {}) {
-    const { apiFetch } = useApi();
+function buildAuditExportQuery(filters: AuditFilters = {}) {
+  const query: AuditExportQuery = {};
 
-    return apiFetch<ApiResponse<AuditListPayload>>(`${ADMIN_BASE}/audit`, {
-      method: "GET",
-      query: buildAuditQuery(filters),
+  if (filters.actor_id?.trim()) {
+    query.actor_id = filters.actor_id.trim();
+  }
+
+  if (filters.event_type?.trim()) {
+    query.event_type = filters.event_type.trim();
+  }
+
+  if (filters.since) {
+    query.since = filters.since;
+  }
+
+  if (filters.until) {
+    query.until = filters.until;
+  }
+
+  return query;
+}
+
+function normalizeAuditEvent(event: AuditEventResponse): AuditEvent {
+  return {
+    id: event.id ?? "",
+    actor_id: event.actor_id ?? null,
+    event_type: event.event_type ?? "",
+    target_type: event.target_type ?? "",
+    target_id: event.target_id ?? "",
+    ip_address: event.ip_address ?? "",
+    user_agent: event.user_agent ?? "",
+    metadata: event.metadata,
+    created_at: event.created_at ?? "",
+  };
+}
+
+function normalizeAuditList(response: AuditListResponse): AuditListPayload {
+  return {
+    events: (response.events ?? []).map(normalizeAuditEvent),
+    total: response.total ?? 0,
+    offset: response.offset ?? 0,
+    limit: response.limit ?? 0,
+  };
+}
+
+export const auditApi = {
+  async listEvents(filters: AuditFilters = {}) {
+    const client = useOpenApiClient();
+    const response = await client.GET("/admin/audit", {
+      params: {
+        query: buildAuditQuery(filters),
+      },
     });
+
+    return normalizeAuditList(unwrapOpenApiResponse<AuditListResponse>(response));
   },
 
-  exportEvents(filters: AuditFilters = {}) {
-    const { apiFetch } = useApi();
-
-    return apiFetch<Blob>(`${ADMIN_BASE}/audit/export`, {
-      method: "GET",
-      query: buildAuditQuery(filters),
-      responseType: "blob",
+  async exportEvents(filters: AuditFilters = {}) {
+    const client = useOpenApiClient();
+    const response = await client.GET("/admin/audit/export", {
+      params: {
+        query: buildAuditExportQuery(filters),
+      },
+      parseAs: "blob",
     });
+
+    return unwrapOpenApiResponse<Blob>(response);
   },
 };

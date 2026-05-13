@@ -9,23 +9,57 @@ import type {
   AdminUserStatusAction,
   CreateAdminUserInput,
 } from "../admin.types";
+import type {
+  ChangePersonalPasswordInput,
+  PersonalAccountPayload,
+  PersonalAccountSession,
+  PersonalMfaStatus,
+} from "../account.types";
 import type { AuditFilters, AuditListPayload } from "../audit.types";
 import type {
   AuditLogFilters,
   BooleanFilterValue,
+  DataPermissionGrant,
+  FunctionPermissionRow,
+  NotificationPreference,
+  PermissionActionColumn,
   SettingsKpiMetric,
+  SettingsGroupRole,
+  SettingsNavigationItem,
+  SettingsOverviewSignal,
+  SecurityPolicyModel,
+  SecurityPolicySetting,
+  SettingsSectionId,
+  SettingsApiCapability,
   UserDirectoryFilters,
 } from "../ui.types";
 import { adminApi } from "../services/adminApi";
+import { accountApi } from "../services/accountApi";
 import { auditApi } from "../services/auditApi";
+import SettingsDataPermissionsPanel from "./SettingsDataPermissionsPanel.vue";
+import SettingsFunctionPermissionsPanel from "./SettingsFunctionPermissionsPanel.vue";
+import SettingsGroupsRolesPanel from "./SettingsGroupsRolesPanel.vue";
 import SettingsAuditLog from "./SettingsAuditLog.vue";
 import SettingsConfirmDialog from "./SettingsConfirmDialog.vue";
 import SettingsCreateUserForm from "./SettingsCreateUserForm.vue";
-import SettingsKpiGrid from "./SettingsKpiGrid.vue";
+import SettingsNotificationsPanel from "./SettingsNotificationsPanel.vue";
+import SettingsOverviewPanel from "./SettingsOverviewPanel.vue";
+import SettingsPersonalAccountPanel from "./SettingsPersonalAccountPanel.vue";
+import SettingsSecurityPolicyPanel from "./SettingsSecurityPolicyPanel.vue";
+import SettingsSectionNav from "./SettingsSectionNav.vue";
 import SettingsUserDetailPanel from "./SettingsUserDetailPanel.vue";
 import SettingsUserDirectory from "./SettingsUserDirectory.vue";
 import { createDateFormatter } from "~/shared/i18n/intl";
 import { isRiskAuditEvent } from "../lib/audit";
+import {
+  SETTINGS_API_CAPABILITIES,
+  SETTINGS_DEMO_DATA_GRANTS,
+  SETTINGS_DEMO_GROUPS,
+  SETTINGS_FUNCTION_PERMISSION_ROWS,
+  SETTINGS_NOTIFICATION_PREFERENCES,
+  SETTINGS_PERMISSION_ACTIONS,
+  SETTINGS_SECURITY_POLICY,
+} from "../lib/settingsCatalog";
 
 const USER_PAGE_LIMIT = 12;
 const AUDIT_PAGE_LIMIT = 12;
@@ -46,7 +80,6 @@ type ConfirmAction =
   | {
       type: "reset-password";
       user: AdminUser;
-      newPassword: string;
     }
   | {
       type: "revoke-session";
@@ -54,8 +87,15 @@ type ConfirmAction =
       session: AdminSession;
     }
   | {
+      type: "revoke-own-session";
+      session: PersonalAccountSession;
+    }
+  | {
       type: "export-audit";
     };
+
+// Held outside reactive state so cleartext never enters Vue reactivity.
+let pendingResetPassword: string | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -104,8 +144,84 @@ function toAuditTimestamp(value: string): string | undefined {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
 }
 
+function normalizeRoleId(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function humanizeGroupName(value: string): string {
+  return value
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function inferResponsibilities(groupName: string): string[] {
+  const normalized = groupName.toLowerCase();
+
+  if (normalized.includes("admin") || normalized.includes("iam")) {
+    return ["Account lifecycle", "Privileged access review", "Audit evidence"];
+  }
+
+  if (normalized.includes("portfolio") || normalized.includes("investment")) {
+    return ["Investment workflow", "Portfolio monitoring", "Decision support"];
+  }
+
+  if (normalized.includes("risk") || normalized.includes("compliance")) {
+    return ["Control review", "Approval oversight", "Exception monitoring"];
+  }
+
+  if (normalized.includes("operation") || normalized.includes("ops")) {
+    return ["Operational queues", "Daily workflow control", "Exception handling"];
+  }
+
+  return ["Business access", "Controlled system usage", "Periodic access review"];
+}
+
+function inferPermissionFamilies(groupName: string): string[] {
+  const normalized = groupName.toLowerCase();
+
+  if (normalized.includes("admin") || normalized.includes("iam")) {
+    return ["IAM_USER_VIEW", "IAM_USER_UPDATE", "IAM_AUDIT_VIEW"];
+  }
+
+  if (normalized.includes("approval") || normalized.includes("risk")) {
+    return ["APPROVAL_VIEW", "APPROVAL_CONFIG", "AUDIT_VIEW"];
+  }
+
+  if (normalized.includes("investment") || normalized.includes("portfolio")) {
+    return ["INVESTMENT_VIEW", "INVESTMENT_CREATE", "PORTFOLIO_VIEW"];
+  }
+
+  return ["DASHBOARD_VIEW", "WORKFLOW_VIEW"];
+}
+
+function inferRiskLevel(groupName: string): SettingsGroupRole["riskLevel"] {
+  const normalized = groupName.toLowerCase();
+
+  if (normalized.includes("admin") || normalized.includes("iam")) {
+    return "restricted";
+  }
+
+  if (
+    normalized.includes("approval") ||
+    normalized.includes("risk") ||
+    normalized.includes("investment")
+  ) {
+    return "elevated";
+  }
+
+  return "standard";
+}
+
 const authStore = useAuthStore();
 const { t, locale } = useI18n();
+const runtimeConfig = useRuntimeConfig();
+const activeSection = ref<SettingsSectionId>("personal-account");
 
 const canViewUsers = computed(() => authStore.hasPermission("IAM_USER_VIEW"));
 const canCreateUsers = computed(() =>
@@ -118,18 +234,8 @@ const canUpdateUsers = computed(() =>
   authStore.hasPermission("IAM_USER_UPDATE"),
 );
 const canViewAudit = computed(() => authStore.hasPermission("IAM_AUDIT_VIEW"));
-const hasAccess = computed(
-  () =>
-    canViewUsers.value ||
-    canCreateUsers.value ||
-    canDeactivateUsers.value ||
-    canUpdateUsers.value ||
-    canViewAudit.value,
-);
-
-if (!hasAccess.value) {
-  await navigateTo("/403", { replace: true });
-}
+// Auth middleware on the /settings page handles unauthenticated redirects.
+// Section visibility is gated by per-permission `v-if`/`v-show` below.
 
 const bangkokFormatter = computed(() =>
   createDateFormatter(
@@ -184,9 +290,14 @@ const auditState = ref<AuditListPayload>({
   offset: 0,
   limit: AUDIT_PAGE_LIMIT,
 });
+const personalAccount = ref<PersonalAccountPayload | null>(null);
+const personalMfaStatus = ref<PersonalMfaStatus | null>(null);
+const personalSessions = ref<PersonalAccountSession[]>([]);
 const sessions = ref<AdminSession[]>([]);
 const selectedUserId = ref<string | null>(null);
 
+const personalLoading = ref(false);
+const personalPasswordLoading = ref(false);
 const usersLoading = ref(false);
 const userMetricsLoading = ref(false);
 const auditLoading = ref(false);
@@ -199,6 +310,10 @@ const statusAction = ref<AdminUserStatusAction | null>(null);
 const revokingSessionId = ref<string | null>(null);
 
 const usersError = ref<string | null>(null);
+const personalError = ref<string | null>(null);
+const personalMfaError = ref<string | null>(null);
+const personalSessionsError = ref<string | null>(null);
+const personalPasswordError = ref<string | null>(null);
 const auditError = ref<string | null>(null);
 const sessionsError = ref<string | null>(null);
 const createError = ref<string | null>(null);
@@ -206,6 +321,8 @@ const resetError = ref<string | null>(null);
 
 const createSuccessNonce = ref(0);
 const resetSuccessNonce = ref(0);
+const personalPasswordSuccessNonce = ref(0);
+const revokingOwnSessionId = ref<string | null>(null);
 const toast = ref<ToastState | null>(null);
 const confirmAction = ref<ConfirmAction | null>(null);
 
@@ -219,45 +336,472 @@ const visibleRiskEvents = computed(
       isRiskAuditEvent(event.event_type),
     ).length,
 );
+const observedGroupCount = computed(() => {
+  const groupNames = new Set<string>();
+
+  for (const user of users.value) {
+    for (const group of user.groups) {
+      if (group.trim()) {
+        groupNames.add(group.trim());
+      }
+    }
+  }
+
+  return groupNames.size;
+});
+const currentSessionFunctionCount = computed(
+  () => authStore.permissions.functions.length,
+);
+const currentSessionContractCount = computed(
+  () => authStore.permissions.contracts.length,
+);
+// `userMetrics.locked` is a backend total. `visibleRiskEvents` is page-local
+// and is shown separately in the overview signal, not summed here.
+const pendingReviewCount = computed(() => userMetrics.value.locked);
 
 const kpiMetrics = computed<SettingsKpiMetric[]>(() => [
   {
     id: "total-users",
-    label: "Total users",
+    label: t("settings.console.kpis.totalUsers"),
     value: canViewUsers.value ? userMetrics.value.total : "-",
-    helper: "Directory accounts under IAM",
+    helper: t("settings.console.kpis.totalUsersHelper"),
     icon: "accounts",
     tone: "primary",
   },
   {
     id: "active-users",
-    label: "Active users",
+    label: t("settings.console.kpis.activeUsers"),
     value: canViewUsers.value ? userMetrics.value.active : "-",
-    helper: "Enabled accounts",
+    helper: t("settings.console.kpis.activeUsersHelper"),
     icon: "check",
     tone: "success",
   },
   {
     id: "locked-users",
-    label: "Locked users",
+    label: t("settings.console.kpis.lockedUsers"),
     value: canViewUsers.value ? userMetrics.value.locked : "-",
-    helper: "Immediate access review",
+    helper: t("settings.console.kpis.lockedUsersHelper"),
     icon: "lock",
     tone: userMetrics.value.locked > 0 ? "warning" : "neutral",
   },
   {
-    id: "audit-risk",
-    label: "Audit hits",
-    value: canViewAudit.value ? auditState.value.total : "-",
-    helper: `${visibleRiskEvents.value} risk events visible`,
-    icon: "audit",
-    tone: visibleRiskEvents.value > 0 ? "danger" : "neutral",
+    id: "groups-roles",
+    label: t("settings.console.kpis.groupsRoles"),
+    value: canViewUsers.value ? observedGroupCount.value : "-",
+    helper: t("settings.console.kpis.groupsRolesHelper"),
+    icon: "groups",
+    tone: "neutral",
+  },
+  {
+    id: "pending-review",
+    label: t("settings.console.kpis.pendingReview"),
+    value: canViewUsers.value || canViewAudit.value ? pendingReviewCount.value : "-",
+    helper: t("settings.console.kpis.pendingReviewHelper"),
+    icon: "review",
+    tone: pendingReviewCount.value > 0 ? "warning" : "success",
+  },
+  {
+    id: "coverage",
+    label: t("settings.console.kpis.permissionCoverage"),
+    value: currentSessionFunctionCount.value + currentSessionContractCount.value,
+    helper: t("settings.console.kpis.permissionCoverageHelper", {
+      functionCount: currentSessionFunctionCount.value,
+      dataScopeCount: currentSessionContractCount.value,
+    }),
+    icon: "shield",
+    tone: "primary",
   },
 ]);
 
 const metricLoading = computed(
   () => userMetricsLoading.value || (auditLoading.value && auditState.value.total === 0),
 );
+const appName = computed(() => String(runtimeConfig.public.appName || "IMS Thailand"));
+const apiBaseUrl = computed(() =>
+  String(
+    runtimeConfig.public.apiBaseUrl ||
+      runtimeConfig.apiBaseUrl ||
+      t("settings.console.common.unavailable"),
+  ),
+);
+const clientTimezone = computed(() => {
+  if (!import.meta.client) {
+    return "Asia/Bangkok";
+  }
+
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Bangkok";
+});
+const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
+  {
+    id: "overview",
+    label: t("settings.console.nav.overview"),
+    description: t("settings.console.nav.overviewDesc"),
+    icon: "dashboard",
+    status: "live",
+  },
+  {
+    id: "personal-account",
+    label: t("settings.console.nav.personalAccount"),
+    description: t("settings.console.nav.personalAccountDesc"),
+    icon: "user",
+    status: "live",
+  },
+  {
+    id: "users",
+    label: t("settings.console.nav.otherAccounts"),
+    description: t("settings.console.nav.otherAccountsDesc"),
+    icon: "accounts",
+    status: canViewUsers.value || canCreateUsers.value ? "live" : "pending",
+    count: canViewUsers.value ? usersState.value.total : undefined,
+    disabled: !(canViewUsers.value || canCreateUsers.value),
+  },
+  {
+    id: "groups",
+    label: t("settings.console.nav.groupsRoles"),
+    description: t("settings.console.nav.groupsRolesDesc"),
+    icon: "groups",
+    status: "read-only",
+    count: observedGroupCount.value,
+    disabled: !canViewUsers.value,
+  },
+  {
+    id: "function-permissions",
+    label: t("settings.console.nav.functionPermissions"),
+    description: t("settings.console.nav.functionPermissionsDesc"),
+    icon: "workflow",
+    status: "read-only",
+    count: currentSessionFunctionCount.value,
+  },
+  {
+    id: "data-permissions",
+    label: t("settings.console.nav.dataPermissions"),
+    description: t("settings.console.nav.dataPermissionsDesc"),
+    icon: "portfolio",
+    status: "read-only",
+    count: currentSessionContractCount.value,
+  },
+  {
+    id: "security-policy",
+    label: t("settings.console.nav.securityPolicy"),
+    description: t("settings.console.nav.securityPolicyDesc"),
+    icon: "shield",
+    status: "pending",
+  },
+  {
+    id: "notifications",
+    label: t("settings.console.nav.notifications"),
+    description: t("settings.console.nav.notificationsDesc"),
+    icon: "notifications",
+    status: "pending",
+  },
+  {
+    id: "audit",
+    label: t("settings.console.nav.auditLogs"),
+    description: t("settings.console.nav.auditLogsDesc"),
+    icon: "audit",
+    status: canViewAudit.value ? "live" : "pending",
+    count: canViewAudit.value ? auditState.value.total : undefined,
+    disabled: !canViewAudit.value,
+  },
+]);
+const overviewSignals = computed<SettingsOverviewSignal[]>(() => [
+  {
+    id: "api-users",
+    label: t("settings.console.overview.signals.userApi"),
+    value: canViewUsers.value
+      ? t("settings.console.common.available")
+      : t("settings.console.common.restricted"),
+    helper: canViewUsers.value
+      ? t("settings.console.overview.signals.userApiAvailable")
+      : t("settings.console.overview.signals.userApiRestricted"),
+    tone: canViewUsers.value ? "success" : "warning",
+  },
+  {
+    id: "locked-users",
+    label: t("settings.console.overview.signals.lockedUsers"),
+    value: canViewUsers.value ? String(userMetrics.value.locked) : "-",
+    helper:
+      userMetrics.value.locked > 0
+        ? t("settings.console.overview.signals.lockedUsersReview")
+        : t("settings.console.overview.signals.lockedUsersClear"),
+    tone: userMetrics.value.locked > 0 ? "warning" : "success",
+  },
+  {
+    id: "audit-risk",
+    label: t("settings.console.overview.signals.auditRiskCurrentPage"),
+    value: canViewAudit.value ? String(visibleRiskEvents.value) : "-",
+    helper: t("settings.console.overview.signals.auditRiskCurrentPageHelper"),
+    tone: visibleRiskEvents.value > 0 ? "danger" : "neutral",
+  },
+  {
+    id: "data-access",
+    label: t("settings.console.overview.signals.dataAccess"),
+    value: String(currentSessionContractCount.value),
+    helper: t("settings.console.overview.signals.dataAccessHelper"),
+    tone: currentSessionContractCount.value > 0 ? "info" : "neutral",
+  },
+]);
+
+function apiCapabilityCopy(
+  capability: SettingsApiCapability,
+): Pick<SettingsApiCapability, "label" | "capability"> {
+  switch (capability.id) {
+    case "personal-account":
+      return {
+        label: t("settings.console.overview.capabilities.personalAccount"),
+        capability: t("settings.console.overview.capabilities.personalAccountCapability"),
+      };
+    case "users":
+      return {
+        label: t("settings.console.overview.capabilities.otherAccounts"),
+        capability: t("settings.console.overview.capabilities.otherAccountsCapability"),
+      };
+    case "sessions":
+      return {
+        label: t("settings.console.overview.capabilities.userSessions"),
+        capability: t("settings.console.overview.capabilities.userSessionsCapability"),
+      };
+    case "audit":
+      return {
+        label: t("settings.console.overview.capabilities.audit"),
+        capability: t("settings.console.overview.capabilities.auditCapability"),
+      };
+    case "groups":
+      return {
+        label: t("settings.console.overview.capabilities.groups"),
+        capability: t("settings.console.overview.capabilities.groupsCapability"),
+      };
+    case "permissions":
+      return {
+        label: t("settings.console.overview.capabilities.permissions"),
+        capability: t("settings.console.overview.capabilities.permissionsCapability"),
+      };
+    case "policy":
+      return {
+        label: t("settings.console.overview.capabilities.policy"),
+        capability: t("settings.console.overview.capabilities.policyCapability"),
+      };
+    default:
+      return {
+        label: capability.label,
+        capability: capability.capability,
+      };
+  }
+}
+
+const apiCapabilities = computed<SettingsApiCapability[]>(() =>
+  SETTINGS_API_CAPABILITIES.map((capability) => ({
+    ...capability,
+    ...apiCapabilityCopy(capability),
+  })),
+);
+
+function permissionActionLabel(action: PermissionActionColumn["key"]) {
+  switch (action) {
+    case "view":
+      return t("settings.console.functionPermissions.actions.view");
+    case "search":
+      return t("settings.console.functionPermissions.actions.search");
+    case "add":
+      return t("settings.console.functionPermissions.actions.add");
+    case "edit":
+      return t("settings.console.functionPermissions.actions.edit");
+    case "delete":
+      return t("settings.console.functionPermissions.actions.delete");
+    case "approve":
+      return t("settings.console.functionPermissions.actions.approve");
+    case "revokeApproval":
+      return t("settings.console.functionPermissions.actions.revokeApproval");
+    case "export":
+      return t("settings.console.functionPermissions.actions.export");
+    case "settings":
+      return t("settings.console.functionPermissions.actions.settings");
+  }
+}
+
+const permissionActions = computed<PermissionActionColumn[]>(() =>
+  SETTINGS_PERMISSION_ACTIONS.map((action) => ({
+    ...action,
+    label: permissionActionLabel(action.key),
+  })),
+);
+
+function localizedPolicySetting(setting: SecurityPolicySetting): SecurityPolicySetting {
+  switch (setting.id) {
+    case "minimum-length":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.minimumLength"),
+        helper: t("settings.console.securityPolicy.settings.minimumLengthHelper"),
+        unit: t("settings.console.securityPolicy.settings.characters"),
+      };
+    case "expiry-days":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.expiryDays"),
+        helper: t("settings.console.securityPolicy.settings.expiryDaysHelper"),
+        unit: t("settings.console.securityPolicy.settings.days"),
+      };
+    case "reuse":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.reuse"),
+        helper: t("settings.console.securityPolicy.settings.reuseHelper"),
+        unit: t("settings.console.securityPolicy.settings.previousPasswords"),
+      };
+    case "failed-attempts":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.failedAttempts"),
+        helper: t("settings.console.securityPolicy.settings.failedAttemptsHelper"),
+      };
+    case "change-interval":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.changeInterval"),
+        helper: t("settings.console.securityPolicy.settings.changeIntervalHelper"),
+        unit: t("settings.console.securityPolicy.settings.day"),
+      };
+    case "enforce-rule":
+      return {
+        ...setting,
+        label: t("settings.console.securityPolicy.settings.enforceRule"),
+        helper: t("settings.console.securityPolicy.settings.enforceRuleHelper"),
+      };
+    default:
+      return setting;
+  }
+}
+
+const securityPolicy = computed<SecurityPolicyModel>(() => ({
+  ...SETTINGS_SECURITY_POLICY,
+  settings: SETTINGS_SECURITY_POLICY.settings.map(localizedPolicySetting),
+}));
+
+function localizedNotification(
+  preference: NotificationPreference,
+): NotificationPreference {
+  switch (preference.id) {
+    case "account-lock":
+      return {
+        ...preference,
+        event: t("settings.console.notifications.events.accountLock"),
+        audience: t("settings.console.notifications.audiences.iamAdministrators"),
+        channels: preference.channels.map(localizedNotificationChannel),
+      };
+    case "password-reset":
+      return {
+        ...preference,
+        event: t("settings.console.notifications.events.passwordReset"),
+        audience: t("settings.console.notifications.audiences.securityAdministrators"),
+        channels: preference.channels.map(localizedNotificationChannel),
+      };
+    case "audit-export":
+      return {
+        ...preference,
+        event: t("settings.console.notifications.events.auditExport"),
+        audience: t("settings.console.notifications.audiences.auditors"),
+        channels: preference.channels.map(localizedNotificationChannel),
+      };
+    case "permission-review":
+      return {
+        ...preference,
+        event: t("settings.console.notifications.events.permissionReview"),
+        audience: t("settings.console.notifications.audiences.groupOwners"),
+        channels: preference.channels.map(localizedNotificationChannel),
+      };
+    default:
+      return {
+        ...preference,
+        channels: preference.channels.map(localizedNotificationChannel),
+      };
+  }
+}
+
+function localizedNotificationChannel(channel: string) {
+  if (channel === "In-app") {
+    return t("settings.console.notifications.channels.inApp");
+  }
+
+  if (channel === "Email") {
+    return t("settings.console.notifications.channels.email");
+  }
+
+  return channel;
+}
+
+const notificationPreferences = computed<NotificationPreference[]>(() =>
+  SETTINGS_NOTIFICATION_PREFERENCES.map(localizedNotification),
+);
+
+const derivedGroups = computed<SettingsGroupRole[]>(() => {
+  const groups = new Map<string, SettingsGroupRole>();
+
+  for (const user of users.value) {
+    for (const groupName of user.groups) {
+      const trimmedName = groupName.trim();
+
+      if (!trimmedName) {
+        continue;
+      }
+
+      const id = normalizeRoleId(trimmedName);
+      const existing = groups.get(id);
+
+      if (existing) {
+        existing.membersCount += 1;
+      } else {
+        groups.set(id, {
+          id,
+          name: humanizeGroupName(trimmedName),
+          description: `Directory role observed from IAM user group "${trimmedName}".`,
+          source: "directory",
+          membersCount: 1,
+          responsibilities: inferResponsibilities(trimmedName),
+          permissionFamilies: inferPermissionFamilies(trimmedName),
+          dataScopes: ["Visible IAM accounts", "Assigned business scopes"],
+          riskLevel: inferRiskLevel(trimmedName),
+        });
+      }
+    }
+  }
+
+  return groups.size > 0
+    ? Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name))
+    : SETTINGS_DEMO_GROUPS;
+});
+const directoryCompleteForGroups = computed(
+  () =>
+    canViewUsers.value &&
+    usersState.value.total > 0 &&
+    usersState.value.users.length >= usersState.value.total,
+);
+const functionPermissionRows = computed<FunctionPermissionRow[]>(() => {
+  const sessionFunctions = new Set(authStore.permissions.functions);
+
+  return SETTINGS_FUNCTION_PERMISSION_ROWS.map((row) => ({
+    ...row,
+    status: sessionFunctions.has(`${row.id.toUpperCase()}_VIEW`)
+      ? "live-session"
+      : row.status,
+    permissions: { ...row.permissions },
+  }));
+});
+const dataPermissionGrants = computed<DataPermissionGrant[]>(() => {
+  const currentUser = authStore.user;
+  const sessionGrants = authStore.permissions.contracts.map((contractId) => ({
+    id: `session-${contractId}`,
+    user: currentUser?.username ?? "current.user",
+    userLabel: currentUser?.displayName ?? t("settings.console.common.currentSession"),
+    contractId,
+    contractName: contractId,
+    scope: "Read only" as const,
+    source: "session" as const,
+    updatedAt: t("settings.console.common.currentSession"),
+  }));
+
+  return [...sessionGrants, ...SETTINGS_DEMO_DATA_GRANTS];
+});
 
 const confirmDialog = computed(() => {
   const action = confirmAction.value;
@@ -276,13 +820,16 @@ const confirmDialog = computed(() => {
     const isDestructive = action.action === "disable" || action.action === "lock";
 
     return {
-      title: `${label} ${action.user.username}`,
+      title: t("settings.console.confirm.statusTitle", {
+        action: label,
+        username: action.user.username,
+      }),
       description:
         action.action === "disable"
-          ? "This prevents future sign-ins for the selected account. Existing audit evidence remains available."
+          ? t("settings.console.confirm.statusDisable")
           : action.action === "lock"
-            ? "This immediately blocks account access until an administrator unlocks it."
-            : "This updates account access state and records the administrative action in the audit trail.",
+            ? t("settings.console.confirm.statusLock")
+            : t("settings.console.confirm.statusDefault"),
       confirmLabel: label,
       tone: isDestructive ? ("danger" as const) : ("warning" as const),
     };
@@ -290,30 +837,41 @@ const confirmDialog = computed(() => {
 
   if (action.type === "reset-password") {
     return {
-      title: `Reset password for ${action.user.username}`,
-      description:
-        "The account will be forced to change this temporary password at next sign-in. Do not share it through unsecured channels.",
-      confirmLabel: "Reset password",
+      title: t("settings.console.confirm.resetPasswordTitle", {
+        username: action.user.username,
+      }),
+      description: t("settings.console.confirm.resetPassword"),
+      confirmLabel: t("settings.actions.resetPassword"),
       tone: "danger" as const,
     };
   }
 
   if (action.type === "revoke-session") {
     return {
-      title: "Revoke active session",
-      description: `This ends the session from ${
-        action.session.ip_address || "an unknown IP"
-      } and records the administrative revocation.`,
-      confirmLabel: "Revoke session",
+      title: t("settings.console.confirm.revokeSessionTitle"),
+      description: t("settings.console.confirm.revokeSession", {
+        ip: action.session.ip_address || t("settings.console.common.unknownIp"),
+      }),
+      confirmLabel: t("settings.console.confirm.revokeSessionConfirmLabel"),
+      tone: "warning" as const,
+    };
+  }
+
+  if (action.type === "revoke-own-session") {
+    return {
+      title: t("settings.console.personal.revokeOwnSessionTitle"),
+      description: t("settings.console.personal.revokeOwnSessionDescription", {
+        ip: action.session.ip_address || t("settings.console.common.unknownIp"),
+      }),
+      confirmLabel: t("settings.console.confirm.revokeSessionConfirmLabel"),
       tone: "warning" as const,
     };
   }
 
   return {
-    title: "Export audit records",
-    description:
-      "The export contains security event metadata for the current filters. Keep the CSV in an approved evidence location.",
-    confirmLabel: "Export CSV",
+    title: t("settings.console.audit.exportTitle"),
+    description: t("settings.console.audit.exportDescription"),
+    confirmLabel: t("settings.console.audit.exportCsv"),
     tone: "warning" as const,
   };
 });
@@ -408,6 +966,71 @@ function buildAuditExportRequest(): AuditFilters {
   };
 }
 
+async function loadPersonalAccount() {
+  personalLoading.value = true;
+  personalError.value = null;
+  personalMfaError.value = null;
+  personalSessionsError.value = null;
+
+  const [accountResult, mfaResult, sessionsResult] = await Promise.allSettled([
+    accountApi.me(),
+    accountApi.mfaStatus(),
+    accountApi.listSessions(),
+  ]);
+
+  if (accountResult.status === "fulfilled") {
+    personalAccount.value = accountResult.value;
+  } else {
+    personalAccount.value = null;
+    personalError.value = getErrorMessage(
+      accountResult.reason,
+      t("settings.console.errors.loadPersonalAccount"),
+    );
+  }
+
+  if (mfaResult.status === "fulfilled") {
+    personalMfaStatus.value = mfaResult.value;
+  } else {
+    personalMfaStatus.value = null;
+    personalMfaError.value = getErrorMessage(
+      mfaResult.reason,
+      t("settings.console.errors.loadMfaStatus"),
+    );
+  }
+
+  if (sessionsResult.status === "fulfilled") {
+    personalSessions.value = sessionsResult.value;
+  } else {
+    personalSessions.value = [];
+    personalSessionsError.value = getErrorMessage(
+      sessionsResult.reason,
+      t("settings.console.errors.loadPersonalSessions"),
+    );
+  }
+
+  personalLoading.value = false;
+}
+
+async function handlePersonalPasswordChange(payload: ChangePersonalPasswordInput) {
+  personalPasswordLoading.value = true;
+  personalPasswordError.value = null;
+  clearToast();
+
+  try {
+    await accountApi.changePassword(payload);
+    personalPasswordSuccessNonce.value += 1;
+    showToast(t("settings.console.notices.personalPasswordChanged"), "success");
+  } catch (error) {
+    personalPasswordError.value = getErrorMessage(
+      error,
+      t("settings.console.errors.changePersonalPassword"),
+    );
+    showToast(personalPasswordError.value, "danger");
+  } finally {
+    personalPasswordLoading.value = false;
+  }
+}
+
 async function loadUserMetrics() {
   if (!canViewUsers.value) {
     return;
@@ -423,12 +1046,15 @@ async function loadUserMetrics() {
     ]);
 
     userMetrics.value = {
-      total: total.data.total,
-      active: active.data.total,
-      locked: locked.data.total,
+      total: total.total,
+      active: active.total,
+      locked: locked.total,
     };
   } catch (error) {
-    showToast(getErrorMessage(error, "Failed to refresh user KPIs."), "danger");
+    showToast(
+      getErrorMessage(error, t("settings.console.errors.refreshUserKpis")),
+      "danger",
+    );
   } finally {
     userMetricsLoading.value = false;
   }
@@ -445,12 +1071,12 @@ async function loadSessions(userId: string) {
   sessionsError.value = null;
 
   try {
-    sessions.value = (await adminApi.listUserSessions(userId)).data;
+    sessions.value = await adminApi.listUserSessions(userId);
   } catch (error) {
     sessions.value = [];
     sessionsError.value = getErrorMessage(
       error,
-      "Failed to load active sessions.",
+      t("settings.console.errors.loadUserSessions"),
     );
   } finally {
     sessionsLoading.value = false;
@@ -467,7 +1093,7 @@ async function loadUsers(offset = userQuery.offset) {
   userQuery.offset = Math.max(0, offset);
 
   try {
-    usersState.value = (await adminApi.listUsers(buildUserRequest(userQuery.offset))).data;
+    usersState.value = await adminApi.listUsers(buildUserRequest(userQuery.offset));
 
     const selectedStillVisible = usersState.value.users.some(
       (user) => user.id === selectedUserId.value,
@@ -507,7 +1133,7 @@ async function loadAudit(offset = auditQuery.offset) {
   auditQuery.offset = Math.max(0, offset);
 
   try {
-    auditState.value = (await auditApi.listEvents(buildAuditRequest(auditQuery.offset))).data;
+    auditState.value = await auditApi.listEvents(buildAuditRequest(auditQuery.offset));
   } catch (error) {
     auditError.value = getErrorMessage(error, t("settings.errors.loadAudit"));
     auditState.value = {
@@ -583,15 +1209,24 @@ function requestStatusChange(action: AdminUserStatusAction) {
   };
 }
 
+function requestStatusChangeForUser(user: AdminUser, action: AdminUserStatusAction) {
+  selectedUserId.value = user.id;
+  confirmAction.value = {
+    type: "status",
+    action,
+    user,
+  };
+}
+
 function requestPasswordReset(newPassword: string) {
   if (!selectedUser.value) {
     return;
   }
 
+  pendingResetPassword = newPassword;
   confirmAction.value = {
     type: "reset-password",
     user: selectedUser.value,
-    newPassword,
   };
 }
 
@@ -603,6 +1238,13 @@ function requestSessionRevoke(session: AdminSession) {
   confirmAction.value = {
     type: "revoke-session",
     user: selectedUser.value,
+    session,
+  };
+}
+
+function requestOwnSessionRevoke(session: PersonalAccountSession) {
+  confirmAction.value = {
+    type: "revoke-own-session",
     session,
   };
 }
@@ -677,6 +1319,24 @@ async function revokeSession(session: AdminSession) {
   }
 }
 
+async function revokeOwnSession(session: PersonalAccountSession) {
+  revokingOwnSessionId.value = session.id;
+  clearToast();
+
+  try {
+    await accountApi.revokeSession(session.id);
+    showToast(t("settings.notices.sessionRevoked"), "success");
+    personalSessions.value = await accountApi.listSessions();
+  } catch (error) {
+    showToast(
+      getErrorMessage(error, t("settings.console.errors.revokeOwnSession")),
+      "danger",
+    );
+  } finally {
+    revokingOwnSessionId.value = null;
+  }
+}
+
 function downloadAuditExport(blob: Blob) {
   if (!import.meta.client) {
     return;
@@ -699,13 +1359,16 @@ async function exportAudit() {
   try {
     const blob = await auditApi.exportEvents(buildAuditExportRequest());
     downloadAuditExport(blob);
-    showToast("Audit export started.", "success");
+    showToast(t("settings.console.notices.auditExportStarted"), "success");
 
     if (canViewAudit.value) {
       await loadAudit(auditQuery.offset);
     }
   } catch (error) {
-    showToast(getErrorMessage(error, "Failed to export audit events."), "danger");
+    showToast(
+      getErrorMessage(error, t("settings.console.errors.exportAudit")),
+      "danger",
+    );
   } finally {
     exportLoading.value = false;
   }
@@ -724,21 +1387,28 @@ async function confirmCurrentAction() {
     if (action.type === "status") {
       await changeUserStatus(action.user, action.action);
     } else if (action.type === "reset-password") {
-      await resetPassword(action.user, action.newPassword);
+      const password = pendingResetPassword;
+      if (password) {
+        await resetPassword(action.user, password);
+      }
     } else if (action.type === "revoke-session") {
       await revokeSession(action.session);
+    } else if (action.type === "revoke-own-session") {
+      await revokeOwnSession(action.session);
     } else {
       await exportAudit();
     }
 
     confirmAction.value = null;
   } finally {
+    pendingResetPassword = null;
     confirmLoading.value = false;
   }
 }
 
 function cancelConfirm() {
   if (!confirmLoading.value) {
+    pendingResetPassword = null;
     confirmAction.value = null;
   }
 }
@@ -771,7 +1441,7 @@ async function refreshUsers() {
 }
 
 onMounted(async () => {
-  const tasks: Promise<unknown>[] = [];
+  const tasks: Promise<unknown>[] = [loadPersonalAccount()];
 
   if (canViewUsers.value) {
     tasks.push(loadUsers(0));
@@ -823,95 +1493,169 @@ onMounted(async () => {
       v-if="toast"
       class="settings-toast"
       :class="`settings-toast--${toast.tone}`"
-      role="status"
-      aria-live="polite"
+      :role="toast.tone === 'danger' ? 'alert' : 'status'"
+      :aria-live="toast.tone === 'danger' ? 'assertive' : 'polite'"
     >
       <span>{{ toast.message }}</span>
       <button
         class="settings-toast__close"
         type="button"
-        aria-label="Dismiss notification"
+        :aria-label="t('settings.console.common.dismissNotification')"
         @click="clearToast"
       >
         <AppIcon name="close" size="xs" />
       </button>
     </div>
 
-    <SettingsKpiGrid :metrics="kpiMetrics" :loading="metricLoading" />
-
-    <section class="settings-workspace">
-      <SettingsUserDirectory
-        v-if="canViewUsers"
-        :users="users"
-        :total="usersState.total"
-        :offset="usersState.offset"
-        :limit="usersState.limit"
-        :selected-user-id="selectedUserId"
-        :loading="usersLoading"
-        :error="usersError"
-        :filters="userFilters"
-        :format-date-time="formatDateTime"
-        :status-label="statusLabel"
-        :status-class="statusClass"
-        @apply="applyUserFilters"
-        @page="loadUsers"
-        @select="selectUser"
+    <div class="settings-console-shell">
+      <SettingsSectionNav
+        :items="settingsNavItems"
+        :active-section="activeSection"
+        @select="activeSection = $event"
       />
 
-      <div class="settings-side-stack">
-        <SettingsCreateUserForm
-          v-if="canCreateUsers"
-          :loading="createLoading"
-          :error="createError"
-          :success-nonce="createSuccessNonce"
-          @submit="handleCreateUser"
+      <div class="settings-console-main">
+        <SettingsOverviewPanel
+          v-show="activeSection === 'overview'"
+          :metrics="kpiMetrics"
+          :loading="metricLoading"
+          :signals="overviewSignals"
+          :capabilities="apiCapabilities"
+          :app-name="appName"
+          :api-base-url="apiBaseUrl"
+          :timezone="clientTimezone"
         />
 
-        <SettingsUserDetailPanel
-          v-if="canViewUsers"
-          :user="selectedUser"
-          :sessions="sessions"
-          :sessions-loading="sessionsLoading"
-          :sessions-error="sessionsError"
-          :can-deactivate-users="canDeactivateUsers"
-          :can-update-users="canUpdateUsers"
-          :status-action="statusAction"
-          :reset-loading="resetLoading"
-          :revoking-session-id="revokingSessionId"
-          :reset-error="resetError"
-          :reset-success-nonce="resetSuccessNonce"
+        <SettingsPersonalAccountPanel
+          v-show="activeSection === 'personal-account'"
+          :account="personalAccount"
+          :mfa-status="personalMfaStatus"
+          :sessions="personalSessions"
+          :loading="personalLoading"
+          :error="personalError"
+          :mfa-error="personalMfaError"
+          :sessions-error="personalSessionsError"
+          :password-loading="personalPasswordLoading"
+          :password-error="personalPasswordError"
+          :password-success-nonce="personalPasswordSuccessNonce"
+          :revoking-session-id="revokingOwnSessionId"
           :format-date-time="formatDateTime"
-          :status-label="statusLabel"
-          :status-class="statusClass"
-          @status="requestStatusChange"
-          @reset-password="requestPasswordReset"
-          @revoke-session="requestSessionRevoke"
+          @refresh="loadPersonalAccount"
+          @change-password="handlePersonalPasswordChange"
+          @revoke-session="requestOwnSessionRevoke"
+        />
+
+        <section v-show="activeSection === 'users'" class="settings-workspace">
+          <SettingsUserDirectory
+            v-if="canViewUsers"
+            :users="users"
+            :total="usersState.total"
+            :offset="usersState.offset"
+            :limit="usersState.limit"
+            :selected-user-id="selectedUserId"
+            :loading="usersLoading"
+            :error="usersError"
+            :filters="userFilters"
+            :format-date-time="formatDateTime"
+            :status-label="statusLabel"
+            :status-class="statusClass"
+            :can-deactivate-users="canDeactivateUsers"
+            :can-update-users="canUpdateUsers"
+            :status-action="statusAction"
+            @apply="applyUserFilters"
+            @page="loadUsers"
+            @select="selectUser"
+            @status="requestStatusChangeForUser"
+          />
+
+          <div class="settings-side-stack">
+            <SettingsCreateUserForm
+              v-if="canCreateUsers"
+              :loading="createLoading"
+              :error="createError"
+              :success-nonce="createSuccessNonce"
+              @submit="handleCreateUser"
+            />
+
+            <SettingsUserDetailPanel
+              v-if="canViewUsers"
+              :user="selectedUser"
+              :sessions="sessions"
+              :sessions-loading="sessionsLoading"
+              :sessions-error="sessionsError"
+              :can-deactivate-users="canDeactivateUsers"
+              :can-update-users="canUpdateUsers"
+              :status-action="statusAction"
+              :reset-loading="resetLoading"
+              :revoking-session-id="revokingSessionId"
+              :reset-error="resetError"
+              :reset-success-nonce="resetSuccessNonce"
+              :format-date-time="formatDateTime"
+              :status-label="statusLabel"
+              :status-class="statusClass"
+              @status="requestStatusChange"
+              @reset-password="requestPasswordReset"
+              @revoke-session="requestSessionRevoke"
+            />
+          </div>
+        </section>
+
+        <SettingsGroupsRolesPanel
+          v-show="activeSection === 'groups'"
+          :groups="derivedGroups"
+          :directory-complete="directoryCompleteForGroups"
+          :loading="usersLoading"
+        />
+
+        <SettingsFunctionPermissionsPanel
+          v-show="activeSection === 'function-permissions'"
+          :actions="permissionActions"
+          :rows="functionPermissionRows"
+          :session-permission-count="currentSessionFunctionCount"
+        />
+
+        <SettingsDataPermissionsPanel
+          v-show="activeSection === 'data-permissions'"
+          :grants="dataPermissionGrants"
+          :format-date-time="formatDateTime"
+        />
+
+        <SettingsSecurityPolicyPanel
+          v-show="activeSection === 'security-policy'"
+          :policy="securityPolicy"
+        />
+
+        <SettingsNotificationsPanel
+          v-show="activeSection === 'notifications'"
+          :preferences="notificationPreferences"
+        />
+
+        <SettingsAuditLog
+          v-if="canViewAudit"
+          v-show="activeSection === 'audit'"
+          :events="auditState.events"
+          :total="auditState.total"
+          :offset="auditState.offset"
+          :limit="auditState.limit"
+          :loading="auditLoading"
+          :exporting="exportLoading"
+          :error="auditError"
+          :filters="auditFilters"
+          :format-date-time="formatDateTime"
+          @apply="applyAuditFilters"
+          @page="loadAudit"
+          @refresh="loadAudit(auditQuery.offset)"
+          @export="requestAuditExport"
         />
       </div>
-    </section>
-
-    <SettingsAuditLog
-      v-if="canViewAudit"
-      :events="auditState.events"
-      :total="auditState.total"
-      :offset="auditState.offset"
-      :limit="auditState.limit"
-      :loading="auditLoading"
-      :exporting="exportLoading"
-      :error="auditError"
-      :filters="auditFilters"
-      :format-date-time="formatDateTime"
-      @apply="applyAuditFilters"
-      @page="loadAudit"
-      @refresh="loadAudit(auditQuery.offset)"
-      @export="requestAuditExport"
-    />
+    </div>
 
     <SettingsConfirmDialog
       :open="Boolean(confirmAction)"
       :title="confirmDialog.title"
       :description="confirmDialog.description"
       :confirm-label="confirmDialog.confirmLabel"
+      :cancel-label="t('settings.console.common.cancel')"
       :tone="confirmDialog.tone"
       :loading="confirmLoading"
       @cancel="cancelConfirm"
@@ -987,6 +1731,19 @@ onMounted(async () => {
   background: var(--action-ghost-hover);
 }
 
+.settings-console-shell {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.28fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.settings-console-main {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
 .settings-control-center :deep(.settings-panel) {
   overflow: hidden;
   border: 1px solid var(--border-subtle);
@@ -1041,7 +1798,7 @@ onMounted(async () => {
 }
 
 .settings-control-center :deep(.table) {
-  min-width: 760px;
+  min-width: 920px;
 }
 
 .settings-control-center :deep(.table th),
@@ -1049,8 +1806,20 @@ onMounted(async () => {
   vertical-align: top;
 }
 
+.settings-control-center :deep(.table thead th) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 @media (max-width: 1180px) {
   .settings-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .settings-console-shell {
     grid-template-columns: 1fr;
   }
 }

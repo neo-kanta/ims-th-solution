@@ -23,6 +23,10 @@ export const enCommonMessages = {
     unknown: "Unknown",
     empty: "No data available.",
     notAvailable: "-",
+    pagination: {
+      empty: "No results",
+      range: "{start}-{end} of {total}",
+    },
   },
   auth: {
     welcome: "Welcome",

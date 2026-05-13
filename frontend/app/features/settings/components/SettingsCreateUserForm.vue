@@ -30,13 +30,15 @@ const passwordToggleLabel = computed(() =>
     : t("auth.showPassword", "Show password"),
 );
 
+const MIN_PASSWORD_LENGTH = 12;
+
 const isSubmitDisabled = computed(
   () =>
     props.loading ||
     !form.username.trim() ||
     !form.display_name.trim() ||
     !form.email.trim() ||
-    form.password.length < 8,
+    form.password.length < MIN_PASSWORD_LENGTH,
 );
 
 watch(
@@ -55,7 +57,7 @@ function validateForm(): boolean {
   const nextErrors: Partial<Record<keyof CreateAdminUserInput, string>> = {};
 
   if (form.username.trim().length < 3) {
-    nextErrors.username = "Use at least 3 characters.";
+    nextErrors.username = t("settings.console.otherAccounts.validationUsername");
   }
 
   if (!form.display_name.trim()) {
@@ -63,11 +65,11 @@ function validateForm(): boolean {
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-    nextErrors.email = "Enter a valid email address.";
+    nextErrors.email = t("settings.console.otherAccounts.validationEmail");
   }
 
-  if (form.password.length < 8) {
-    nextErrors.password = "Use at least 8 characters.";
+  if (form.password.length < MIN_PASSWORD_LENGTH) {
+    nextErrors.password = t("settings.console.otherAccounts.validationPassword");
   }
 
   fieldErrors.value = nextErrors;
@@ -93,10 +95,10 @@ function handleSubmit() {
     <header class="settings-panel__header">
       <div>
         <h2 class="settings-panel__title">
-          {{ t("settings.createUserTitle") }}
+          {{ t("settings.console.otherAccounts.createTitle") }}
         </h2>
         <p class="settings-panel__subtitle">
-          New accounts require a temporary password change at first sign-in.
+          {{ t("settings.console.otherAccounts.createSubtitle") }}
         </p>
       </div>
     </header>

@@ -40,6 +40,22 @@ export function getAuditSeverity(eventType: string): AuditSeverity {
   return "low";
 }
 
+export function getAuditSeverityKey(severity: AuditSeverity): string {
+  switch (severity) {
+    case "critical":
+      return "settings.console.audit.severity.critical";
+    case "high":
+      return "settings.console.audit.severity.high";
+    case "medium":
+      return "settings.console.audit.severity.medium";
+    case "low":
+      return "settings.console.audit.severity.low";
+  }
+}
+
+/**
+ * @deprecated Use getAuditSeverityKey + i18n `t(...)` at the call site.
+ */
 export function getAuditSeverityLabel(severity: AuditSeverity): string {
   switch (severity) {
     case "critical":

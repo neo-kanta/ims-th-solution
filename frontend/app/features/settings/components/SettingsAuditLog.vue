@@ -6,7 +6,7 @@ import type { AuditLogFilters } from "../ui.types";
 import {
   getAuditSeverity,
   getAuditSeverityClass,
-  getAuditSeverityLabel,
+  getAuditSeverityKey,
 } from "../lib/audit";
 
 const props = defineProps<{
@@ -52,12 +52,12 @@ watch(
 
 const rangeLabel = computed(() => {
   if (props.total === 0) {
-    return "0 of 0";
+    return t("common.pagination.empty");
   }
 
   const start = props.offset + 1;
   const end = Math.min(props.offset + props.events.length, props.total);
-  return `${start}-${end} of ${props.total}`;
+  return t("common.pagination.range", { start, end, total: props.total });
 });
 
 const canPageBack = computed(() => props.offset > 0 && !props.loading);
@@ -77,11 +77,41 @@ function applyFilters() {
 }
 
 function severityLabel(eventTypeValue: string) {
-  return getAuditSeverityLabel(getAuditSeverity(eventTypeValue));
+  return t(getAuditSeverityKey(getAuditSeverity(eventTypeValue)));
 }
 
 function severityClass(eventTypeValue: string) {
   return getAuditSeverityClass(getAuditSeverity(eventTypeValue));
+}
+
+interface AuditOutcome {
+  label: string;
+  badgeClass: string;
+}
+
+function eventOutcome(eventType: string): AuditOutcome {
+  if (
+    eventType.endsWith("_FAILURE") ||
+    eventType === "RATE_LIMIT_BLOCKED" ||
+    eventType === "REFRESH_TOKEN_BREACH"
+  ) {
+    return {
+      label: t("settings.console.audit.outcome.failure"),
+      badgeClass: "badge-error",
+    };
+  }
+
+  if (eventType === "ACCOUNT_LOCKED" || eventType === "MFA_DISABLED") {
+    return {
+      label: t("settings.console.audit.outcome.warning"),
+      badgeClass: "badge-warning",
+    };
+  }
+
+  return {
+    label: t("settings.console.audit.outcome.success"),
+    badgeClass: "badge-success",
+  };
 }
 </script>
 
@@ -91,7 +121,7 @@ function severityClass(eventTypeValue: string) {
       <div>
         <h2 class="settings-panel__title">{{ t("settings.auditTitle") }}</h2>
         <p class="settings-panel__subtitle">
-          Immutable IAM security events with actor, target, and network context.
+          {{ t("settings.console.audit.subtitle") }}
         </p>
       </div>
       <div class="settings-audit-log__header-actions">
@@ -114,14 +144,16 @@ function severityClass(eventTypeValue: string) {
           :disabled="loading || total === 0"
           @click="emit('export')"
         >
-          Export CSV
+          {{ t("settings.console.audit.exportCsv") }}
         </AppButton>
       </div>
     </header>
 
     <form class="settings-audit-log__filters" @submit.prevent="applyFilters">
       <div class="form-group">
-        <label for="settings-audit-event-type" class="label">Event type</label>
+        <label for="settings-audit-event-type" class="label">
+          {{ t("settings.console.audit.eventType") }}
+        </label>
         <input
           id="settings-audit-event-type"
           v-model="eventType"
@@ -131,7 +163,9 @@ function severityClass(eventTypeValue: string) {
         />
       </div>
       <div class="form-group">
-        <label for="settings-audit-actor-id" class="label">Actor ID</label>
+        <label for="settings-audit-actor-id" class="label">
+          {{ t("settings.console.audit.actorId") }}
+        </label>
         <input
           id="settings-audit-actor-id"
           v-model="actorId"
@@ -141,7 +175,9 @@ function severityClass(eventTypeValue: string) {
         />
       </div>
       <div class="form-group">
-        <label for="settings-audit-target-type" class="label">Target type</label>
+        <label for="settings-audit-target-type" class="label">
+          {{ t("settings.console.audit.targetType") }}
+        </label>
         <input
           id="settings-audit-target-type"
           v-model="targetType"
@@ -151,7 +187,9 @@ function severityClass(eventTypeValue: string) {
         />
       </div>
       <div class="form-group">
-        <label for="settings-audit-target-id" class="label">Target ID</label>
+        <label for="settings-audit-target-id" class="label">
+          {{ t("settings.console.audit.targetId") }}
+        </label>
         <input
           id="settings-audit-target-id"
           v-model="targetId"
@@ -161,7 +199,9 @@ function severityClass(eventTypeValue: string) {
         />
       </div>
       <div class="form-group">
-        <label for="settings-audit-since" class="label">Since</label>
+        <label for="settings-audit-since" class="label">
+          {{ t("settings.console.audit.since") }}
+        </label>
         <input
           id="settings-audit-since"
           v-model="since"
@@ -170,7 +210,9 @@ function severityClass(eventTypeValue: string) {
         />
       </div>
       <div class="form-group">
-        <label for="settings-audit-until" class="label">Until</label>
+        <label for="settings-audit-until" class="label">
+          {{ t("settings.console.audit.until") }}
+        </label>
         <input
           id="settings-audit-until"
           v-model="until"
@@ -195,24 +237,33 @@ function severityClass(eventTypeValue: string) {
 
     <div class="settings-audit-log__body">
       <div class="table-wrap settings-audit-log__table">
-        <table class="table">
+        <table class="table settings-audit-table">
+          <colgroup>
+            <col class="settings-audit-table__col-action" />
+            <col class="settings-audit-table__col-target" />
+            <col class="settings-audit-table__col-actor" />
+            <col class="settings-audit-table__col-network" />
+            <col class="settings-audit-table__col-timestamp" />
+            <col class="settings-audit-table__col-status" />
+          </colgroup>
           <thead>
             <tr>
-              <th>{{ t("settings.auditTable.event") }}</th>
+              <th>{{ t("settings.console.audit.action") }}</th>
               <th>{{ t("settings.auditTable.target") }}</th>
               <th>{{ t("settings.auditTable.actor") }}</th>
-              <th>Network</th>
-              <th>{{ t("settings.auditTable.created") }}</th>
+              <th>{{ t("settings.console.audit.network") }}</th>
+              <th>{{ t("settings.console.audit.timestamp") }}</th>
+              <th>{{ t("settings.console.audit.outcome.column") }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="5" class="settings-table-state">
+              <td colspan="6" class="settings-table-state">
                 {{ t("settings.loadingAudit") }}
               </td>
             </tr>
             <tr v-else-if="events.length === 0">
-              <td colspan="5" class="settings-table-state">
+              <td colspan="6" class="settings-table-state">
                 {{ t("settings.noAudit") }}
               </td>
             </tr>
@@ -251,6 +302,11 @@ function severityClass(eventTypeValue: string) {
                   </div>
                 </td>
                 <td>{{ formatDateTime(event.created_at) }}</td>
+                <td>
+                  <span class="badge" :class="eventOutcome(event.event_type).badgeClass">
+                    {{ eventOutcome(event.event_type).label }}
+                  </span>
+                </td>
               </tr>
             </template>
           </tbody>
@@ -286,6 +342,9 @@ function severityClass(eventTypeValue: string) {
             <div class="settings-record-secondary">
               {{ event.ip_address || t("common.notAvailable") }}
             </div>
+            <span class="badge" :class="eventOutcome(event.event_type).badgeClass">
+              {{ eventOutcome(event.event_type).label }}
+            </span>
           </article>
         </template>
       </div>
@@ -353,6 +412,46 @@ function severityClass(eventTypeValue: string) {
   border-radius: var(--radius-md);
 }
 
+.settings-audit-table {
+  min-width: 1180px;
+  table-layout: fixed;
+}
+
+.settings-audit-table__col-action {
+  width: 18rem;
+}
+
+.settings-audit-table__col-target,
+.settings-audit-table__col-actor {
+  width: 16rem;
+}
+
+.settings-audit-table__col-network {
+  width: 24rem;
+}
+
+.settings-audit-table__col-timestamp {
+  width: 10rem;
+}
+
+.settings-audit-table__col-status {
+  width: 8rem;
+}
+
+.settings-audit-table th,
+.settings-audit-table td {
+  vertical-align: top;
+}
+
+.settings-audit-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.settings-audit-table .badge {
+  white-space: nowrap;
+}
+
 .settings-audit-log__mobile-list {
   display: none;
 }
@@ -362,6 +461,10 @@ function severityClass(eventTypeValue: string) {
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-3);
   align-items: start;
+}
+
+.settings-audit-log__event > div {
+  min-width: 0;
 }
 
 .settings-audit-card {
@@ -386,6 +489,8 @@ function severityClass(eventTypeValue: string) {
   display: block;
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .settings-record-secondary {
@@ -395,6 +500,7 @@ function severityClass(eventTypeValue: string) {
   font-size: var(--font-size-xs);
   line-height: var(--line-height-relaxed);
   overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .settings-table-state,
