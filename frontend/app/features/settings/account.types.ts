@@ -35,3 +35,12 @@ export interface ChangePersonalPasswordInput {
   old_password: string;
   new_password: string;
 }
+
+export interface PersonalMfaEnrollResult {
+  provisioning_uri: string;
+  recovery_codes: string[];
+}
+
+export interface PersonalMfaTotpInput {
+  totp_code: string;
+}

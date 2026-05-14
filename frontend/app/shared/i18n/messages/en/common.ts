@@ -26,6 +26,7 @@ export const enCommonMessages = {
     pagination: {
       empty: "No results",
       range: "{start}-{end} of {total}",
+      pageSize: "Per page",
     },
   },
   auth: {

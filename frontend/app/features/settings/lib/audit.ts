@@ -53,22 +53,6 @@ export function getAuditSeverityKey(severity: AuditSeverity): string {
   }
 }
 
-/**
- * @deprecated Use getAuditSeverityKey + i18n `t(...)` at the call site.
- */
-export function getAuditSeverityLabel(severity: AuditSeverity): string {
-  switch (severity) {
-    case "critical":
-      return "Critical";
-    case "high":
-      return "High";
-    case "medium":
-      return "Medium";
-    case "low":
-      return "Low";
-  }
-}
-
 export function getAuditSeverityClass(severity: AuditSeverity): string {
   switch (severity) {
     case "critical":

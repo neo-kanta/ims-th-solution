@@ -8,6 +8,7 @@ import {
   getAuditSeverityClass,
   getAuditSeverityKey,
 } from "../lib/audit";
+import SettingsPaginationFooter from "./SettingsPaginationFooter.vue";
 
 const props = defineProps<{
   events: AuditEvent[];
@@ -24,6 +25,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   apply: [filters: AuditLogFilters];
   page: [offset: number];
+  pageSize: [limit: number];
   refresh: [];
   export: [];
 }>();
@@ -48,21 +50,6 @@ watch(
     until.value = filters.until;
   },
   { deep: true },
-);
-
-const rangeLabel = computed(() => {
-  if (props.total === 0) {
-    return t("common.pagination.empty");
-  }
-
-  const start = props.offset + 1;
-  const end = Math.min(props.offset + props.events.length, props.total);
-  return t("common.pagination.range", { start, end, total: props.total });
-});
-
-const canPageBack = computed(() => props.offset > 0 && !props.loading);
-const canPageForward = computed(
-  () => props.offset + props.limit < props.total && !props.loading,
 );
 
 function applyFilters() {
@@ -350,27 +337,15 @@ function eventOutcome(eventType: string): AuditOutcome {
       </div>
     </div>
 
-    <footer class="settings-panel__footer">
-      <span>{{ rangeLabel }}</span>
-      <div class="settings-pagination">
-        <AppButton
-          variant="secondary"
-          size="sm"
-          :disabled="!canPageBack"
-          @click="emit('page', Math.max(0, offset - limit))"
-        >
-          {{ t("common.previous") }}
-        </AppButton>
-        <AppButton
-          variant="secondary"
-          size="sm"
-          :disabled="!canPageForward"
-          @click="emit('page', offset + limit)"
-        >
-          {{ t("common.next") }}
-        </AppButton>
-      </div>
-    </footer>
+    <SettingsPaginationFooter
+      :total="total"
+      :offset="offset"
+      :limit="limit"
+      :page-count="events.length"
+      :loading="loading"
+      @page="(next) => emit('page', next)"
+      @page-size="(next) => emit('pageSize', next)"
+    />
   </section>
 </template>
 

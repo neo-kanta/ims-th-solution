@@ -3,6 +3,13 @@ import { computed, ref, watch } from "vue";
 
 import type { AdminUser, AdminUserStatusAction } from "../admin.types";
 import type { BooleanFilterValue, UserDirectoryFilters } from "../ui.types";
+import { buildCsv, downloadBlob } from "../lib/csv";
+import SettingsPaginationFooter from "./SettingsPaginationFooter.vue";
+
+interface UserStatusBadge {
+  label: string;
+  badgeClass: string;
+}
 
 const props = defineProps<{
   users: AdminUser[];
@@ -16,6 +23,7 @@ const props = defineProps<{
   formatDateTime: (value?: string | null) => string;
   statusLabel: (user: AdminUser) => string;
   statusClass: (user: AdminUser) => string;
+  statusBadges: (user: AdminUser) => UserStatusBadge[];
   canDeactivateUsers: boolean;
   canUpdateUsers: boolean;
   statusAction: AdminUserStatusAction | null;
@@ -24,6 +32,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   apply: [filters: UserDirectoryFilters];
   page: [offset: number];
+  pageSize: [limit: number];
   select: [userId: string];
   status: [user: AdminUser, action: AdminUserStatusAction];
 }>();
@@ -42,21 +51,6 @@ watch(
     locked.value = filters.locked;
   },
   { deep: true },
-);
-
-const rangeLabel = computed(() => {
-  if (props.total === 0) {
-    return t("common.pagination.empty");
-  }
-
-  const start = props.offset + 1;
-  const end = Math.min(props.offset + props.users.length, props.total);
-  return t("common.pagination.range", { start, end, total: props.total });
-});
-
-const canPageBack = computed(() => props.offset > 0 && !props.loading);
-const canPageForward = computed(
-  () => props.offset + props.limit < props.total && !props.loading,
 );
 
 function applyFilters() {
@@ -78,6 +72,38 @@ function nextActivationAction(user: AdminUser): AdminUserStatusAction {
 function nextLockAction(user: AdminUser): AdminUserStatusAction {
   return user.is_locked ? "unlock" : "lock";
 }
+
+function exportVisibleUsersCsv() {
+  if (props.users.length === 0) return;
+
+  const headers = [
+    "id",
+    "username",
+    "display_name",
+    "email",
+    "is_active",
+    "is_locked",
+    "failed_login_attempts",
+    "last_login_at",
+    "groups",
+  ];
+
+  const rows = props.users.map((user) => [
+    user.id ?? "",
+    user.username ?? "",
+    user.display_name ?? "",
+    user.email ?? "",
+    String(Boolean(user.is_active)),
+    String(Boolean(user.is_locked)),
+    String(user.failed_login_attempts ?? 0),
+    user.last_login_at ?? "",
+    user.groups?.join("|") ?? "",
+  ]);
+
+  const blob = buildCsv(headers, rows);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  downloadBlob(blob, `iam_users_visible_${stamp}.csv`);
+}
 </script>
 
 <template>
@@ -91,9 +117,20 @@ function nextLockAction(user: AdminUser): AdminUserStatusAction {
           {{ t("settings.console.otherAccounts.subtitle") }}
         </p>
       </div>
-      <span class="badge badge-neutral">
-        {{ t("settings.totalCount", { count: total }) }}
-      </span>
+      <div class="settings-user-directory__header-actions">
+        <span class="badge badge-neutral">
+          {{ t("settings.totalCount", { count: total }) }}
+        </span>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          :disabled="loading || users.length === 0"
+          :title="t('settings.console.otherAccounts.exportCsvHint')"
+          @click="exportVisibleUsersCsv"
+        >
+          {{ t("settings.console.otherAccounts.exportCsv") }}
+        </AppButton>
+      </div>
     </header>
 
     <div class="settings-user-directory__status-legend" aria-label="Account statuses">
@@ -212,9 +249,16 @@ function nextLockAction(user: AdminUser): AdminUserStatusAction {
                   </button>
                 </td>
                 <td>
-                  <span class="badge" :class="statusClass(user)">
-                    {{ statusLabel(user) }}
-                  </span>
+                  <div class="settings-status-stack">
+                    <span
+                      v-for="badge in statusBadges(user)"
+                      :key="badge.label"
+                      class="badge"
+                      :class="badge.badgeClass"
+                    >
+                      {{ badge.label }}
+                    </span>
+                  </div>
                 </td>
                 <td>
                   {{
@@ -296,8 +340,15 @@ function nextLockAction(user: AdminUser): AdminUserStatusAction {
                   <span class="settings-record-primary">{{ user.display_name }}</span>
                   <span class="settings-record-secondary">{{ user.username }}</span>
                 </span>
-                <span class="badge" :class="statusClass(user)">
-                  {{ statusLabel(user) }}
+                <span class="settings-status-stack">
+                  <span
+                    v-for="badge in statusBadges(user)"
+                    :key="badge.label"
+                    class="badge"
+                    :class="badge.badgeClass"
+                  >
+                    {{ badge.label }}
+                  </span>
                 </span>
               </span>
               <span class="settings-user-card__meta">
@@ -345,27 +396,15 @@ function nextLockAction(user: AdminUser): AdminUserStatusAction {
       </div>
     </div>
 
-    <footer class="settings-panel__footer">
-      <span>{{ rangeLabel }}</span>
-      <div class="settings-pagination">
-        <AppButton
-          variant="secondary"
-          size="sm"
-          :disabled="!canPageBack"
-          @click="emit('page', Math.max(0, offset - limit))"
-        >
-          {{ t("common.previous") }}
-        </AppButton>
-        <AppButton
-          variant="secondary"
-          size="sm"
-          :disabled="!canPageForward"
-          @click="emit('page', offset + limit)"
-        >
-          {{ t("common.next") }}
-        </AppButton>
-      </div>
-    </footer>
+    <SettingsPaginationFooter
+      :total="total"
+      :offset="offset"
+      :limit="limit"
+      :page-count="users.length"
+      :loading="loading"
+      @page="(next) => emit('page', next)"
+      @page-size="(next) => emit('pageSize', next)"
+    />
   </section>
 </template>
 
@@ -541,5 +580,18 @@ function nextLockAction(user: AdminUser): AdminUserStatusAction {
   .settings-user-card__head {
     flex-direction: column;
   }
+}
+
+.settings-status-stack {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.settings-user-directory__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 </style>

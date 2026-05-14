@@ -6,6 +6,12 @@ import type {
   AdminUser,
   AdminUserStatusAction,
 } from "../admin.types";
+import SettingsPasswordToggle from "./SettingsPasswordToggle.vue";
+
+interface UserStatusBadge {
+  label: string;
+  badgeClass: string;
+}
 
 const props = defineProps<{
   user: AdminUser | null;
@@ -22,6 +28,7 @@ const props = defineProps<{
   formatDateTime: (value?: string | null) => string;
   statusLabel: (user: AdminUser) => string;
   statusClass: (user: AdminUser) => string;
+  statusBadges: (user: AdminUser) => UserStatusBadge[];
 }>();
 
 const emit = defineEmits<{
@@ -35,12 +42,6 @@ const { t } = useI18n();
 const newPassword = ref("");
 const resetFieldError = ref<string | null>(null);
 const showPassword = ref(false);
-
-const passwordToggleLabel = computed(() =>
-  showPassword.value
-    ? t("auth.hidePassword", "Hide password")
-    : t("auth.showPassword", "Show password"),
-);
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -108,9 +109,16 @@ function requestResetPassword() {
           <h2 class="settings-panel__title">{{ user.display_name }}</h2>
           <p class="settings-panel__subtitle">{{ user.username }}</p>
         </div>
-        <span class="badge" :class="statusClass(user)">
-          {{ statusLabel(user) }}
-        </span>
+        <div class="settings-status-stack">
+          <span
+            v-for="badge in statusBadges(user)"
+            :key="badge.label"
+            class="badge"
+            :class="badge.badgeClass"
+          >
+            {{ badge.label }}
+          </span>
+        </div>
       </header>
 
       <div class="settings-user-detail__body">
@@ -232,49 +240,10 @@ function requestResetPassword() {
                 autocomplete="new-password"
                 :aria-invalid="Boolean(resetFieldError || resetError)"
               />
-              <button
-                type="button"
-                class="settings-password-field__toggle"
-                :aria-label="passwordToggleLabel"
-                :title="passwordToggleLabel"
-                :aria-pressed="showPassword"
-                @click="showPassword = !showPassword"
-              >
-                <svg
-                  v-if="showPassword"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                  />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
-                <svg
-                  v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </button>
+              <SettingsPasswordToggle
+                :shown="showPassword"
+                @toggle="showPassword = !showPassword"
+              />
             </div>
             <div v-if="resetFieldError" class="error-text">
               {{ resetFieldError }}
@@ -443,24 +412,6 @@ function requestResetPassword() {
   padding-right: var(--space-10);
 }
 
-.settings-password-field__toggle {
-  position: absolute;
-  top: 50%;
-  right: var(--space-2);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
-  transform: translateY(-50%);
-}
-
-.settings-password-field__toggle:hover {
-  color: var(--text-primary);
-  background: var(--action-ghost-hover);
-}
 
 .settings-session-list {
   display: grid;
@@ -504,6 +455,13 @@ function requestResetPassword() {
   text-align: center;
 }
 
+.settings-action-block__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-relaxed);
+}
+
 @media (max-width: 640px) {
   .settings-detail-grid,
   .settings-action-grid {
@@ -515,10 +473,9 @@ function requestResetPassword() {
   }
 }
 
-.settings-action-block__hint {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-relaxed);
+.settings-status-stack {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 </style>

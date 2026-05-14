@@ -36,6 +36,11 @@ function severityClass(severity: NotificationPreference["severity"]) {
       </span>
     </header>
 
+    <div class="alert alert-warning settings-panel__alert" role="note">
+      <strong>{{ t("settings.console.common.sampleDataTitle") }}</strong>
+      <span>{{ t("settings.console.notifications.sampleNotice") }}</span>
+    </div>
+
     <div class="settings-notifications__body">
       <article
         v-for="preference in preferences"

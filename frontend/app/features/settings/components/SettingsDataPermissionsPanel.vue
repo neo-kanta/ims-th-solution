@@ -67,6 +67,11 @@ const groupedRows = computed(() => {
       </span>
     </header>
 
+    <div class="alert alert-warning settings-panel__alert" role="note">
+      <strong>{{ t("settings.console.common.sampleDataTitle") }}</strong>
+      <span>{{ t("settings.console.dataPermissions.sampleNotice") }}</span>
+    </div>
+
     <div class="settings-data-permissions__toolbar">
       <div
         class="settings-mode-switch"

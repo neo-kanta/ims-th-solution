@@ -39,6 +39,11 @@ function displayValue(setting: SecurityPolicySetting) {
       </span>
     </header>
 
+    <div class="alert alert-warning settings-panel__alert" role="note">
+      <strong>{{ t("settings.console.common.sampleDataTitle") }}</strong>
+      <span>{{ t("settings.console.securityPolicy.sampleNotice") }}</span>
+    </div>
+
     <div class="settings-security__body">
       <div class="settings-security__mode">
         <div>

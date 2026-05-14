@@ -26,6 +26,7 @@ export const zhCommonMessages = {
     pagination: {
       empty: "暂无结果",
       range: "{start}-{end} / 共 {total}",
+      pageSize: "每页",
     },
   },
   auth: {

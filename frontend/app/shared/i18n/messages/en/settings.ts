@@ -66,6 +66,7 @@ export const enSettingsMessages = {
         userAgentUnavailable: "User agent unavailable",
         dismissNotification: "Dismiss notification",
         cancel: "Cancel",
+        sampleDataTitle: "Sample data — not connected",
       },
       kpis: {
         totalUsers: "Total users",
@@ -174,6 +175,44 @@ export const enSettingsMessages = {
           "Use at least 8 characters for the new password.",
         validationPasswordMismatch:
           "New password and confirmation do not match.",
+        mfaEnableCta: "Enable MFA",
+        mfaDisableCta: "Disable MFA",
+        mfaEnroll: {
+          title: "Set up multi-factor authentication",
+          subtitle:
+            "Add a second factor using an authenticator app such as Google Authenticator, Authy, or 1Password.",
+          introBody:
+            "Enabling MFA strengthens your account against credential theft. You will need an authenticator app on your phone.",
+          step1: "Generate a one-time secret and recovery codes.",
+          step2: "Scan the QR code with your authenticator app.",
+          step3: "Enter the 6-digit code shown by your app to confirm.",
+          startCta: "Start enrollment",
+          starting: "Starting…",
+          scanTitle: "Scan the QR code",
+          scanBody:
+            "Open your authenticator app and scan the QR. If scanning is not possible, use the manual setup link below.",
+          qrAlt: "MFA setup QR code",
+          manualToggle: "Show manual setup URI",
+          recoveryTitle: "Save your recovery codes",
+          recoveryBody:
+            "Each code can be used once if you lose access to your authenticator. Store them somewhere safe — they will not be shown again.",
+          copyCodes: "Copy codes",
+          ackLabel: "I have safely stored these recovery codes.",
+          verifyTitle: "Verify your authenticator",
+          verifyBody:
+            "Enter the 6-digit code currently shown by your authenticator app.",
+          totpLabel: "6-digit code",
+          verifyCta: "Verify and enable",
+          verifying: "Verifying…",
+        },
+        mfaDisable: {
+          title: "Disable multi-factor authentication",
+          body:
+            "Disabling MFA removes a critical layer of protection. Confirm by entering the current 6-digit code from your authenticator app.",
+          totpLabel: "6-digit code",
+          confirmCta: "Disable MFA",
+          disabling: "Disabling…",
+        },
       },
       otherAccounts: {
         title: "Other accounts",
@@ -199,6 +238,9 @@ export const enSettingsMessages = {
         validationUsername: "Use at least 3 characters.",
         validationEmail: "Enter a valid email address.",
         validationPassword: "Use at least 8 characters.",
+        exportCsv: "Export CSV",
+        exportCsvHint:
+          "Download the currently visible page as CSV. Use filters and Per page to scope the export.",
       },
       accountDetail: {
         passwordChange: "Password change",
@@ -230,6 +272,13 @@ export const enSettingsMessages = {
         dataScopes: "Data scopes",
         selectGroup: "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
+        notClassified: "Unclassified",
+        notConfigured: "Not configured — awaiting groups API",
+        membersOnPage: "Members (visible)",
+        membersCountHint:
+          "Counts only directory entries on the current page. A backend groups endpoint is required for global membership totals.",
+        directoryDerivedDescription:
+          "Derived from the IAM directory group \"{group}\". Attribute metadata is awaiting the groups API.",
       },
       functionPermissions: {
         title: "Function permissions",
@@ -238,6 +287,8 @@ export const enSettingsMessages = {
         sessionGrants: "{count} session grants",
         notice:
           "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
+        sampleNotice:
+          "This matrix is illustrative only. No backend endpoint is wired; rows shown here do not reflect the actual permission grants stored in the database.",
         menuFunction: "Menu / Function",
         owner: "Owner",
         source: "Source",
@@ -266,6 +317,8 @@ export const enSettingsMessages = {
         searchPlaceholder: "Search user, contract, fund, or scope",
         grantsCount: "{count} grants",
         noMatches: "No data permissions match the current search.",
+        sampleNotice:
+          "Demo grants only. The data-permission admin API is not yet exposed; rows here do not represent live grants.",
       },
       securityPolicy: {
         title: "Security policy",
@@ -276,6 +329,8 @@ export const enSettingsMessages = {
           "Internal password policy remains editable only when the backend exposes policy management.",
         externalAuthority: "External authority",
         internalAuthority: "Internal authority",
+        sampleNotice:
+          "These values are placeholders for the eventual policy API. Actual lockout, password expiry, and complexity rules are configured server-side.",
         settings: {
           minimumLength: "Minimum length",
           minimumLengthHelper:
@@ -303,6 +358,8 @@ export const enSettingsMessages = {
         subtitle:
           "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
         channelsLabel: "Notification channels",
+        sampleNotice:
+          "Demo notification rules. No subscription API exists yet; toggles are read-only previews.",
         events: {
           accountLock: "Account locked",
           passwordReset: "Password reset completed",
@@ -353,6 +410,8 @@ export const enSettingsMessages = {
       notices: {
         personalPasswordChanged: "Your password was changed successfully.",
         auditExportStarted: "Audit export started.",
+        mfaEnabled: "MFA enabled.",
+        mfaDisabled: "MFA disabled.",
       },
       errors: {
         loadPersonalAccount: "Failed to load your account profile.",
@@ -363,6 +422,9 @@ export const enSettingsMessages = {
         revokeOwnSession: "Failed to revoke your session.",
         refreshUserKpis: "Failed to refresh user KPIs.",
         exportAudit: "Failed to export audit events.",
+        mfaEnroll: "Failed to start MFA enrollment.",
+        mfaVerify: "MFA verification failed. Re-enter the current 6-digit code.",
+        mfaDisable: "Failed to disable MFA. The code may be incorrect or expired.",
       },
       confirm: {
         statusTitle: "{action} {username}",

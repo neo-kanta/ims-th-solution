@@ -66,6 +66,7 @@ export const zhSettingsMessages = {
         userAgentUnavailable: "User agent unavailable",
         dismissNotification: "Dismiss notification",
         cancel: "Cancel",
+        sampleDataTitle: "示例数据 — 尚未接入",
       },
       kpis: {
         totalUsers: "Total users",
@@ -159,6 +160,43 @@ export const zhSettingsMessages = {
         validationCurrentPassword: "Enter your current password.",
         validationNewPassword: "Use at least 8 characters for the new password.",
         validationPasswordMismatch: "New password and confirmation do not match.",
+        mfaEnableCta: "启用 MFA",
+        mfaDisableCta: "停用 MFA",
+        mfaEnroll: {
+          title: "设置多重身份验证",
+          subtitle:
+            "使用 Google Authenticator、Authy 或 1Password 等验证器应用添加第二验证因素。",
+          introBody:
+            "启用 MFA 可有效降低凭据被盗的风险。您需要在手机上安装一个身份验证器应用。",
+          step1: "生成一次性密钥与恢复代码。",
+          step2: "用您的验证器应用扫描 QR 码。",
+          step3: "输入应用显示的 6 位代码以确认。",
+          startCta: "开始设置",
+          starting: "启动中…",
+          scanTitle: "扫描 QR 码",
+          scanBody:
+            "打开验证器应用并扫描 QR。如果无法扫描，请使用下方的手动设置链接。",
+          qrAlt: "MFA 设置二维码",
+          manualToggle: "显示手动设置 URI",
+          recoveryTitle: "保存恢复代码",
+          recoveryBody:
+            "每个代码在丢失验证器后可使用一次。请妥善保管——这些代码不会再次显示。",
+          copyCodes: "复制代码",
+          ackLabel: "我已安全保存这些恢复代码。",
+          verifyTitle: "验证您的验证器",
+          verifyBody: "输入您的验证器应用当前显示的 6 位代码。",
+          totpLabel: "6 位代码",
+          verifyCta: "验证并启用",
+          verifying: "验证中…",
+        },
+        mfaDisable: {
+          title: "停用多重身份验证",
+          body:
+            "停用 MFA 将移除关键的安全层。请输入验证器应用当前的 6 位代码确认。",
+          totpLabel: "6 位代码",
+          confirmCta: "停用 MFA",
+          disabling: "停用中…",
+        },
       },
       otherAccounts: {
         title: "Other accounts",
@@ -181,6 +219,9 @@ export const zhSettingsMessages = {
         validationUsername: "Use at least 3 characters.",
         validationEmail: "Enter a valid email address.",
         validationPassword: "Use at least 8 characters.",
+        exportCsv: "导出 CSV",
+        exportCsvHint:
+          "下载当前页可见数据为 CSV。请用筛选器与每页数量来调整范围。",
       },
       accountDetail: {
         passwordChange: "Password change",
@@ -209,12 +250,18 @@ export const zhSettingsMessages = {
         dataScopes: "Data scopes",
         selectGroup: "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
+        notClassified: "未分类",
+        notConfigured: "未配置 — 等待分组 API",
+        membersOnPage: "成员（当前页）",
+        membersCountHint: "仅统计当前页可见的目录条目。完整成员数需要后端分组 API。",
+        directoryDerivedDescription: "源自 IAM 目录分组 \"{group}\"。属性元数据等待分组 API。",
       },
       functionPermissions: {
         title: "Function permissions",
         subtitle: "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
         sessionGrants: "{count} session grants",
         notice: "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
+        sampleNotice: "此权限矩阵仅供示意，未接入后端 API；显示的内容不代表系统中实际配置的权限。",
         menuFunction: "Menu / Function",
         owner: "Owner",
         source: "Source",
@@ -242,6 +289,7 @@ export const zhSettingsMessages = {
         searchPlaceholder: "Search user, contract, fund, or scope",
         grantsCount: "{count} grants",
         noMatches: "No data permissions match the current search.",
+        sampleNotice: "仅为演示数据。数据权限管理 API 尚未开放，此处显示不代表真实授权。",
       },
       securityPolicy: {
         title: "Security policy",
@@ -250,6 +298,7 @@ export const zhSettingsMessages = {
         authModeHelper: "Internal password policy remains editable only when the backend exposes policy management.",
         externalAuthority: "External authority",
         internalAuthority: "Internal authority",
+        sampleNotice: "此处的值仅为占位符。实际的锁定策略、密码过期及复杂度规则由后端配置。",
         settings: {
           minimumLength: "Minimum length",
           minimumLengthHelper: "Temporary and reset passwords must satisfy this floor.",
@@ -273,6 +322,7 @@ export const zhSettingsMessages = {
         title: "Notifications",
         subtitle: "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
         channelsLabel: "Notification channels",
+        sampleNotice: "通知规则仅为演示。尚无订阅 API，开关仅为只读预览。",
         events: {
           accountLock: "Account locked",
           passwordReset: "Password reset completed",
@@ -321,6 +371,8 @@ export const zhSettingsMessages = {
       notices: {
         personalPasswordChanged: "Your password was changed successfully.",
         auditExportStarted: "Audit export started.",
+        mfaEnabled: "已启用 MFA。",
+        mfaDisabled: "已停用 MFA。",
       },
       errors: {
         loadPersonalAccount: "Failed to load your account profile.",
@@ -331,6 +383,9 @@ export const zhSettingsMessages = {
         revokeOwnSession: "Failed to revoke your session.",
         refreshUserKpis: "Failed to refresh user KPIs.",
         exportAudit: "Failed to export audit events.",
+        mfaEnroll: "无法开始 MFA 设置。",
+        mfaVerify: "MFA 验证失败，请重新输入当前的 6 位代码。",
+        mfaDisable: "停用 MFA 失败，代码可能不正确或已过期。",
       },
       confirm: {
         statusTitle: "{action} {username}",

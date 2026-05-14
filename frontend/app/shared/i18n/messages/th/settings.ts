@@ -66,6 +66,7 @@ export const thSettingsMessages = {
         userAgentUnavailable: "User agent unavailable",
         dismissNotification: "Dismiss notification",
         cancel: "Cancel",
+        sampleDataTitle: "ข้อมูลตัวอย่าง — ยังไม่เชื่อมต่อระบบ",
       },
       kpis: {
         totalUsers: "Total users",
@@ -160,6 +161,43 @@ export const thSettingsMessages = {
         validationCurrentPassword: "Enter your current password.",
         validationNewPassword: "Use at least 8 characters for the new password.",
         validationPasswordMismatch: "New password and confirmation do not match.",
+        mfaEnableCta: "เปิดใช้งาน MFA",
+        mfaDisableCta: "ปิดการใช้งาน MFA",
+        mfaEnroll: {
+          title: "ตั้งค่าการยืนยันตัวตนหลายขั้นตอน",
+          subtitle:
+            "เพิ่มชั้นความปลอดภัยด้วยแอปยืนยันตัวตน เช่น Google Authenticator, Authy หรือ 1Password",
+          introBody:
+            "การเปิด MFA จะช่วยเพิ่มความปลอดภัยของบัญชีจากการขโมยข้อมูลรับรอง ต้องมีแอปยืนยันตัวตนบนโทรศัพท์ของคุณ",
+          step1: "สร้างรหัสลับและรหัสกู้คืน",
+          step2: "สแกน QR ด้วยแอปยืนยันตัวตน",
+          step3: "ป้อนรหัส 6 หลักที่แอปแสดงเพื่อยืนยัน",
+          startCta: "เริ่มลงทะเบียน",
+          starting: "กำลังเริ่ม…",
+          scanTitle: "สแกน QR Code",
+          scanBody:
+            "เปิดแอปยืนยันตัวตนและสแกน QR หากสแกนไม่ได้ ใช้ลิงก์ตั้งค่าด้วยตนเองด้านล่าง",
+          qrAlt: "QR สำหรับตั้งค่า MFA",
+          manualToggle: "แสดง URI สำหรับตั้งค่าด้วยตนเอง",
+          recoveryTitle: "บันทึกรหัสกู้คืน",
+          recoveryBody:
+            "ใช้รหัสได้ครั้งละหนึ่งรหัสเมื่อเข้าถึงแอปไม่ได้ เก็บไว้ในที่ปลอดภัย รหัสจะไม่แสดงอีก",
+          copyCodes: "คัดลอกรหัส",
+          ackLabel: "ฉันได้เก็บรหัสกู้คืนอย่างปลอดภัยแล้ว",
+          verifyTitle: "ยืนยันแอปยืนยันตัวตน",
+          verifyBody: "ป้อนรหัส 6 หลักที่แอปแสดงในขณะนี้",
+          totpLabel: "รหัส 6 หลัก",
+          verifyCta: "ยืนยันและเปิดใช้งาน",
+          verifying: "กำลังยืนยัน…",
+        },
+        mfaDisable: {
+          title: "ปิดการใช้งาน MFA",
+          body:
+            "การปิด MFA จะลดความปลอดภัยอย่างมาก ยืนยันโดยป้อนรหัส 6 หลักจากแอปยืนยันตัวตน",
+          totpLabel: "รหัส 6 หลัก",
+          confirmCta: "ปิดการใช้งาน MFA",
+          disabling: "กำลังปิด…",
+        },
       },
       otherAccounts: {
         title: "Other accounts",
@@ -182,6 +220,9 @@ export const thSettingsMessages = {
         validationUsername: "Use at least 3 characters.",
         validationEmail: "Enter a valid email address.",
         validationPassword: "Use at least 8 characters.",
+        exportCsv: "ส่งออก CSV",
+        exportCsvHint:
+          "ดาวน์โหลดข้อมูลหน้านี้เป็น CSV ใช้ตัวกรองและจำนวนต่อหน้าเพื่อกำหนดขอบเขต",
       },
       accountDetail: {
         passwordChange: "Password change",
@@ -211,12 +252,18 @@ export const thSettingsMessages = {
         dataScopes: "Data scopes",
         selectGroup: "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
+        notClassified: "ยังไม่จำแนก",
+        notConfigured: "ยังไม่ได้ตั้งค่า — รอ API กลุ่ม",
+        membersOnPage: "สมาชิก (ที่แสดง)",
+        membersCountHint: "นับเฉพาะรายการที่แสดงในหน้านี้ จำนวนสมาชิกทั้งหมดต้องใช้ API กลุ่ม",
+        directoryDerivedDescription: "นำมาจากกลุ่ม IAM \"{group}\" คุณสมบัติเพิ่มเติมรอ API กลุ่ม",
       },
       functionPermissions: {
         title: "Function permissions",
         subtitle: "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
         sessionGrants: "{count} session grants",
         notice: "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
+        sampleNotice: "เมทริกซ์นี้เป็นเพียงตัวอย่างเท่านั้น ยังไม่มี API จริง รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริงในระบบ",
         menuFunction: "Menu / Function",
         owner: "Owner",
         source: "Source",
@@ -244,6 +291,7 @@ export const thSettingsMessages = {
         searchPlaceholder: "Search user, contract, fund, or scope",
         grantsCount: "{count} grants",
         noMatches: "No data permissions match the current search.",
+        sampleNotice: "เป็นข้อมูลตัวอย่างเท่านั้น ยังไม่เปิดใช้ API การจัดการสิทธิ์ข้อมูล รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริง",
       },
       securityPolicy: {
         title: "Security policy",
@@ -252,6 +300,7 @@ export const thSettingsMessages = {
         authModeHelper: "Internal password policy remains editable only when the backend exposes policy management.",
         externalAuthority: "External authority",
         internalAuthority: "Internal authority",
+        sampleNotice: "ค่าที่แสดงเป็นเพียงค่าตัวอย่าง ยังไม่มี API สำหรับการตั้งค่านโยบาย ค่าจริงถูกกำหนดที่ฝั่งเซิร์ฟเวอร์",
         settings: {
           minimumLength: "Minimum length",
           minimumLengthHelper: "Temporary and reset passwords must satisfy this floor.",
@@ -275,6 +324,7 @@ export const thSettingsMessages = {
         title: "Notifications",
         subtitle: "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
         channelsLabel: "Notification channels",
+        sampleNotice: "กฎการแจ้งเตือนนี้เป็นเพียงตัวอย่าง ยังไม่มี API ปุ่มเปิด/ปิดเป็นเพียงการแสดงผล",
         events: {
           accountLock: "Account locked",
           passwordReset: "Password reset completed",
@@ -323,6 +373,8 @@ export const thSettingsMessages = {
       notices: {
         personalPasswordChanged: "Your password was changed successfully.",
         auditExportStarted: "Audit export started.",
+        mfaEnabled: "เปิด MFA แล้ว",
+        mfaDisabled: "ปิด MFA แล้ว",
       },
       errors: {
         loadPersonalAccount: "Failed to load your account profile.",
@@ -333,6 +385,9 @@ export const thSettingsMessages = {
         revokeOwnSession: "Failed to revoke your session.",
         refreshUserKpis: "Failed to refresh user KPIs.",
         exportAudit: "Failed to export audit events.",
+        mfaEnroll: "ไม่สามารถเริ่มลงทะเบียน MFA ได้",
+        mfaVerify: "การยืนยัน MFA ล้มเหลว กรุณากรอกรหัส 6 หลักล่าสุดอีกครั้ง",
+        mfaDisable: "ปิดการใช้งาน MFA ไม่สำเร็จ รหัสอาจไม่ถูกต้องหรือหมดอายุ",
       },
       confirm: {
         statusTitle: "{action} {username}",

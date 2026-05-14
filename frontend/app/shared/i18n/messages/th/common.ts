@@ -26,6 +26,7 @@ export const thCommonMessages = {
     pagination: {
       empty: "ไม่มีรายการ",
       range: "{start}-{end} จากทั้งหมด {total}",
+      pageSize: "ต่อหน้า",
     },
   },
   auth: {

@@ -32,11 +32,9 @@ const { t } = useI18n();
       </span>
     </header>
 
-    <div class="settings-permissions__notice">
-      <AppIcon name="info" size="sm" />
-      <span>
-        {{ t("settings.console.functionPermissions.notice") }}
-      </span>
+    <div class="alert alert-warning settings-panel__alert" role="note">
+      <strong>{{ t("settings.console.common.sampleDataTitle") }}</strong>
+      <span>{{ t("settings.console.functionPermissions.sampleNotice") }}</span>
     </div>
 
     <div class="settings-permissions__body">
@@ -110,19 +108,6 @@ const { t } = useI18n();
 </template>
 
 <style scoped>
-.settings-permissions__notice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: var(--space-5) var(--space-5) 0;
-  padding: var(--space-4);
-  border: 1px solid var(--alert-info-border);
-  border-radius: var(--radius-md);
-  background: var(--alert-info-bg);
-  color: var(--alert-info-text);
-  font-size: var(--font-size-sm);
-}
-
 .settings-permissions__body {
   padding: var(--space-5);
 }
@@ -199,11 +184,5 @@ const { t } = useI18n();
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
-}
-
-@media (max-width: 760px) {
-  .settings-permissions__notice {
-    align-items: flex-start;
-  }
 }
 </style>

@@ -38,6 +38,15 @@ function riskBadgeClass(riskLevel: SettingsGroupRole["riskLevel"]) {
 }
 
 const { t } = useI18n();
+
+function riskBadgeLabel(group: SettingsGroupRole): string {
+  // Risk level is meaningful only when the backend supplied it (demo source
+  // ships explicit values). Directory-derived groups have no risk metadata yet.
+  if (group.source === "directory") {
+    return t("settings.console.groupsRoles.notClassified");
+  }
+  return group.riskLevel;
+}
 </script>
 
 <template>
@@ -80,11 +89,14 @@ const { t } = useI18n();
             <span class="settings-group-row__description">{{ group.description }}</span>
           </span>
           <span class="settings-group-row__meta">
-            <span class="badge badge-neutral">
+            <span
+              class="badge badge-neutral"
+              :title="t('settings.console.groupsRoles.membersCountHint')"
+            >
               {{ t("settings.console.groupsRoles.membersCount", { count: group.membersCount }) }}
             </span>
             <span class="badge" :class="riskBadgeClass(group.riskLevel)">
-              {{ group.riskLevel }}
+              {{ riskBadgeLabel(group) }}
             </span>
           </span>
         </button>
@@ -118,18 +130,22 @@ const { t } = useI18n();
 
           <dl class="settings-groups__stats">
             <div>
-              <dt>{{ t("settings.console.groupsRoles.members") }}</dt>
+              <dt
+                :title="t('settings.console.groupsRoles.membersCountHint')"
+              >
+                {{ t("settings.console.groupsRoles.membersOnPage") }}
+              </dt>
               <dd>{{ selectedGroup.membersCount }}</dd>
             </div>
             <div>
               <dt>{{ t("settings.console.groupsRoles.risk") }}</dt>
-              <dd>{{ selectedGroup.riskLevel }}</dd>
+              <dd>{{ riskBadgeLabel(selectedGroup) }}</dd>
             </div>
           </dl>
 
           <div class="settings-groups__section">
             <h4>{{ t("settings.console.groupsRoles.functionalResponsibility") }}</h4>
-            <ul>
+            <ul v-if="selectedGroup.responsibilities.length">
               <li
                 v-for="responsibility in selectedGroup.responsibilities"
                 :key="responsibility"
@@ -137,11 +153,14 @@ const { t } = useI18n();
                 {{ responsibility }}
               </li>
             </ul>
+            <p v-else class="settings-groups__empty">
+              {{ t("settings.console.groupsRoles.notConfigured") }}
+            </p>
           </div>
 
           <div class="settings-groups__section">
             <h4>{{ t("settings.console.groupsRoles.permissionFamilies") }}</h4>
-            <div class="settings-chip-list">
+            <div v-if="selectedGroup.permissionFamilies.length" class="settings-chip-list">
               <span
                 v-for="permission in selectedGroup.permissionFamilies"
                 :key="permission"
@@ -150,11 +169,14 @@ const { t } = useI18n();
                 {{ permission }}
               </span>
             </div>
+            <p v-else class="settings-groups__empty">
+              {{ t("settings.console.groupsRoles.notConfigured") }}
+            </p>
           </div>
 
           <div class="settings-groups__section">
             <h4>{{ t("settings.console.groupsRoles.dataScopes") }}</h4>
-            <div class="settings-chip-list">
+            <div v-if="selectedGroup.dataScopes.length" class="settings-chip-list">
               <span
                 v-for="scope in selectedGroup.dataScopes"
                 :key="scope"
@@ -163,6 +185,9 @@ const { t } = useI18n();
                 {{ scope }}
               </span>
             </div>
+            <p v-else class="settings-groups__empty">
+              {{ t("settings.console.groupsRoles.notConfigured") }}
+            </p>
           </div>
         </template>
 
@@ -342,5 +367,15 @@ const { t } = useI18n();
   .settings-group-row__meta {
     justify-content: flex-start;
   }
+}
+
+.settings-groups__empty {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
 }
 </style>

@@ -27,6 +27,8 @@ const emit = defineEmits<{
   refresh: [];
   changePassword: [payload: ChangePersonalPasswordInput];
   revokeSession: [session: PersonalAccountSession];
+  startMfaEnroll: [];
+  startMfaDisable: [];
 }>();
 
 const passwordForm = reactive({
@@ -192,6 +194,24 @@ function submitPasswordChange() {
               >
                 {{ mfaStatus?.enabled ? t("settings.console.common.protected") : t("settings.console.common.review") }}
               </span>
+            </div>
+            <div class="settings-personal-card__actions">
+              <button
+                v-if="!mfaStatus?.enabled"
+                type="button"
+                class="btn btn-primary btn-sm"
+                @click="emit('startMfaEnroll')"
+              >
+                {{ t("settings.console.personal.mfaEnableCta") }}
+              </button>
+              <button
+                v-else
+                type="button"
+                class="btn btn-danger btn-sm"
+                @click="emit('startMfaDisable')"
+              >
+                {{ t("settings.console.personal.mfaDisableCta") }}
+              </button>
             </div>
             <div v-if="mfaError" class="alert alert-danger" role="alert">
               {{ mfaError }}
@@ -584,5 +604,10 @@ function submitPasswordChange() {
   .settings-personal-password__actions {
     justify-content: stretch;
   }
+}
+
+.settings-personal-card__actions {
+  display: flex;
+  gap: var(--space-2);
 }
 </style>
