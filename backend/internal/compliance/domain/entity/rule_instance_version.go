@@ -13,7 +13,7 @@ type RuleInstanceVersion struct {
 	ID             uuid.UUID
 	RuleInstanceID uuid.UUID
 	VersionNumber  int
-	Parameters     json.RawMessage // validated against rule type schema at write time
+	Parameters     json.RawMessage `swaggertype:"object"` // validated against rule type schema at write time
 	ChangeReason   string          // why this version was created
 	ApprovedBy     *uuid.UUID      // nil if no approval required
 	CreatedBy      uuid.UUID

@@ -34,7 +34,7 @@ type PreTradeCheckRequest struct {
 // PreTradeCheckResponse is the result returned to the OMS / caller.
 type PreTradeCheckResponse struct {
 	CheckGroupID    uuid.UUID       `json:"check_group_id"`
-	Verdict         vo.Verdict      `json:"verdict"`
+	Verdict         vo.Verdict      `json:"verdict" swaggertype:"string"`
 	RulesEvaluated  int             `json:"rules_evaluated"`
 	TotalDurationMs int64           `json:"total_duration_ms"`
 	Breaches        []BreachSummary `json:"breaches,omitempty"`
@@ -44,8 +44,8 @@ type PreTradeCheckResponse struct {
 type BreachSummary struct {
 	BreachID    uuid.UUID   `json:"breach_id"`
 	RuleTypeID  string      `json:"rule_type_id"`
-	Severity    vo.Severity `json:"severity"`
-	Verdict     vo.Verdict  `json:"verdict"`
+	Severity    vo.Severity `json:"severity" swaggertype:"string"`
+	Verdict     vo.Verdict  `json:"verdict" swaggertype:"string"`
 	Message     string      `json:"message"`
 	Overridable bool        `json:"overridable"`
 }

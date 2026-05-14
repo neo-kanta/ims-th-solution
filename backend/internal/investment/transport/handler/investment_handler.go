@@ -197,6 +197,19 @@ func writeDomainError(w http.ResponseWriter, err error) {
 
 // ─── Fund handlers ───────────────────────────────────────────────────────────
 
+// ListFunds handles GET /investment/funds.
+// @Summary List Funds
+// @Description List funds visible to the authenticated user.
+// @Tags Investment - Funds
+// @Security BearerAuth
+// @Produce json
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Page size (default 50, max 200)"
+// @Success 200 {object} response.FundListResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds [get]
 func (h *InvestmentHandler) ListFunds(w http.ResponseWriter, r *http.Request) {
 	page, limit := paginationParams(r)
 	filter := domain.FundListFilter{Page: page, Limit: limit, AccessibleFundIDs: accessibleFundIDs(r.Context(), h.pc)}
@@ -215,6 +228,20 @@ func (h *InvestmentHandler) ListFunds(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetFund handles GET /investment/funds/{id}.
+// @Summary Get Fund
+// @Description Retrieve one fund by ID.
+// @Tags Investment - Funds
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Success 200 {object} response.FundResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id} [get]
 func (h *InvestmentHandler) GetFund(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -237,6 +264,22 @@ func (h *InvestmentHandler) GetFund(w http.ResponseWriter, r *http.Request) {
 	httputil.OK(w, response.FromFund(f))
 }
 
+// CreateFund handles POST /investment/funds.
+// @Summary Create Fund
+// @Description Create a fund record.
+// @Tags Investment - Funds
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.CreateFundRequest true "Fund create payload"
+// @Success 201 {object} response.FundResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds [post]
 func (h *InvestmentHandler) CreateFund(w http.ResponseWriter, r *http.Request) {
 	var req request.CreateFundRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -274,6 +317,24 @@ func (h *InvestmentHandler) CreateFund(w http.ResponseWriter, r *http.Request) {
 	httputil.Created(w, response.FromFund(f))
 }
 
+// UpdateFund handles PUT /investment/funds/{id}.
+// @Summary Update Fund
+// @Description Update mutable fields on a fund using optimistic version control.
+// @Tags Investment - Funds
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Param request body request.UpdateFundRequest true "Fund update payload"
+// @Success 200 {object} response.FundResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id} [put]
 func (h *InvestmentHandler) UpdateFund(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -322,6 +383,23 @@ func (h *InvestmentHandler) UpdateFund(w http.ResponseWriter, r *http.Request) {
 	httputil.OK(w, response.FromFund(f))
 }
 
+// DeleteFund handles DELETE /investment/funds/{id}.
+// @Summary Delete Fund
+// @Description Soft-delete a fund using optimistic version control.
+// @Tags Investment - Funds
+// @Security BearerAuth
+// @Accept json
+// @Param id path string true "Fund UUID"
+// @Param request body request.DeleteFundRequest false "Fund delete payload"
+// @Success 204 "No Content"
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id} [delete]
 func (h *InvestmentHandler) DeleteFund(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -348,6 +426,21 @@ func (h *InvestmentHandler) DeleteFund(w http.ResponseWriter, r *http.Request) {
 
 // ─── Portfolio handlers ──────────────────────────────────────────────────────
 
+// ListPortfolios handles GET /investment/portfolios.
+// @Summary List Portfolios
+// @Description List portfolios visible to the authenticated user.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Produce json
+// @Param fund_id query string false "Fund UUID"
+// @Param status query string false "Portfolio status"
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Page size (default 50, max 200)"
+// @Success 200 {object} response.PortfolioListResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios [get]
 func (h *InvestmentHandler) ListPortfolios(w http.ResponseWriter, r *http.Request) {
 	page, limit := paginationParams(r)
 	filter := domain.PortfolioListFilter{Page: page, Limit: limit}
@@ -379,6 +472,20 @@ func (h *InvestmentHandler) ListPortfolios(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// GetPortfolio handles GET /investment/portfolios/{id}.
+// @Summary Get Portfolio
+// @Description Retrieve one portfolio by ID.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Success 200 {object} response.PortfolioResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id} [get]
 func (h *InvestmentHandler) GetPortfolio(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -401,6 +508,22 @@ func (h *InvestmentHandler) GetPortfolio(w http.ResponseWriter, r *http.Request)
 	httputil.OK(w, response.FromPortfolio(p))
 }
 
+// CreatePortfolio handles POST /investment/portfolios.
+// @Summary Create Portfolio
+// @Description Create a portfolio under a fund.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.CreatePortfolioRequest true "Portfolio create payload"
+// @Success 201 {object} response.PortfolioResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios [post]
 func (h *InvestmentHandler) CreatePortfolio(w http.ResponseWriter, r *http.Request) {
 	var req request.CreatePortfolioRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -450,6 +573,24 @@ func (h *InvestmentHandler) CreatePortfolio(w http.ResponseWriter, r *http.Reque
 	httputil.Created(w, response.FromPortfolio(p))
 }
 
+// UpdatePortfolio handles PUT /investment/portfolios/{id}.
+// @Summary Update Portfolio
+// @Description Update mutable fields on a portfolio using optimistic version control.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param request body request.UpdatePortfolioRequest true "Portfolio update payload"
+// @Success 200 {object} response.PortfolioResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id} [put]
 func (h *InvestmentHandler) UpdatePortfolio(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -497,6 +638,23 @@ func (h *InvestmentHandler) UpdatePortfolio(w http.ResponseWriter, r *http.Reque
 	httputil.OK(w, response.FromPortfolio(p))
 }
 
+// DeletePortfolio handles DELETE /investment/portfolios/{id}.
+// @Summary Delete Portfolio
+// @Description Soft-delete a portfolio using optimistic version control.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Accept json
+// @Param id path string true "Portfolio UUID"
+// @Param request body request.DeletePortfolioRequest false "Portfolio delete payload"
+// @Success 204 "No Content"
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id} [delete]
 func (h *InvestmentHandler) DeletePortfolio(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -523,6 +681,19 @@ func (h *InvestmentHandler) DeletePortfolio(w http.ResponseWriter, r *http.Reque
 
 // ─── Holdings, transactions, cash ─────────────────────────────────────────────
 
+// ListHoldings handles GET /investment/portfolios/{id}/holdings.
+// @Summary List Portfolio Holdings
+// @Description List current holdings for a portfolio.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Success 200 {array} response.HoldingResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/holdings [get]
 func (h *InvestmentHandler) ListHoldings(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -545,6 +716,24 @@ func (h *InvestmentHandler) ListHoldings(w http.ResponseWriter, r *http.Request)
 	httputil.OK(w, out)
 }
 
+// ListTransactions handles GET /investment/portfolios/{id}/transactions.
+// @Summary List Portfolio Transactions
+// @Description List transactions for a portfolio with optional instrument and date filters.
+// @Tags Investment - Ledger
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param instrument_id query string false "Instrument UUID"
+// @Param from query string false "Start business date (YYYY-MM-DD)"
+// @Param to query string false "End business date (YYYY-MM-DD)"
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Page size (default 50, max 200)"
+// @Success 200 {object} response.TransactionListResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/transactions [get]
 func (h *InvestmentHandler) ListTransactions(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -590,6 +779,19 @@ func (h *InvestmentHandler) ListTransactions(w http.ResponseWriter, r *http.Requ
 	})
 }
 
+// ListCashBalances handles GET /investment/portfolios/{id}/cash.
+// @Summary List Portfolio Cash Balances
+// @Description List cash balances by currency for a portfolio.
+// @Tags Investment - Portfolios
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Success 200 {array} response.CashBalanceResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/cash [get]
 func (h *InvestmentHandler) ListCashBalances(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -612,6 +814,24 @@ func (h *InvestmentHandler) ListCashBalances(w http.ResponseWriter, r *http.Requ
 	httputil.OK(w, out)
 }
 
+// PostTransaction handles POST /investment/portfolios/{id}/transactions.
+// @Summary Post Portfolio Transaction
+// @Description Post a buy, sell, cash, or other portfolio transaction into the ledger.
+// @Tags Investment - Ledger
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param request body request.PostTransactionRequest true "Transaction post payload"
+// @Success 201 {object} response.TransactionResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/transactions [post]
 func (h *InvestmentHandler) PostTransaction(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -706,6 +926,25 @@ func (h *InvestmentHandler) PostTransaction(w http.ResponseWriter, r *http.Reque
 	httputil.Created(w, response.FromTransaction(res.Transaction))
 }
 
+// ReverseTransaction handles POST /investment/portfolios/{id}/transactions/{txnId}/reverse.
+// @Summary Reverse Portfolio Transaction
+// @Description Post a reversal transaction for an existing portfolio transaction.
+// @Tags Investment - Ledger
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param txnId path string true "Transaction UUID"
+// @Param request body request.ReverseTransactionRequest true "Transaction reversal payload"
+// @Success 201 {object} response.TransactionResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/transactions/{txnId}/reverse [post]
 func (h *InvestmentHandler) ReverseTransaction(w http.ResponseWriter, r *http.Request) {
 	portfolioID, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -761,6 +1000,21 @@ func (h *InvestmentHandler) ReverseTransaction(w http.ResponseWriter, r *http.Re
 
 // ─── Instruments ─────────────────────────────────────────────────────────────
 
+// ListInstruments handles GET /investment/instruments.
+// @Summary List Instruments
+// @Description List tradable and reference instruments with optional filters.
+// @Tags Investment - Instruments
+// @Security BearerAuth
+// @Produce json
+// @Param asset_class_id query string false "Asset class UUID"
+// @Param search query string false "Search text"
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Page size (default 50, max 200)"
+// @Success 200 {object} response.InstrumentListResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/instruments [get]
 func (h *InvestmentHandler) ListInstruments(w http.ResponseWriter, r *http.Request) {
 	page, limit := paginationParams(r)
 	filter := domain.InstrumentListFilter{Page: page, Limit: limit}
@@ -787,6 +1041,20 @@ func (h *InvestmentHandler) ListInstruments(w http.ResponseWriter, r *http.Reque
 	})
 }
 
+// GetInstrument handles GET /investment/instruments/{id}.
+// @Summary Get Instrument
+// @Description Retrieve one instrument by ID.
+// @Tags Investment - Instruments
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Instrument UUID"
+// @Success 200 {object} response.InstrumentResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/instruments/{id} [get]
 func (h *InvestmentHandler) GetInstrument(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -805,6 +1073,22 @@ func (h *InvestmentHandler) GetInstrument(w http.ResponseWriter, r *http.Request
 	httputil.OK(w, response.FromInstrument(i))
 }
 
+// CreateInstrument handles POST /investment/instruments.
+// @Summary Create Instrument
+// @Description Create an instrument master record.
+// @Tags Investment - Instruments
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body request.CreateInstrumentRequest true "Instrument create payload"
+// @Success 201 {object} response.InstrumentResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/instruments [post]
 func (h *InvestmentHandler) CreateInstrument(w http.ResponseWriter, r *http.Request) {
 	var req request.CreateInstrumentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -844,6 +1128,24 @@ func (h *InvestmentHandler) CreateInstrument(w http.ResponseWriter, r *http.Requ
 	httputil.Created(w, response.FromInstrument(inst))
 }
 
+// UpdateInstrument handles PUT /investment/instruments/{id}.
+// @Summary Update Instrument
+// @Description Update mutable fields on an instrument master record.
+// @Tags Investment - Instruments
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Instrument UUID"
+// @Param request body request.UpdateInstrumentRequest true "Instrument update payload"
+// @Success 200 {object} response.InstrumentResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/instruments/{id} [put]
 func (h *InvestmentHandler) UpdateInstrument(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -893,6 +1195,17 @@ func (h *InvestmentHandler) UpdateInstrument(w http.ResponseWriter, r *http.Requ
 
 // ─── Reference / taxonomy ────────────────────────────────────────────────────
 
+// ListAssetClasses handles GET /investment/reference/asset-classes.
+// @Summary List Asset Classes
+// @Description List active asset classes.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.AssetClass
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/asset-classes [get]
 func (h *InvestmentHandler) ListAssetClasses(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListAssetClasses(r.Context(), false)
 	if err != nil {
@@ -901,6 +1214,19 @@ func (h *InvestmentHandler) ListAssetClasses(w http.ResponseWriter, r *http.Requ
 	}
 	httputil.OK(w, rows)
 }
+
+// ListAssetSubtypes handles GET /investment/reference/asset-subtypes.
+// @Summary List Asset Subtypes
+// @Description List active asset subtypes, optionally filtered by asset class.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Param asset_class_id query string false "Asset class UUID"
+// @Success 200 {array} entity.AssetSubtype
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/asset-subtypes [get]
 func (h *InvestmentHandler) ListAssetSubtypes(w http.ResponseWriter, r *http.Request) {
 	var class *uuid.UUID
 	if v := r.URL.Query().Get("asset_class_id"); v != "" {
@@ -915,6 +1241,18 @@ func (h *InvestmentHandler) ListAssetSubtypes(w http.ResponseWriter, r *http.Req
 	}
 	httputil.OK(w, rows)
 }
+
+// ListSectors handles GET /investment/reference/sectors.
+// @Summary List Sectors
+// @Description List investment sector taxonomy rows.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.Sector
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/sectors [get]
 func (h *InvestmentHandler) ListSectors(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListSectors(r.Context(), nil, nil)
 	if err != nil {
@@ -923,6 +1261,18 @@ func (h *InvestmentHandler) ListSectors(w http.ResponseWriter, r *http.Request) 
 	}
 	httputil.OK(w, rows)
 }
+
+// ListFundCategories handles GET /investment/reference/fund-categories.
+// @Summary List Fund Categories
+// @Description List active fund categories.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.FundCategory
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/fund-categories [get]
 func (h *InvestmentHandler) ListFundCategories(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListFundCategories(r.Context())
 	if err != nil {
@@ -931,6 +1281,18 @@ func (h *InvestmentHandler) ListFundCategories(w http.ResponseWriter, r *http.Re
 	}
 	httputil.OK(w, rows)
 }
+
+// ListRegions handles GET /investment/reference/regions.
+// @Summary List Regions
+// @Description List active regions.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.Region
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/regions [get]
 func (h *InvestmentHandler) ListRegions(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListRegions(r.Context())
 	if err != nil {
@@ -939,6 +1301,18 @@ func (h *InvestmentHandler) ListRegions(w http.ResponseWriter, r *http.Request) 
 	}
 	httputil.OK(w, rows)
 }
+
+// ListCountries handles GET /investment/reference/countries.
+// @Summary List Countries
+// @Description List active countries.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.Country
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/countries [get]
 func (h *InvestmentHandler) ListCountries(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListCountries(r.Context(), nil)
 	if err != nil {
@@ -947,6 +1321,18 @@ func (h *InvestmentHandler) ListCountries(w http.ResponseWriter, r *http.Request
 	}
 	httputil.OK(w, rows)
 }
+
+// ListInvestmentStyles handles GET /investment/reference/investment-styles.
+// @Summary List Investment Styles
+// @Description List active investment styles.
+// @Tags Investment - Reference
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} entity.InvestmentStyle
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/reference/investment-styles [get]
 func (h *InvestmentHandler) ListInvestmentStyles(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.taxonomy.ListInvestmentStyles(r.Context())
 	if err != nil {
@@ -958,6 +1344,24 @@ func (h *InvestmentHandler) ListInvestmentStyles(w http.ResponseWriter, r *http.
 
 // ─── Pricing & Valuation ──────────────────────────────────────────────────────
 
+// PostPriceSnapshot handles POST /investment/instruments/{id}/prices.
+// @Summary Post Price Snapshot
+// @Description Capture a price snapshot for an instrument and business date.
+// @Tags Investment - Pricing
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Instrument UUID"
+// @Param request body request.PostPriceSnapshotRequest true "Price snapshot payload"
+// @Success 201 {object} response.PriceResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/instruments/{id}/prices [post]
 func (h *InvestmentHandler) PostPriceSnapshot(w http.ResponseWriter, r *http.Request) {
 	instID, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -1002,6 +1406,24 @@ func (h *InvestmentHandler) PostPriceSnapshot(w http.ResponseWriter, r *http.Req
 	httputil.Created(w, response.FromPrice(snap))
 }
 
+// RunValuation handles POST /investment/portfolios/{id}/valuations/run.
+// @Summary Run Portfolio Valuation
+// @Description Run a valuation snapshot for a portfolio and business date.
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param request body request.RunValuationRequest true "Valuation run payload"
+// @Success 201 {object} response.ValuationResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/valuations/run [post]
 func (h *InvestmentHandler) RunValuation(w http.ResponseWriter, r *http.Request) {
 	portfolioID, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -1061,6 +1483,20 @@ func (h *InvestmentHandler) RunValuation(w http.ResponseWriter, r *http.Request)
 	httputil.Created(w, response.FromValuation(res.Valuation))
 }
 
+// GetLatestValuation handles GET /investment/portfolios/{id}/valuations/latest.
+// @Summary Get Latest Portfolio Valuation
+// @Description Retrieve the latest internal valuation snapshot for a portfolio.
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Success 200 {object} response.ValuationResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/valuations/latest [get]
 func (h *InvestmentHandler) GetLatestValuation(w http.ResponseWriter, r *http.Request) {
 	portfolioID, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -1083,6 +1519,23 @@ func (h *InvestmentHandler) GetLatestValuation(w http.ResponseWriter, r *http.Re
 	httputil.OK(w, response.FromValuation(v))
 }
 
+// ListValuations handles GET /investment/portfolios/{id}/valuations.
+// @Summary List Portfolio Valuations
+// @Description List valuation snapshots for a portfolio with optional date filters.
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param from query string false "Start business date (YYYY-MM-DD)"
+// @Param to query string false "End business date (YYYY-MM-DD)"
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Page size (default 50, max 200)"
+// @Success 200 {object} response.ValuationListResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/valuations [get]
 func (h *InvestmentHandler) ListValuations(w http.ResponseWriter, r *http.Request) {
 	portfolioID, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -1161,8 +1614,27 @@ func (h *InvestmentHandler) ListFundAUM(w http.ResponseWriter, r *http.Request) 
 	}
 	h.listAUM(w, r, vo.AumScopeFund, fundID)
 }
+
 // ComputeFundAUM aggregates per-portfolio AUM into a fund-level snapshot for
 // the requested business date. Idempotent on (fund, date, source=INTERNAL).
+// @Summary Compute Fund AUM
+// @Description Aggregate portfolio AUM snapshots into a fund-level snapshot for a business date.
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Param request body request.ComputeFundAUMRequest true "Fund AUM compute payload"
+// @Success 200 {object} response.ComputeFundAUMResponse
+// @Success 201 {object} response.ComputeFundAUMResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id}/aum/compute [post]
 func (h *InvestmentHandler) ComputeFundAUM(w http.ResponseWriter, r *http.Request) {
 	if h.fundAUM == nil {
 		httputil.InternalError(w, "fund aum compute not wired")

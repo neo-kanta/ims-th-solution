@@ -24,7 +24,7 @@ type CreateFundRequest struct {
 	ExternalPAMRef string     `json:"external_pam_ref"`
 }
 
-// UpdateFundRequest is the JSON body for PATCH /investment/funds/{id}.
+// UpdateFundRequest is the JSON body for PUT /investment/funds/{id}.
 type UpdateFundRequest struct {
 	ExpectedVersion int        `json:"expected_version" validate:"required,min=1"`
 	Name            *string    `json:"name"`
@@ -62,7 +62,7 @@ type CreatePortfolioRequest struct {
 	TaxLotMethod      string     `json:"tax_lot_method"`
 }
 
-// UpdatePortfolioRequest is the JSON body for PATCH /investment/portfolios/{id}.
+// UpdatePortfolioRequest is the JSON body for PUT /investment/portfolios/{id}.
 type UpdatePortfolioRequest struct {
 	ExpectedVersion int        `json:"expected_version" validate:"required,min=1"`
 	Name            *string    `json:"name"`
@@ -99,7 +99,7 @@ type CreateInstrumentRequest struct {
 	Attributes      map[string]any `json:"attributes"`
 }
 
-// UpdateInstrumentRequest is the JSON body for PATCH /investment/instruments/{id}.
+// UpdateInstrumentRequest is the JSON body for PUT /investment/instruments/{id}.
 type UpdateInstrumentRequest struct {
 	Name            *string        `json:"name"`
 	PrimaryExchange *string        `json:"primary_exchange"`
@@ -157,7 +157,7 @@ type PostPriceSnapshotRequest struct {
 	StaleReason  string `json:"stale_reason"`
 }
 
-// RunValuationRequest is the JSON body for POST /investment/portfolios/{id}/valuations.
+// RunValuationRequest is the JSON body for POST /investment/portfolios/{id}/valuations/run.
 type RunValuationRequest struct {
 	BusinessDate string            `json:"business_date" validate:"required"`
 	FxRates      map[string]string `json:"fx_rates"`
