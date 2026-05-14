@@ -225,7 +225,7 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerReverse))
-			r.Post("/portfolios/{id}/transactions/{txn_id}/reverse", h.ReverseTransaction)
+			r.Post("/portfolios/{id}/transactions/{txnId}/reverse", h.ReverseTransaction)
 		})
 
 		// ── Prices ──────────────────────────────────────────────────────

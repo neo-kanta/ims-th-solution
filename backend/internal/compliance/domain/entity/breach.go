@@ -26,10 +26,10 @@ type Breach struct {
 	ContractID     uuid.UUID
 	RuleTypeID     string
 	RuleInstanceID uuid.UUID
-	Severity       vo.Severity
-	Verdict        vo.Verdict
-	Status         BreachStatus
-	Evidence       vo.Evidence
+	Severity       vo.Severity  `swaggertype:"string"`
+	Verdict        vo.Verdict   `swaggertype:"string"`
+	Status         BreachStatus `swaggertype:"string"`
+	Evidence       vo.Evidence  `swaggertype:"object"`
 	Message        string
 	BusinessDate   time.Time
 	CreatedAt      time.Time

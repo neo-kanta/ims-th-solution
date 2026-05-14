@@ -19,7 +19,7 @@ type RuleInstance struct {
 	Description     string
 	CurrentVersion  int // pointer to the active version number
 	IsActive        bool
-	EffectiveWindow vo.EffectiveWindow
+	EffectiveWindow vo.EffectiveWindow `swaggertype:"object"`
 	CreatedBy       uuid.UUID
 	CreatedAt       time.Time
 	UpdatedAt       time.Time

@@ -7,8 +7,14 @@ import (
 	"strconv"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/application"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
+
+type QuoteResponse = domain.Quote
+type PriceBarResponse = domain.PriceBar
+type ProviderHealthResponse = domain.ProviderHealth
+type ImportMarketDataResponse = application.ImportMarketDataResult
 
 type Handler struct {
 	service *application.Service
@@ -18,6 +24,20 @@ func NewHandler(service *application.Service) *Handler {
 	return &Handler{service: service}
 }
 
+// GetQuote handles GET /market-data/quote.
+// @Summary Get Market Quote
+// @Description Get a latest quote for a symbol from the configured provider chain or a requested provider.
+// @Tags MarketData
+// @Security BearerAuth
+// @Produce json
+// @Param symbol query string true "Market symbol"
+// @Param provider query string false "Provider name (alpha_vantage or yahoo)"
+// @Success 200 {object} QuoteResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 502 {object} httputil.ErrorResponse
+// @Router /market-data/quote [get]
 func (h *Handler) GetQuote(w http.ResponseWriter, r *http.Request) {
 	symbol := r.URL.Query().Get("symbol")
 	if symbol == "" {
@@ -41,6 +61,21 @@ func (h *Handler) GetQuote(w http.ResponseWriter, r *http.Request) {
 	httputil.OK(w, q)
 }
 
+// GetHistory handles GET /market-data/history.
+// @Summary Get Market Price History
+// @Description Get daily price bars for a symbol from the configured provider chain or a requested provider.
+// @Tags MarketData
+// @Security BearerAuth
+// @Produce json
+// @Param symbol query string true "Market symbol"
+// @Param provider query string false "Provider name (alpha_vantage or yahoo)"
+// @Param limit query int false "Maximum bars to return (default 250, max 1000)"
+// @Success 200 {array} PriceBarResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 502 {object} httputil.ErrorResponse
+// @Router /market-data/history [get]
 func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	symbol := r.URL.Query().Get("symbol")
 	if symbol == "" {
@@ -73,7 +108,7 @@ func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	httputil.OK(w, bars)
 }
 
-type importMarketDataRequest struct {
+type ImportMarketDataRequest struct {
 	Symbol         string `json:"symbol"`
 	Provider       string `json:"provider"`
 	IncludeQuote   *bool  `json:"include_quote"`
@@ -81,8 +116,22 @@ type importMarketDataRequest struct {
 	HistoryLimit   int    `json:"history_limit"`
 }
 
+// ImportMarketData handles POST /market-data/import.
+// @Summary Import Market Data
+// @Description Fetch and persist quote and/or daily price history for a symbol.
+// @Tags MarketData
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body ImportMarketDataRequest true "Market data import payload"
+// @Success 201 {object} ImportMarketDataResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 502 {object} httputil.ErrorResponse
+// @Router /market-data/import [post]
 func (h *Handler) ImportMarketData(w http.ResponseWriter, r *http.Request) {
-	var req importMarketDataRequest
+	var req ImportMarketDataRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid JSON body")
 		return
@@ -109,6 +158,17 @@ func (h *Handler) ImportMarketData(w http.ResponseWriter, r *http.Request) {
 	httputil.Created(w, result)
 }
 
+// ProviderHealth handles GET /market-data/provider-health.
+// @Summary Get Market Data Provider Health
+// @Description Get configured market data provider health and recent status information.
+// @Tags MarketData
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} ProviderHealthResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /market-data/provider-health [get]
 func (h *Handler) ProviderHealth(w http.ResponseWriter, r *http.Request) {
 	health, err := h.service.ProviderHealth(r.Context())
 	if err != nil {

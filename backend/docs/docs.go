@@ -1229,256 +1229,67 @@ const docTemplate = `{
                 }
             }
         },
-        "/etl/feeds": {
+        "/compliance/breaches": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "List configured ETL feed sources",
+                "description": "List compliance breaches with optional portfolio, contract, rule, status, and date filters.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "ETL"
+                    "Compliance"
                 ],
-                "summary": "List ETL Feeds",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": true
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/etl/feeds/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an ETL feed source configuration",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ETL"
-                ],
-                "summary": "Update ETL Feed",
+                "summary": "List Compliance Breaches",
                 "parameters": [
                     {
                         "type": "string",
-                        "format": "uuid",
-                        "description": "Feed UUID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Feed update payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/UpdateFeedRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/etl/import": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Upload a CSV file for ETL import processing",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ETL"
-                ],
-                "summary": "Import ETL File",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "Import file (CSV)",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Import target",
-                        "name": "import_target",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Business date (YYYY-MM-DD)",
-                        "name": "business_date",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/etl/jobs": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "List ETL jobs with optional filters for job type, business date, and status",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ETL"
-                ],
-                "summary": "List ETL Jobs",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Job type",
-                        "name": "type",
+                        "description": "Portfolio UUID",
+                        "name": "portfolio_id",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Business date (YYYY-MM-DD)",
-                        "name": "date",
+                        "description": "Contract UUID",
+                        "name": "contract_id",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Job status",
+                        "description": "Breach status",
                         "name": "status",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Page index (default 0)",
-                        "name": "page",
+                        "type": "string",
+                        "description": "Rule type ID",
+                        "name": "rule_type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "date_to",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Page size (default 50, max 100)",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 50, max 200)",
                         "name": "limit",
                         "in": "query"
                     }
@@ -1487,13 +1298,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ListJobsResult"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
+                            "$ref": "#/definitions/ListBreachesResult"
                         }
                     },
                     "401": {
@@ -1504,76 +1309,6 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/etl/jobs/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Manually trigger an ETL job for a business date",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ETL"
-                ],
-                "summary": "Trigger ETL Job",
-                "parameters": [
-                    {
-                        "description": "Job trigger payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/TriggerJobRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -1587,36 +1322,47 @@ const docTemplate = `{
                 }
             }
         },
-        "/etl/jobs/{id}": {
-            "get": {
+        "/compliance/breaches/{breachID}/override": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a single ETL job with associated file import records when applicable",
+                "description": "Override an open, overridable compliance breach with an audit reason.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "ETL"
+                    "Compliance"
                 ],
-                "summary": "Get ETL Job Detail",
+                "summary": "Override Compliance Breach",
                 "parameters": [
                     {
                         "type": "string",
-                        "format": "uuid",
-                        "description": "Job UUID",
-                        "name": "id",
+                        "description": "Breach UUID",
+                        "name": "breachID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Override payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OverrideRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/JobDetailResult"
+                            "$ref": "#/definitions/Override"
                         }
                     },
                     "400": {
@@ -1642,68 +1388,56 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
                     }
                 }
             }
         },
-        "/etl/market-prices": {
-            "get": {
+        "/compliance/checks/post-trade": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "List market price snapshots with optional ticker and date filters",
+                "description": "Evaluate compliance rules after trade capture or during periodic replay.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "ETL"
+                    "Compliance"
                 ],
-                "summary": "List Market Prices",
+                "summary": "Run Post-Trade Compliance Check",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Ticker",
-                        "name": "ticker",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Business date (YYYY-MM-DD)",
-                        "name": "date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start business date (YYYY-MM-DD)",
-                        "name": "date_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End business date (YYYY-MM-DD)",
-                        "name": "date_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page index (default 0)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 50, max 100)",
-                        "name": "limit",
-                        "in": "query"
+                        "description": "Post-trade check payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTradeRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/MarketPriceListResult"
+                            "$ref": "#/definitions/PostTradeCheckResponse"
                         }
                     },
                     "400": {
@@ -1723,68 +1457,50 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
                     }
                 }
             }
         },
-        "/etl/nav-snapshots": {
-            "get": {
+        "/compliance/checks/pre-trade": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "List NAV snapshots with optional fund code and date filters",
+                "description": "Evaluate compliance rules for a proposed order before execution.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "ETL"
+                    "Compliance"
                 ],
-                "summary": "List NAV Snapshots",
+                "summary": "Run Pre-Trade Compliance Check",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Fund code",
-                        "name": "fund_code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Business date (YYYY-MM-DD)",
-                        "name": "date",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start business date (YYYY-MM-DD)",
-                        "name": "date_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End business date (YYYY-MM-DD)",
-                        "name": "date_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page index (default 0)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 50, max 100)",
-                        "name": "limit",
-                        "in": "query"
+                        "description": "Pre-trade check payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PreTradeRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/NAVSnapshotListResult"
+                            "$ref": "#/definitions/PreTradeCheckResponse"
                         }
                     },
                     "400": {
@@ -1801,6 +1517,212 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/checks/{groupID}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve check records and breaches associated with one compliance check group.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Compliance"
+                ],
+                "summary": "Get Compliance Check Group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Check group UUID",
+                        "name": "groupID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CheckGroupResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/rules": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List configured compliance rule instances with optional type and active filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Compliance"
+                ],
+                "summary": "List Compliance Rule Instances",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Rule type ID",
+                        "name": "rule_type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by active flag",
+                        "name": "is_active",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ListRuleInstancesResult"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a compliance rule instance and its initial parameter version.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Compliance"
+                ],
+                "summary": "Create Compliance Rule Instance",
+                "parameters": [
+                    {
+                        "description": "Rule instance payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateRuleInstanceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CreateRuleInstanceResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -1833,9 +1755,2702 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/investment/funds": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List funds visible to the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Funds"
+                ],
+                "summary": "List Funds",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a fund record.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Funds"
+                ],
+                "summary": "Create Fund",
+                "parameters": [
+                    {
+                        "description": "Fund create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateFundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/FundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one fund by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Funds"
+                ],
+                "summary": "Get Fund",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update mutable fields on a fund using optimistic version control.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Funds"
+                ],
+                "summary": "Update Fund",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fund update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateFundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a fund using optimistic version control.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Funds"
+                ],
+                "summary": "Delete Fund",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fund delete payload",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/DeleteFundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/aum/compute": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Aggregate portfolio AUM snapshots into a fund-level snapshot for a business date.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Compute Fund AUM",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fund AUM compute payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComputeFundAUMRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ComputeFundAUMResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ComputeFundAUMResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/instruments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List tradable and reference instruments with optional filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Instruments"
+                ],
+                "summary": "List Instruments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset class UUID",
+                        "name": "asset_class_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search text",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/InstrumentListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create an instrument master record.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Instruments"
+                ],
+                "summary": "Create Instrument",
+                "parameters": [
+                    {
+                        "description": "Instrument create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateInstrumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/InstrumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/instruments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one instrument by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Instruments"
+                ],
+                "summary": "Get Instrument",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instrument UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/InstrumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update mutable fields on an instrument master record.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Instruments"
+                ],
+                "summary": "Update Instrument",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instrument UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Instrument update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateInstrumentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/InstrumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/instruments/{id}/prices": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Capture a price snapshot for an instrument and business date.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Pricing"
+                ],
+                "summary": "Post Price Snapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instrument UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Price snapshot payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostPriceSnapshotRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List portfolios visible to the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "List Portfolios",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "fund_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Portfolio status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a portfolio under a fund.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "Create Portfolio",
+                "parameters": [
+                    {
+                        "description": "Portfolio create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreatePortfolioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one portfolio by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "Get Portfolio",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update mutable fields on a portfolio using optimistic version control.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "Update Portfolio",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Portfolio update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdatePortfolioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a portfolio using optimistic version control.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "Delete Portfolio",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Portfolio delete payload",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/DeletePortfolioRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/cash": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List cash balances by currency for a portfolio.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "List Portfolio Cash Balances",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/CashBalanceResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/holdings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List current holdings for a portfolio.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios"
+                ],
+                "summary": "List Portfolio Holdings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/HoldingResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List transactions for a portfolio with optional instrument and date filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Ledger"
+                ],
+                "summary": "List Portfolio Transactions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Instrument UUID",
+                        "name": "instrument_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Ledger"
+                ],
+                "summary": "Post Portfolio Transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction post payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/transactions/{txnId}/reverse": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Post a reversal transaction for an existing portfolio transaction.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Ledger"
+                ],
+                "summary": "Reverse Portfolio Transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Transaction UUID",
+                        "name": "txnId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction reversal payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReverseTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/valuations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List valuation snapshots for a portfolio with optional date filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "List Portfolio Valuations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ValuationListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/valuations/latest": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve the latest internal valuation snapshot for a portfolio.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Latest Portfolio Valuation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ValuationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/portfolios/{id}/valuations/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Run a valuation snapshot for a portfolio and business date.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Run Portfolio Valuation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Valuation run payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RunValuationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ValuationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/asset-classes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active asset classes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Asset Classes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/AssetClass"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/asset-subtypes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active asset subtypes, optionally filtered by asset class.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Asset Subtypes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Asset class UUID",
+                        "name": "asset_class_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/AssetSubtype"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/countries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active countries.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Countries",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Country"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/fund-categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active fund categories.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Fund Categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/FundCategory"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/investment-styles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active investment styles.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Investment Styles",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/InvestmentStyle"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/regions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List active regions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Regions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Region"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/reference/sectors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List investment sector taxonomy rows.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Reference"
+                ],
+                "summary": "List Sectors",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Sector"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get daily price bars for a symbol from the configured provider chain or a requested provider.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Get Market Price History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Market symbol",
+                        "name": "symbol",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider name (alpha_vantage or yahoo)",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum bars to return (default 250, max 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PriceBarResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetch and persist quote and/or daily price history for a symbol.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Import Market Data",
+                "parameters": [
+                    {
+                        "description": "Market data import payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ImportMarketDataRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ImportMarketDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/provider-health": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get configured market data provider health and recent status information.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Get Market Data Provider Health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ProviderHealthResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/quote": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get a latest quote for a symbol from the configured provider chain or a requested provider.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Get Market Quote",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Market symbol",
+                        "name": "symbol",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Provider name (alpha_vantage or yahoo)",
+                        "name": "provider",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/QuoteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/day-states/{contractId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the current workflow state for a contract and business date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Workflow Day State",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Contract UUID",
+                        "name": "contractId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "businessDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/WorkflowStateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/day-states/{contractId}/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get transition history for a contract and business date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Workflow Transition History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Contract UUID",
+                        "name": "contractId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "businessDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/HistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/day-states/{contractId}/transitions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Execute a workflow transition such as OPEN_DAY, APPROVE, CLOSE_TRANSACTIONS, or ROLLBACK_ACCOUNTING_CLOSE.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Execute Workflow Transition",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Contract UUID",
+                        "name": "contractId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transition payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExecuteTransitionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TransitionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/scheduler/run-once": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Manually execute one workflow day scheduler tick.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Run Workflow Scheduler Once",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "AUMResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "scope_id": {
+                    "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
         "AdminResetPasswordRequest": {
             "type": "object",
             "required": [
@@ -1918,6 +4533,82 @@ const docTemplate = `{
                 }
             }
         },
+        "AssetClass": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "displayOrder": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "AssetSubtype": {
+            "type": "object",
+            "properties": {
+                "assetClassID": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "displayOrder": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "AssetType": {
+            "type": "string",
+            "enum": [
+                "UNKNOWN",
+                "EQUITY",
+                "ETF",
+                "MUTUAL_FUND"
+            ],
+            "x-enum-varnames": [
+                "AssetTypeUnknown",
+                "AssetTypeEquity",
+                "AssetTypeETF",
+                "AssetTypeMutualFund"
+            ]
+        },
         "AuditEventResponse": {
             "type": "object",
             "properties": {
@@ -1971,6 +4662,110 @@ const docTemplate = `{
                 }
             }
         },
+        "BlockingReason": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "Breach": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "checkGroupID": {
+                    "type": "string"
+                },
+                "checkRecordID": {
+                    "type": "string"
+                },
+                "contractID": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "evidence": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "portfolioID": {
+                    "type": "string"
+                },
+                "resolvedAt": {
+                    "type": "string"
+                },
+                "resolvedBy": {
+                    "type": "string"
+                },
+                "ruleInstanceID": {
+                    "type": "string"
+                },
+                "ruleTypeID": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "BreachSummary": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "CashBalanceResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "last_business_date": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
         "ChangePasswordRequest": {
             "type": "object",
             "required": [
@@ -1983,6 +4778,363 @@ const docTemplate = `{
                 },
                 "old_password": {
                     "type": "string"
+                }
+            }
+        },
+        "CheckGroupResult": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Breach"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CheckRecord"
+                    }
+                }
+            }
+        },
+        "CheckRecord": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "checkGroupID": {
+                    "description": "groups all records from a single check request",
+                    "type": "string"
+                },
+                "checkedAt": {
+                    "type": "string"
+                },
+                "checkedBy": {
+                    "description": "actor ID or \"system\"",
+                    "type": "string"
+                },
+                "contractID": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "dataSnapshotHash": {
+                    "description": "SHA-256 of the DataBundle used",
+                    "type": "string"
+                },
+                "effectiveSeverity": {
+                    "description": "binding-level severity applied",
+                    "type": "string"
+                },
+                "evalDurationMs": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "evidence": {
+                    "description": "structured evidence",
+                    "type": "object"
+                },
+                "finalVerdict": {
+                    "description": "after severity cap",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "orderID": {
+                    "description": "nil for periodic checks",
+                    "type": "string"
+                },
+                "parameterSnapshot": {
+                    "description": "frozen copy of params used",
+                    "type": "object"
+                },
+                "portfolioID": {
+                    "type": "string"
+                },
+                "ruleInstanceID": {
+                    "type": "string"
+                },
+                "ruleInstanceVersion": {
+                    "type": "integer"
+                },
+                "ruleTypeID": {
+                    "type": "string"
+                },
+                "ticker": {
+                    "description": "empty for portfolio-wide periodic checks",
+                    "type": "string"
+                },
+                "timing": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "description": "raw verdict from rule",
+                    "type": "string"
+                }
+            }
+        },
+        "ComputeFundAUMRequest": {
+            "type": "object",
+            "required": [
+                "business_date"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "ComputeFundAUMResponse": {
+            "type": "object",
+            "properties": {
+                "idempotent": {
+                    "type": "boolean"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "snapshot": {
+                    "$ref": "#/definitions/AUMResponse"
+                }
+            }
+        },
+        "Country": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "isocode": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "regionID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreateFundRequest": {
+            "type": "object",
+            "required": [
+                "base_currency",
+                "code",
+                "fund_category_id",
+                "inception_date",
+                "name"
+            ],
+            "properties": {
+                "base_currency": {
+                    "type": "string"
+                },
+                "benchmark": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "external_pam_ref": {
+                    "type": "string"
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "inception_date": {
+                    "type": "string"
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "short_name": {
+                    "type": "string",
+                    "maxLength": 80
+                }
+            }
+        },
+        "CreateInstrumentRequest": {
+            "type": "object",
+            "required": [
+                "asset_class_id",
+                "asset_subtype_id",
+                "country_id",
+                "currency",
+                "name",
+                "primary_ticker"
+            ],
+            "properties": {
+                "asset_class_id": {
+                    "type": "string"
+                },
+                "asset_subtype_id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "country_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "lot_size": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "primary_exchange": {
+                    "type": "string"
+                },
+                "primary_ticker": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "region_id": {
+                    "type": "string"
+                },
+                "sector_id": {
+                    "type": "string"
+                },
+                "tick_size": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreatePortfolioRequest": {
+            "type": "object",
+            "required": [
+                "base_currency",
+                "code",
+                "fund_id",
+                "inception_date",
+                "name",
+                "valuation_currency"
+            ],
+            "properties": {
+                "base_currency": {
+                    "type": "string"
+                },
+                "benchmark": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "inception_date": {
+                    "type": "string"
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "strategy_code": {
+                    "type": "string"
+                },
+                "style_id": {
+                    "type": "string"
+                },
+                "tax_lot_method": {
+                    "type": "string"
+                },
+                "valuation_currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreateRuleInstanceRequest": {
+            "type": "object",
+            "properties": {
+                "change_reason": {
+                    "description": "\"initial creation\" if blank",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "effective_from": {
+                    "description": "\"2006-01-02\"",
+                    "type": "string"
+                },
+                "effective_to": {
+                    "description": "\"2006-01-02\" or null",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "defaults to true",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "type": "object"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreateRuleInstanceResult": {
+            "type": "object",
+            "properties": {
+                "instance": {
+                    "$ref": "#/definitions/RuleInstance"
+                },
+                "version": {
+                    "$ref": "#/definitions/RuleInstanceVersion"
                 }
             }
         },
@@ -2011,6 +5163,30 @@ const docTemplate = `{
                 }
             }
         },
+        "DeleteFundRequest": {
+            "type": "object",
+            "required": [
+                "expected_version"
+            ],
+            "properties": {
+                "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "DeletePortfolioRequest": {
+            "type": "object",
+            "required": [
+                "expected_version"
+            ],
+            "properties": {
+                "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
         "ErrorResponse": {
             "type": "object",
             "properties": {
@@ -2023,31 +5199,137 @@ const docTemplate = `{
                 }
             }
         },
-        "FileImportDTO": {
+        "ExecuteTransitionRequest": {
             "type": "object",
             "properties": {
-                "error_detail": {
+                "action": {
+                    "description": "Action identifies the transition to execute.\nValid values: OPEN_DAY, APPROVE, CANCEL_DAY_START, CANCEL_APPROVAL,\nCLOSE_TRANSACTIONS, CANCEL_TRANSACTION_CLOSE, CLOSE_ACCOUNTING,\nROLLBACK_ACCOUNTING_CLOSE",
                     "type": "string"
                 },
-                "failed": {
-                    "type": "integer"
+                "attestationReason": {
+                    "description": "AttestationReason is required when ZeroTransactionAttestation is true.\nMust be at least 30 characters.",
+                    "type": "string"
                 },
-                "file_name": {
+                "businessDate": {
+                    "description": "BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar).",
+                    "type": "string"
+                },
+                "idempotencyKey": {
+                    "description": "IdempotencyKey is an optional client-generated UUID. When provided, a\nduplicate request with the same key returns the original result without\nre-executing the transition. (Full idempotency store is Batch 2.)",
+                    "type": "string"
+                },
+                "notes": {
+                    "description": "Notes is an optional free-text remark stored on the approval record.\nApplies to APPROVE only.",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "Reason is mandatory for cancel and rollback actions (min 20 chars).\nOptional for forward transitions.",
+                    "type": "string"
+                },
+                "zeroTransactionAttestation": {
+                    "description": "ZeroTransactionAttestation must be true when approving a day with no\ninvestment transactions. Ignored for all other actions.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "FundCategory": {
+            "type": "object",
+            "properties": {
+                "assetClassID": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "import_target": {
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 },
-                "inserted": {
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "FundListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FundResponse"
+                    }
+                },
+                "limit": {
                     "type": "integer"
                 },
-                "skipped": {
+                "page": {
                     "type": "integer"
                 },
-                "total_rows": {
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "FundResponse": {
+            "type": "object",
+            "properties": {
+                "base_currency": {
+                    "type": "string"
+                },
+                "benchmark": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "external_pam_ref": {
+                    "type": "string"
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inception_date": {
+                    "type": "string"
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "short_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "integer"
                 }
             }
@@ -2066,77 +5348,237 @@ const docTemplate = `{
                 }
             }
         },
-        "JobDTO": {
+        "HistoryResponse": {
             "type": "object",
             "properties": {
-                "business_date": {
+                "businessDate": {
                     "type": "string"
                 },
-                "created_at": {
+                "contractId": {
                     "type": "string"
                 },
-                "duration_ms": {
+                "transitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TransitionEntry"
+                    }
+                }
+            }
+        },
+        "HoldingResponse": {
+            "type": "object",
+            "properties": {
+                "average_cost": {
+                    "type": "string"
+                },
+                "cost_basis": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "last_business_date": {
+                    "type": "string"
+                },
+                "last_transaction_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ImportMarketDataRequest": {
+            "type": "object",
+            "properties": {
+                "history_limit": {
                     "type": "integer"
                 },
-                "error_summary": {
+                "include_history": {
+                    "type": "boolean"
+                },
+                "include_quote": {
+                    "type": "boolean"
+                },
+                "provider": {
                     "type": "string"
                 },
-                "finished_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "job_type": {
-                    "type": "string"
-                },
-                "records_fail": {
-                    "type": "integer"
-                },
-                "records_in": {
-                    "type": "integer"
-                },
-                "records_ok": {
-                    "type": "integer"
-                },
-                "started_at": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "triggered_by": {
+                "symbol": {
                     "type": "string"
                 }
             }
         },
-        "JobDetailResult": {
+        "ImportMarketDataResponse": {
             "type": "object",
             "properties": {
-                "file_imports": {
+                "daily_prices": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/FileImportDTO"
+                        "$ref": "#/definitions/PriceBar"
                     }
                 },
-                "job": {
-                    "$ref": "#/definitions/JobDTO"
+                "daily_prices_imported": {
+                    "type": "integer"
+                },
+                "history_provider": {
+                    "type": "string"
+                },
+                "imported_at": {
+                    "type": "string"
+                },
+                "quote": {
+                    "$ref": "#/definitions/Quote"
+                },
+                "quote_provider": {
+                    "type": "string"
+                },
+                "requested_provider": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
                 }
             }
         },
-        "ListJobsResult": {
+        "InstrumentListResponse": {
             "type": "object",
             "properties": {
-                "jobs": {
+                "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/JobDTO"
+                        "$ref": "#/definitions/InstrumentResponse"
                     }
                 },
                 "limit": {
                     "type": "integer"
                 },
                 "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "InstrumentResponse": {
+            "type": "object",
+            "properties": {
+                "asset_class_id": {
+                    "type": "string"
+                },
+                "asset_subtype_id": {
+                    "type": "string"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "country_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_tradable": {
+                    "type": "boolean"
+                },
+                "lot_size": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_exchange": {
+                    "type": "string"
+                },
+                "primary_ticker": {
+                    "type": "string"
+                },
+                "region_id": {
+                    "type": "string"
+                },
+                "sector_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tick_size": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "InvestmentStyle": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "ListBreachesResult": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Breach"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ListRuleInstancesResult": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RuleInstanceDetail"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
                     "type": "integer"
                 },
                 "total": {
@@ -2282,55 +5724,6 @@ const docTemplate = `{
                 }
             }
         },
-        "MarketPriceDTO": {
-            "type": "object",
-            "properties": {
-                "business_date": {
-                    "type": "string"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "fetched_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "is_stale": {
-                    "type": "boolean"
-                },
-                "price": {
-                    "type": "string"
-                },
-                "provider": {
-                    "type": "string"
-                },
-                "ticker": {
-                    "type": "string"
-                }
-            }
-        },
-        "MarketPriceListResult": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "prices": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/MarketPriceDTO"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
         "MeResponse": {
             "type": "object",
             "properties": {
@@ -2342,52 +5735,44 @@ const docTemplate = `{
                 }
             }
         },
-        "NAVSnapshotDTO": {
+        "Override": {
             "type": "object",
             "properties": {
-                "business_date": {
+                "approvedBy": {
+                    "description": "second-level approval if required",
                     "type": "string"
                 },
-                "currency": {
+                "breachID": {
                     "type": "string"
                 },
-                "fetched_at": {
+                "createdAt": {
                     "type": "string"
                 },
-                "fund_code": {
+                "delegatedFrom": {
+                    "description": "original officer if delegated",
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "is_stale": {
-                    "type": "boolean"
-                },
-                "nav_value": {
+                "overriddenBy": {
+                    "description": "compliance officer with IRG_OVERRIDE_BREACH permission",
                     "type": "string"
                 },
-                "provider": {
+                "reason": {
+                    "description": "mandatory — justification",
                     "type": "string"
                 }
             }
         },
-        "NAVSnapshotListResult": {
+        "OverrideRequest": {
             "type": "object",
             "properties": {
-                "limit": {
-                    "type": "integer"
+                "approved_by": {
+                    "type": "string"
                 },
-                "page": {
-                    "type": "integer"
-                },
-                "snapshots": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/NAVSnapshotDTO"
-                    }
-                },
-                "total": {
-                    "type": "integer"
+                "reason": {
+                    "type": "string"
                 }
             }
         },
@@ -2405,6 +5790,547 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "PortfolioListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PortfolioResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PortfolioResponse": {
+            "type": "object",
+            "properties": {
+                "base_currency": {
+                    "type": "string"
+                },
+                "benchmark": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inception_date": {
+                    "type": "string"
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "strategy_code": {
+                    "type": "string"
+                },
+                "style_id": {
+                    "type": "string"
+                },
+                "tax_lot_method": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "valuation_currency": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PostPriceSnapshotRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "currency",
+                "price",
+                "price_source"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "price_source": {
+                    "type": "string"
+                },
+                "provider_ref": {
+                    "type": "string"
+                },
+                "stale_reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "PostTradeCheckResponse": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BreachSummary"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "total_duration_ms": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "PostTradeRequest": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "PostTransactionRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "currency",
+                "transaction_type"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "external_ref": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "force_post": {
+                    "type": "boolean"
+                },
+                "fx_rate_to_base": {
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "settlement_date": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "source_decision_id": {
+                    "type": "string"
+                },
+                "source_execution_id": {
+                    "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "PreTradeCheckResponse": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BreachSummary"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "total_duration_ms": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "PreTradeRequest": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "description": "\"2006-01-02\"",
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "side": {
+                    "description": "BUY | SELL",
+                    "type": "string"
+                },
+                "ticker": {
+                    "type": "string"
+                }
+            }
+        },
+        "PreviousDayStatus": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "currentState": {
+                    "type": "string"
+                },
+                "persisted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "PriceBar": {
+            "type": "object",
+            "properties": {
+                "adjusted_close": {
+                    "type": "number"
+                },
+                "close": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "high": {
+                    "type": "number"
+                },
+                "low": {
+                    "type": "number"
+                },
+                "open": {
+                    "type": "number"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PriceBarResponse": {
+            "type": "object",
+            "properties": {
+                "adjusted_close": {
+                    "type": "number"
+                },
+                "close": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "high": {
+                    "type": "number"
+                },
+                "low": {
+                    "type": "number"
+                },
+                "open": {
+                    "type": "number"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                }
+            }
+        },
+        "PriceResponse": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "captured_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "price_source": {
+                    "type": "string"
+                },
+                "provider_ref": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProviderHealthResponse": {
+            "type": "object",
+            "properties": {
+                "configured": {
+                    "type": "boolean"
+                },
+                "healthy": {
+                    "type": "boolean"
+                },
+                "last_checked": {
+                    "type": "string"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "last_status": {
+                    "type": "string"
+                },
+                "official": {
+                    "type": "boolean"
+                },
+                "provider_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "Quote": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string"
+                },
+                "asset_type": {
+                    "$ref": "#/definitions/AssetType"
+                },
+                "cached": {
+                    "type": "boolean"
+                },
+                "captured_at": {
+                    "type": "string"
+                },
+                "change": {
+                    "type": "number"
+                },
+                "change_percent": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "high": {
+                    "type": "number"
+                },
+                "low": {
+                    "type": "number"
+                },
+                "open": {
+                    "type": "number"
+                },
+                "previous_close": {
+                    "type": "number"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                }
+            }
+        },
+        "QuoteResponse": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string"
+                },
+                "asset_type": {
+                    "$ref": "#/definitions/AssetType"
+                },
+                "cached": {
+                    "type": "boolean"
+                },
+                "captured_at": {
+                    "type": "string"
+                },
+                "change": {
+                    "type": "number"
+                },
+                "change_percent": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "high": {
+                    "type": "number"
+                },
+                "low": {
+                    "type": "number"
+                },
+                "open": {
+                    "type": "number"
+                },
+                "previous_close": {
+                    "type": "number"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
                 }
             }
         },
@@ -2436,6 +6362,242 @@ const docTemplate = `{
                 }
             }
         },
+        "Region": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReverseTransactionRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "reason"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "force_post": {
+                    "type": "boolean"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "RuleInstance": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "currentVersion": {
+                    "description": "pointer to the active version number",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "effectiveWindow": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "human-friendly name",
+                    "type": "string"
+                },
+                "ruleTypeID": {
+                    "description": "stable SPI type ID, e.g. \"concentration.single_issuer\"",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "RuleInstanceDetail": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "currentVersion": {
+                    "description": "pointer to the active version number",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "effectiveWindow": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "description": "human-friendly name",
+                    "type": "string"
+                },
+                "ruleTypeID": {
+                    "description": "stable SPI type ID, e.g. \"concentration.single_issuer\"",
+                    "type": "string"
+                },
+                "type_metadata": {
+                    "$ref": "#/definitions/RuleMetadata"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "RuleInstanceVersion": {
+            "type": "object",
+            "properties": {
+                "approvedBy": {
+                    "description": "nil if no approval required",
+                    "type": "string"
+                },
+                "changeReason": {
+                    "description": "why this version was created",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "createdBy": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "description": "validated against rule type schema at write time",
+                    "type": "object"
+                },
+                "ruleInstanceID": {
+                    "type": "string"
+                },
+                "versionNumber": {
+                    "type": "integer"
+                }
+            }
+        },
+        "RuleMetadata": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "default_severity": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "supported_scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "supported_timings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "type_id": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "RunValuationRequest": {
+            "type": "object",
+            "required": [
+                "business_date"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "fx_rates": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "total_units": {
+                    "type": "string"
+                }
+            }
+        },
+        "Sector": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parentID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "SessionResponse": {
             "type": "object",
             "properties": {
@@ -2459,37 +6621,268 @@ const docTemplate = `{
                 }
             }
         },
-        "TriggerJobRequest": {
+        "TransactionListResponse": {
             "type": "object",
-            "required": [
-                "business_date",
-                "job_type"
-            ],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TransactionResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "TransactionResponse": {
+            "type": "object",
             "properties": {
                 "business_date": {
                     "type": "string"
                 },
-                "force": {
-                    "type": "boolean"
+                "created_at": {
+                    "type": "string"
                 },
-                "job_type": {
+                "created_by": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "external_ref": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "fx_rate_to_base": {
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "reverses_transaction_id": {
+                    "type": "string"
+                },
+                "settlement_date": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "source_decision_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction_type": {
                     "type": "string"
                 }
             }
         },
-        "UpdateFeedRequest": {
+        "TransitionEntry": {
             "type": "object",
             "properties": {
-                "config": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                "action": {
+                    "type": "string"
                 },
-                "is_active": {
+                "actorId": {
+                    "type": "string"
+                },
+                "actorType": {
+                    "type": "string"
+                },
+                "actorUsername": {
+                    "type": "string"
+                },
+                "fromState": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "occurredAt": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "requestId": {
+                    "type": "string"
+                },
+                "toState": {
+                    "type": "string"
+                }
+            }
+        },
+        "TransitionResponse": {
+            "type": "object",
+            "properties": {
+                "approvalId": {
+                    "description": "ApprovalID is set when the transition was an APPROVE action.",
+                    "type": "string"
+                },
+                "businessDate": {
+                    "type": "string"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "fromState": {
+                    "type": "string"
+                },
+                "isZeroTransaction": {
+                    "description": "IsZeroTransaction is set when the APPROVE was on a zero-transaction day.",
                     "type": "boolean"
                 },
+                "occurredAt": {
+                    "description": "RFC3339 UTC",
+                    "type": "string"
+                },
+                "toState": {
+                    "type": "string"
+                },
+                "transitionId": {
+                    "type": "string"
+                },
+                "workflowDayId": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateFundRequest": {
+            "type": "object",
+            "required": [
+                "expected_version"
+            ],
+            "properties": {
+                "benchmark": {
+                    "type": "string"
+                },
+                "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "external_pam_ref": {
+                    "type": "string"
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "short_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateInstrumentRequest": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "fund_category_id": {
+                    "type": "string"
+                },
+                "is_tradable": {
+                    "type": "boolean"
+                },
+                "lot_size": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_exchange": {
+                    "type": "string"
+                },
+                "sector_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tick_size": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdatePortfolioRequest": {
+            "type": "object",
+            "required": [
+                "expected_version"
+            ],
+            "properties": {
+                "benchmark": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "expected_version": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "manager_user_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "risk_profile": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "strategy_code": {
+                    "type": "string"
+                },
+                "style_id": {
                     "type": "string"
                 }
             }
@@ -2514,6 +6907,194 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "ValuationLineResponse": {
+            "type": "object",
+            "properties": {
+                "cost_basis": {
+                    "type": "string"
+                },
+                "fx_rate_to_valuation_ccy": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "price_in_quote_ccy": {
+                    "type": "string"
+                },
+                "price_snapshot_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "quote_currency": {
+                    "type": "string"
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                }
+            }
+        },
+        "ValuationListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ValuationResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ValuationResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cash_balance": {
+                    "type": "string"
+                },
+                "cost_basis": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "has_stale_inputs": {
+                    "type": "boolean"
+                },
+                "holding_lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ValuationLineResponse"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_indicative": {
+                    "type": "boolean"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "price_set_hash": {
+                    "type": "string"
+                },
+                "realised_pnl": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "WorkflowStateResponse": {
+            "type": "object",
+            "properties": {
+                "accountingClosedAt": {
+                    "type": "string"
+                },
+                "allowedActions": {
+                    "description": "AllowedActions is computed server-side from the current state.\nThe UI must use this list to decide which buttons to enable.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "blockingReasons": {
+                    "description": "BlockingReasons explains why AllowedActions may be empty even though\na transition appears structurally valid (e.g. previous day still open).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BlockingReason"
+                    }
+                },
+                "businessDate": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "currentState": {
+                    "description": "CurrentState is one of: NOT_STARTED, DAY_OPEN, MANAGER_APPROVED,\nTRANSACTION_CLOSED, ACCOUNTING_CLOSED",
+                    "type": "string"
+                },
+                "managerApprovedAt": {
+                    "type": "string"
+                },
+                "managerApprovedBy": {
+                    "type": "string"
+                },
+                "openedAt": {
+                    "description": "Per-stage timestamps (null until that stage is reached)",
+                    "type": "string"
+                },
+                "openedBy": {
+                    "type": "string"
+                },
+                "pendingReclose": {
+                    "type": "boolean"
+                },
+                "persisted": {
+                    "description": "Persisted is false when no workflow__day_states row exists yet.\nClients can use this to distinguish a genuinely-started day from\na cancelled/never-started synthetic NOT_STARTED response.",
+                    "type": "boolean"
+                },
+                "previousDay": {
+                    "description": "PreviousDay is populated only when Persisted=false (NOT_STARTED).\nIt lets the UI display the previous-day status before the operator\nclicks \"Open Day\".",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/PreviousDayStatus"
+                        }
+                    ]
+                },
+                "recloseCount": {
+                    "type": "integer"
+                },
+                "transactionClosedAt": {
+                    "type": "string"
+                },
+                "transactionsLocked": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "description": "Version is the optimistic lock counter. Clients should pass this\nback in write requests (future: when version field is added to the\ntransition request). Nil when Persisted=false.",
+                    "type": "integer"
                 }
             }
         }

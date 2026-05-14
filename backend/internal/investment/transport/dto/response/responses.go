@@ -78,13 +78,13 @@ type InstrumentResponse struct {
 
 // HoldingResponse mirrors entity.PortfolioPosition.
 type HoldingResponse struct {
-	InstrumentID     uuid.UUID  `json:"instrument_id"`
-	Quantity         string     `json:"quantity"`
-	AverageCost      string     `json:"average_cost"`
-	CostBasis        string     `json:"cost_basis"`
-	LastBusinessDate *string    `json:"last_business_date,omitempty"`
+	InstrumentID      uuid.UUID  `json:"instrument_id"`
+	Quantity          string     `json:"quantity"`
+	AverageCost       string     `json:"average_cost"`
+	CostBasis         string     `json:"cost_basis"`
+	LastBusinessDate  *string    `json:"last_business_date,omitempty"`
 	LastTransactionID *uuid.UUID `json:"last_transaction_id,omitempty"`
-	Version          int        `json:"version"`
+	Version           int        `json:"version"`
 }
 
 // TransactionResponse mirrors entity.PortfolioTransaction.
@@ -123,37 +123,37 @@ type CashBalanceResponse struct {
 
 // ValuationLineResponse mirrors entity.ValuationHoldingLine.
 type ValuationLineResponse struct {
-	InstrumentID     uuid.UUID  `json:"instrument_id"`
-	PriceSnapshotID  *uuid.UUID `json:"price_snapshot_id,omitempty"`
-	Quantity         string     `json:"quantity"`
-	PriceInQuoteCcy  string     `json:"price_in_quote_ccy"`
-	QuoteCurrency    string     `json:"quote_currency"`
-	FxRate           string     `json:"fx_rate_to_valuation_ccy"`
-	MarketValue      string     `json:"market_value"`
-	CostBasis        string     `json:"cost_basis"`
-	UnrealisedPnL    string     `json:"unrealised_pnl"`
-	IsStale          bool       `json:"is_stale"`
+	InstrumentID    uuid.UUID  `json:"instrument_id"`
+	PriceSnapshotID *uuid.UUID `json:"price_snapshot_id,omitempty"`
+	Quantity        string     `json:"quantity"`
+	PriceInQuoteCcy string     `json:"price_in_quote_ccy"`
+	QuoteCurrency   string     `json:"quote_currency"`
+	FxRate          string     `json:"fx_rate_to_valuation_ccy"`
+	MarketValue     string     `json:"market_value"`
+	CostBasis       string     `json:"cost_basis"`
+	UnrealisedPnL   string     `json:"unrealised_pnl"`
+	IsStale         bool       `json:"is_stale"`
 }
 
 // ValuationResponse mirrors entity.ValuationSnapshot (with optional lines).
 type ValuationResponse struct {
-	ID             uuid.UUID                `json:"id"`
-	PortfolioID    uuid.UUID                `json:"portfolio_id"`
-	BusinessDate   string                   `json:"business_date"`
-	ValuationCcy   string                   `json:"valuation_ccy"`
-	MarketValue    string                   `json:"market_value"`
-	CostBasis      string                   `json:"cost_basis"`
-	UnrealisedPnL  string                   `json:"unrealised_pnl"`
-	RealisedPnL    string                   `json:"realised_pnl"`
-	ROI            string                   `json:"roi,omitempty"`
-	AUM            string                   `json:"aum"`
-	CashBalance    string                   `json:"cash_balance"`
-	PriceSetHash   string                   `json:"price_set_hash"`
-	HasStaleInputs bool                     `json:"has_stale_inputs"`
-	IsIndicative   bool                     `json:"is_indicative"`
-	Source         string                   `json:"source"`
-	CreatedAt      time.Time                `json:"created_at"`
-	HoldingLines   []ValuationLineResponse  `json:"holding_lines,omitempty"`
+	ID             uuid.UUID               `json:"id"`
+	PortfolioID    uuid.UUID               `json:"portfolio_id"`
+	BusinessDate   string                  `json:"business_date"`
+	ValuationCcy   string                  `json:"valuation_ccy"`
+	MarketValue    string                  `json:"market_value"`
+	CostBasis      string                  `json:"cost_basis"`
+	UnrealisedPnL  string                  `json:"unrealised_pnl"`
+	RealisedPnL    string                  `json:"realised_pnl"`
+	ROI            string                  `json:"roi,omitempty"`
+	AUM            string                  `json:"aum"`
+	CashBalance    string                  `json:"cash_balance"`
+	PriceSetHash   string                  `json:"price_set_hash"`
+	HasStaleInputs bool                    `json:"has_stale_inputs"`
+	IsIndicative   bool                    `json:"is_indicative"`
+	Source         string                  `json:"source"`
+	CreatedAt      time.Time               `json:"created_at"`
+	HoldingLines   []ValuationLineResponse `json:"holding_lines,omitempty"`
 }
 
 // NAVResponse mirrors entity.NAVSnapshot.
@@ -170,14 +170,14 @@ type NAVResponse struct {
 
 // AUMResponse mirrors entity.AUMSnapshot.
 type AUMResponse struct {
-	ID            uuid.UUID `json:"id"`
-	ScopeType     string    `json:"scope_type"`
-	ScopeID       uuid.UUID `json:"scope_id"`
-	BusinessDate  string    `json:"business_date"`
-	AUM           string    `json:"aum"`
-	ValuationCcy  string    `json:"valuation_ccy"`
-	Source        string    `json:"source"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID           uuid.UUID `json:"id"`
+	ScopeType    string    `json:"scope_type"`
+	ScopeID      uuid.UUID `json:"scope_id"`
+	BusinessDate string    `json:"business_date"`
+	AUM          string    `json:"aum"`
+	ValuationCcy string    `json:"valuation_ccy"`
+	Source       string    `json:"source"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // PriceResponse mirrors entity.PriceSnapshot.
@@ -196,11 +196,11 @@ type PriceResponse struct {
 // PortfolioSummaryResponse aggregates the most useful headline metrics for a
 // portfolio detail view.
 type PortfolioSummaryResponse struct {
-	PortfolioID      uuid.UUID `json:"portfolio_id"`
-	HoldingCount     int       `json:"holding_count"`
-	NonZeroHoldings  int       `json:"non_zero_holdings"`
-	CashBalances     []CashBalanceResponse `json:"cash_balances"`
-	LatestValuation  *ValuationResponse    `json:"latest_valuation,omitempty"`
+	PortfolioID     uuid.UUID             `json:"portfolio_id"`
+	HoldingCount    int                   `json:"holding_count"`
+	NonZeroHoldings int                   `json:"non_zero_holdings"`
+	CashBalances    []CashBalanceResponse `json:"cash_balances"`
+	LatestValuation *ValuationResponse    `json:"latest_valuation,omitempty"`
 }
 
 // PaginatedResponse is a generic envelope for list endpoints.
@@ -209,6 +209,41 @@ type PaginatedResponse[T any] struct {
 	Total int `json:"total"`
 	Page  int `json:"page"`
 	Limit int `json:"limit"`
+}
+
+type FundListResponse struct {
+	Items []FundResponse `json:"items"`
+	Total int            `json:"total"`
+	Page  int            `json:"page"`
+	Limit int            `json:"limit"`
+}
+
+type PortfolioListResponse struct {
+	Items []PortfolioResponse `json:"items"`
+	Total int                 `json:"total"`
+	Page  int                 `json:"page"`
+	Limit int                 `json:"limit"`
+}
+
+type InstrumentListResponse struct {
+	Items []InstrumentResponse `json:"items"`
+	Total int                  `json:"total"`
+	Page  int                  `json:"page"`
+	Limit int                  `json:"limit"`
+}
+
+type TransactionListResponse struct {
+	Items []TransactionResponse `json:"items"`
+	Total int                   `json:"total"`
+	Page  int                   `json:"page"`
+	Limit int                   `json:"limit"`
+}
+
+type ValuationListResponse struct {
+	Items []ValuationResponse `json:"items"`
+	Total int                 `json:"total"`
+	Page  int                 `json:"page"`
+	Limit int                 `json:"limit"`
 }
 
 // ComputeFundAUMResponse is the body returned by
