@@ -1,5 +1,23 @@
 import { useRuntimeConfig } from "#imports";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getResponseStatus(error: unknown): number | null {
+  if (!isRecord(error)) {
+    return null;
+  }
+
+  const status = error.status;
+  if (typeof status === "number") {
+    return status;
+  }
+
+  const statusCode = error.statusCode;
+  return typeof statusCode === "number" ? statusCode : null;
+}
+
 export function useApi() {
   const config = useRuntimeConfig();
   const authStore = useAuthStore();
@@ -22,8 +40,8 @@ export function useApi() {
         ...options,
         headers,
       });
-    } catch (error: any) {
-      if (error?.status === 401 || error?.statusCode === 401) {
+    } catch (error) {
+      if (getResponseStatus(error) === 401) {
         authStore.clearAuth();
       }
       throw error;

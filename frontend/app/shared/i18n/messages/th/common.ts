@@ -23,6 +23,11 @@ export const thCommonMessages = {
     unknown: "ไม่ทราบ",
     empty: "ยังไม่มีข้อมูล",
     notAvailable: "-",
+    pagination: {
+      empty: "ไม่มีรายการ",
+      range: "{start}-{end} จากทั้งหมด {total}",
+      pageSize: "ต่อหน้า",
+    },
   },
   auth: {
     welcome: "ยินดีต้อนรับ",
