@@ -61,17 +61,17 @@ func TestAll_CoversBriefMandatedCodes(t *testing.T) {
 func TestDefaultStatus_KnownCodes(t *testing.T) {
 	t.Parallel()
 	cases := map[string]int{
-		CodeInvalidRequest:           http.StatusBadRequest,
-		CodeInstrumentNotFound:       http.StatusNotFound,
-		CodeDecisionNotFound:         http.StatusNotFound,
-		CodeVersionMismatch:          http.StatusConflict,
-		CodeAlreadyReversed:          http.StatusConflict,
-		CodeFundHasActivePortfolios:  http.StatusConflict,
-		CodeOversell:                 http.StatusUnprocessableEntity,
-		CodeWorkflowTradeNotAllowed:  http.StatusUnprocessableEntity,
-		CodeComplianceRejected:       http.StatusUnprocessableEntity,
-		CodeUnitisedNotSupported:     http.StatusUnprocessableEntity,
-		CodeInternal:                 http.StatusInternalServerError,
+		CodeInvalidRequest:          http.StatusBadRequest,
+		CodeInstrumentNotFound:      http.StatusNotFound,
+		CodeDecisionNotFound:        http.StatusNotFound,
+		CodeVersionMismatch:         http.StatusConflict,
+		CodeAlreadyReversed:         http.StatusConflict,
+		CodeFundHasActivePortfolios: http.StatusConflict,
+		CodeOversell:                http.StatusUnprocessableEntity,
+		CodeWorkflowTradeNotAllowed: http.StatusUnprocessableEntity,
+		CodeComplianceRejected:      http.StatusUnprocessableEntity,
+		CodeUnitisedNotSupported:    http.StatusUnprocessableEntity,
+		CodeInternal:                http.StatusInternalServerError,
 	}
 	for code, want := range cases {
 		if got := DefaultStatus(code); got != want {
@@ -94,10 +94,10 @@ type codedErr struct {
 	det    map[string]any
 }
 
-func (e *codedErr) Error() string         { return e.msg }
-func (e *codedErr) ErrorCode() string     { return e.code }
+func (e *codedErr) Error() string                { return e.msg }
+func (e *codedErr) ErrorCode() string            { return e.code }
 func (e *codedErr) ErrorDetails() map[string]any { return e.det }
-func (e *codedErr) HTTPStatus() int       { return e.status }
+func (e *codedErr) HTTPStatus() int              { return e.status }
 
 func TestCodeOf_FindsCodedInChain(t *testing.T) {
 	t.Parallel()

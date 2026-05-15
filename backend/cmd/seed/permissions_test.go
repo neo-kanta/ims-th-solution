@@ -39,8 +39,8 @@ type fakeCatalog struct {
 	defs   []contract.PermissionDefinition
 }
 
-func (f fakeCatalog) Module() string                                   { return f.module }
-func (f fakeCatalog) Permissions() []contract.PermissionDefinition     { return f.defs }
+func (f fakeCatalog) Module() string                               { return f.module }
+func (f fakeCatalog) Permissions() []contract.PermissionDefinition { return f.defs }
 
 func TestAggregateCatalogs_Sorted(t *testing.T) {
 	t.Parallel()

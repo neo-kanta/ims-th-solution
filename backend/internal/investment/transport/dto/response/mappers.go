@@ -114,20 +114,20 @@ func FromTransaction(t *entity.PortfolioTransaction) TransactionResponse {
 		side = string(*t.Side)
 	}
 	return TransactionResponse{
-		ID:                    t.ID,
-		PortfolioID:           t.PortfolioID,
-		FundID:                t.FundID,
-		InstrumentID:          t.InstrumentID,
-		TransactionType:       string(t.TransactionType),
-		Side:                  side,
-		Quantity:              FormatDecimal(t.Quantity),
-		Price:                 FormatDecimal(t.Price),
-		Currency:              t.Currency,
-		GrossAmount:           t.GrossAmount.String(),
-		Fees:                  t.Fees.String(),
-		NetAmount:             t.NetAmount.String(),
-		FxRateToBase:          FormatDecimal(t.FxRateToBase),
-		BusinessDate:          FormatDate(t.BusinessDate),
+		ID:              t.ID,
+		PortfolioID:     t.PortfolioID,
+		FundID:          t.FundID,
+		InstrumentID:    t.InstrumentID,
+		TransactionType: string(t.TransactionType),
+		Side:            side,
+		Quantity:        FormatDecimal(t.Quantity),
+		Price:           FormatDecimal(t.Price),
+		Currency:        t.Currency,
+		GrossAmount:     t.GrossAmount.String(),
+		Fees:            t.Fees.String(),
+		NetAmount:       t.NetAmount.String(),
+		FxRateToBase:    FormatDecimal(t.FxRateToBase),
+		BusinessDate:    FormatDate(t.BusinessDate),
 		SettlementDate: func() string {
 			if t.SettlementDate == nil {
 				return ""

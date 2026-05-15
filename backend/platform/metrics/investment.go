@@ -23,12 +23,12 @@ const (
 // Initial values are zero for every label combination; Prometheus exposes
 // them automatically once Inc/Observe is called for that combination.
 var (
-	InvestmentPostTotal              *prometheus.CounterVec
-	InvestmentPostViolationTotal     *prometheus.CounterVec
-	InvestmentProjectorRetryTotal    prometheus.Counter
-	InvestmentValuationDurationSecs  prometheus.Histogram
-	InvestmentValuationStaleInputs   prometheus.Counter
-	InvestmentForcePostTotal         *prometheus.CounterVec
+	InvestmentPostTotal             *prometheus.CounterVec
+	InvestmentPostViolationTotal    *prometheus.CounterVec
+	InvestmentProjectorRetryTotal   prometheus.Counter
+	InvestmentValuationDurationSecs prometheus.Histogram
+	InvestmentValuationStaleInputs  prometheus.Counter
+	InvestmentForcePostTotal        *prometheus.CounterVec
 )
 
 func init() { registerInvestmentMetrics() }

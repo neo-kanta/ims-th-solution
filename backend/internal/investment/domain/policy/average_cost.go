@@ -11,11 +11,11 @@ import (
 // average-cost position. All decimal values are expressed in the portfolio's
 // base currency.
 type AverageCostInputs struct {
-	OldQuantity   decimal.Decimal
+	OldQuantity    decimal.Decimal
 	OldAverageCost decimal.Decimal // per-unit, in base ccy
-	BuyQuantity   decimal.Decimal
-	BuyPriceBase  decimal.Decimal // price per unit, in base ccy (already FX'd)
-	BuyFeesBase   decimal.Decimal // total fees for the lot, in base ccy
+	BuyQuantity    decimal.Decimal
+	BuyPriceBase   decimal.Decimal // price per unit, in base ccy (already FX'd)
+	BuyFeesBase    decimal.Decimal // total fees for the lot, in base ccy
 }
 
 // AverageCostResult holds the new projection.
@@ -27,12 +27,14 @@ type AverageCostResult struct {
 
 // ApplyBuyAverageCost computes the new average-cost position after a buy.
 // Formula:
-//   new_qty       = old_qty + buy_qty
-//   new_avg_cost  = (old_qty * old_avg_cost + buy_qty * buy_price_base + buy_fees_base) / new_qty
-//   new_cost_basis = new_qty * new_avg_cost
+//
+//	new_qty       = old_qty + buy_qty
+//	new_avg_cost  = (old_qty * old_avg_cost + buy_qty * buy_price_base + buy_fees_base) / new_qty
+//	new_cost_basis = new_qty * new_avg_cost
 //
 // When old_qty is zero, the formula reduces to:
-//   new_avg_cost = (buy_qty * buy_price_base + buy_fees_base) / buy_qty
+//
+//	new_avg_cost = (buy_qty * buy_price_base + buy_fees_base) / buy_qty
 //
 // Inputs must be non-negative. buy_qty must be > 0; otherwise the function
 // returns the inputs unchanged (caller guards this elsewhere).
@@ -71,9 +73,9 @@ type SellInputs struct {
 
 // SellResult contains both the new projection and the realised P/L.
 type SellResult struct {
-	NewQuantity    decimal.Decimal
-	NewAverageCost decimal.Decimal
-	NewCostBasis   decimal.Decimal
+	NewQuantity     decimal.Decimal
+	NewAverageCost  decimal.Decimal
+	NewCostBasis    decimal.Decimal
 	RealisedPnLBase decimal.Decimal
 }
 
@@ -83,7 +85,8 @@ type SellResult struct {
 // clean slate.
 //
 // Realised P/L (in base ccy):
-//   realised = sell_qty * (sell_price_base - old_avg_cost) - sell_fees_base
+//
+//	realised = sell_qty * (sell_price_base - old_avg_cost) - sell_fees_base
 //
 // Caller MUST validate sell_qty <= old_qty BEFORE calling — this function
 // asserts via a return-as-zero-position fallback if it doesn't.

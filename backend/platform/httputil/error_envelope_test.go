@@ -21,10 +21,10 @@ type testErr struct {
 	details map[string]any
 }
 
-func (e *testErr) Error() string                 { return e.msg }
-func (e *testErr) ErrorCode() string             { return e.code }
-func (e *testErr) ErrorDetails() map[string]any  { return e.details }
-func (e *testErr) HTTPStatus() int               { return e.status }
+func (e *testErr) Error() string                { return e.msg }
+func (e *testErr) ErrorCode() string            { return e.code }
+func (e *testErr) ErrorDetails() map[string]any { return e.details }
+func (e *testErr) HTTPStatus() int              { return e.status }
 
 func newRequest() *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "/x", nil)

@@ -39,8 +39,8 @@ type Probe interface {
 // Service collects every readiness probe and the DB pool used for the
 // baseline ping. Add/remove probes via Register / Deregister at startup.
 type Service struct {
-	pool      *pgxpool.Pool
-	probes    []Probe
+	pool         *pgxpool.Pool
+	probes       []Probe
 	shuttingDown atomic.Bool
 	probeTimeout time.Duration
 }

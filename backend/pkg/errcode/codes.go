@@ -37,14 +37,14 @@ const (
 	CodeDecisionNotDraft = "DECISION_NOT_DRAFT"
 
 	// ─── Position / posting violations ───────────────────────────────────
-	CodeOversell                 = "OVERSELL"
-	CodeWorkflowTradeNotAllowed  = "WORKFLOW_TRADE_NOT_ALLOWED"
-	CodeWorkflowLocked           = "WORKFLOW_LOCKED"
-	CodeComplianceRejected       = "COMPLIANCE_REJECTED"
-	CodePostTradeBlocked         = "POST_TRADE_BLOCKED"
-	CodeInstrumentNotMapped      = "INSTRUMENT_NOT_MAPPED"
-	CodePriceCurrencyMismatch    = "PRICE_CURRENCY_MISMATCH"
-	CodeUnitisedNotSupported     = "UNITISED_NOT_SUPPORTED"
+	CodeOversell                = "OVERSELL"
+	CodeWorkflowTradeNotAllowed = "WORKFLOW_TRADE_NOT_ALLOWED"
+	CodeWorkflowLocked          = "WORKFLOW_LOCKED"
+	CodeComplianceRejected      = "COMPLIANCE_REJECTED"
+	CodePostTradeBlocked        = "POST_TRADE_BLOCKED"
+	CodeInstrumentNotMapped     = "INSTRUMENT_NOT_MAPPED"
+	CodePriceCurrencyMismatch   = "PRICE_CURRENCY_MISMATCH"
+	CodeUnitisedNotSupported    = "UNITISED_NOT_SUPPORTED"
 
 	// ─── Reversal / lifecycle ────────────────────────────────────────────
 	CodeAlreadyReversed       = "ALREADY_REVERSED"

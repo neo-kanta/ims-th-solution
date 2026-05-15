@@ -25,9 +25,9 @@ type binding struct {
 
 // verificationOutcome reports the verdict for one binding.
 type verificationOutcome struct {
-	Name           string
-	Status         string // "ok", "fake-allowed", "fake-rejected", "nil"
-	Message        string
+	Name    string
+	Status  string // "ok", "fake-allowed", "fake-rejected", "nil"
+	Message string
 }
 
 // verifyBindings runs each binding through the validator and returns the

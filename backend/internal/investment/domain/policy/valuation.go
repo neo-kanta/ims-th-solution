@@ -43,13 +43,14 @@ type PortfolioValuationOutput struct {
 // pure aggregator over holdings).
 //
 // Rules:
-//   market_value_per_holding = quantity * (price_in_quote_ccy * fx_to_valuation_ccy)
-//   unrealised_pnl_per_holding = market_value - cost_basis
-//   portfolio.market_value = sum holdings.market_value
-//   portfolio.cost_basis   = sum holdings.cost_basis
-//   portfolio.unrealised   = portfolio.market_value - portfolio.cost_basis
-//   portfolio.roi          = portfolio.unrealised / portfolio.cost_basis (nil when cost_basis = 0)
-//   portfolio.has_stale_inputs = any holding.is_stale
+//
+//	market_value_per_holding = quantity * (price_in_quote_ccy * fx_to_valuation_ccy)
+//	unrealised_pnl_per_holding = market_value - cost_basis
+//	portfolio.market_value = sum holdings.market_value
+//	portfolio.cost_basis   = sum holdings.cost_basis
+//	portfolio.unrealised   = portfolio.market_value - portfolio.cost_basis
+//	portfolio.roi          = portfolio.unrealised / portfolio.cost_basis (nil when cost_basis = 0)
+//	portfolio.has_stale_inputs = any holding.is_stale
 func ComputePortfolioValuation(holdings []HoldingValuationInput) PortfolioValuationOutput {
 	totalMV := decimal.Zero
 	totalCB := decimal.Zero

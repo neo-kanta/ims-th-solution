@@ -24,12 +24,12 @@ func TestCollectSQLSeedFiles_Sorted(t *testing.T) {
 	dir := t.TempDir()
 
 	files := map[string]string{
-		"002_b.sql":              "SELECT 'b';",
-		"001_a.sql":              "SELECT 'a';",
-		"investment/01_z.sql":    "SELECT 'z';",
-		"investment/02_x.sql":    "SELECT 'x';",
-		"ignored/notes.txt":      "ignored",
-		"ignored/sub/note.txt":   "ignored",
+		"002_b.sql":               "SELECT 'b';",
+		"001_a.sql":               "SELECT 'a';",
+		"investment/01_z.sql":     "SELECT 'z';",
+		"investment/02_x.sql":     "SELECT 'x';",
+		"ignored/notes.txt":       "ignored",
+		"ignored/sub/note.txt":    "ignored",
 		"investment/sub/03_y.sql": "SELECT 'y';",
 	}
 	for rel, body := range files {
@@ -81,9 +81,9 @@ func TestRunSQLSeeds_ExecutesAllInOrder(t *testing.T) {
 	dir := t.TempDir()
 
 	files := map[string]string{
-		"01_first.sql":           "FIRST_SQL;",
-		"02_second.sql":          "SECOND_SQL;",
-		"investment/01_inv.sql":  "INV_SQL;",
+		"01_first.sql":          "FIRST_SQL;",
+		"02_second.sql":         "SECOND_SQL;",
+		"investment/01_inv.sql": "INV_SQL;",
 	}
 	for rel, body := range files {
 		path := filepath.Join(dir, rel)
