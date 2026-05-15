@@ -20,10 +20,10 @@ const (
 type RuleMetadata struct {
 	TypeID           string           `json:"type_id"`
 	Version          string           `json:"version"`
-	Category         RuleCategory     `json:"category"`
-	DefaultSeverity  vo.Severity      `json:"default_severity"`
-	SupportedTimings []vo.CheckTiming `json:"supported_timings"`
-	SupportedScopes  []vo.ScopeType   `json:"supported_scopes"`
+	Category         RuleCategory     `json:"category" swaggertype:"string"`
+	DefaultSeverity  vo.Severity      `json:"default_severity" swaggertype:"string"`
+	SupportedTimings []vo.CheckTiming `json:"supported_timings" swaggertype:"array,string"`
+	SupportedScopes  []vo.ScopeType   `json:"supported_scopes" swaggertype:"array,string"`
 	Overridable      bool             `json:"overridable"`
 	Description      string           `json:"description"`
 }

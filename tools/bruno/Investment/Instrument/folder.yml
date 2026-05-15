@@ -1,0 +1,6 @@
+info:
+  name: Instrument
+  type: folder
+
+request:
+  auth: inherit

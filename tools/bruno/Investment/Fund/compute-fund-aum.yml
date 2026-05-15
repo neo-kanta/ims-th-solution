@@ -1,0 +1,39 @@
+info:
+  name: compute-fund-aum
+  type: http
+  seq: 32
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/funds/:fundId/aum/compute"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "business_date": "{{investment-business-date}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const snapshot = data.snapshot || {};
+
+        if (snapshot.id) {
+          bru.setEnvVar("investment-fund-aum-id", snapshot.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -121,7 +121,25 @@ npm run dev
 npm run build
 npm run preview
 npm run generate
+npm run api:generate
 npm run test
+```
+
+## Generated API Types
+
+The frontend can generate typed API paths and schemas from the backend Swagger output:
+
+```bash
+npm run api:generate
+```
+
+From the repository root, `make api-client` first refreshes `backend/docs/swagger.json` and then regenerates `app/api/generated/schema.d.ts`.
+
+Use `useOpenApiClient()` from `app/api/openapi.ts` when a feature needs a typed client backed by Swagger:
+
+```ts
+const client = useOpenApiClient();
+const me = unwrapOpenApiResponse(await client.GET("/auth/me"));
 ```
 
 ## Auth and Routing

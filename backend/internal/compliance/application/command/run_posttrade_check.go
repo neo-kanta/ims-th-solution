@@ -24,7 +24,7 @@ type PostTradeCheckRequest struct {
 // PostTradeCheckResponse is returned from the post-trade handler.
 type PostTradeCheckResponse struct {
 	CheckGroupID    uuid.UUID       `json:"check_group_id"`
-	Verdict         vo.Verdict      `json:"verdict"`
+	Verdict         vo.Verdict      `json:"verdict" swaggertype:"string"`
 	RulesEvaluated  int             `json:"rules_evaluated"`
 	TotalDurationMs int64           `json:"total_duration_ms"`
 	Breaches        []BreachSummary `json:"breaches,omitempty"`

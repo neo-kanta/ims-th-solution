@@ -80,6 +80,16 @@ func NewWorkflowHandler(
 }
 
 // RunSchedulerOnce manually executes one workflow scheduler tick.
+// @Summary Run Workflow Scheduler Once
+// @Description Manually execute one workflow day scheduler tick.
+// @Tags Workflow
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} map[string]interface{}
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /workflow/scheduler/run-once [post]
 func (h *WorkflowHandler) RunSchedulerOnce(w http.ResponseWriter, r *http.Request) {
 	if h.schedulerRunner == nil {
 		httputil.InternalError(w, "workflow scheduler is not configured")
@@ -102,6 +112,20 @@ func (h *WorkflowHandler) RunSchedulerOnce(w http.ResponseWriter, r *http.Reques
 // GET /workflow/day-states/{contractId}?businessDate=YYYY-MM-DD
 // ─────────────────────────────────────────────────────────────────────────────
 
+// GetCurrentState handles GET /workflow/day-states/{contractId}.
+// @Summary Get Workflow Day State
+// @Description Get the current workflow state for a contract and business date.
+// @Tags Workflow
+// @Security BearerAuth
+// @Produce json
+// @Param contractId path string true "Contract UUID"
+// @Param businessDate query string true "Business date (YYYY-MM-DD)"
+// @Success 200 {object} response.WorkflowStateResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /workflow/day-states/{contractId} [get]
 func (h *WorkflowHandler) GetCurrentState(w http.ResponseWriter, r *http.Request) {
 	contractID, ok := parseContractID(w, r)
 	if !ok {
@@ -128,6 +152,20 @@ func (h *WorkflowHandler) GetCurrentState(w http.ResponseWriter, r *http.Request
 // GET /workflow/day-states/{contractId}/history?businessDate=YYYY-MM-DD
 // ─────────────────────────────────────────────────────────────────────────────
 
+// GetHistory handles GET /workflow/day-states/{contractId}/history.
+// @Summary Get Workflow Transition History
+// @Description Get transition history for a contract and business date.
+// @Tags Workflow
+// @Security BearerAuth
+// @Produce json
+// @Param contractId path string true "Contract UUID"
+// @Param businessDate query string true "Business date (YYYY-MM-DD)"
+// @Success 200 {object} response.HistoryResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /workflow/day-states/{contractId}/history [get]
 func (h *WorkflowHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	contractID, ok := parseContractID(w, r)
 	if !ok {
@@ -156,6 +194,22 @@ func (h *WorkflowHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 
 // ExecuteTransition validates the request, resolves the per-action permission,
 // then dispatches to the matching command handler.
+// @Summary Execute Workflow Transition
+// @Description Execute a workflow transition such as OPEN_DAY, APPROVE, CLOSE_TRANSACTIONS, or ROLLBACK_ACCOUNTING_CLOSE.
+// @Tags Workflow
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param contractId path string true "Contract UUID"
+// @Param request body request.ExecuteTransitionRequest true "Transition payload"
+// @Success 201 {object} response.TransitionResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /workflow/day-states/{contractId}/transitions [post]
 func (h *WorkflowHandler) ExecuteTransition(w http.ResponseWriter, r *http.Request) {
 	contractID, ok := parseContractID(w, r)
 	if !ok {

@@ -1,5 +1,24 @@
 basePath: /api/v1
 definitions:
+  AUMResponse:
+    properties:
+      aum:
+        type: string
+      business_date:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      scope_id:
+        type: string
+      scope_type:
+        type: string
+      source:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
   AdminResetPasswordRequest:
     properties:
       new_password:
@@ -54,6 +73,58 @@ definitions:
       username:
         type: string
     type: object
+  AssetClass:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      displayOrder:
+        type: integer
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  AssetSubtype:
+    properties:
+      assetClassID:
+        type: string
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      displayOrder:
+        type: integer
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  AssetType:
+    enum:
+    - UNKNOWN
+    - EQUITY
+    - ETF
+    - MUTUAL_FUND
+    type: string
+    x-enum-varnames:
+    - AssetTypeUnknown
+    - AssetTypeEquity
+    - AssetTypeETF
+    - AssetTypeMutualFund
   AuditEventResponse:
     properties:
       actor_id:
@@ -89,6 +160,74 @@ definitions:
       total:
         type: integer
     type: object
+  BlockingReason:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  Breach:
+    properties:
+      businessDate:
+        type: string
+      checkGroupID:
+        type: string
+      checkRecordID:
+        type: string
+      contractID:
+        type: string
+      createdAt:
+        type: string
+      evidence:
+        type: object
+      id:
+        type: string
+      message:
+        type: string
+      portfolioID:
+        type: string
+      resolvedAt:
+        type: string
+      resolvedBy:
+        type: string
+      ruleInstanceID:
+        type: string
+      ruleTypeID:
+        type: string
+      severity:
+        type: string
+      status:
+        type: string
+      verdict:
+        type: string
+    type: object
+  BreachSummary:
+    properties:
+      breach_id:
+        type: string
+      message:
+        type: string
+      overridable:
+        type: boolean
+      rule_type_id:
+        type: string
+      severity:
+        type: string
+      verdict:
+        type: string
+    type: object
+  CashBalanceResponse:
+    properties:
+      balance:
+        type: string
+      currency:
+        type: string
+      last_business_date:
+        type: string
+      version:
+        type: integer
+    type: object
   ChangePasswordRequest:
     properties:
       new_password:
@@ -98,6 +237,253 @@ definitions:
     required:
     - new_password
     - old_password
+    type: object
+  CheckGroupResult:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/Breach'
+        type: array
+      check_group_id:
+        type: string
+      records:
+        items:
+          $ref: '#/definitions/CheckRecord'
+        type: array
+    type: object
+  CheckRecord:
+    properties:
+      businessDate:
+        type: string
+      checkGroupID:
+        description: groups all records from a single check request
+        type: string
+      checkedAt:
+        type: string
+      checkedBy:
+        description: actor ID or "system"
+        type: string
+      contractID:
+        type: string
+      createdAt:
+        type: string
+      dataSnapshotHash:
+        description: SHA-256 of the DataBundle used
+        type: string
+      effectiveSeverity:
+        description: binding-level severity applied
+        type: string
+      evalDurationMs:
+        format: int64
+        type: integer
+      evidence:
+        description: structured evidence
+        type: object
+      finalVerdict:
+        description: after severity cap
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+      orderID:
+        description: nil for periodic checks
+        type: string
+      parameterSnapshot:
+        description: frozen copy of params used
+        type: object
+      portfolioID:
+        type: string
+      ruleInstanceID:
+        type: string
+      ruleInstanceVersion:
+        type: integer
+      ruleTypeID:
+        type: string
+      ticker:
+        description: empty for portfolio-wide periodic checks
+        type: string
+      timing:
+        type: string
+      verdict:
+        description: raw verdict from rule
+        type: string
+    type: object
+  ComputeFundAUMRequest:
+    properties:
+      business_date:
+        type: string
+    required:
+    - business_date
+    type: object
+  ComputeFundAUMResponse:
+    properties:
+      idempotent:
+        type: boolean
+      portfolio_count:
+        type: integer
+      snapshot:
+        $ref: '#/definitions/AUMResponse'
+    type: object
+  Country:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      isocode:
+        type: string
+      name:
+        type: string
+      regionID:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  CreateFundRequest:
+    properties:
+      base_currency:
+        type: string
+      benchmark:
+        type: string
+      code:
+        maxLength: 40
+        type: string
+      external_pam_ref:
+        type: string
+      fund_category_id:
+        type: string
+      has_units:
+        type: boolean
+      inception_date:
+        type: string
+      manager_user_id:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      risk_profile:
+        type: string
+      short_name:
+        maxLength: 80
+        type: string
+    required:
+    - base_currency
+    - code
+    - fund_category_id
+    - inception_date
+    - name
+    type: object
+  CreateInstrumentRequest:
+    properties:
+      asset_class_id:
+        type: string
+      asset_subtype_id:
+        type: string
+      attributes:
+        additionalProperties: {}
+        type: object
+      country_id:
+        type: string
+      currency:
+        type: string
+      fund_category_id:
+        type: string
+      lot_size:
+        type: integer
+      name:
+        maxLength: 255
+        type: string
+      primary_exchange:
+        type: string
+      primary_ticker:
+        maxLength: 40
+        type: string
+      region_id:
+        type: string
+      sector_id:
+        type: string
+      tick_size:
+        type: string
+    required:
+    - asset_class_id
+    - asset_subtype_id
+    - country_id
+    - currency
+    - name
+    - primary_ticker
+    type: object
+  CreatePortfolioRequest:
+    properties:
+      base_currency:
+        type: string
+      benchmark:
+        type: string
+      code:
+        maxLength: 40
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: string
+      has_units:
+        type: boolean
+      inception_date:
+        type: string
+      manager_user_id:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      risk_profile:
+        type: string
+      strategy_code:
+        type: string
+      style_id:
+        type: string
+      tax_lot_method:
+        type: string
+      valuation_currency:
+        type: string
+    required:
+    - base_currency
+    - code
+    - fund_id
+    - inception_date
+    - name
+    - valuation_currency
+    type: object
+  CreateRuleInstanceRequest:
+    properties:
+      change_reason:
+        description: '"initial creation" if blank'
+        type: string
+      description:
+        type: string
+      effective_from:
+        description: '"2006-01-02"'
+        type: string
+      effective_to:
+        description: '"2006-01-02" or null'
+        type: string
+      is_active:
+        description: defaults to true
+        type: boolean
+      name:
+        type: string
+      parameters:
+        type: object
+      rule_type_id:
+        type: string
+    type: object
+  CreateRuleInstanceResult:
+    properties:
+      instance:
+        $ref: '#/definitions/RuleInstance'
+      version:
+        $ref: '#/definitions/RuleInstanceVersion'
     type: object
   CreateUserRequest:
     properties:
@@ -117,6 +503,22 @@ definitions:
     - password
     - username
     type: object
+  DeleteFundRequest:
+    properties:
+      expected_version:
+        minimum: 1
+        type: integer
+    required:
+    - expected_version
+    type: object
+  DeletePortfolioRequest:
+    properties:
+      expected_version:
+        minimum: 1
+        type: integer
+    required:
+    - expected_version
+    type: object
   ErrorResponse:
     properties:
       code:
@@ -125,23 +527,110 @@ definitions:
       error:
         type: string
     type: object
-  FileImportDTO:
+  ExecuteTransitionRequest:
     properties:
-      error_detail:
+      action:
+        description: |-
+          Action identifies the transition to execute.
+          Valid values: OPEN_DAY, APPROVE, CANCEL_DAY_START, CANCEL_APPROVAL,
+          CLOSE_TRANSACTIONS, CANCEL_TRANSACTION_CLOSE, CLOSE_ACCOUNTING,
+          ROLLBACK_ACCOUNTING_CLOSE
         type: string
-      failed:
-        type: integer
-      file_name:
+      attestationReason:
+        description: |-
+          AttestationReason is required when ZeroTransactionAttestation is true.
+          Must be at least 30 characters.
+        type: string
+      businessDate:
+        description: BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar).
+        type: string
+      idempotencyKey:
+        description: |-
+          IdempotencyKey is an optional client-generated UUID. When provided, a
+          duplicate request with the same key returns the original result without
+          re-executing the transition. (Full idempotency store is Batch 2.)
+        type: string
+      notes:
+        description: |-
+          Notes is an optional free-text remark stored on the approval record.
+          Applies to APPROVE only.
+        type: string
+      reason:
+        description: |-
+          Reason is mandatory for cancel and rollback actions (min 20 chars).
+          Optional for forward transitions.
+        type: string
+      zeroTransactionAttestation:
+        description: |-
+          ZeroTransactionAttestation must be true when approving a day with no
+          investment transactions. Ignored for all other actions.
+        type: boolean
+    type: object
+  FundCategory:
+    properties:
+      assetClassID:
+        type: string
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
         type: string
       id:
         type: string
-      import_target:
+      isActive:
+        type: boolean
+      name:
         type: string
-      inserted:
+      updatedAt:
+        type: string
+    type: object
+  FundListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/FundResponse'
+        type: array
+      limit:
         type: integer
-      skipped:
+      page:
         type: integer
-      total_rows:
+      total:
+        type: integer
+    type: object
+  FundResponse:
+    properties:
+      base_currency:
+        type: string
+      benchmark:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      external_pam_ref:
+        type: string
+      fund_category_id:
+        type: string
+      has_units:
+        type: boolean
+      id:
+        type: string
+      inception_date:
+        type: string
+      manager_user_id:
+        type: string
+      name:
+        type: string
+      risk_profile:
+        type: string
+      short_name:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      version:
         type: integer
     type: object
   HealthResponse:
@@ -153,53 +642,158 @@ definitions:
       status:
         type: string
     type: object
-  JobDTO:
+  HistoryResponse:
     properties:
-      business_date:
+      businessDate:
         type: string
-      created_at:
+      contractId:
         type: string
-      duration_ms:
-        type: integer
-      error_summary:
-        type: string
-      finished_at:
-        type: string
-      id:
-        type: string
-      job_type:
-        type: string
-      records_fail:
-        type: integer
-      records_in:
-        type: integer
-      records_ok:
-        type: integer
-      started_at:
-        type: string
-      status:
-        type: string
-      triggered_by:
-        type: string
-    type: object
-  JobDetailResult:
-    properties:
-      file_imports:
+      transitions:
         items:
-          $ref: '#/definitions/FileImportDTO'
+          $ref: '#/definitions/TransitionEntry'
         type: array
-      job:
-        $ref: '#/definitions/JobDTO'
     type: object
-  ListJobsResult:
+  HoldingResponse:
     properties:
-      jobs:
+      average_cost:
+        type: string
+      cost_basis:
+        type: string
+      instrument_id:
+        type: string
+      last_business_date:
+        type: string
+      last_transaction_id:
+        type: string
+      quantity:
+        type: string
+      version:
+        type: integer
+    type: object
+  ImportMarketDataRequest:
+    properties:
+      history_limit:
+        type: integer
+      include_history:
+        type: boolean
+      include_quote:
+        type: boolean
+      provider:
+        type: string
+      symbol:
+        type: string
+    type: object
+  ImportMarketDataResponse:
+    properties:
+      daily_prices:
         items:
-          $ref: '#/definitions/JobDTO'
+          $ref: '#/definitions/PriceBar'
+        type: array
+      daily_prices_imported:
+        type: integer
+      history_provider:
+        type: string
+      imported_at:
+        type: string
+      quote:
+        $ref: '#/definitions/Quote'
+      quote_provider:
+        type: string
+      requested_provider:
+        type: string
+      symbol:
+        type: string
+    type: object
+  InstrumentListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/InstrumentResponse'
         type: array
       limit:
         type: integer
       page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  InstrumentResponse:
+    properties:
+      asset_class_id:
+        type: string
+      asset_subtype_id:
+        type: string
+      attributes:
+        additionalProperties: {}
+        type: object
+      country_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      fund_category_id:
+        type: string
+      id:
+        type: string
+      is_tradable:
+        type: boolean
+      lot_size:
+        type: integer
+      name:
+        type: string
+      primary_exchange:
+        type: string
+      primary_ticker:
+        type: string
+      region_id:
+        type: string
+      sector_id:
+        type: string
+      status:
+        type: string
+      tick_size:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  InvestmentStyle:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  ListBreachesResult:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/Breach'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ListRuleInstancesResult:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/RuleInstanceDetail'
+        type: array
+      limit:
+        type: integer
+      offset:
         type: integer
       total:
         type: integer
@@ -296,38 +890,6 @@ definitions:
     required:
     - totp_code
     type: object
-  MarketPriceDTO:
-    properties:
-      business_date:
-        type: string
-      currency:
-        type: string
-      fetched_at:
-        type: string
-      id:
-        type: string
-      is_stale:
-        type: boolean
-      price:
-        type: string
-      provider:
-        type: string
-      ticker:
-        type: string
-    type: object
-  MarketPriceListResult:
-    properties:
-      limit:
-        type: integer
-      page:
-        type: integer
-      prices:
-        items:
-          $ref: '#/definitions/MarketPriceDTO'
-        type: array
-      total:
-        type: integer
-    type: object
   MeResponse:
     properties:
       permissions:
@@ -335,37 +897,33 @@ definitions:
       user:
         $ref: '#/definitions/UserResponse'
     type: object
-  NAVSnapshotDTO:
+  Override:
     properties:
-      business_date:
+      approvedBy:
+        description: second-level approval if required
         type: string
-      currency:
+      breachID:
         type: string
-      fetched_at:
+      createdAt:
         type: string
-      fund_code:
+      delegatedFrom:
+        description: original officer if delegated
         type: string
       id:
         type: string
-      is_stale:
-        type: boolean
-      nav_value:
+      overriddenBy:
+        description: compliance officer with IRG_OVERRIDE_BREACH permission
         type: string
-      provider:
+      reason:
+        description: mandatory — justification
         type: string
     type: object
-  NAVSnapshotListResult:
+  OverrideRequest:
     properties:
-      limit:
-        type: integer
-      page:
-        type: integer
-      snapshots:
-        items:
-          $ref: '#/definitions/NAVSnapshotDTO'
-        type: array
-      total:
-        type: integer
+      approved_by:
+        type: string
+      reason:
+        type: string
     type: object
   PermissionsResp:
     properties:
@@ -377,6 +935,364 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  PortfolioListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/PortfolioResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  PortfolioResponse:
+    properties:
+      base_currency:
+        type: string
+      benchmark:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: string
+      has_units:
+        type: boolean
+      id:
+        type: string
+      inception_date:
+        type: string
+      manager_user_id:
+        type: string
+      name:
+        type: string
+      risk_profile:
+        type: string
+      status:
+        type: string
+      strategy_code:
+        type: string
+      style_id:
+        type: string
+      tax_lot_method:
+        type: string
+      updated_at:
+        type: string
+      valuation_currency:
+        type: string
+      version:
+        type: integer
+    type: object
+  PostPriceSnapshotRequest:
+    properties:
+      business_date:
+        type: string
+      currency:
+        type: string
+      is_stale:
+        type: boolean
+      price:
+        type: string
+      price_source:
+        type: string
+      provider_ref:
+        type: string
+      stale_reason:
+        type: string
+    required:
+    - business_date
+    - currency
+    - price
+    - price_source
+    type: object
+  PostTradeCheckResponse:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/BreachSummary'
+        type: array
+      check_group_id:
+        type: string
+      rules_evaluated:
+        type: integer
+      total_duration_ms:
+        type: integer
+      verdict:
+        type: string
+    type: object
+  PostTradeRequest:
+    properties:
+      business_date:
+        type: string
+      contract_id:
+        type: string
+      portfolio_id:
+        type: string
+    type: object
+  PostTransactionRequest:
+    properties:
+      business_date:
+        type: string
+      currency:
+        type: string
+      external_ref:
+        type: string
+      fees:
+        type: string
+      force_post:
+        type: boolean
+      fx_rate_to_base:
+        type: string
+      gross_amount:
+        type: string
+      instrument_id:
+        type: string
+      net_amount:
+        type: string
+      price:
+        type: string
+      quantity:
+        type: string
+      reason:
+        type: string
+      settlement_date:
+        type: string
+      side:
+        type: string
+      source_decision_id:
+        type: string
+      source_execution_id:
+        type: string
+      transaction_type:
+        type: string
+    required:
+    - business_date
+    - currency
+    - transaction_type
+    type: object
+  PreTradeCheckResponse:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/BreachSummary'
+        type: array
+      check_group_id:
+        type: string
+      rules_evaluated:
+        type: integer
+      total_duration_ms:
+        type: integer
+      verdict:
+        type: string
+    type: object
+  PreTradeRequest:
+    properties:
+      business_date:
+        description: '"2006-01-02"'
+        type: string
+      contract_id:
+        type: string
+      currency:
+        type: string
+      exchange:
+        type: string
+      order_id:
+        type: string
+      portfolio_id:
+        type: string
+      price:
+        type: string
+      quantity:
+        type: string
+      side:
+        description: BUY | SELL
+        type: string
+      ticker:
+        type: string
+    type: object
+  PreviousDayStatus:
+    properties:
+      businessDate:
+        type: string
+      currentState:
+        type: string
+      persisted:
+        type: boolean
+    type: object
+  PriceBar:
+    properties:
+      adjusted_close:
+        type: number
+      close:
+        type: number
+      currency:
+        type: string
+      date:
+        type: string
+      high:
+        type: number
+      low:
+        type: number
+      open:
+        type: number
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
+      volume:
+        type: integer
+    type: object
+  PriceBarResponse:
+    properties:
+      adjusted_close:
+        type: number
+      close:
+        type: number
+      currency:
+        type: string
+      date:
+        type: string
+      high:
+        type: number
+      low:
+        type: number
+      open:
+        type: number
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
+      volume:
+        type: integer
+    type: object
+  PriceResponse:
+    properties:
+      business_date:
+        type: string
+      captured_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      instrument_id:
+        type: string
+      is_stale:
+        type: boolean
+      price:
+        type: string
+      price_source:
+        type: string
+      provider_ref:
+        type: string
+    type: object
+  ProviderHealthResponse:
+    properties:
+      configured:
+        type: boolean
+      healthy:
+        type: boolean
+      last_checked:
+        type: string
+      last_error:
+        type: string
+      last_status:
+        type: string
+      official:
+        type: boolean
+      provider_name:
+        type: string
+      role:
+        type: string
+    type: object
+  Quote:
+    properties:
+      as_of:
+        type: string
+      asset_type:
+        $ref: '#/definitions/AssetType'
+      cached:
+        type: boolean
+      captured_at:
+        type: string
+      change:
+        type: number
+      change_percent:
+        type: number
+      currency:
+        type: string
+      high:
+        type: number
+      low:
+        type: number
+      open:
+        type: number
+      previous_close:
+        type: number
+      price:
+        type: number
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
+      volume:
+        type: integer
+    type: object
+  QuoteResponse:
+    properties:
+      as_of:
+        type: string
+      asset_type:
+        $ref: '#/definitions/AssetType'
+      cached:
+        type: boolean
+      captured_at:
+        type: string
+      change:
+        type: number
+      change_percent:
+        type: number
+      currency:
+        type: string
+      high:
+        type: number
+      low:
+        type: number
+      open:
+        type: number
+      previous_close:
+        type: number
+      price:
+        type: number
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
+      volume:
+        type: integer
     type: object
   RefreshRequest:
     properties:
@@ -396,6 +1312,164 @@ definitions:
       refresh_token_expires_at:
         type: string
     type: object
+  Region:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  ReverseTransactionRequest:
+    properties:
+      business_date:
+        type: string
+      force_post:
+        type: boolean
+      reason:
+        type: string
+    required:
+    - business_date
+    - reason
+    type: object
+  RuleInstance:
+    properties:
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      currentVersion:
+        description: pointer to the active version number
+        type: integer
+      description:
+        type: string
+      effectiveWindow:
+        type: object
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        description: human-friendly name
+        type: string
+      ruleTypeID:
+        description: stable SPI type ID, e.g. "concentration.single_issuer"
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  RuleInstanceDetail:
+    properties:
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      currentVersion:
+        description: pointer to the active version number
+        type: integer
+      description:
+        type: string
+      effectiveWindow:
+        type: object
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        description: human-friendly name
+        type: string
+      ruleTypeID:
+        description: stable SPI type ID, e.g. "concentration.single_issuer"
+        type: string
+      type_metadata:
+        $ref: '#/definitions/RuleMetadata'
+      updatedAt:
+        type: string
+    type: object
+  RuleInstanceVersion:
+    properties:
+      approvedBy:
+        description: nil if no approval required
+        type: string
+      changeReason:
+        description: why this version was created
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      id:
+        type: string
+      parameters:
+        description: validated against rule type schema at write time
+        type: object
+      ruleInstanceID:
+        type: string
+      versionNumber:
+        type: integer
+    type: object
+  RuleMetadata:
+    properties:
+      category:
+        type: string
+      default_severity:
+        type: string
+      description:
+        type: string
+      overridable:
+        type: boolean
+      supported_scopes:
+        items:
+          type: string
+        type: array
+      supported_timings:
+        items:
+          type: string
+        type: array
+      type_id:
+        type: string
+      version:
+        type: string
+    type: object
+  RunValuationRequest:
+    properties:
+      business_date:
+        type: string
+      fx_rates:
+        additionalProperties:
+          type: string
+        type: object
+      total_units:
+        type: string
+    required:
+    - business_date
+    type: object
+  Sector:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parentID:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   SessionResponse:
     properties:
       created_at:
@@ -411,28 +1485,183 @@ definitions:
       user_agent:
         type: string
     type: object
-  TriggerJobRequest:
+  TransactionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/TransactionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  TransactionResponse:
     properties:
       business_date:
         type: string
-      force:
-        type: boolean
-      job_type:
+      created_at:
         type: string
-    required:
-    - business_date
-    - job_type
+      created_by:
+        type: string
+      currency:
+        type: string
+      external_ref:
+        type: string
+      fees:
+        type: string
+      fund_id:
+        type: string
+      fx_rate_to_base:
+        type: string
+      gross_amount:
+        type: string
+      id:
+        type: string
+      instrument_id:
+        type: string
+      net_amount:
+        type: string
+      portfolio_id:
+        type: string
+      price:
+        type: string
+      quantity:
+        type: string
+      reason:
+        type: string
+      reverses_transaction_id:
+        type: string
+      settlement_date:
+        type: string
+      side:
+        type: string
+      source_decision_id:
+        type: string
+      status:
+        type: string
+      transaction_type:
+        type: string
     type: object
-  UpdateFeedRequest:
+  TransitionEntry:
     properties:
-      config:
-        items:
-          type: integer
-        type: array
-      is_active:
+      action:
+        type: string
+      actorId:
+        type: string
+      actorType:
+        type: string
+      actorUsername:
+        type: string
+      fromState:
+        type: string
+      id:
+        type: string
+      occurredAt:
+        type: string
+      reason:
+        type: string
+      requestId:
+        type: string
+      toState:
+        type: string
+    type: object
+  TransitionResponse:
+    properties:
+      approvalId:
+        description: ApprovalID is set when the transition was an APPROVE action.
+        type: string
+      businessDate:
+        type: string
+      contractId:
+        type: string
+      fromState:
+        type: string
+      isZeroTransaction:
+        description: IsZeroTransaction is set when the APPROVE was on a zero-transaction
+          day.
         type: boolean
+      occurredAt:
+        description: RFC3339 UTC
+        type: string
+      toState:
+        type: string
+      transitionId:
+        type: string
+      workflowDayId:
+        type: string
+    type: object
+  UpdateFundRequest:
+    properties:
+      benchmark:
+        type: string
+      expected_version:
+        minimum: 1
+        type: integer
+      external_pam_ref:
+        type: string
+      fund_category_id:
+        type: string
+      manager_user_id:
+        type: string
       name:
         type: string
+      risk_profile:
+        type: string
+      short_name:
+        type: string
+      status:
+        type: string
+    required:
+    - expected_version
+    type: object
+  UpdateInstrumentRequest:
+    properties:
+      attributes:
+        additionalProperties: {}
+        type: object
+      fund_category_id:
+        type: string
+      is_tradable:
+        type: boolean
+      lot_size:
+        type: integer
+      name:
+        type: string
+      primary_exchange:
+        type: string
+      sector_id:
+        type: string
+      status:
+        type: string
+      tick_size:
+        type: string
+    type: object
+  UpdatePortfolioRequest:
+    properties:
+      benchmark:
+        type: string
+      description:
+        type: string
+      expected_version:
+        minimum: 1
+        type: integer
+      manager_user_id:
+        type: string
+      name:
+        type: string
+      risk_profile:
+        type: string
+      status:
+        type: string
+      strategy_code:
+        type: string
+      style_id:
+        type: string
+    required:
+    - expected_version
     type: object
   UserResponse:
     properties:
@@ -448,6 +1677,146 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  ValuationLineResponse:
+    properties:
+      cost_basis:
+        type: string
+      fx_rate_to_valuation_ccy:
+        type: string
+      instrument_id:
+        type: string
+      is_stale:
+        type: boolean
+      market_value:
+        type: string
+      price_in_quote_ccy:
+        type: string
+      price_snapshot_id:
+        type: string
+      quantity:
+        type: string
+      quote_currency:
+        type: string
+      unrealised_pnl:
+        type: string
+    type: object
+  ValuationListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ValuationResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ValuationResponse:
+    properties:
+      aum:
+        type: string
+      business_date:
+        type: string
+      cash_balance:
+        type: string
+      cost_basis:
+        type: string
+      created_at:
+        type: string
+      has_stale_inputs:
+        type: boolean
+      holding_lines:
+        items:
+          $ref: '#/definitions/ValuationLineResponse'
+        type: array
+      id:
+        type: string
+      is_indicative:
+        type: boolean
+      market_value:
+        type: string
+      portfolio_id:
+        type: string
+      price_set_hash:
+        type: string
+      realised_pnl:
+        type: string
+      roi:
+        type: string
+      source:
+        type: string
+      unrealised_pnl:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
+  WorkflowStateResponse:
+    properties:
+      accountingClosedAt:
+        type: string
+      allowedActions:
+        description: |-
+          AllowedActions is computed server-side from the current state.
+          The UI must use this list to decide which buttons to enable.
+        items:
+          type: string
+        type: array
+      blockingReasons:
+        description: |-
+          BlockingReasons explains why AllowedActions may be empty even though
+          a transition appears structurally valid (e.g. previous day still open).
+        items:
+          $ref: '#/definitions/BlockingReason'
+        type: array
+      businessDate:
+        description: YYYY-MM-DD
+        type: string
+      contractId:
+        type: string
+      currentState:
+        description: |-
+          CurrentState is one of: NOT_STARTED, DAY_OPEN, MANAGER_APPROVED,
+          TRANSACTION_CLOSED, ACCOUNTING_CLOSED
+        type: string
+      managerApprovedAt:
+        type: string
+      managerApprovedBy:
+        type: string
+      openedAt:
+        description: Per-stage timestamps (null until that stage is reached)
+        type: string
+      openedBy:
+        type: string
+      pendingReclose:
+        type: boolean
+      persisted:
+        description: |-
+          Persisted is false when no workflow__day_states row exists yet.
+          Clients can use this to distinguish a genuinely-started day from
+          a cancelled/never-started synthetic NOT_STARTED response.
+        type: boolean
+      previousDay:
+        allOf:
+        - $ref: '#/definitions/PreviousDayStatus'
+        description: |-
+          PreviousDay is populated only when Persisted=false (NOT_STARTED).
+          It lets the UI display the previous-day status before the operator
+          clicks "Open Day".
+      recloseCount:
+        type: integer
+      transactionClosedAt:
+        type: string
+      transactionsLocked:
+        type: boolean
+      version:
+        description: |-
+          Version is the optimistic lock counter. Clients should pass this
+          back in write requests (future: when version field is added to the
+          transition request). Nil when Persisted=false.
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -1249,9 +2618,2039 @@ paths:
       summary: Revoke a Session
       tags:
       - Sessions
-  /etl/feeds:
+  /compliance/breaches:
     get:
-      description: List configured ETL feed sources
+      description: List compliance breaches with optional portfolio, contract, rule,
+        status, and date filters.
+      parameters:
+      - description: Portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Contract UUID
+        in: query
+        name: contract_id
+        type: string
+      - description: Breach status
+        in: query
+        name: status
+        type: string
+      - description: Rule type ID
+        in: query
+        name: rule_type_id
+        type: string
+      - description: Start business date (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: End business date (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ListBreachesResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Compliance Breaches
+      tags:
+      - Compliance
+  /compliance/breaches/{breachID}/override:
+    post:
+      consumes:
+      - application/json
+      description: Override an open, overridable compliance breach with an audit reason.
+      parameters:
+      - description: Breach UUID
+        in: path
+        name: breachID
+        required: true
+        type: string
+      - description: Override payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/OverrideRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Override'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Override Compliance Breach
+      tags:
+      - Compliance
+  /compliance/checks/{groupID}:
+    get:
+      description: Retrieve check records and breaches associated with one compliance
+        check group.
+      parameters:
+      - description: Check group UUID
+        in: path
+        name: groupID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/CheckGroupResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Compliance Check Group
+      tags:
+      - Compliance
+  /compliance/checks/post-trade:
+    post:
+      consumes:
+      - application/json
+      description: Evaluate compliance rules after trade capture or during periodic
+        replay.
+      parameters:
+      - description: Post-trade check payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PostTradeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/PostTradeCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Post-Trade Compliance Check
+      tags:
+      - Compliance
+  /compliance/checks/pre-trade:
+    post:
+      consumes:
+      - application/json
+      description: Evaluate compliance rules for a proposed order before execution.
+      parameters:
+      - description: Pre-trade check payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PreTradeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/PreTradeCheckResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Pre-Trade Compliance Check
+      tags:
+      - Compliance
+  /compliance/rules:
+    get:
+      description: List configured compliance rule instances with optional type and
+        active filters.
+      parameters:
+      - description: Rule type ID
+        in: query
+        name: rule_type_id
+        type: string
+      - description: Filter by active flag
+        in: query
+        name: is_active
+        type: boolean
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ListRuleInstancesResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Compliance Rule Instances
+      tags:
+      - Compliance
+    post:
+      consumes:
+      - application/json
+      description: Create a compliance rule instance and its initial parameter version.
+      parameters:
+      - description: Rule instance payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateRuleInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateRuleInstanceResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Compliance Rule Instance
+      tags:
+      - Compliance
+  /health:
+    get:
+      description: Check backend, database, and Redis health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/HealthResponse'
+      summary: Health Check
+      tags:
+      - System
+  /investment/funds:
+    get:
+      description: List funds visible to the authenticated user.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Funds
+      tags:
+      - Investment - Funds
+    post:
+      consumes:
+      - application/json
+      description: Create a fund record.
+      parameters:
+      - description: Fund create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateFundRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/FundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Fund
+      tags:
+      - Investment - Funds
+  /investment/funds/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-delete a fund using optimistic version control.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fund delete payload
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/DeleteFundRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Fund
+      tags:
+      - Investment - Funds
+    get:
+      description: Retrieve one fund by ID.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund
+      tags:
+      - Investment - Funds
+    put:
+      consumes:
+      - application/json
+      description: Update mutable fields on a fund using optimistic version control.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fund update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateFundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Fund
+      tags:
+      - Investment - Funds
+  /investment/funds/{id}/aum/compute:
+    post:
+      consumes:
+      - application/json
+      description: Aggregate portfolio AUM snapshots into a fund-level snapshot for
+        a business date.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fund AUM compute payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ComputeFundAUMRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ComputeFundAUMResponse'
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ComputeFundAUMResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Compute Fund AUM
+      tags:
+      - Investment - Valuation
+  /investment/instruments:
+    get:
+      description: List tradable and reference instruments with optional filters.
+      parameters:
+      - description: Asset class UUID
+        in: query
+        name: asset_class_id
+        type: string
+      - description: Search text
+        in: query
+        name: search
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/InstrumentListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Instruments
+      tags:
+      - Investment - Instruments
+    post:
+      consumes:
+      - application/json
+      description: Create an instrument master record.
+      parameters:
+      - description: Instrument create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateInstrumentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/InstrumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Instrument
+      tags:
+      - Investment - Instruments
+  /investment/instruments/{id}:
+    get:
+      description: Retrieve one instrument by ID.
+      parameters:
+      - description: Instrument UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/InstrumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Instrument
+      tags:
+      - Investment - Instruments
+    put:
+      consumes:
+      - application/json
+      description: Update mutable fields on an instrument master record.
+      parameters:
+      - description: Instrument UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Instrument update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateInstrumentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/InstrumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Instrument
+      tags:
+      - Investment - Instruments
+  /investment/instruments/{id}/prices:
+    post:
+      consumes:
+      - application/json
+      description: Capture a price snapshot for an instrument and business date.
+      parameters:
+      - description: Instrument UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Price snapshot payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PostPriceSnapshotRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/PriceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Post Price Snapshot
+      tags:
+      - Investment - Pricing
+  /investment/portfolios:
+    get:
+      description: List portfolios visible to the authenticated user.
+      parameters:
+      - description: Fund UUID
+        in: query
+        name: fund_id
+        type: string
+      - description: Portfolio status
+        in: query
+        name: status
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PortfolioListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolios
+      tags:
+      - Investment - Portfolios
+    post:
+      consumes:
+      - application/json
+      description: Create a portfolio under a fund.
+      parameters:
+      - description: Portfolio create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreatePortfolioRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/PortfolioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Portfolio
+      tags:
+      - Investment - Portfolios
+  /investment/portfolios/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft-delete a portfolio using optimistic version control.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Portfolio delete payload
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/DeletePortfolioRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Portfolio
+      tags:
+      - Investment - Portfolios
+    get:
+      description: Retrieve one portfolio by ID.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PortfolioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Portfolio
+      tags:
+      - Investment - Portfolios
+    put:
+      consumes:
+      - application/json
+      description: Update mutable fields on a portfolio using optimistic version control.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Portfolio update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdatePortfolioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PortfolioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Portfolio
+      tags:
+      - Investment - Portfolios
+  /investment/portfolios/{id}/cash:
+    get:
+      description: List cash balances by currency for a portfolio.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/CashBalanceResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Cash Balances
+      tags:
+      - Investment - Portfolios
+  /investment/portfolios/{id}/holdings:
+    get:
+      description: List current holdings for a portfolio.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/HoldingResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Holdings
+      tags:
+      - Investment - Portfolios
+  /investment/portfolios/{id}/transactions:
+    get:
+      description: List transactions for a portfolio with optional instrument and
+        date filters.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Instrument UUID
+        in: query
+        name: instrument_id
+        type: string
+      - description: Start business date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: End business date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TransactionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Transactions
+      tags:
+      - Investment - Ledger
+    post:
+      consumes:
+      - application/json
+      description: Post a buy, sell, cash, or other portfolio transaction into the
+        ledger.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction post payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PostTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TransactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Post Portfolio Transaction
+      tags:
+      - Investment - Ledger
+  /investment/portfolios/{id}/transactions/{txnId}/reverse:
+    post:
+      consumes:
+      - application/json
+      description: Post a reversal transaction for an existing portfolio transaction.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction UUID
+        in: path
+        name: txnId
+        required: true
+        type: string
+      - description: Transaction reversal payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ReverseTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TransactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reverse Portfolio Transaction
+      tags:
+      - Investment - Ledger
+  /investment/portfolios/{id}/valuations:
+    get:
+      description: List valuation snapshots for a portfolio with optional date filters.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Start business date (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: End business date (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ValuationListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Valuations
+      tags:
+      - Investment - Valuation
+  /investment/portfolios/{id}/valuations/latest:
+    get:
+      description: Retrieve the latest internal valuation snapshot for a portfolio.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ValuationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Latest Portfolio Valuation
+      tags:
+      - Investment - Valuation
+  /investment/portfolios/{id}/valuations/run:
+    post:
+      consumes:
+      - application/json
+      description: Run a valuation snapshot for a portfolio and business date.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Valuation run payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RunValuationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ValuationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Portfolio Valuation
+      tags:
+      - Investment - Valuation
+  /investment/reference/asset-classes:
+    get:
+      description: List active asset classes.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/AssetClass'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Asset Classes
+      tags:
+      - Investment - Reference
+  /investment/reference/asset-subtypes:
+    get:
+      description: List active asset subtypes, optionally filtered by asset class.
+      parameters:
+      - description: Asset class UUID
+        in: query
+        name: asset_class_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/AssetSubtype'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Asset Subtypes
+      tags:
+      - Investment - Reference
+  /investment/reference/countries:
+    get:
+      description: List active countries.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Country'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Countries
+      tags:
+      - Investment - Reference
+  /investment/reference/fund-categories:
+    get:
+      description: List active fund categories.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/FundCategory'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Fund Categories
+      tags:
+      - Investment - Reference
+  /investment/reference/investment-styles:
+    get:
+      description: List active investment styles.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/InvestmentStyle'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Styles
+      tags:
+      - Investment - Reference
+  /investment/reference/regions:
+    get:
+      description: List active regions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Region'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Regions
+      tags:
+      - Investment - Reference
+  /investment/reference/sectors:
+    get:
+      description: List investment sector taxonomy rows.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Sector'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Sectors
+      tags:
+      - Investment - Reference
+  /market-data/history:
+    get:
+      description: Get daily price bars for a symbol from the configured provider
+        chain or a requested provider.
+      parameters:
+      - description: Market symbol
+        in: query
+        name: symbol
+        required: true
+        type: string
+      - description: Provider name (alpha_vantage or yahoo)
+        in: query
+        name: provider
+        type: string
+      - description: Maximum bars to return (default 250, max 1000)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/PriceBarResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Market Price History
+      tags:
+      - MarketData
+  /market-data/import:
+    post:
+      consumes:
+      - application/json
+      description: Fetch and persist quote and/or daily price history for a symbol.
+      parameters:
+      - description: Market data import payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ImportMarketDataRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ImportMarketDataResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Import Market Data
+      tags:
+      - MarketData
+  /market-data/provider-health:
+    get:
+      description: Get configured market data provider health and recent status information.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ProviderHealthResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Market Data Provider Health
+      tags:
+      - MarketData
+  /market-data/quote:
+    get:
+      description: Get a latest quote for a symbol from the configured provider chain
+        or a requested provider.
+      parameters:
+      - description: Market symbol
+        in: query
+        name: symbol
+        required: true
+        type: string
+      - description: Provider name (alpha_vantage or yahoo)
+        in: query
+        name: provider
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/QuoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Market Quote
+      tags:
+      - MarketData
+  /workflow/day-states/{contractId}:
+    get:
+      description: Get the current workflow state for a contract and business date.
+      parameters:
+      - description: Contract UUID
+        in: path
+        name: contractId
+        required: true
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkflowStateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Day State
+      tags:
+      - Workflow
+  /workflow/day-states/{contractId}/history:
+    get:
+      description: Get transition history for a contract and business date.
+      parameters:
+      - description: Contract UUID
+        in: path
+        name: contractId
+        required: true
+        type: string
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/HistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Transition History
+      tags:
+      - Workflow
+  /workflow/day-states/{contractId}/transitions:
+    post:
+      consumes:
+      - application/json
+      description: Execute a workflow transition such as OPEN_DAY, APPROVE, CLOSE_TRANSACTIONS,
+        or ROLLBACK_ACCOUNTING_CLOSE.
+      parameters:
+      - description: Contract UUID
+        in: path
+        name: contractId
+        required: true
+        type: string
+      - description: Transition payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ExecuteTransitionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TransitionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Execute Workflow Transition
+      tags:
+      - Workflow
+  /workflow/scheduler/run-once:
+    post:
+      description: Manually execute one workflow day scheduler tick.
       produces:
       - application/json
       responses:
@@ -1276,372 +4675,9 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List ETL Feeds
+      summary: Run Workflow Scheduler Once
       tags:
-      - ETL
-  /etl/feeds/{id}:
-    put:
-      consumes:
-      - application/json
-      description: Update an ETL feed source configuration
-      parameters:
-      - description: Feed UUID
-        format: uuid
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Feed update payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/UpdateFeedRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Update ETL Feed
-      tags:
-      - ETL
-  /etl/import:
-    post:
-      consumes:
-      - multipart/form-data
-      description: Upload a CSV file for ETL import processing
-      parameters:
-      - description: Import file (CSV)
-        in: formData
-        name: file
-        required: true
-        type: file
-      - description: Import target
-        in: formData
-        name: import_target
-        required: true
-        type: string
-      - description: Business date (YYYY-MM-DD)
-        in: formData
-        name: business_date
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Import ETL File
-      tags:
-      - ETL
-  /etl/jobs:
-    get:
-      description: List ETL jobs with optional filters for job type, business date,
-        and status
-      parameters:
-      - description: Job type
-        in: query
-        name: type
-        type: string
-      - description: Business date (YYYY-MM-DD)
-        in: query
-        name: date
-        type: string
-      - description: Job status
-        in: query
-        name: status
-        type: string
-      - description: Page index (default 0)
-        in: query
-        name: page
-        type: integer
-      - description: Page size (default 50, max 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/ListJobsResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List ETL Jobs
-      tags:
-      - ETL
-  /etl/jobs/{id}:
-    get:
-      description: Retrieve a single ETL job with associated file import records when
-        applicable
-      parameters:
-      - description: Job UUID
-        format: uuid
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JobDetailResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get ETL Job Detail
-      tags:
-      - ETL
-  /etl/jobs/trigger:
-    post:
-      consumes:
-      - application/json
-      description: Manually trigger an ETL job for a business date
-      parameters:
-      - description: Job trigger payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/TriggerJobRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Trigger ETL Job
-      tags:
-      - ETL
-  /etl/market-prices:
-    get:
-      description: List market price snapshots with optional ticker and date filters
-      parameters:
-      - description: Ticker
-        in: query
-        name: ticker
-        type: string
-      - description: Business date (YYYY-MM-DD)
-        in: query
-        name: date
-        type: string
-      - description: Start business date (YYYY-MM-DD)
-        in: query
-        name: date_from
-        type: string
-      - description: End business date (YYYY-MM-DD)
-        in: query
-        name: date_to
-        type: string
-      - description: Page index (default 0)
-        in: query
-        name: page
-        type: integer
-      - description: Page size (default 50, max 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/MarketPriceListResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List Market Prices
-      tags:
-      - ETL
-  /etl/nav-snapshots:
-    get:
-      description: List NAV snapshots with optional fund code and date filters
-      parameters:
-      - description: Fund code
-        in: query
-        name: fund_code
-        type: string
-      - description: Business date (YYYY-MM-DD)
-        in: query
-        name: date
-        type: string
-      - description: Start business date (YYYY-MM-DD)
-        in: query
-        name: date_from
-        type: string
-      - description: End business date (YYYY-MM-DD)
-        in: query
-        name: date_to
-        type: string
-      - description: Page index (default 0)
-        in: query
-        name: page
-        type: integer
-      - description: Page size (default 50, max 100)
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/NAVSnapshotListResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List NAV Snapshots
-      tags:
-      - ETL
-  /health:
-    get:
-      description: Check backend, database, and Redis health status
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/HealthResponse'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/HealthResponse'
-      summary: Health Check
-      tags:
-      - System
+      - Workflow
 schemes:
 - http
 - https

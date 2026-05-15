@@ -1,0 +1,6 @@
+info:
+  name: Fund
+  type: folder
+
+request:
+  auth: inherit

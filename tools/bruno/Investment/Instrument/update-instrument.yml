@@ -1,0 +1,35 @@
+info:
+  name: update-instrument
+  type: http
+  seq: 20
+
+http:
+  method: PUT
+  url: "{{investment-base-url}}/instruments/:instrumentId"
+  params:
+    - name: instrumentId
+      value: "{{investment-instrument-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{investment-instrument-name}}",
+        "primary_exchange": "{{investment-primary-exchange}}",
+        "lot_size": {{investment-lot-size}},
+        "tick_size": "{{investment-tick-size}}",
+        "is_tradable": {{investment-is-tradable}},
+        "status": "{{investment-instrument-status}}",
+        "attributes": {
+          "source": "bruno"
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

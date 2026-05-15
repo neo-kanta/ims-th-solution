@@ -1,0 +1,49 @@
+info:
+  name: create-fund
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/funds"
+  body:
+    type: json
+    data: |-
+      {
+        "code": "{{investment-fund-code}}",
+        "name": "{{investment-fund-name}}",
+        "short_name": "{{investment-fund-short-name}}",
+        "fund_category_id": "{{investment-fund-category-id}}",
+        "base_currency": "{{investment-base-currency}}",
+        "inception_date": "{{investment-inception-date}}",
+        "manager_user_id": null,
+        "benchmark": "{{investment-benchmark}}",
+        "risk_profile": "{{investment-risk-profile}}",
+        "has_units": {{investment-has-units}},
+        "external_pam_ref": "{{investment-external-pam-ref}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-fund-id", data.id, { persist: true });
+        }
+
+        if (data.version !== undefined) {
+          bru.setEnvVar("investment-fund-version", String(data.version), { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

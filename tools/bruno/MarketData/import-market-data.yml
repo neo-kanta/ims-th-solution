@@ -1,0 +1,50 @@
+info:
+  name: import-market-data
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{market-data-base-url}}/import"
+  body:
+    type: json
+    data: |-
+      {
+        "symbol": "{{market-data-symbol}}",
+        "provider": "{{market-data-provider}}",
+        "include_quote": true,
+        "include_history": true,
+        "history_limit": {{market-data-history-limit}}
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.symbol) {
+          bru.setEnvVar("market-data-last-symbol", data.symbol, { persist: true });
+        }
+
+        if (data.quote_provider || data.history_provider) {
+          bru.setEnvVar("market-data-last-provider", data.quote_provider || data.history_provider, { persist: true });
+        }
+
+        if (data.quote?.price) {
+          bru.setEnvVar("market-data-last-price", data.quote.price, { persist: true });
+        }
+
+        if (data.daily_prices?.[0]?.close) {
+          bru.setEnvVar("market-data-last-close", data.daily_prices[0].close, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

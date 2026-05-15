@@ -2,7 +2,7 @@
 # Quick commands for development, testing, and deployment.
 
 .PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed db-reset \
-        test test-unit test-integration test-e2e lint build docker-build swagger
+        contract-check test test-unit test-integration test-e2e lint build docker-build swagger api-client
 
 # =============================
 # Development
@@ -51,6 +51,13 @@ db-reset: ## Drop + recreate + migrate + seed
 	$(MAKE) seed
 
 # =============================
+# Contracts
+# =============================
+
+contract-check: ## Verify cross-module contract bindings against the running database
+	cd backend && go run cmd/contract-check/main.go
+
+# =============================
 # Testing
 # =============================
 
@@ -84,6 +91,9 @@ docker-build: ## Build Docker images
 
 swagger: ## Generate backend Swagger docs
 	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go -d . -o docs --parseInternal --useStructName
+
+api-client: swagger ## Generate frontend API types from backend Swagger docs
+	cd frontend && npm run api:generate
 
 # =============================
 # Help

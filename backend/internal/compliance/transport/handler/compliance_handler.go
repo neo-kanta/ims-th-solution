@@ -57,7 +57,7 @@ func NewComplianceHandler(
 // POST /compliance/checks/pre-trade
 // ============================================================
 
-type preTradeRequest struct {
+type PreTradeRequest struct {
 	PortfolioID  string `json:"portfolio_id"`
 	ContractID   string `json:"contract_id"`
 	BusinessDate string `json:"business_date"` // "2006-01-02"
@@ -70,8 +70,22 @@ type preTradeRequest struct {
 	Exchange     string `json:"exchange"`
 }
 
+// RunPreTradeCheck handles POST /compliance/checks/pre-trade.
+// @Summary Run Pre-Trade Compliance Check
+// @Description Evaluate compliance rules for a proposed order before execution.
+// @Tags Compliance
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body PreTradeRequest true "Pre-trade check payload"
+// @Success 201 {object} command.PreTradeCheckResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/checks/pre-trade [post]
 func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Request) {
-	var req preTradeRequest
+	var req PreTradeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid request body: "+err.Error())
 		return
@@ -137,14 +151,28 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 // POST /compliance/checks/post-trade
 // ============================================================
 
-type postTradeRequest struct {
+type PostTradeRequest struct {
 	PortfolioID  string `json:"portfolio_id"`
 	ContractID   string `json:"contract_id"`
 	BusinessDate string `json:"business_date"`
 }
 
+// RunPostTradeCheck handles POST /compliance/checks/post-trade.
+// @Summary Run Post-Trade Compliance Check
+// @Description Evaluate compliance rules after trade capture or during periodic replay.
+// @Tags Compliance
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body PostTradeRequest true "Post-trade check payload"
+// @Success 201 {object} command.PostTradeCheckResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/checks/post-trade [post]
 func (h *ComplianceHandler) RunPostTradeCheck(w http.ResponseWriter, r *http.Request) {
-	var req postTradeRequest
+	var req PostTradeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid request body: "+err.Error())
 		return
@@ -184,6 +212,20 @@ func (h *ComplianceHandler) RunPostTradeCheck(w http.ResponseWriter, r *http.Req
 // GET /compliance/checks/{groupID}
 // ============================================================
 
+// GetCheckGroup handles GET /compliance/checks/{groupID}.
+// @Summary Get Compliance Check Group
+// @Description Retrieve check records and breaches associated with one compliance check group.
+// @Tags Compliance
+// @Security BearerAuth
+// @Produce json
+// @Param groupID path string true "Check group UUID"
+// @Success 200 {object} query.CheckGroupResult
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/checks/{groupID} [get]
 func (h *ComplianceHandler) GetCheckGroup(w http.ResponseWriter, r *http.Request) {
 	groupID, err := uuid.Parse(chi.URLParam(r, "groupID"))
 	if err != nil {
@@ -207,6 +249,25 @@ func (h *ComplianceHandler) GetCheckGroup(w http.ResponseWriter, r *http.Request
 // GET /compliance/breaches
 // ============================================================
 
+// ListBreaches handles GET /compliance/breaches.
+// @Summary List Compliance Breaches
+// @Description List compliance breaches with optional portfolio, contract, rule, status, and date filters.
+// @Tags Compliance
+// @Security BearerAuth
+// @Produce json
+// @Param portfolio_id query string false "Portfolio UUID"
+// @Param contract_id query string false "Contract UUID"
+// @Param status query string false "Breach status"
+// @Param rule_type_id query string false "Rule type ID"
+// @Param date_from query string false "Start business date (YYYY-MM-DD)"
+// @Param date_to query string false "End business date (YYYY-MM-DD)"
+// @Param offset query int false "Offset (default 0)"
+// @Param limit query int false "Limit (default 50, max 200)"
+// @Success 200 {object} query.ListBreachesResult
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/breaches [get]
 func (h *ComplianceHandler) ListBreaches(w http.ResponseWriter, r *http.Request) {
 	req := query.ListBreachesRequest{
 		Offset: parseIntParam(r, "offset", 0),
@@ -253,11 +314,28 @@ func (h *ComplianceHandler) ListBreaches(w http.ResponseWriter, r *http.Request)
 // POST /compliance/breaches/{breachID}/override
 // ============================================================
 
-type overrideRequest struct {
+type OverrideRequest struct {
 	Reason     string `json:"reason"`
 	ApprovedBy string `json:"approved_by,omitempty"`
 }
 
+// OverrideBreach handles POST /compliance/breaches/{breachID}/override.
+// @Summary Override Compliance Breach
+// @Description Override an open, overridable compliance breach with an audit reason.
+// @Tags Compliance
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param breachID path string true "Breach UUID"
+// @Param request body OverrideRequest true "Override payload"
+// @Success 201 {object} entity.Override
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/breaches/{breachID}/override [post]
 func (h *ComplianceHandler) OverrideBreach(w http.ResponseWriter, r *http.Request) {
 	breachID, err := uuid.Parse(chi.URLParam(r, "breachID"))
 	if err != nil {
@@ -265,7 +343,7 @@ func (h *ComplianceHandler) OverrideBreach(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var req overrideRequest
+	var req OverrideRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid request body: "+err.Error())
 		return
@@ -346,17 +424,17 @@ func writeOverrideError(w http.ResponseWriter, err error) {
 // POST /compliance/rules
 // ============================================================
 
-// createRuleInstanceRequest is the JSON body accepted by RunCreateRuleInstance.
+// CreateRuleInstanceRequest is the JSON body accepted by RunCreateRuleInstance.
 //
 // Field naming follows the snake_case convention used across the compliance
 // API. `parameters` is a raw JSON document — the handler does not decode it
 // beyond validating that it is well-formed JSON; the application layer then
 // checks it against the rule type's ParameterSchema.
-type createRuleInstanceRequest struct {
+type CreateRuleInstanceRequest struct {
 	RuleTypeID    string          `json:"rule_type_id"`
 	Name          string          `json:"name"`
 	Description   string          `json:"description,omitempty"`
-	Parameters    json.RawMessage `json:"parameters"`
+	Parameters    json.RawMessage `json:"parameters" swaggertype:"object"`
 	EffectiveFrom string          `json:"effective_from"`          // "2006-01-02"
 	EffectiveTo   *string         `json:"effective_to,omitempty"`  // "2006-01-02" or null
 	IsActive      *bool           `json:"is_active,omitempty"`     // defaults to true
@@ -368,8 +446,22 @@ type createRuleInstanceRequest struct {
 // Permission: IRG_EDIT_RULE_INSTANCE (enforced at the router). The actor UUID
 // is taken from the auth context — never from the request body — so callers
 // cannot impersonate another user when stamping created_by.
+// @Summary Create Compliance Rule Instance
+// @Description Create a compliance rule instance and its initial parameter version.
+// @Tags Compliance
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateRuleInstanceRequest true "Rule instance payload"
+// @Success 201 {object} command.CreateRuleInstanceResult
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/rules [post]
 func (h *ComplianceHandler) CreateRuleInstance(w http.ResponseWriter, r *http.Request) {
-	var req createRuleInstanceRequest
+	var req CreateRuleInstanceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid request body: "+err.Error())
 		return
@@ -457,6 +549,21 @@ func writeCreateRuleInstanceError(w http.ResponseWriter, err error) {
 // GET /compliance/rules
 // ============================================================
 
+// ListRuleInstances handles GET /compliance/rules.
+// @Summary List Compliance Rule Instances
+// @Description List configured compliance rule instances with optional type and active filters.
+// @Tags Compliance
+// @Security BearerAuth
+// @Produce json
+// @Param rule_type_id query string false "Rule type ID"
+// @Param is_active query bool false "Filter by active flag"
+// @Param offset query int false "Offset (default 0)"
+// @Param limit query int false "Limit (default 50, max 200)"
+// @Success 200 {object} query.ListRuleInstancesResult
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /compliance/rules [get]
 func (h *ComplianceHandler) ListRuleInstances(w http.ResponseWriter, r *http.Request) {
 	req := query.ListRuleInstancesRequest{
 		Offset: parseIntParam(r, "offset", 0),
