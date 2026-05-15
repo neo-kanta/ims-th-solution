@@ -1,626 +1,227 @@
-# CLAUDE.md — Instructions for Claude Code
+# CLAUDE.md - Instructions for AI/dev assistants
 
-> **Read `AIREAD.md` first.** It contains the full project context, business rules,
-> and domain knowledge. This file contains only operational instructions for working in this codebase.
+Read `AIREAD.md` when you need business context, domain terminology, or project rationale. This file is the current operational guide for working in the codebase.
 
----
+## Project Snapshot
 
-## Project Identity
-
-- **Name:** IMS (Investment Management System) — Thailand PoC
-- **Repo:** `ims-th-solution`
-- **License:** MIT
-- **Language:** Go 1.23+ (backend), TypeScript + Nuxt 3 (frontend), PostgreSQL (database)
-
----
+- Name: IMS Thailand Solution
+- Repo: `ims-th-solution`
+- License: MIT
+- Backend: Go 1.25 modular monolith, Chi router, pgx, Redis, Swagger
+- Frontend: Nuxt 4, Vue 3, Pinia, TypeScript, VueUse, Tailwind CSS 4
+- Database: PostgreSQL migrations and seeds
+- Local infra: Docker Compose with PostgreSQL, Redis, backend, and frontend services
 
 ## Quick Commands
 
-```bash
-# === Development ===
-make dev                    # Start everything (docker-compose up + frontend dev)
-make dev-backend            # Backend only (go run cmd/server/main.go)
-make dev-frontend           # Frontend only (cd frontend && npm run dev)
-
-# === Database ===
-make migrate-up             # Run pending migrations
-make migrate-down           # Rollback last migration
-make migrate-new module=workflow name=add_carry_forward  # Create new migration pair
-make seed                   # Load seed data
-make db-reset               # Drop + recreate + migrate + seed
-
-# === Testing ===
-make test                   # All tests
-make test-unit              # Unit tests only (backend)
-make test-integration       # Integration tests
-make test-e2e               # Playwright E2E tests
-make lint                   # Lint both frontend and backend
-
-# === Build ===
-make build                  # Build backend binary + frontend static
-make docker-build           # Build Docker images
-```
-
----
-
-## Folder Structure — Where To Put Things
-
-### This is a modular monolith. Every file has ONE correct location.
-
-**If you are adding a new Go file, ask: "Which module does this belong to?"**
-Then place it in the correct sublayer within that module.
-
-```
-backend/internal/<MODULE>/
-  domain/entity/         → Business entity structs + methods
-  domain/valueobject/    → Immutable value types
-  domain/event/          → Domain events
-  domain/policy/         → Business validation rules
-  domain/repository.go   → Repository INTERFACE only
-  application/command/   → Write use cases
-  application/query/     → Read use cases
-  application/dto/       → Application DTOs
-  infrastructure/persistence/  → SQL repository implementations
-  infrastructure/adapter/      → External system adapters
-  transport/handler/     → HTTP handlers
-  transport/dto/request/ → Request structs
-  transport/dto/response/→ Response structs
-  transport/validator/   → Request validators
-  transport/router.go    → Route definitions
-  jobs/                  → Scheduled/background tasks
-  permission/policies.go → Permission code declarations
-  module.go              → Module wire-up (constructor, route registration)
-```
-
-**If you are adding a new Vue file, ask: "Which domain module and component type?"**
-
-```
-frontend/modules/<DOMAIN>/
-  components/forms/      → Input forms
-  components/tables/     → Data tables
-  components/dialogs/    → Modal dialogs
-  components/cards/      → Info cards
-  components/widgets/    → Complex composite widgets
-  composables/           → useXxx.ts composables
-  stores/                → useXxxStore.ts Pinia stores
-  api/                   → xxxApi.ts API client functions
-  types/                 → xxx.types.ts TypeScript interfaces
-```
-
-**If you are adding a page (route):**
-
-```
-frontend/app/pages/<domain>/<feature>/index.vue
-frontend/app/pages/<domain>/<feature>/[id].vue
-frontend/app/pages/<domain>/<feature>/create.vue
-```
-
-**If you are adding shared UI:**
-
-```
-frontend/shared/components/ui/      → Base UI primitives (AppButton, AppInput, etc.)
-frontend/shared/components/layout/  → Layout parts (Sidebar, TopBar, etc.)
-frontend/shared/composables/        → Cross-domain composables (useAuth, usePermissionGuard)
-frontend/shared/stores/             → Global stores (useAuthStore, useGlobalStore)
-frontend/shared/types/              → Shared TypeScript types
-frontend/shared/utils/              → Formatters, validators, constants
-```
-
-**If you are adding a database migration:**
-
-```
-database/migrations/<YYYYMMDDHHMMSS>_<module>__<description>.up.sql
-database/migrations/<YYYYMMDDHHMMSS>_<module>__<description>.down.sql
-```
-
-**If you are adding cross-module infrastructure:**
-
-```
-backend/platform/       → middleware, config, DB helpers, logging, errors, clock
-backend/pkg/types/      → Shared value types (Money, DateRange, Pagination)
-backend/pkg/enum/       → Shared enums
-backend/pkg/contract/   → Inter-module interfaces ONLY
-```
-
----
-
-## Module List
-
-| Module              | Backend Path               | Frontend Path                     | Database Prefix  |
-| ------------------- | -------------------------- | --------------------------------- | ---------------- |
-| Workflow Management | `internal/workflow/`       | `modules/workflow/`               | `workflow__`     |
-| Stock Investment    | `internal/investment/`     | `modules/investment/`             | `investment__`   |
-| Approval Workflow   | `internal/approval/`       | `modules/approval/`               | `approval__`     |
-| Permissions         | `internal/permissions/`    | `modules/permissions/`            | `permissions__`  |
-| Identity & Access   | `internal/iam/`            | (uses shared/stores/useAuthStore) | `iam__`          |
-| Notification        | `internal/notification/`   | `modules/notification/`           | `notification__` |
-| Audit               | `internal/audit/`          | `modules/audit/`                  | `audit__`        |
-| Market Data         | `internal/market_data/`    | —                                 | `market_data__`  |
-| Reference Data      | `internal/reference_data/` | —                                 | `reference__`    |
-| Compliance/IRG      | `internal/compliance/`     | —                                 | `compliance__`   |
-| ETL/Integration     | `internal/integration/`    | —                                 | `integration__`  |
-
----
-
-## STRICT Rules — Do NOT Violate These
-
-### Architecture
-
-1. **Never import one module's internal code from another module.**
-   Cross-module → use `pkg/contract/` interfaces or domain events.
-2. **Never put business logic in HTTP handlers.** Handlers only: parse request → call application service → format response.
-3. **Never put business logic in Vue components.** Components only: display data, capture user input, call store actions.
-4. **Never skip server-side permission checks.** Frontend guards are UX only. Backend middleware enforces.
-5. **Never use domain entities in transport layer.** Always convert to/from DTOs.
-6. **Never create circular module dependencies.** If A needs B and B needs A → extract to shared_kernel or events.
-
-### Code Style
-
-7. **Go files:** `snake_case.go`. Structs: `PascalCase`. No exported global variables.
-8. **Vue files:** `PascalCase.vue`. Composition API + `<script setup lang="ts">` only. No Options API.
-9. **One file, one responsibility.** No god files. Max ~300 lines per file as a guideline.
-10. **No magic strings.** Use constants or enums for status codes, permission codes, error codes.
-11. **All timestamps in UTC on backend.** Display in `Asia/Bangkok` on frontend.
-12. **Every migration `.up.sql` must have a matching `.down.sql`.** Down scripts must use `IF EXISTS`.
-
-### Testing
-
-13. **Domain layer:** Unit test business rules with table-driven tests.
-14. **Application layer:** Unit test use cases with mocked repositories.
-15. **Transport layer:** Test handlers with httptest.
-16. **Frontend:** Component tests with Vitest, E2E with Playwright.
-
----
-
-## Initialization Guide
-
-When initializing this project from scratch, follow this order:
-
-### Phase 1: Repository Skeleton
+Run these from the repository root unless noted.
 
 ```bash
-# 1. Create top-level structure
-mkdir -p backend/{cmd/{server,migrate,seed,scheduler},internal,platform,pkg,api/openapi}
-mkdir -p frontend/{app/{layouts,pages,middleware,plugins},modules,shared,assets,public}
-mkdir -p database/{migrations,seeds,reference,views,functions,triggers,test_data,erd}
-mkdir -p docs/{adr,api,domain,runbook,onboarding}
-mkdir -p scripts
-mkdir -p infra/{docker,nginx,env}
-mkdir -p tests/{integration,e2e/specs}
+# Development
+make dev
+make dev-backend
+make dev-frontend
+
+# Database
+make migrate-up
+make migrate-down
+make migrate-new module=workflow name=add_carry_forward
+make seed
+make db-reset
+make contract-check
+
+# Tests and quality
+make test
+make test-unit
+make test-integration
+make test-e2e
+make lint
+
+# Build and generated clients
+make build
+make docker-build
+make swagger
+make api-client
 ```
 
-### Phase 2: Frontend Init (Nuxt 3)
+Useful direct commands:
 
 ```bash
-cd frontend
-npx nuxi@latest init . --force --packageManager npm
-npm install
-npm install -D @nuxtjs/tailwindcss @pinia/nuxt @vueuse/nuxt
-npm install pinia @vueuse/core dayjs
-npm install -D typescript @types/node
+cd infra && docker compose up -d postgres redis
+cd backend && go test ./...
+cd frontend && npm run test
+cd frontend && npm run build
 ```
 
-Configure `nuxt.config.ts`:
+`make dev` starts PostgreSQL and then launches local backend/frontend processes. If the local backend `.env` uses `RATE_LIMIT_BACKEND=redis`, start Redis first.
 
-```typescript
-export default defineNuxtConfig({
-  devtools: { enabled: true },
-  srcDir: "app/",
-  modules: ["@nuxtjs/tailwindcss", "@pinia/nuxt", "@vueuse/nuxt"],
-  css: ["~/assets/css/main.css"],
-  runtimeConfig: {
-    public: {
-      apiBaseUrl:
-        process.env.NUXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1",
-      appName: process.env.NUXT_PUBLIC_APP_NAME || "IMS Thailand",
-    },
-  },
-  typescript: {
-    strict: true,
-  },
-  tailwindcss: {
-    cssPath: "~/assets/css/main.css",
-  },
-});
+## Current Runtime Wiring
+
+`backend/cmd/server/main.go` is the source of truth for mounted modules:
+
+1. Load config and logging.
+2. Connect PostgreSQL.
+3. Optionally connect Redis when `RATE_LIMIT_BACKEND=redis`.
+4. Wire audit, IAM, compliance, workflow, investment, and market data.
+5. Start the workflow scheduler on an hourly loop.
+6. Mount `/health`, `/swagger/*`, and `/api/v1`.
+
+Public API:
+
+- `GET /health`
+- `GET /swagger/*`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+
+Authenticated API groups:
+
+- IAM/auth/session/MFA/admin under `/api/v1/auth/*` and `/api/v1/admin/*`
+- Audit admin list/export mounted by IAM under `/api/v1/admin/audit`
+- Workflow under `/api/v1/workflow/*`
+- Compliance under `/api/v1/compliance/*`
+- Investment under `/api/v1/investment/*`
+- Market data under `/api/v1/market-data/*`
+
+## Module Status
+
+| Module | Status | Notes |
+| --- | --- | --- |
+| `iam` | Active | Auth, sessions, MFA, admin user operations, permission and data-scope checks. |
+| `audit` | Active | Audit recorder plus admin audit list/export routes. |
+| `workflow` | Active | Business-day state machine, transition history, scheduler, workflow state contract. |
+| `compliance` | Active | IRG rule registry, checks, breaches, overrides, rule instances, contract adapter. |
+| `investment` | Active | Funds, portfolios, instruments, ledger, price snapshots, valuations, AUM, holdings and cash reads. |
+| `market_data` | Active | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence. |
+| `approval` | Scaffold | Module and permission policy only. |
+| `integration` | Scaffold | Module boundary only. |
+| `notification` | Scaffold | Module and permission policy only. |
+| `permissions` | Scaffold | Tables and catalogs exist; active admin workflows are currently through IAM/settings. |
+| `reference_data` | Scaffold | Boundary only. |
+
+Current workspace caveat: `backend/internal/leave_delegation` is absent in the working tree. If backend build or seed code references it, remove or restore the stale import intentionally before trusting test results.
+
+## Backend Placement Rules
+
+This is a modular monolith. Start by choosing the owning module under `backend/internal/<module>/`.
+
+```text
+backend/internal/<module>/
+  domain/entity/              business entities
+  domain/valueobject/         immutable value types
+  domain/event/               domain events
+  domain/policy/              pure business rules
+  domain/repository.go        repository interfaces
+  application/command/        write use cases
+  application/query/          read use cases
+  application/service/        application services
+  infrastructure/persistence/ SQL-backed repositories
+  infrastructure/adapter/     external or cross-module adapters
+  transport/handler/          HTTP handlers
+  transport/dto/request/      request structs
+  transport/dto/response/     response structs
+  transport/router.go         route definitions
+  jobs/                       scheduled/background tasks
+  permission/policies.go      permission catalog provider
+  module.go                   dependency wiring and route registration
 ```
 
-Create frontend domain module folders:
+Shared backend code belongs in:
 
-```bash
-cd frontend
-for mod in workflow investment leave-delegation approval permissions notification audit; do
-  mkdir -p modules/$mod/{components/{forms,tables,dialogs,cards,widgets},composables,stores,api,types}
-  echo "export {}" > modules/$mod/index.ts
-done
-
-mkdir -p shared/{components/{ui,layout,data-display},composables,stores,types,utils}
-mkdir -p app/pages/{workflow,investment/{analysis,decision,execution,review},leave/agents,approval/{config},permissions/{accounts,groups},settings/{notifications,audit}}
+```text
+backend/platform/       config, database, middleware, logging, errors, clock, health, validation
+backend/pkg/types/      shared value types
+backend/pkg/enum/       shared enums
+backend/pkg/contract/   cross-module interfaces only
 ```
 
-### Phase 3: Backend Init (Go)
+Backend rules:
 
-```bash
-cd backend
-go mod init github.com/neo-kanta/ims-th-solution/backend
+- Do not import another module's `internal` package. Use `backend/pkg/contract` interfaces or adapters.
+- Keep business logic out of HTTP handlers. Handlers parse, call application code, and format responses.
+- Keep SQL in `infrastructure/persistence` or migration/seed files.
+- Keep transaction boundaries in application command handlers or repository helpers, not transport code.
+- Enforce permissions on the backend with middleware or application checks. Frontend route guards are UX only.
+- Use DTOs at transport boundaries; do not expose domain entities directly from handlers.
+- Keep timestamps UTC in backend storage and logic; format for `Asia/Bangkok` in the frontend.
+- Every `.up.sql` migration needs a matching `.down.sql`.
+
+## Frontend Placement Rules
+
+Nuxt uses `srcDir: "app/"`, so all app code is under `frontend/app`.
+
+```text
+frontend/app/
+  api/                 generated OpenAPI types and typed client helpers
+  assets/css/          global CSS
+  composables/         thin Nuxt composables such as useApi/useI18n
+  features/            feature-owned components, services, types, helpers
+  layouts/             default, auth, dashboard layouts
+  middleware/          auth and permission route middleware
+  pages/               file-based route shells
+  shared/i18n/         internal translations and formatting helpers
+  shared/routing/      route meta helpers
+  shared/ui/           shared UI primitives
+  stores/              cross-feature Pinia stores
+  types/               app-level shared types
 ```
 
-Install core dependencies:
+Frontend rules:
 
-```bash
-go get github.com/go-chi/chi/v5
-go get github.com/go-chi/cors
-go get github.com/jackc/pgx/v5
-go get github.com/golang-migrate/migrate/v4
-go get github.com/golang-jwt/jwt/v5
-go get github.com/go-playground/validator/v10
-go get github.com/google/uuid
-go get go.uber.org/zap                       # or use slog (stdlib)
-go get github.com/joho/godotenv
+- Do not create new `frontend/modules/*` code; that is outdated guidance.
+- Keep route files thin and move real UI or service logic into `app/features/<feature>`.
+- Put reusable primitives in `app/shared/ui` only when they are truly shared.
+- Use `useApi()` or `useOpenApiClient()` for backend calls so auth and base URLs stay centralized.
+- Put user-facing copy in `app/shared/i18n/messages/{en,th,zh}` and consume it through `useI18n().t(...)`.
+- Use `definePageMeta` plus `auth`/`permission` middleware for protected pages.
+
+## Database And Seeds
+
+Migrations live in `database/migrations` and use:
+
+```text
+<timestamp>_<module>__<description>.up.sql
+<timestamp>_<module>__<description>.down.sql
 ```
 
-Create backend module skeletons:
-
-```bash
-cd backend
-for mod in workflow investment leave_delegation approval permissions iam notification audit market_data reference_data compliance integration; do
-  mkdir -p internal/$mod/{domain/{entity,valueobject,event,policy},application/{command,query,dto},infrastructure/{persistence,adapter},transport/{handler,dto/{request,response},validator},jobs,permission}
-  cat > internal/$mod/module.go << 'GOEOF'
-package $(echo $mod | tr '/' '_')
-
-// Module wire-up — register routes and dependencies here.
-GOEOF
-  cat > internal/$mod/README.md << 'EOF'
-# Module: $mod
-
-TODO: describe this module's purpose and key domain rules.
-EOF
-done
-
-# Create platform packages
-for pkg in config database middleware httputil logging errors clock validation testutil; do
-  mkdir -p platform/$pkg
-done
-
-# Create shared kernel packages
-mkdir -p pkg/{types,enum,contract}
-```
-
-### Phase 4: Database Init
-
-```bash
-cd database
-# First migration: users table
-cat > migrations/20260301000001_iam__create_users.up.sql << 'SQL'
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-CREATE TABLE iam_users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(100) NOT NULL UNIQUE,
-    display_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    password_hash VARCHAR(255) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    is_on_leave BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID,
-    updated_by UUID
-);
-
-CREATE INDEX idx_iam_users_username ON iam_users(username);
-CREATE INDEX idx_iam_users_is_active ON iam_users(is_active);
-SQL
-
-cat > migrations/20260301000001_iam__create_users.down.sql << 'SQL'
-DROP TABLE IF EXISTS iam_users;
-SQL
-```
-
-### Phase 5: Infrastructure
-
-Create `infra/docker-compose.yml`:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    ports:
-      - "5437:5437"
-    command: -p 5437
-    environment:
-      POSTGRES_DB: ims_dev
-      POSTGRES_USER: ims_app
-      POSTGRES_PASSWORD: ims_dev_password
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  backend:
-    build:
-      context: ../backend
-      dockerfile: ../infra/docker/Dockerfile.backend
-    ports:
-      - "8080:8080"
-    env_file:
-      - ./env/.env.development
-    depends_on:
-      - postgres
-
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: ../infra/docker/Dockerfile.frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-
-volumes:
-  pgdata:
-```
-
-Create `infra/env/.env.development`:
-
-```env
-APP_ENV=development
-APP_PORT=8080
-APP_LOG_LEVEL=debug
-APP_JWT_SECRET=dev-secret-change-in-production
-
-DB_HOST=postgres
-DB_PORT=5437
-DB_NAME=ims_dev
-DB_USER=ims_app
-DB_PASSWORD=ims_dev_password
-DB_SSL_MODE=disable
-DB_MAX_CONNECTIONS=25
-
-NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
-NUXT_PUBLIC_APP_NAME=IMS Thailand
-```
-
----
-
-## Current Implementation Priority
-
-The PoC is being built in this order (from D01 Project Plan):
-
-| Priority | What                                                             | Target    |
-| -------- | ---------------------------------------------------------------- | --------- |
-| **P0**   | Frontend skeleton (Nuxt 3 + routing + layouts)                   | Month 1-2 |
-| **P0**   | Backend API gateway (chi router + middleware + health check)     | Month 1-2 |
-| **P0**   | Database schema design + initial migrations                      | Month 1-2 |
-| **P1**   | Permissions module (accounts, groups, function/data permissions) | Month 2-3 |
-| **P1**   | IAM module (login, session, JWT)                                 | Month 2-3 |
-| **P2**   | Workflow module (day-start through closing)                      | Month 3-4 |
-| **P2**   | ETL / Data integration PoC                                       | Month 2-3 |
-| **P3**   | Investment module (4-step flow)                                  | Month 4-6 |
-| **P3**   | Leave & delegation module                                        | Month 4-5 |
-| **P4**   | Approval workflow                                                | Month 5-6 |
-| **P4**   | IRG / compliance hooks                                           | Month 5-6 |
-| **P5**   | Notification, audit UI, dashboard polish                         | Month 6-7 |
-| **P6**   | E2E testing, UAT, production deployment                          | Month 7-8 |
-
-**When asked to "initialize the project", focus on P0:**
-
-1. Frontend with Nuxt 3, Tailwind, Pinia, layouts, empty pages for all domains
-2. Backend with chi router, health endpoint, CORS, structured logging, config loading
-3. Docker Compose with PostgreSQL
-4. First migrations (iam_users, permissions tables)
-
----
-
-## API Gateway / Backend Platform Layer
-
-The backend acts as a single API gateway. All requests go through middleware in this order:
-
-```
-Request → RequestID → Logger → CORS → Recovery → Auth → PermissionCheck → DataScope → Handler
-```
-
-**Key platform packages to build first:**
-
-```
-platform/config/config.go        → Load .env, expose AppConfig struct
-platform/database/connection.go  → pgx connection pool
-platform/database/tx.go          → Transaction helper (begin/commit/rollback)
-platform/database/health.go      → Ping check for health endpoint
-platform/middleware/request_id.go→ Inject X-Request-ID header
-platform/middleware/cors.go      → CORS configuration
-platform/middleware/recovery.go  → Panic recovery with logging
-platform/middleware/auth.go      → JWT validation, extract user context
-platform/middleware/permission.go→ Function permission enforcement
-platform/middleware/data_scope.go→ Data permission scoping (contract visibility)
-platform/middleware/audit.go     → Audit log side-effect
-platform/httputil/response.go   → Standard JSON response helpers
-platform/httputil/pagination.go → Parse ?page=&limit= params
-platform/httputil/error_response.go → Business-safe error formatting
-platform/logging/logger.go      → Structured logger (slog or zap)
-platform/errors/business.go     → BusinessError, ValidationError types
-platform/errors/codes.go        → Error code constants
-platform/clock/clock.go         → Clock interface for testability
-platform/clock/business_date.go → Thai business day calculator
-```
-
-**Minimal `cmd/server/main.go` pattern:**
-
-```go
-package main
-
-import (
-    "net/http"
-    "github.com/go-chi/chi/v5"
-    chimw "github.com/go-chi/chi/v5/middleware"
-    // import platform packages
-    // import module packages
-)
-
-func main() {
-    // 1. Load config
-    // 2. Connect database
-    // 3. Create logger
-    // 4. Wire modules
-    // 5. Build router
-
-    r := chi.NewRouter()
-    r.Use(chimw.RequestID)
-    r.Use(chimw.RealIP)
-    r.Use(customLogger)
-    r.Use(chimw.Recoverer)
-    r.Use(corsMiddleware)
-
-    // Health check (no auth required)
-    r.Get("/health", healthHandler)
-
-    // API v1 routes (auth required)
-    r.Route("/api/v1", func(r chi.Router) {
-        r.Use(authMiddleware)
-        r.Use(auditMiddleware)
-
-        // Mount each module's routes
-        // workflowModule.RegisterRoutes(r)
-        // investmentModule.RegisterRoutes(r)
-        // etc.
-    })
-
-    http.ListenAndServe(":"+cfg.Port, r)
-}
-```
-
----
-
-## Frontend Patterns
-
-### API Client Pattern
-
-Every module has an `api/xxxApi.ts` file. Use `$fetch` (Nuxt built-in, based on ofetch):
-
-```typescript
-// modules/workflow/api/workflowApi.ts
-const BASE = "/api/v1";
-
-export const workflowApi = {
-  getStatus(contractId: string) {
-    return $fetch(`${BASE}/workflow/${contractId}/status`);
-  },
-  startDay(contractId: string, date: string) {
-    return $fetch(`${BASE}/workflow/${contractId}/start-day`, {
-      method: "POST",
-      body: { date },
-    });
-  },
-};
-```
-
-### Pinia Store Pattern
-
-```typescript
-// modules/workflow/stores/useWorkflowStore.ts
-import { defineStore } from "pinia";
-import { workflowApi } from "../api/workflowApi";
-import type { WorkflowStatus } from "../types/workflow.types";
-
-export const useWorkflowStore = defineStore("workflow", () => {
-  const status = ref<WorkflowStatus | null>(null);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
-
-  async function fetchStatus(contractId: string) {
-    loading.value = true;
-    error.value = null;
-    try {
-      status.value = await workflowApi.getStatus(contractId);
-    } catch (e: any) {
-      error.value = e.data?.message || "Failed to fetch workflow status";
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  return { status, loading, error, fetchStatus };
-});
-```
-
-### Permission Guard Pattern
-
-```typescript
-// shared/composables/usePermissionGuard.ts
-export function usePermissionGuard() {
-  const authStore = useAuthStore();
-
-  function hasFunction(code: string): boolean {
-    return authStore.permissions.functions.includes(code);
-  }
-
-  function hasContract(contractId: string): boolean {
-    return authStore.permissions.contracts.includes(contractId);
-  }
-
-  return { hasFunction, hasContract };
-}
-```
-
-### Page Template
-
-```vue
-<!-- app/pages/workflow/index.vue -->
-<script setup lang="ts">
-definePageMeta({
-  layout: "dashboard",
-  middleware: ["auth", "permission"],
-  meta: { permission: "WORKFLOW_VIEW" },
-});
-
-const workflowStore = useWorkflowStore();
-const globalStore = useGlobalStore();
-
-onMounted(() => {
-  if (globalStore.activeContractId) {
-    workflowStore.fetchStatus(globalStore.activeContractId);
-  }
-});
-</script>
-
-<template>
-  <div>
-    <h1 class="text-2xl font-bold mb-6">Workflow Operations</h1>
-    <!-- Use module components here -->
-  </div>
-</template>
-```
-
----
-
-## Git Conventions
-
-```
-feat(workflow): add day-start operation handler
-fix(investment): correct sell quantity validation
-refactor(permissions): extract permission checker interface
-docs(adr): add decision record for workflow state machine
-test(approval): add approval routing policy unit tests
-chore(infra): update Docker base image
-```
-
-Branch naming: `feat/<module>/<short-description>`, `fix/<module>/<short-description>`
-
----
-
-## Common Mistakes to Avoid
-
-1. **Don't create files outside the module structure.** If you're unsure where a file goes, check the module table above.
-2. **Don't add npm packages without checking if Nuxt already provides it.** Nuxt auto-imports composables, `$fetch`, etc.
-3. **Don't write SQL in Go handler files.** SQL lives in `infrastructure/persistence/` only.
-4. **Don't hardcode contract IDs, user IDs, or permission codes.** Use constants and lookup from DB/config.
-5. **Don't forget the `.down.sql` migration.** Every up has a down. No exceptions.
-6. **Don't use `localStorage` in Nuxt.** Use Pinia stores with `useState` for SSR-safe state, or `useCookie` for persistence.
-7. **Don't put API base URL in component files.** Use `useRuntimeConfig().public.apiBaseUrl`.
-
----
-
-## When You're Unsure
-
-1. Check `AIREAD.md` for business context
-2. Check the original `.docx` spec documents for detailed field-level requirements
-3. Check `docs/adr/` for past architectural decisions
-4. If a requirement seems ambiguous, make the safest assumption and add a `// ASSUMPTION:` comment
-5. When in doubt, keep the domain module boundary strict — it's easier to relax later than to tighten
+Seed behavior:
+
+- `make seed` runs `backend/cmd/seed/main.go`.
+- The seeder upserts Go permission catalogs first.
+- SQL files under `database/seeds` then run in lexicographic order.
+- Investment reference seeds live under `database/seeds/investment`.
+- Keep seeds idempotent with `ON CONFLICT`.
+
+## API And Generated Types
+
+- Backend Swagger source is generated into `backend/docs`.
+- `make swagger` refreshes Swagger.
+- `make api-client` runs Swagger generation and then `frontend/scripts/generate-openapi-types.mjs`.
+- Generated frontend OpenAPI types are written to `frontend/app/api/ims-api.d.ts`.
+- Typed frontend access should go through `frontend/app/api/openapi.ts`.
+
+## Environment Notes
+
+- Compose env files live under `infra/env`.
+- Local backend runs from `backend` and can load `backend/.env` if present.
+- Do not commit real secrets.
+- `APP_JWT_SECRET`, `MFA_ENCRYPTION_KEY`, and `ALPHA_VANTAGE_API_KEY` are required outside development/test according to `backend/platform/config/config.go`.
+- Redis is optional only when `RATE_LIMIT_BACKEND=memory`; if set to `redis`, backend startup requires a reachable Redis instance.
+
+## Git And Review Hygiene
+
+- Keep changes scoped to the requested behavior.
+- Do not revert user changes or unrelated dirty files.
+- Prefer small, focused tests near the layer being changed.
+- For backend changes, run `go test ./...` from `backend` when feasible.
+- For frontend changes, run `npm run test` or `npm run build` from `frontend` when relevant.
+- For docs-only changes, no build is required, but call out any known compile blockers you discover.
+
+## Common Mistakes To Avoid
+
+- Using outdated Nuxt 3 or `frontend/modules` instructions.
+- Adding a module import from another module's `internal` package.
+- Adding SQL directly in handlers.
+- Trusting frontend permissions without backend enforcement.
+- Forgetting to update the permission catalog provider and SQL grants together.
+- Adding migration `up` files without matching `down` files.
+- Regenerating OpenAPI types without first refreshing Swagger when backend routes changed.
