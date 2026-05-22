@@ -53,6 +53,11 @@ export const enCommonMessages = {
     dashboard: "Dashboard",
     workflow: "Workflow",
     settings: "Settings",
+    personalSettings: "Personal settings",
+    investment: "Investment",
+    investmentResearch: "Investment research",
+    administration: "Administration",
+    administrationSettings: "Administration settings",
   },
   shell: {
     workspaceLabel: "Operations workspace",
@@ -63,6 +68,12 @@ export const enCommonMessages = {
     collapseNavigation: "Collapse navigation",
     resizeNavigation: "Resize navigation",
     primaryNavigation: "Primary navigation",
+  },
+  header: {
+    issue: "Issues",
+    pullRequest: "Pull Requests",
+    compliance: "Compliance",
+    audit: "Audit",
   },
   dashboard: {
     overview: "Overview",

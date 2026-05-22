@@ -1,35 +1,41 @@
 <script setup lang="ts">
 interface Props {
-  variant?: 'primary' | 'secondary' | 'danger' | 'warning' | 'success' | 'ghost'
-  size?: 'xs' | 'sm' | 'md' | 'lg'
-  loading?: boolean
-  disabled?: boolean
-  icon?: boolean
+  variant?:
+    | "primary"
+    | "secondary"
+    | "danger"
+    | "warning"
+    | "success"
+    | "ghost";
+  size?: "xs" | "sm" | "md" | "lg";
+  loading?: boolean;
+  disabled?: boolean;
+  icon?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  variant: 'secondary',
-  size: 'md',
+  variant: "secondary",
+  size: "md",
   loading: false,
   disabled: false,
   icon: false,
-})
+});
 
 const emit = defineEmits<{
-  click: [event: MouseEvent]
-}>()
+  click: [event: MouseEvent];
+}>();
 
 function handleClick(event: MouseEvent) {
-  if (props.loading || props.disabled) return
-  emit('click', event)
+  if (props.loading || props.disabled) return;
+  emit("click", event);
 }
 
-const iconSizeMap: Record<NonNullable<Props['size']>, string> = {
-  xs: 'btn-icon-xs',
-  sm: 'btn-icon-sm',
-  md: 'btn-icon',
-  lg: 'btn-icon',
-}
+const iconSizeMap: Record<NonNullable<Props["size"]>, string> = {
+  xs: "btn-icon-xs",
+  sm: "btn-icon-sm",
+  md: "btn-icon",
+  lg: "btn-icon",
+};
 </script>
 
 <template>
@@ -54,10 +60,9 @@ const iconSizeMap: Record<NonNullable<Props['size']>, string> = {
       stroke-width="2.5"
       stroke-linecap="round"
       stroke-linejoin="round"
-      style="animation: spin 0.75s linear infinite; flex-shrink: 0;"
+      class="btn-spinner"
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     </svg>
     <slot />
   </button>
@@ -85,5 +90,16 @@ const iconSizeMap: Record<NonNullable<Props['size']>, string> = {
 .btn-icon {
   width: 40px;
   height: 40px;
+}
+
+.btn-spinner {
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -4,9 +4,22 @@ export type MessageTree = {
   [key: string]: string | MessageTree;
 };
 
+/**
+ * Recursively widens literal string types to `string`, preserving the
+ * tree shape. Used by MessageCatalog so non-English locales — which by
+ * definition contain different literal values from the English reference
+ * tree — still satisfy the catalog constraint as long as their keys and
+ * tree shape match.
+ */
+type WidenStrings<T> = T extends string
+  ? string
+  : T extends MessageTree
+    ? { [K in keyof T]: WidenStrings<T[K]> }
+    : never;
+
 export type MessageCatalog<TMessages extends MessageTree = MessageTree> = Record<
   Locale,
-  TMessages
+  WidenStrings<TMessages>
 >;
 
 export type TranslationParams = Record<

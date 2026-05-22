@@ -38,7 +38,7 @@ migrate-new: ## Create new migration pair (usage: make migrate-new module=workfl
 	echo "Created: database/migrations/$${timestamp}_$(module)__$(name).{up,down}.sql"
 
 seed: ## Load seed data
-	cd backend && go run cmd/seed/main.go
+	cd backend && go run ./cmd/seed
 
 db-reset: ## Drop + recreate + migrate + seed
 	@echo "Resetting database..."

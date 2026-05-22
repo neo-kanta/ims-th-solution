@@ -53,6 +53,11 @@ export const thCommonMessages = {
     dashboard: "แดชบอร์ด",
     workflow: "เวิร์กโฟลว์",
     settings: "การตั้งค่า",
+    personalSettings: "การตั้งค่าส่วนบุคคล",
+    investment: "การลงทุน",
+    investmentResearch: "บทวิเคราะห์การลงทุน",
+    administration: "การดูแลระบบ",
+    administrationSettings: "การตั้งค่าการดูแลระบบ",
   },
   shell: {
     workspaceLabel: "พื้นที่ปฏิบัติงาน",
@@ -63,6 +68,12 @@ export const thCommonMessages = {
     collapseNavigation: "ย่อแถบนำทาง",
     resizeNavigation: "ปรับขนาดแถบนำทาง",
     primaryNavigation: "เมนูนำทางหลัก",
+  },
+  header: {
+    issue: "รายการปัญหา",
+    pullRequest: "คำขอดึงข้อมูล",
+    compliance: "การปฏิบัติตามข้อกำหนด",
+    audit: "การตรวจสอบ",
   },
   dashboard: {
     overview: "ภาพรวม",

@@ -53,6 +53,11 @@ export const zhCommonMessages = {
     dashboard: "仪表板",
     workflow: "工作流",
     settings: "设置",
+    personalSettings: "个人设置",
+    investment: "投资",
+    investmentResearch: "投资研究",
+    administration: "系统管理",
+    administrationSettings: "系统设置",
   },
   shell: {
     workspaceLabel: "运营工作区",
@@ -63,6 +68,12 @@ export const zhCommonMessages = {
     collapseNavigation: "收起导航",
     resizeNavigation: "调整导航宽度",
     primaryNavigation: "主导航",
+  },
+  header: {
+    issue: "议题",
+    pullRequest: "拉取请求",
+    compliance: "合规性",
+    audit: "审计",
   },
   dashboard: {
     overview: "概览",

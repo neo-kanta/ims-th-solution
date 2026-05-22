@@ -4,6 +4,14 @@ export const enSettingsMessages = {
     title: "Administrative control center",
     description:
       "Front-end workspace for IAM user operations and audit visibility backed by the existing admin APIs.",
+    individualBreadcrumb: "Settings",
+    individualTitle: "Settings",
+    individualDescription:
+      "Manage your personal profile, password, MFA recovery, active sessions, and assigned access.",
+    administrationBreadcrumb: "Administration",
+    administrationTitle: "Administrator settings",
+    administrationDescription:
+      "Administrator workspace for IAM operations, roles, permissions, policy controls, and audit evidence backed by the available admin APIs.",
     refreshUsers: "Refresh users",
     refreshAudit: "Refresh audit",
     metrics: {
@@ -19,6 +27,11 @@ export const enSettingsMessages = {
     console: {
       nav: {
         sectionsLabel: "Settings sections",
+        accountGroup: "Account",
+        individualGroup: "Individual",
+        administrationGroup: "Administration",
+        accessGroup: "Access",
+        systemGroup: "System",
         overview: "Overview",
         overviewDesc: "Control health and API map",
         personalAccount: "Personal Account",
@@ -96,13 +109,15 @@ export const enSettingsMessages = {
         liveApi: "Live API",
         signals: {
           userApi: "User API",
-          userApiAvailable: "Directory operations are enabled for this session.",
+          userApiAvailable:
+            "Directory operations are enabled for this session.",
           userApiRestricted: "Current account cannot view IAM users.",
           lockedUsers: "Locked users",
           lockedUsersReview: "Immediate access review recommended.",
           lockedUsersClear: "No locked accounts returned by the metric query.",
           auditRisk: "Audit risk",
-          auditRiskHelper: "Visible critical, high, and medium IAM audit events.",
+          auditRiskHelper:
+            "Visible critical, high, and medium IAM audit events.",
           auditRiskCurrentPage: "Risk events (current page)",
           auditRiskCurrentPageHelper:
             "Counts only the audit rows visible on this page. Use filters to scope the time window.",
@@ -157,7 +172,8 @@ export const enSettingsMessages = {
         currentPassword: "Current password",
         newPassword: "New password",
         confirmNewPassword: "Confirm new password",
-        passwordHelp: "Minimum 8 characters. Backend password policy still applies.",
+        passwordHelp:
+          "Minimum 8 characters. Backend password policy still applies.",
         showPasswords: "Show password fields",
         hidePasswords: "Hide password fields",
         changePassword: "Change password",
@@ -207,8 +223,7 @@ export const enSettingsMessages = {
         },
         mfaDisable: {
           title: "Disable multi-factor authentication",
-          body:
-            "Disabling MFA removes a critical layer of protection. Confirm by entering the current 6-digit code from your authenticator app.",
+          body: "Disabling MFA removes a critical layer of protection. Confirm by entering the current 6-digit code from your authenticator app.",
           totpLabel: "6-digit code",
           confirmCta: "Disable MFA",
           disabling: "Disabling…",
@@ -270,7 +285,8 @@ export const enSettingsMessages = {
         functionalResponsibility: "Functional responsibility",
         permissionFamilies: "Permission families",
         dataScopes: "Data scopes",
-        selectGroup: "Select a group to review responsibilities and access scope.",
+        selectGroup:
+          "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
         notClassified: "Unclassified",
         notConfigured: "Not configured — awaiting groups API",
@@ -278,7 +294,7 @@ export const enSettingsMessages = {
         membersCountHint:
           "Counts only directory entries on the current page. A backend groups endpoint is required for global membership totals.",
         directoryDerivedDescription:
-          "Derived from the IAM directory group \"{group}\". Attribute metadata is awaiting the groups API.",
+          'Derived from the IAM directory group "{group}". Attribute metadata is awaiting the groups API.',
       },
       functionPermissions: {
         title: "Function permissions",
@@ -423,8 +439,10 @@ export const enSettingsMessages = {
         refreshUserKpis: "Failed to refresh user KPIs.",
         exportAudit: "Failed to export audit events.",
         mfaEnroll: "Failed to start MFA enrollment.",
-        mfaVerify: "MFA verification failed. Re-enter the current 6-digit code.",
-        mfaDisable: "Failed to disable MFA. The code may be incorrect or expired.",
+        mfaVerify:
+          "MFA verification failed. Re-enter the current 6-digit code.",
+        mfaDisable:
+          "Failed to disable MFA. The code may be incorrect or expired.",
       },
       confirm: {
         statusTitle: "{action} {username}",

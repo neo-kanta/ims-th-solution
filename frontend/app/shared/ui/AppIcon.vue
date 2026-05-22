@@ -265,6 +265,24 @@ const titleId = computed(() => (
       <path d="M9.5 12.5h5" />
     </template>
 
+    <template v-else-if="name === 'pull-request'">
+      <circle cx="18" cy="18" r="3" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
+      <path d="M18 15V9a4 4 0 0 0-4-4H9" />
+      <path d="M6 9v6" />
+    </template>
+
+    <template v-else-if="name === 'issue'">
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </template>
+
+    <template v-else-if="name === 'compliance'">
+      <path d="M12 3.5 5.5 6v5.5c0 4.2 2.4 7.3 6.5 9 4.1-1.7 6.5-4.8 6.5-9V6Z" />
+      <path d="m9 11.5 2 2 4-4" />
+    </template>
+
     <template v-else-if="name === 'briefcase'">
       <rect x="3.5" y="7.5" width="17" height="11.5" rx="2" />
       <path d="M8.5 7.5v-1A2.5 2.5 0 0 1 11 4h2a2.5 2.5 0 0 1 2.5 2.5v1" />

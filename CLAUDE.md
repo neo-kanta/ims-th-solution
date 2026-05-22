@@ -84,21 +84,19 @@ Authenticated API groups:
 
 ## Module Status
 
-| Module | Status | Notes |
-| --- | --- | --- |
-| `iam` | Active | Auth, sessions, MFA, admin user operations, permission and data-scope checks. |
-| `audit` | Active | Audit recorder plus admin audit list/export routes. |
-| `workflow` | Active | Business-day state machine, transition history, scheduler, workflow state contract. |
-| `compliance` | Active | IRG rule registry, checks, breaches, overrides, rule instances, contract adapter. |
-| `investment` | Active | Funds, portfolios, instruments, ledger, price snapshots, valuations, AUM, holdings and cash reads. |
-| `market_data` | Active | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence. |
-| `approval` | Scaffold | Module and permission policy only. |
-| `integration` | Scaffold | Module boundary only. |
-| `notification` | Scaffold | Module and permission policy only. |
-| `permissions` | Scaffold | Tables and catalogs exist; active admin workflows are currently through IAM/settings. |
-| `reference_data` | Scaffold | Boundary only. |
-
-Current workspace caveat: `backend/internal/leave_delegation` is absent in the working tree. If backend build or seed code references it, remove or restore the stale import intentionally before trusting test results.
+| Module           | Status   | Notes                                                                                              |
+| ---------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `iam`            | Active   | Auth, sessions, MFA, admin user operations, permission and data-scope checks.                      |
+| `audit`          | Active   | Audit recorder plus admin audit list/export routes.                                                |
+| `workflow`       | Active   | Business-day state machine, transition history, scheduler, workflow state contract.                |
+| `compliance`     | Active   | IRG rule registry, checks, breaches, overrides, rule instances, contract adapter.                  |
+| `investment`     | Active   | Funds, portfolios, instruments, ledger, price snapshots, valuations, AUM, holdings and cash reads. |
+| `market_data`    | Active   | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence.             |
+| `approval`       | Scaffold | Module and permission policy only.                                                                 |
+| `integration`    | Scaffold | Module boundary only.                                                                              |
+| `notification`   | Scaffold | Module and permission policy only.                                                                 |
+| `permissions`    | Scaffold | Tables and catalogs exist; active admin workflows are currently through IAM/settings.              |
+| `reference_data` | Scaffold | Boundary only.                                                                                     |
 
 ## Backend Placement Rules
 

@@ -4,6 +4,14 @@ export const thSettingsMessages = {
     title: "ศูนย์ควบคุมผู้ดูแลระบบ",
     description:
       "พื้นที่ทำงานฝั่งหน้าบ้านสำหรับจัดการผู้ใช้ IAM และการมองเห็นข้อมูลตรวจสอบ โดยเชื่อมกับ admin API ที่มีอยู่",
+    individualBreadcrumb: "Settings",
+    individualTitle: "Settings",
+    individualDescription:
+      "Manage your personal profile, password, MFA recovery, active sessions, and assigned access.",
+    administrationBreadcrumb: "Administration",
+    administrationTitle: "Administrator settings",
+    administrationDescription:
+      "Administrator workspace for IAM operations, roles, permissions, policy controls, and audit evidence backed by the available admin APIs.",
     refreshUsers: "รีเฟรชผู้ใช้",
     refreshAudit: "รีเฟรชข้อมูลตรวจสอบ",
     metrics: {
@@ -19,6 +27,11 @@ export const thSettingsMessages = {
     console: {
       nav: {
         sectionsLabel: "Settings sections",
+        accountGroup: "Account",
+        individualGroup: "Individual",
+        administrationGroup: "Administration",
+        accessGroup: "Access",
+        systemGroup: "System",
         overview: "Overview",
         overviewDesc: "Control health and API map",
         personalAccount: "Personal Account",
@@ -80,26 +93,31 @@ export const thSettingsMessages = {
         pendingReview: "Pending review",
         pendingReviewHelper: "Locked users plus visible risk events",
         permissionCoverage: "Permission coverage",
-        permissionCoverageHelper: "{functionCount} functions / {dataScopeCount} data scopes",
+        permissionCoverageHelper:
+          "{functionCount} functions / {dataScopeCount} data scopes",
       },
       overview: {
         title: "Settings overview",
-        subtitle: "Operational snapshot for identity, permission, policy, notification, and audit controls.",
+        subtitle:
+          "Operational snapshot for identity, permission, policy, notification, and audit controls.",
         application: "Application",
         apiBase: "API base",
         timezone: "Timezone",
         apiMapTitle: "API integration map",
-        apiMapSubtitle: "Live controls are wired to existing endpoints; unavailable domains stay read-only.",
+        apiMapSubtitle:
+          "Live controls are wired to existing endpoints; unavailable domains stay read-only.",
         liveApi: "Live API",
         signals: {
           userApi: "User API",
-          userApiAvailable: "Directory operations are enabled for this session.",
+          userApiAvailable:
+            "Directory operations are enabled for this session.",
           userApiRestricted: "Current account cannot view IAM users.",
           lockedUsers: "Locked users",
           lockedUsersReview: "Immediate access review recommended.",
           lockedUsersClear: "No locked accounts returned by the metric query.",
           auditRisk: "Audit risk",
-          auditRiskHelper: "Visible critical, high, and medium IAM audit events.",
+          auditRiskHelper:
+            "Visible critical, high, and medium IAM audit events.",
           auditRiskCurrentPage: "เหตุการณ์ความเสี่ยง (หน้านี้)",
           auditRiskCurrentPageHelper:
             "นับเฉพาะรายการตรวจสอบที่แสดงในหน้านี้ ใช้ตัวกรองเพื่อกำหนดช่วงเวลา",
@@ -108,24 +126,30 @@ export const thSettingsMessages = {
         },
         capabilities: {
           personalAccount: "Personal account",
-          personalAccountCapability: "Read own profile, change own password, read MFA status, list and revoke own sessions",
+          personalAccountCapability:
+            "Read own profile, change own password, read MFA status, list and revoke own sessions",
           otherAccounts: "Other accounts",
-          otherAccountsCapability: "List, create, enable, disable, lock, unlock, reset passwords",
+          otherAccountsCapability:
+            "List, create, enable, disable, lock, unlock, reset passwords",
           userSessions: "User sessions",
-          userSessionsCapability: "List and revoke active sessions for selected users",
+          userSessionsCapability:
+            "List and revoke active sessions for selected users",
           audit: "Audit / Change logs",
           auditCapability: "Filter IAM audit events and export CSV evidence",
           groups: "Groups / Roles",
           groupsCapability: "Derived from current user directory payload",
           permissions: "Function and data permissions",
-          permissionsCapability: "Backend administration endpoints are not exposed in this frontend",
+          permissionsCapability:
+            "Backend administration endpoints are not exposed in this frontend",
           policy: "Security policy / Notifications",
-          policyCapability: "Displayed as typed configuration scaffolds until APIs exist",
+          policyCapability:
+            "Displayed as typed configuration scaffolds until APIs exist",
         },
       },
       personal: {
         title: "Personal account",
-        subtitle: "Your own profile, password, MFA state, active sessions, and assigned access.",
+        subtitle:
+          "Your own profile, password, MFA state, active sessions, and assigned access.",
         refresh: "Refresh account",
         currentUser: "Current user",
         usernameUnavailable: "Username unavailable",
@@ -143,24 +167,30 @@ export const thSettingsMessages = {
         enrolled: "Enrolled",
         recoveryCodes: "Recovery codes",
         changePasswordTitle: "Change personal password",
-        changePasswordSubtitle: "Uses the authenticated account endpoint and never changes another user's credential.",
+        changePasswordSubtitle:
+          "Uses the authenticated account endpoint and never changes another user's credential.",
         currentPassword: "Current password",
         newPassword: "New password",
         confirmNewPassword: "Confirm new password",
-        passwordHelp: "Minimum 8 characters. Backend password policy still applies.",
+        passwordHelp:
+          "Minimum 8 characters. Backend password policy still applies.",
         showPasswords: "Show password fields",
         hidePasswords: "Hide password fields",
         changePassword: "Change password",
         activeSessionsTitle: "My active sessions",
-        activeSessionsSubtitle: "Sessions returned from the personal account session API.",
+        activeSessionsSubtitle:
+          "Sessions returned from the personal account session API.",
         noSessions: "No active sessions were returned for your account.",
         lastActivity: "Last activity {date}",
         expires: "Expires {date}",
         revokeOwnSessionTitle: "Revoke your active session",
-        revokeOwnSessionDescription: "This ends the selected session from {ip}. If this is your current browser session, you may need to sign in again.",
+        revokeOwnSessionDescription:
+          "This ends the selected session from {ip}. If this is your current browser session, you may need to sign in again.",
         validationCurrentPassword: "Enter your current password.",
-        validationNewPassword: "Use at least 8 characters for the new password.",
-        validationPasswordMismatch: "New password and confirmation do not match.",
+        validationNewPassword:
+          "Use at least 8 characters for the new password.",
+        validationPasswordMismatch:
+          "New password and confirmation do not match.",
         mfaEnableCta: "เปิดใช้งาน MFA",
         mfaDisableCta: "ปิดการใช้งาน MFA",
         mfaEnroll: {
@@ -192,8 +222,7 @@ export const thSettingsMessages = {
         },
         mfaDisable: {
           title: "ปิดการใช้งาน MFA",
-          body:
-            "การปิด MFA จะลดความปลอดภัยอย่างมาก ยืนยันโดยป้อนรหัส 6 หลักจากแอปยืนยันตัวตน",
+          body: "การปิด MFA จะลดความปลอดภัยอย่างมาก ยืนยันโดยป้อนรหัส 6 หลักจากแอปยืนยันตัวตน",
           totpLabel: "รหัส 6 หลัก",
           confirmCta: "ปิดการใช้งาน MFA",
           disabling: "กำลังปิด…",
@@ -201,9 +230,11 @@ export const thSettingsMessages = {
       },
       otherAccounts: {
         title: "Other accounts",
-        subtitle: "Search, filter, and inspect admin-managed IAM accounts separate from your personal account.",
+        subtitle:
+          "Search, filter, and inspect admin-managed IAM accounts separate from your personal account.",
         createTitle: "Create other account",
-        createSubtitle: "Creates an admin-managed IAM account, not your personal profile.",
+        createSubtitle:
+          "Creates an admin-managed IAM account, not your personal profile.",
         searchUsers: "Search users",
         activity: "Activity",
         lockState: "Lock state",
@@ -216,7 +247,8 @@ export const thSettingsMessages = {
         disabledStatus: "Disabled",
         lockedStatus: "Locked",
         resignedNotExposed: "Resigned not exposed",
-        resignedUnavailable: "Resigned state is not present in the current IAM user payload.",
+        resignedUnavailable:
+          "Resigned state is not present in the current IAM user payload.",
         validationUsername: "Use at least 3 characters.",
         validationEmail: "Enter a valid email address.",
         validationPassword: "Use at least 8 characters.",
@@ -232,13 +264,15 @@ export const thSettingsMessages = {
         current: "Current",
         expires: "Expires {date}",
         noAccountSelected: "No account selected",
-        noAccountSelectedSubtitle: "Select a user to review status, sessions, and controlled actions.",
+        noAccountSelectedSubtitle:
+          "Select a user to review status, sessions, and controlled actions.",
         resetPasswordHint:
           "หลังจากรีเซ็ตแล้ว ผู้ใช้จะต้องตั้งรหัสผ่านใหม่ในการเข้าสู่ระบบครั้งถัดไป",
       },
       groupsRoles: {
         title: "Groups / roles",
-        subtitle: "Role inventory is derived from visible IAM users until dedicated group APIs are exposed.",
+        subtitle:
+          "Role inventory is derived from visible IAM users until dedicated group APIs are exposed.",
         directoryDerived: "Directory derived",
         partialDirectory: "Partial directory",
         noGroups: "No groups are visible in the current directory response.",
@@ -250,20 +284,26 @@ export const thSettingsMessages = {
         functionalResponsibility: "Functional responsibility",
         permissionFamilies: "Permission families",
         dataScopes: "Data scopes",
-        selectGroup: "Select a group to review responsibilities and access scope.",
+        selectGroup:
+          "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
         notClassified: "ยังไม่จำแนก",
         notConfigured: "ยังไม่ได้ตั้งค่า — รอ API กลุ่ม",
         membersOnPage: "สมาชิก (ที่แสดง)",
-        membersCountHint: "นับเฉพาะรายการที่แสดงในหน้านี้ จำนวนสมาชิกทั้งหมดต้องใช้ API กลุ่ม",
-        directoryDerivedDescription: "นำมาจากกลุ่ม IAM \"{group}\" คุณสมบัติเพิ่มเติมรอ API กลุ่ม",
+        membersCountHint:
+          "นับเฉพาะรายการที่แสดงในหน้านี้ จำนวนสมาชิกทั้งหมดต้องใช้ API กลุ่ม",
+        directoryDerivedDescription:
+          'นำมาจากกลุ่ม IAM "{group}" คุณสมบัติเพิ่มเติมรอ API กลุ่ม',
       },
       functionPermissions: {
         title: "Function permissions",
-        subtitle: "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
+        subtitle:
+          "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
         sessionGrants: "{count} session grants",
-        notice: "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
-        sampleNotice: "เมทริกซ์นี้เป็นเพียงตัวอย่างเท่านั้น ยังไม่มี API จริง รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริงในระบบ",
+        notice:
+          "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
+        sampleNotice:
+          "เมทริกซ์นี้เป็นเพียงตัวอย่างเท่านั้น ยังไม่มี API จริง รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริงในระบบ",
         menuFunction: "Menu / Function",
         owner: "Owner",
         source: "Source",
@@ -283,7 +323,8 @@ export const thSettingsMessages = {
       },
       dataPermissions: {
         title: "Data permissions",
-        subtitle: "Review access by user or by contract/fund. Live contract grants are limited to the current session payload.",
+        subtitle:
+          "Review access by user or by contract/fund. Live contract grants are limited to the current session payload.",
         viewModeLabel: "Data permission view mode",
         userToContracts: "User to contracts",
         contractToUsers: "Contract to users",
@@ -291,19 +332,24 @@ export const thSettingsMessages = {
         searchPlaceholder: "Search user, contract, fund, or scope",
         grantsCount: "{count} grants",
         noMatches: "No data permissions match the current search.",
-        sampleNotice: "เป็นข้อมูลตัวอย่างเท่านั้น ยังไม่เปิดใช้ API การจัดการสิทธิ์ข้อมูล รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริง",
+        sampleNotice:
+          "เป็นข้อมูลตัวอย่างเท่านั้น ยังไม่เปิดใช้ API การจัดการสิทธิ์ข้อมูล รายการที่แสดงไม่ได้สะท้อนสิทธิ์จริง",
       },
       securityPolicy: {
         title: "Security policy",
-        subtitle: "Password and access-control rules. Values are read-only until policy APIs are available.",
+        subtitle:
+          "Password and access-control rules. Values are read-only until policy APIs are available.",
         authMode: "Authentication mode",
-        authModeHelper: "Internal password policy remains editable only when the backend exposes policy management.",
+        authModeHelper:
+          "Internal password policy remains editable only when the backend exposes policy management.",
         externalAuthority: "External authority",
         internalAuthority: "Internal authority",
-        sampleNotice: "ค่าที่แสดงเป็นเพียงค่าตัวอย่าง ยังไม่มี API สำหรับการตั้งค่านโยบาย ค่าจริงถูกกำหนดที่ฝั่งเซิร์ฟเวอร์",
+        sampleNotice:
+          "ค่าที่แสดงเป็นเพียงค่าตัวอย่าง ยังไม่มี API สำหรับการตั้งค่านโยบาย ค่าจริงถูกกำหนดที่ฝั่งเซิร์ฟเวอร์",
         settings: {
           minimumLength: "Minimum length",
-          minimumLengthHelper: "Temporary and reset passwords must satisfy this floor.",
+          minimumLengthHelper:
+            "Temporary and reset passwords must satisfy this floor.",
           expiryDays: "Password expiry",
           expiryDaysHelper: "Rotation interval for internal password mode.",
           reuse: "Reuse restriction",
@@ -311,9 +357,11 @@ export const thSettingsMessages = {
           failedAttempts: "Max failed login attempts",
           failedAttemptsHelper: "Account locks after this threshold.",
           changeInterval: "Minimum change interval",
-          changeIntervalHelper: "Limits rapid password churn after a successful change.",
+          changeIntervalHelper:
+            "Limits rapid password churn after a successful change.",
           enforceRule: "Enforce password rule",
-          enforceRuleHelper: "Applies complexity and history validation to all internal accounts.",
+          enforceRuleHelper:
+            "Applies complexity and history validation to all internal accounts.",
           characters: "characters",
           days: "days",
           previousPasswords: "previous passwords",
@@ -322,9 +370,11 @@ export const thSettingsMessages = {
       },
       notifications: {
         title: "Notifications",
-        subtitle: "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
+        subtitle:
+          "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
         channelsLabel: "Notification channels",
-        sampleNotice: "กฎการแจ้งเตือนนี้เป็นเพียงตัวอย่าง ยังไม่มี API ปุ่มเปิด/ปิดเป็นเพียงการแสดงผล",
+        sampleNotice:
+          "กฎการแจ้งเตือนนี้เป็นเพียงตัวอย่าง ยังไม่มี API ปุ่มเปิด/ปิดเป็นเพียงการแสดงผล",
         events: {
           accountLock: "Account locked",
           passwordReset: "Password reset completed",
@@ -344,7 +394,8 @@ export const thSettingsMessages = {
       },
       audit: {
         action: "Action",
-        subtitle: "Immutable IAM security events with actor, target, and network context.",
+        subtitle:
+          "Immutable IAM security events with actor, target, and network context.",
         eventType: "Event type",
         actorId: "Actor ID",
         targetType: "Target type",
@@ -356,7 +407,8 @@ export const thSettingsMessages = {
         network: "Network",
         exportCsv: "Export CSV",
         exportTitle: "Export audit records",
-        exportDescription: "The export contains security event metadata for the current filters. Keep the CSV in an approved evidence location.",
+        exportDescription:
+          "The export contains security event metadata for the current filters. Keep the CSV in an approved evidence location.",
         severity: {
           critical: "วิกฤต",
           high: "สูง",
@@ -394,11 +446,16 @@ export const thSettingsMessages = {
         resetPasswordTitle: "Reset password for {username}",
         revokeSessionTitle: "Revoke active session",
         revokeSessionConfirmLabel: "Revoke session",
-        statusDisable: "This prevents future sign-ins for the selected account. Existing audit evidence remains available.",
-        statusLock: "This immediately blocks account access until an administrator unlocks it.",
-        statusDefault: "This updates account access state and records the administrative action in the audit trail.",
-        resetPassword: "The account will be forced to change this temporary password at next sign-in. Do not share it through unsecured channels.",
-        revokeSession: "This ends the session from {ip} and records the administrative revocation.",
+        statusDisable:
+          "This prevents future sign-ins for the selected account. Existing audit evidence remains available.",
+        statusLock:
+          "This immediately blocks account access until an administrator unlocks it.",
+        statusDefault:
+          "This updates account access state and records the administrative action in the audit trail.",
+        resetPassword:
+          "The account will be forced to change this temporary password at next sign-in. Do not share it through unsecured channels.",
+        revokeSession:
+          "This ends the session from {ip} and records the administrative revocation.",
       },
     },
     usersPanelTitle: "ผู้ใช้ผู้ดูแล",
