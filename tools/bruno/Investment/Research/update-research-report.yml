@@ -1,0 +1,47 @@
+info:
+  name: update-research-report
+  type: http
+  seq: 34
+
+http:
+  method: PUT
+  url: "{{investment-base-url}}/research-reports/:reportId"
+  params:
+    - name: reportId
+      value: "{{investment-research-report-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "report_date": "{{investment-business-date}}",
+        "effective_date": "{{investment-business-date}}",
+        "owner_user_id": "{{user_id}}",
+        "author_user_id": "{{user_id}}",
+        "applicable_contract_id": null,
+        "instrument_type": "{{investment-research-instrument-type}}",
+        "instrument_code": "{{investment-research-instrument-code}}",
+        "instrument_name": "{{investment-research-instrument-name}}",
+        "market": "{{investment-research-market}}",
+        "currency": "{{investment-instrument-currency}}",
+        "recommendation": "{{investment-research-recommendation}}",
+        "report_title": "{{investment-research-report-title}}",
+        "company_overview": "{{investment-research-company-overview}}",
+        "company_outlook": "{{investment-research-company-outlook}}",
+        "esg_comment": "{{investment-research-esg-comment}}",
+        "financial_status": "{{investment-research-financial-status}}",
+        "investment_analysis": "{{investment-research-investment-analysis}}",
+        "rejection_reason": "{{investment-research-rejection-reason}}",
+        "post_submission_note": "{{investment-research-post-submission-note}}",
+        "report_status": "{{investment-research-report-status}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

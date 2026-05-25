@@ -1,0 +1,7 @@
+info:
+  name: Research
+  type: folder
+
+request:
+  auth: inherit
+

@@ -196,6 +196,40 @@ variables:
     value: '{"THB":"1","USD":"36.50"}'
   - name: investment-total-units
     value: "1000"
+  - name: investment-research-report-id
+    value: ""
+  - name: investment-research-report-no
+    value: BRUNO-RPT-001
+  - name: investment-research-report-title
+    value: Bruno Sample Research Report
+  - name: investment-research-report-status
+    value: DRAFT
+  - name: investment-research-review-status
+    value: NOT_SUBMITTED
+  - name: investment-research-recommendation
+    value: BUY
+  - name: investment-research-instrument-type
+    value: EQUITY
+  - name: investment-research-instrument-code
+    value: BRUNO
+  - name: investment-research-instrument-name
+    value: Bruno Sample Instrument
+  - name: investment-research-market
+    value: SET
+  - name: investment-research-company-overview
+    value: Sample company overview from Bruno.
+  - name: investment-research-company-outlook
+    value: Stable outlook with monitored catalysts.
+  - name: investment-research-esg-comment
+    value: No material ESG concern identified in this sample.
+  - name: investment-research-financial-status
+    value: Healthy balance sheet and consistent cash generation.
+  - name: investment-research-investment-analysis
+    value: Bruno sample analysis contains enough detail to satisfy validation and exercise the research report API.
+  - name: investment-research-rejection-reason
+    value: ""
+  - name: investment-research-post-submission-note
+    value: Submitted from Bruno for workflow testing.
   - name: compliance-base-url
     value: http://localhost:8080/api/v1/compliance
   - name: compliance-portfolio-id
@@ -253,9 +287,9 @@ variables:
   - name: workflow-scheduler-base-url
     value: http://localhost:8080/api/v1/workflow/scheduler
   - name: workflow-scheduler-run-id
-    value: 22fd0082-1949-4f79-ad03-92e7b32e40e3
+    value: 128188a7-c35b-42c2-b7f9-dd4696f70769
   - name: workflow-scheduler-run-status
-    value: PARTIAL_SUCCESS
+    value: SKIPPED
   - name: workflow-contract-id
     value: c0000000-0000-0000-0000-000000000001
   - name: workflow-seed-day-open-contract-id

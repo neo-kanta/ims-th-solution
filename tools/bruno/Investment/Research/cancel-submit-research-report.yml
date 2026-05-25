@@ -1,0 +1,33 @@
+info:
+  name: cancel-submit-research-report
+  type: http
+  seq: 37
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/research-reports/:reportId/cancel-submit"
+  params:
+    - name: reportId
+      value: "{{investment-research-report-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-research-report-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
