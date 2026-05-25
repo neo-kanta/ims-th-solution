@@ -2180,6 +2180,190 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integration/dashboard/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal dashboard snapshot
+         * @description Returns the caller's full dashboard read model: tasks, workflow states, and aggregate counts.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["DashboardSnapshotDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration/tasks/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal task list
+         * @description Returns the caller's task feed, optionally filtered by module, priority, or status.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by module (investment|workflow|compliance) */
+                    module?: string;
+                    /** @description Filter by priority (HIGH|MEDIUM|LOW|INFO) */
+                    priority?: string;
+                    /** @description Filter by status (PENDING|IN_PROGRESS|COMPLETED) */
+                    status?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["TaskListDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration/tasks/my/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal task summary
+         * @description Returns aggregate task counts for the caller without the full task list.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["TaskSummaryDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/funds": {
         parameters: {
             query?: never;
@@ -4803,6 +4987,563 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/research-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Investment Research Reports
+         * @description Paginated list of research reports with optional filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description DRAFT | ACTIVE | EXPIRED | REJECTED */
+                    report_status?: string;
+                    /** @description NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED */
+                    review_status?: string;
+                    /** @description BUY | SELL | HOLD */
+                    recommendation?: string;
+                    /** @description Exact instrument code filter */
+                    instrument_code?: string;
+                    /** @description Owner user UUID */
+                    owner_user_id?: string;
+                    /** @description Inclusive lower bound YYYY-MM-DD */
+                    report_date_from?: string;
+                    /** @description Inclusive upper bound YYYY-MM-DD */
+                    report_date_to?: string;
+                    /** @description Substring search on report_no/instrument_code/report_title */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create Investment Research Report
+         * @description Create a new DRAFT research report.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Research report create payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Investment Research Report
+         * @description Retrieve one research report by ID.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update Investment Research Report
+         * @description Apply partial updates to a research report. Refused when the report has been deleted or its review is completed.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Research report update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Delete Investment Research Report
+         * @description Soft-delete a research report. Only allowed while review_status = NOT_SUBMITTED.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}/cancel-submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Submission Of Investment Research Report
+         * @description Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused once review has been completed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Investment Research Report
+         * @description Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval workflow is invoked.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/market-data/history": {
         parameters: {
             query?: never;
@@ -5666,6 +6407,27 @@ export interface components {
             tax_lot_method?: string;
             valuation_currency: string;
         };
+        CreateResearchReportRequest: {
+            applicable_contract_id?: string;
+            author_user_id: string;
+            company_outlook?: string;
+            company_overview?: string;
+            currency?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            instrument_code: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            investment_analysis: string;
+            market?: string;
+            owner_user_id: string;
+            /** @enum {string} */
+            recommendation: "BUY" | "SELL" | "HOLD";
+            report_date: string;
+            report_no: string;
+            report_title?: string;
+        };
         CreateRuleInstanceRequest: {
             /** @description "initial creation" if blank */
             change_reason?: string;
@@ -5689,6 +6451,12 @@ export interface components {
             email: string;
             password: string;
             username: string;
+        };
+        DashboardSnapshotDTO: {
+            lastRefreshed?: string;
+            summary?: components["schemas"]["TaskSummaryDTO"];
+            tasks?: components["schemas"]["TaskDTO"][];
+            workflowStates?: components["schemas"]["WorkflowStateDTO"][];
         };
         DeleteFundRequest: {
             expected_version: number;
@@ -6123,6 +6891,41 @@ export interface components {
             name?: string;
             updatedAt?: string;
         };
+        ResearchReportListResponse: {
+            items?: components["schemas"]["ResearchReportResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        ResearchReportResponse: {
+            applicable_contract_id?: string;
+            author_user_id?: string;
+            company_outlook?: string;
+            company_overview?: string;
+            created_at?: string;
+            created_by?: string;
+            currency?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            investment_analysis?: string;
+            market?: string;
+            owner_user_id?: string;
+            post_submission_note?: string;
+            recommendation?: string;
+            rejection_reason?: string;
+            report_date?: string;
+            report_no?: string;
+            report_status?: string;
+            report_title?: string;
+            review_status?: string;
+            updated_at?: string;
+            updated_by?: string;
+        };
         ReverseTransactionRequest: {
             business_date: string;
             force_post?: boolean;
@@ -6206,6 +7009,45 @@ export interface components {
             ip_address?: string;
             last_activity_at?: string;
             user_agent?: string;
+        };
+        SuccessResponse: {
+            data?: unknown;
+            message?: string;
+        };
+        TaskDTO: {
+            actionUrl?: string;
+            allowedActions?: string[];
+            businessDate?: string;
+            canAct?: boolean;
+            contractId?: string;
+            createdAt?: string;
+            description?: string;
+            module?: string;
+            priority?: string;
+            reason?: string;
+            severity?: string;
+            sourceRecordId?: string;
+            sourceType?: string;
+            status?: string;
+            subject?: string;
+            taskId?: string;
+            title?: string;
+            type?: string;
+            updatedAt?: string;
+        };
+        TaskListDTO: {
+            summary?: components["schemas"]["TaskSummaryDTO"];
+            tasks?: components["schemas"]["TaskDTO"][];
+        };
+        TaskSummaryDTO: {
+            byModule?: {
+                [key: string]: number;
+            };
+            byPriority?: {
+                [key: string]: number;
+            };
+            highPriority?: number;
+            total?: number;
         };
         TransactionListResponse: {
             items?: components["schemas"]["TransactionResponse"][];
@@ -6298,6 +7140,28 @@ export interface components {
             strategy_code?: string;
             style_id?: string;
         };
+        UpdateResearchReportRequest: {
+            applicable_contract_id?: string;
+            author_user_id?: string;
+            company_outlook?: string;
+            company_overview?: string;
+            currency?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            instrument_code?: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            investment_analysis?: string;
+            market?: string;
+            owner_user_id?: string;
+            post_submission_note?: string;
+            recommendation?: string;
+            rejection_reason?: string;
+            report_date?: string;
+            report_status?: string;
+            report_title?: string;
+        };
         UserResponse: {
             display_name?: string;
             email?: string;
@@ -6341,6 +7205,12 @@ export interface components {
             source?: string;
             unrealised_pnl?: string;
             valuation_ccy?: string;
+        };
+        WorkflowStateDTO: {
+            businessDate?: string;
+            contractId?: string;
+            currentState?: string;
+            updatedAt?: string;
         };
         WorkflowStateResponse: {
             accountingClosedAt?: string;

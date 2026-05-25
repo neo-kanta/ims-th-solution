@@ -194,8 +194,9 @@ Seed behavior:
 - Backend Swagger source is generated into `backend/docs`.
 - `make swagger` refreshes Swagger.
 - `make api-client` runs Swagger generation and then `frontend/scripts/generate-openapi-types.mjs`.
-- Generated frontend OpenAPI types are written to `frontend/app/api/ims-api.d.ts`.
+- Generated frontend OpenAPI types are written to `frontend/app/api/ims-api.d.ts` (Absolute path: `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`).
 - Typed frontend access should go through `frontend/app/api/openapi.ts`.
+- **CRITICAL**: **DO NOT write API types, requests/responses, or client fetch code manually by hand.** All endpoints must rely on the generated typed client from `ims-api.d.ts`.
 
 ## Environment Notes
 
@@ -223,3 +224,4 @@ Seed behavior:
 - Forgetting to update the permission catalog provider and SQL grants together.
 - Adding migration `up` files without matching `down` files.
 - Regenerating OpenAPI types without first refreshing Swagger when backend routes changed.
+- Writing custom frontend API fetch code, mock fetch utilities, or manual type definitions instead of using the generated types in `ims-api.d.ts`.

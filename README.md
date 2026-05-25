@@ -154,7 +154,9 @@ Nuxt is configured with `srcDir: "app/"`.
 - `frontend/app/shared/ui/` owns reusable UI primitives.
 - `frontend/app/shared/i18n/` owns the internal translation registry and messages for `en`, `th`, and `zh`.
 - `frontend/app/pages/` contains route shells and file-based routes.
-- `frontend/app/api/openapi.ts` provides the typed OpenAPI client backed by generated `frontend/app/api/ims-api.d.ts`.
+- `frontend/app/api/openapi.ts` provides the typed OpenAPI client backed by generated `frontend/app/api/ims-api.d.ts` (Absolute path: `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`).
+  > [!IMPORTANT]
+  > **DO NOT write API types or fetch calls manually by hand.** The schema must always be generated from Swagger. Developers must consume routes using the generated typed client from `ims-api.d.ts`.
 
 See [frontend/README.md](C:/Users/kanta/source/repos/ims-th-solution/frontend/README.md) for frontend-specific conventions.
 
@@ -172,7 +174,7 @@ See [database/migrations/README.md](C:/Users/kanta/source/repos/ims-th-solution/
 - Bruno API collections live under [tools/bruno](C:/Users/kanta/source/repos/ims-th-solution/tools/bruno).
 - The local MCP server lives under [tools/mcp/ims-mcp-server](C:/Users/kanta/source/repos/ims-th-solution/tools/mcp/ims-mcp-server).
 - `make swagger` regenerates backend Swagger docs.
-- `make api-client` regenerates frontend OpenAPI types from `backend/docs/swagger.json`.
+- `make api-client` regenerates frontend OpenAPI types from `backend/docs/swagger.json` to `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`. Never modify or write API client structures manually.
 
 ## License
 

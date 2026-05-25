@@ -121,19 +121,16 @@ internal/<module>/
 ### Frontend Module Internal Structure (EVERY module follows this)
 
 ```
-modules/<domain>/
-├── components/
-│   ├── forms/           # Input forms
-│   ├── tables/          # Data tables
-│   ├── dialogs/         # Modal dialogs
-│   ├── cards/           # Summary/detail cards
-│   └── widgets/         # Composite widgets
+frontend/app/features/<domain>/
+├── components/          # Domain-specific UI components
 ├── composables/         # Domain composables (useXxx.ts)
 ├── stores/              # Pinia stores (useXxxStore.ts)
-├── api/                 # API client functions (xxxApi.ts)
-├── types/               # TypeScript types (xxx.types.ts)
+├── types/               # Local TypeScript types (xxx.types.ts)
 └── index.ts             # Barrel exports
 ```
+
+> [!WARNING]
+> **API client types and routes MUST NOT be written by hand.** Feature components and stores must interact with the backend API exclusively through the typed client generated in `frontend/app/api/ims-api.d.ts` (Absolute path: `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`). Do not write API clients manually.
 
 ---
 
@@ -229,8 +226,9 @@ Enterprise-grade, server-side enforced:
 | Vue components         | `PascalCase.vue`                         | `AnalysisReportForm.vue`                  |
 | Pinia stores           | `use<Name>Store.ts`                      | `useInvestmentDecisionStore.ts`           |
 | Composables            | `use<Name>.ts`                           | `useWorkflow.ts`                          |
-| API client files       | `<domain>Api.ts`                         | `investmentApi.ts`                        |
 | TypeScript types       | `<domain>.types.ts`                      | `investment.types.ts`                     |
+
+Note: **NO manual API client files (like `<domain>Api.ts`) are allowed.** All API interfaces are automatically generated into `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`.
 
 ---
 
@@ -253,6 +251,7 @@ Enterprise-grade, server-side enforced:
 - Skip server-side permission checks
 - Use `any` / `interface{}` for cross-module data passing
 - Create circular module dependencies
+- **Write custom API fetch clients, request/response models, or route fetch utilities by hand.** All frontend API interactions must use the generated schema/types from `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts` (built via `make api-client`). Do not fucking dare write API code by hand.
 
 ---
 
