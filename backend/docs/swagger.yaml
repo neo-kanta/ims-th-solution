@@ -19,6 +19,25 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  AddProviderMappingRequest:
+    properties:
+      confidence_score:
+        type: string
+      is_primary:
+        type: boolean
+      priority:
+        type: integer
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_symbol:
+        type: string
+    type: object
   AdminResetPasswordRequest:
     properties:
       new_password:
@@ -217,6 +236,13 @@ definitions:
       verdict:
         type: string
     type: object
+  CandidatesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/UnmappedCandidateDTO'
+        type: array
+    type: object
   CashBalanceResponse:
     properties:
       balance:
@@ -227,6 +253,17 @@ definitions:
         type: string
       version:
         type: integer
+    type: object
+  CashProjectionResponse:
+    properties:
+      cash_impact:
+        type: string
+      currency:
+        type: string
+      current_balance:
+        type: string
+      projected_balance:
+        type: string
     type: object
   ChangePasswordRequest:
     properties:
@@ -309,6 +346,34 @@ definitions:
         description: raw verdict from rule
         type: string
     type: object
+  ComplianceBreachPreviewResponse:
+    properties:
+      breach_id:
+        type: string
+      message:
+        type: string
+      overridable:
+        type: boolean
+      rule_type_id:
+        type: string
+      severity:
+        type: string
+      verdict:
+        type: string
+    type: object
+  CompliancePreviewResponse:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/ComplianceBreachPreviewResponse'
+        type: array
+      check_group_id:
+        type: string
+      rules_evaluated:
+        type: integer
+      verdict:
+        type: string
+    type: object
   ComputeFundAUMRequest:
     properties:
       business_date:
@@ -375,6 +440,40 @@ definitions:
     - fund_category_id
     - inception_date
     - name
+    type: object
+  CreateImportBatchRequest:
+    properties:
+      chunk_size:
+        type: integer
+      history_limit:
+        type: integer
+      idempotency_key:
+        type: string
+      import_type:
+        type: string
+      include_history:
+        type: boolean
+      include_quote:
+        type: boolean
+      provider:
+        type: string
+      symbols:
+        items:
+          type: string
+        type: array
+    type: object
+  CreateImportBatchResponse:
+    properties:
+      batch_id:
+        type: string
+      reused:
+        type: boolean
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
     type: object
   CreateInstrumentRequest:
     properties:
@@ -455,6 +554,60 @@ definitions:
     - name
     - valuation_currency
     type: object
+  CreateResearchReportRequest:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      currency:
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      instrument_code:
+        maxLength: 40
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      investment_analysis:
+        minLength: 25
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      recommendation:
+        enum:
+        - BUY
+        - SELL
+        - HOLD
+        type: string
+      report_date:
+        type: string
+      report_no:
+        maxLength: 60
+        type: string
+      report_title:
+        type: string
+    required:
+    - author_user_id
+    - instrument_code
+    - investment_analysis
+    - owner_user_id
+    - recommendation
+    - report_date
+    - report_no
+    type: object
   CreateRuleInstanceRequest:
     properties:
       change_reason:
@@ -485,6 +638,35 @@ definitions:
       version:
         $ref: '#/definitions/RuleInstanceVersion'
     type: object
+  CreateSecurityRequest:
+    properties:
+      asset_type:
+        type: string
+      auto_build_ims_symbol:
+        type: boolean
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      ims_symbol:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      status:
+        type: string
+    type: object
   CreateUserRequest:
     properties:
       display_name:
@@ -502,6 +684,21 @@ definitions:
     - email
     - password
     - username
+    type: object
+  DashboardSnapshotDTO:
+    properties:
+      lastRefreshed:
+        type: string
+      summary:
+        $ref: '#/definitions/TaskSummaryDTO'
+      tasks:
+        items:
+          $ref: '#/definitions/TaskDTO'
+        type: array
+      workflowStates:
+        items:
+          $ref: '#/definitions/WorkflowStateDTO'
+        type: array
     type: object
   DeleteFundRequest:
     properties:
@@ -668,6 +865,92 @@ definitions:
       quantity:
         type: string
       version:
+        type: integer
+    type: object
+  ImportBatch:
+    properties:
+      accepted_records:
+        type: integer
+      batch_id:
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      error_message:
+        type: string
+      idempotency_key:
+        type: string
+      import_type:
+        type: string
+      provider:
+        type: string
+      rejected_records:
+        type: integer
+      started_at:
+        type: string
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
+      warning_records:
+        type: integer
+    type: object
+  ImportBatchStatusResponseDTO:
+    properties:
+      batch:
+        $ref: '#/definitions/ImportBatch'
+      chunks:
+        items:
+          $ref: '#/definitions/ImportChunkSummary'
+        type: array
+      errors:
+        items:
+          $ref: '#/definitions/ImportChunkItem'
+        type: array
+    type: object
+  ImportChunkItem:
+    properties:
+      chunk_id:
+        type: string
+      created_at:
+        type: string
+      error_code:
+        type: string
+      error_message:
+        type: string
+      item_id:
+        type: string
+      provider_symbol:
+        type: string
+      security_id:
+        type: string
+      status:
+        type: string
+      symbol:
+        type: string
+    type: object
+  ImportChunkSummary:
+    properties:
+      accepted_records:
+        type: integer
+      chunk_id:
+        type: string
+      chunk_index:
+        type: integer
+      error_message:
+        type: string
+      rejected_records:
+        type: integer
+      status:
+        type: string
+      total_records:
+        type: integer
+      warning_records:
         type: integer
     type: object
   ImportMarketDataRequest:
@@ -890,6 +1173,108 @@ definitions:
     required:
     - totp_code
     type: object
+  MapCandidateRequest:
+    properties:
+      security_id:
+        type: string
+    type: object
+  MappingsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ProviderMappingDTO'
+        type: array
+    type: object
+  MarketDataScreenRowDTO:
+    properties:
+      asset_type:
+        type: string
+      change_amount:
+        type: string
+      change_percent:
+        type: string
+      currency:
+        type: string
+      data_quality_status:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      freshness_status:
+        type: string
+      ims_symbol:
+        type: string
+      last_price:
+        type: string
+      last_update_at:
+        type: string
+      mapping_status:
+        type: string
+      name:
+        type: string
+      pinned:
+        type: boolean
+      provider_badges:
+        items:
+          $ref: '#/definitions/ProviderBadgeDTO'
+        type: array
+      security_id:
+        type: string
+      volume:
+        type: integer
+      watching:
+        type: boolean
+      yield_to_maturity:
+        type: string
+    type: object
+  MarketDataScreenSearchItemDTO:
+    properties:
+      action_hint:
+        type: string
+      asset_type:
+        type: string
+      change_amount:
+        type: string
+      change_percent:
+        type: string
+      currency:
+        type: string
+      data_quality_status:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      freshness_status:
+        type: string
+      has_active_mapping:
+        type: boolean
+      ims_symbol:
+        type: string
+      last_price:
+        type: string
+      last_update_at:
+        type: string
+      mapping_status:
+        type: string
+      name:
+        type: string
+      pinned:
+        type: boolean
+      provider_badges:
+        items:
+          $ref: '#/definitions/ProviderBadgeDTO'
+        type: array
+      security_id:
+        type: string
+      volume:
+        type: integer
+      watching:
+        type: boolean
+      yield_to_maturity:
+        type: string
+    type: object
   MeResponse:
     properties:
       permissions:
@@ -989,6 +1374,23 @@ definitions:
         type: string
       version:
         type: integer
+    type: object
+  PositionProjectionResponse:
+    properties:
+      current_average_cost:
+        type: string
+      current_cost_basis:
+        type: string
+      current_quantity:
+        type: string
+      instrument_id:
+        type: string
+      projected_average_cost:
+        type: string
+      projected_cost_basis:
+        type: string
+      projected_quantity:
+        type: string
     type: object
   PostPriceSnapshotRequest:
     properties:
@@ -1103,6 +1505,8 @@ definitions:
         type: string
       exchange:
         type: string
+      fees:
+        type: string
       order_id:
         type: string
       portfolio_id:
@@ -1201,6 +1605,13 @@ definitions:
       provider_ref:
         type: string
     type: object
+  ProviderBadgeDTO:
+    properties:
+      label:
+        type: string
+      provider_code:
+        type: string
+    type: object
   ProviderHealthResponse:
     properties:
       configured:
@@ -1218,6 +1629,31 @@ definitions:
       provider_name:
         type: string
       role:
+        type: string
+    type: object
+  ProviderMappingDTO:
+    properties:
+      confidence_score:
+        type: string
+      is_primary:
+        type: boolean
+      mapping_id:
+        type: string
+      mapping_status:
+        type: string
+      priority:
+        type: integer
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_symbol:
+        type: string
+      security_id:
         type: string
     type: object
   Quote:
@@ -1325,6 +1761,81 @@ definitions:
       name:
         type: string
       updatedAt:
+        type: string
+    type: object
+  RejectCandidateRequest:
+    properties:
+      reason:
+        type: string
+    type: object
+  ResearchReportListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ResearchReportResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ResearchReportResponse:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      currency:
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      investment_analysis:
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      post_submission_note:
+        type: string
+      recommendation:
+        type: string
+      rejection_reason:
+        type: string
+      report_date:
+        type: string
+      report_no:
+        type: string
+      report_status:
+        type: string
+      report_title:
+        type: string
+      review_status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
         type: string
     type: object
   ReverseTransactionRequest:
@@ -1438,6 +1949,31 @@ definitions:
       version:
         type: string
     type: object
+  RunImportBatchResponse:
+    properties:
+      accepted_records:
+        type: integer
+      batch_id:
+        type: string
+      chunks:
+        items:
+          $ref: '#/definitions/ImportChunkSummary'
+        type: array
+      errors:
+        items:
+          $ref: '#/definitions/ImportChunkItem'
+        type: array
+      rejected_records:
+        type: integer
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
+      warning_records:
+        type: integer
+    type: object
   RunValuationRequest:
     properties:
       business_date:
@@ -1450,6 +1986,27 @@ definitions:
         type: string
     required:
     - business_date
+    type: object
+  ScreenSearchResponseDTO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/MarketDataScreenSearchItemDTO'
+        type: array
+    type: object
+  ScreenWatchlistResponseDTO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/MarketDataScreenRowDTO'
+        type: array
+    type: object
+  SearchResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/SecurityDTO'
+        type: array
     type: object
   Sector:
     properties:
@@ -1470,6 +2027,39 @@ definitions:
       updatedAt:
         type: string
     type: object
+  SecurityDTO:
+    properties:
+      asset_type:
+        type: string
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      ims_symbol:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      provider_mappings:
+        items:
+          $ref: '#/definitions/ProviderMappingDTO'
+        type: array
+      security_id:
+        type: string
+      status:
+        type: string
+    type: object
   SessionResponse:
     properties:
       created_at:
@@ -1484,6 +2074,79 @@ definitions:
         type: string
       user_agent:
         type: string
+    type: object
+  SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  TaskDTO:
+    properties:
+      actionUrl:
+        type: string
+      allowedActions:
+        items:
+          type: string
+        type: array
+      businessDate:
+        type: string
+      canAct:
+        type: boolean
+      contractId:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      module:
+        type: string
+      priority:
+        type: string
+      reason:
+        type: string
+      severity:
+        type: string
+      sourceRecordId:
+        type: string
+      sourceType:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      taskId:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  TaskListDTO:
+    properties:
+      summary:
+        $ref: '#/definitions/TaskSummaryDTO'
+      tasks:
+        items:
+          $ref: '#/definitions/TaskDTO'
+        type: array
+    type: object
+  TaskSummaryDTO:
+    properties:
+      byModule:
+        additionalProperties:
+          type: integer
+        type: object
+      byPriority:
+        additionalProperties:
+          type: integer
+        type: object
+      highPriority:
+        type: integer
+      total:
+        type: integer
     type: object
   TransactionListResponse:
     properties:
@@ -1545,6 +2208,25 @@ definitions:
       transaction_type:
         type: string
     type: object
+  TransactionSimulationResponse:
+    properties:
+      cash:
+        $ref: '#/definitions/CashProjectionResponse'
+      compliance:
+        $ref: '#/definitions/CompliancePreviewResponse'
+      gross_amount:
+        type: string
+      instrument_id:
+        type: string
+      net_amount:
+        type: string
+      portfolio_id:
+        type: string
+      position:
+        $ref: '#/definitions/PositionProjectionResponse'
+      transaction_type:
+        type: string
+    type: object
   TransitionEntry:
     properties:
       action:
@@ -1591,6 +2273,39 @@ definitions:
       transitionId:
         type: string
       workflowDayId:
+        type: string
+    type: object
+  UnmappedCandidateDTO:
+    properties:
+      batch_id:
+        type: string
+      candidate_id:
+        type: string
+      candidate_status:
+        type: string
+      confidence_score:
+        type: string
+      created_at:
+        type: string
+      isin:
+        type: string
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_name:
+        type: string
+      provider_symbol:
+        type: string
+      rejected_reason:
+        type: string
+      resolved_at:
+        type: string
+      suggested_security_id:
         type: string
     type: object
   UpdateFundRequest:
@@ -1662,6 +2377,74 @@ definitions:
         type: string
     required:
     - expected_version
+    type: object
+  UpdateResearchReportRequest:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      currency:
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      instrument_code:
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      investment_analysis:
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      post_submission_note:
+        type: string
+      recommendation:
+        type: string
+      rejection_reason:
+        type: string
+      report_date:
+        type: string
+      report_status:
+        type: string
+      report_title:
+        type: string
+    type: object
+  UpdateSecurityRequest:
+    properties:
+      asset_type:
+        type: string
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      status:
+        type: string
     type: object
   UserResponse:
     properties:
@@ -1751,6 +2534,17 @@ definitions:
       unrealised_pnl:
         type: string
       valuation_ccy:
+        type: string
+    type: object
+  WorkflowStateDTO:
+    properties:
+      businessDate:
+        type: string
+      contractId:
+        type: string
+      currentState:
+        type: string
+      updatedAt:
         type: string
     type: object
   WorkflowStateResponse:
@@ -2960,6 +3754,106 @@ paths:
       summary: Health Check
       tags:
       - System
+  /integration/dashboard/me:
+    get:
+      description: 'Returns the caller''s full dashboard read model: tasks, workflow
+        states, and aggregate counts.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/DashboardSnapshotDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal dashboard snapshot
+      tags:
+      - Integration
+  /integration/tasks/my:
+    get:
+      description: Returns the caller's task feed, optionally filtered by module,
+        priority, or status.
+      parameters:
+      - description: Filter by module (investment|workflow|compliance)
+        in: query
+        name: module
+        type: string
+      - description: Filter by priority (HIGH|MEDIUM|LOW|INFO)
+        in: query
+        name: priority
+        type: string
+      - description: Filter by status (PENDING|IN_PROGRESS|COMPLETED)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/TaskListDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal task list
+      tags:
+      - Integration
+  /integration/tasks/my/summary:
+    get:
+      description: Returns aggregate task counts for the caller without the full task
+        list.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/TaskSummaryDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal task summary
+      tags:
+      - Integration
   /investment/funds:
     get:
       description: List funds visible to the authenticated user.
@@ -3992,6 +4886,64 @@ paths:
       summary: Reverse Portfolio Transaction
       tags:
       - Investment - Ledger
+  /investment/portfolios/{id}/transactions/simulate:
+    post:
+      consumes:
+      - application/json
+      description: Run the post preconditions and pre-trade compliance checks, then
+        preview ledger cash and position impact without mutating investment tables.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction simulation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PostTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TransactionSimulationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Simulate Portfolio Transaction
+      tags:
+      - Investment - Ledger
   /investment/portfolios/{id}/valuations:
     get:
       description: List valuation snapshots for a portfolio with optional date filters.
@@ -4351,6 +5303,324 @@ paths:
       summary: List Sectors
       tags:
       - Investment - Reference
+  /investment/research-reports:
+    get:
+      description: Paginated list of research reports with optional filters.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: DRAFT | ACTIVE | EXPIRED | REJECTED
+        in: query
+        name: report_status
+        type: string
+      - description: NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED
+        in: query
+        name: review_status
+        type: string
+      - description: BUY | SELL | HOLD
+        in: query
+        name: recommendation
+        type: string
+      - description: Exact instrument code filter
+        in: query
+        name: instrument_code
+        type: string
+      - description: Owner user UUID
+        in: query
+        name: owner_user_id
+        type: string
+      - description: Inclusive lower bound YYYY-MM-DD
+        in: query
+        name: report_date_from
+        type: string
+      - description: Inclusive upper bound YYYY-MM-DD
+        in: query
+        name: report_date_to
+        type: string
+      - description: Substring search on report_no/instrument_code/report_title
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Research Reports
+      tags:
+      - Investment - Research
+    post:
+      consumes:
+      - application/json
+      description: Create a new DRAFT research report.
+      parameters:
+      - description: Research report create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}:
+    delete:
+      description: Soft-delete a research report. Only allowed while review_status
+        = NOT_SUBMITTED.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Investment Research Report
+      tags:
+      - Investment - Research
+    get:
+      description: Retrieve one research report by ID.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Research Report
+      tags:
+      - Investment - Research
+    put:
+      consumes:
+      - application/json
+      description: Apply partial updates to a research report. Refused when the report
+        has been deleted or its review is completed.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Research report update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}/cancel-submit:
+    post:
+      description: Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused
+        once review has been completed.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Submission Of Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}/submit:
+    post:
+      description: Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval
+        workflow is invoked.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit Investment Research Report
+      tags:
+      - Investment - Research
   /market-data/history:
     get:
       description: Get daily price bars for a symbol from the configured provider
@@ -4439,6 +5709,135 @@ paths:
       summary: Import Market Data
       tags:
       - MarketData
+  /market-data/import-batches:
+    post:
+      consumes:
+      - application/json
+      description: Create a chunked market data import batch for the given symbols.
+      parameters:
+      - description: Import batch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateImportBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateImportBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Market Data Import Batch
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}:
+    get:
+      description: Returns batch status with chunk summary and error rows.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImportBatchStatusResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Market Data Import Batch
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}/errors:
+    get:
+      description: Returns rejected/failed/warning items for the batch.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ImportChunkItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Market Data Import Batch Errors
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}/run:
+    post:
+      description: Runs all chunks for the batch synchronously.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RunImportBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Market Data Import Batch
+      tags:
+      - MarketData
   /market-data/provider-health:
     get:
       description: Get configured market data provider health and recent status information.
@@ -4510,6 +5909,384 @@ paths:
       summary: Get Market Quote
       tags:
       - MarketData
+  /market-data/screen/search:
+    get:
+      description: Search canonical securities with latest snapshot data and add-to-watchlist
+        hint.
+      parameters:
+      - description: Free-text query
+        in: query
+        name: query
+        type: string
+      - description: Maximum rows (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ScreenSearchResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Market Data screen — search
+      tags:
+      - MarketData
+  /market-data/screen/watchlist:
+    get:
+      description: Canonical securities joined with their latest snapshot data. Frontend-safe
+        DTO.
+      parameters:
+      - description: Maximum rows (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ScreenWatchlistResponseDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Market Data screen — watchlist
+      tags:
+      - MarketData
+  /reference-data/securities:
+    post:
+      consumes:
+      - application/json
+      description: Register a new canonical IMS security.
+      parameters:
+      - description: Security payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateSecurityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create canonical security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}:
+    get:
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get canonical security
+      tags:
+      - ReferenceData
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateSecurityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Patch canonical security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}/mappings:
+    get:
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MappingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List provider mappings for a security
+      tags:
+      - ReferenceData
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Provider mapping payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/AddProviderMappingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ProviderMappingDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add provider mapping to a security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}/mappings/{mapping_id}:
+    delete:
+      description: Marks the mapping as INACTIVE rather than removing it physically.
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Mapping id
+        in: path
+        name: mapping_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Soft-delete a provider mapping
+      tags:
+      - ReferenceData
+  /reference-data/securities/search:
+    get:
+      description: Search canonical securities by query, asset type, provider, and
+        status.
+      parameters:
+      - description: Free-text query against ims_symbol/display_symbol/name/isin
+        in: query
+        name: query
+        type: string
+      - description: Filter by AssetType (EQUITY, BOND, FX, ...)
+        in: query
+        name: asset_type
+        type: string
+      - description: Only securities with an ACTIVE mapping for this provider_code
+        in: query
+        name: provider
+        type: string
+      - description: Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED)
+        in: query
+        name: status
+        type: string
+      - description: Result limit (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search canonical securities
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates:
+    get:
+      parameters:
+      - description: Filter by candidate_status
+        in: query
+        name: status
+        type: string
+      - description: Filter by provider_code
+        in: query
+        name: provider
+        type: string
+      - description: Filter by import batch id
+        in: query
+        name: batch_id
+        type: string
+      - description: Result limit (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/CandidatesResponse'
+      security:
+      - BearerAuth: []
+      summary: List unmapped provider symbol candidates
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates/{candidate_id}/map:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate id
+        in: path
+        name: candidate_id
+        required: true
+        type: string
+      - description: Security id to map to
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/MapCandidateRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Map a candidate to an existing security
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates/{candidate_id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate id
+        in: path
+        name: candidate_id
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RejectCandidateRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject an unmapped candidate
+      tags:
+      - ReferenceData
   /workflow/day-states/{contractId}:
     get:
       description: Get the current workflow state for a contract and business date.

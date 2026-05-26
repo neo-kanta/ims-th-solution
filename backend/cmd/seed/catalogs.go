@@ -4,11 +4,12 @@ import (
 	approvalperm "github.com/neo-kanta/ims-th-solution/backend/internal/approval/permission"
 	auditperm "github.com/neo-kanta/ims-th-solution/backend/internal/audit/permission"
 	iamperm "github.com/neo-kanta/ims-th-solution/backend/internal/iam/permission"
+	integrationperm "github.com/neo-kanta/ims-th-solution/backend/internal/integration/permission"
 	investmentperm "github.com/neo-kanta/ims-th-solution/backend/internal/investment/permission"
-	leaveperm "github.com/neo-kanta/ims-th-solution/backend/internal/leave_delegation/permission"
 	marketdataperm "github.com/neo-kanta/ims-th-solution/backend/internal/market_data/permission"
 	notificationperm "github.com/neo-kanta/ims-th-solution/backend/internal/notification/permission"
 	permissionsperm "github.com/neo-kanta/ims-th-solution/backend/internal/permissions/permission"
+	referencedataperm "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/permission"
 	workflowperm "github.com/neo-kanta/ims-th-solution/backend/internal/workflow/permission"
 
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
@@ -25,9 +26,10 @@ func defaultPermissionCatalogs() []contract.PermissionCatalog {
 		auditperm.Provider{},
 		workflowperm.Provider{},
 		investmentperm.Provider{},
+		integrationperm.Provider{},
 		marketdataperm.Provider{},
+		referencedataperm.Provider{},
 		approvalperm.Provider{},
-		leaveperm.Provider{},
 		notificationperm.Provider{},
 	}
 }

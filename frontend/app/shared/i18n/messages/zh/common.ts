@@ -56,6 +56,7 @@ export const zhCommonMessages = {
     personalSettings: "个人设置",
     investment: "投资",
     investmentResearch: "投资研究",
+    marketData: "市场数据",
     administration: "系统管理",
     administrationSettings: "系统设置",
   },

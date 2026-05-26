@@ -29,12 +29,14 @@ type Config struct {
 }
 
 type Service struct {
-	providers map[string]domain.MarketDataProvider
-	repo      domain.SnapshotRepository
-	logger    domain.ProviderRequestLogger
-	cache     domain.QuoteCache
-	cfg       Config
-	now       func() time.Time
+	providers        map[string]domain.MarketDataProvider
+	repo             domain.SnapshotRepository
+	logger           domain.ProviderRequestLogger
+	cache            domain.QuoteCache
+	batchRepo        domain.ImportBatchRepository
+	securityResolver SecurityResolver
+	cfg              Config
+	now              func() time.Time
 }
 
 type ImportMarketDataRequest struct {
@@ -97,6 +99,28 @@ func NewService(
 		cfg:       cfg,
 		now:       func() time.Time { return time.Now().UTC() },
 	}
+}
+
+// SetImportBatchRepository wires the import batch repository used by
+// CreateImportBatch / RunImportBatch / GetImportBatch endpoints. It is
+// kept separate from NewService to avoid breaking the existing test
+// constructors that don't need the batch table.
+func (s *Service) SetImportBatchRepository(repo domain.ImportBatchRepository) {
+	if s == nil {
+		return
+	}
+	s.batchRepo = repo
+}
+
+// SetSecurityResolver wires the reference_data resolver used by batch import
+// to translate input symbols into canonical IMS securities and provider
+// symbols. nil-safe; when unset, market_data falls back to the legacy
+// market_symbols path.
+func (s *Service) SetSecurityResolver(resolver SecurityResolver) {
+	if s == nil {
+		return
+	}
+	s.securityResolver = resolver
 }
 
 func (s *Service) GetQuote(ctx context.Context, symbol string) (*domain.Quote, error) {

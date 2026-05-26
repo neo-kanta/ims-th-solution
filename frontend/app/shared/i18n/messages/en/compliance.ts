@@ -19,7 +19,7 @@ export const enComplianceMessages = {
       retry: "Retry",
       backendError: "The backend returned an error.",
       none: "—",
-      viewMissingApi: "View Missing API checklist",
+      notYetAvailable: "Not yet supported by the backend.",
     },
 
     // Dashboard
@@ -27,17 +27,83 @@ export const enComplianceMessages = {
       title: "Compliance",
       description:
         "Investment restriction and guideline overview. The pre-trade simulator stops bad orders before they become trade, settlement, or audit problems.",
+      restrictedHint: "Restricted",
+      headerActions: {
+        recentChanges: "Recent changes",
+        openBreaches: "Open breaches",
+        newRule: "New rule",
+      },
+      tabs: {
+        overview: "Overview",
+        library: "Library",
+        approvals: "Approvals",
+        breaches: "Breaches",
+        exceptions: "Exceptions",
+        audit: "Audit",
+        settings: "Settings",
+      },
       kpi: {
-        totalRules: "Total rules",
         activeRules: "Active rules",
+        activeRulesSub: "published, in effect",
+        draft: "Draft",
+        draftSub: "not yet submitted",
+        draftHint:
+          "Backend has no Draft state today; this counts inactive rules with a future effective_from.",
+        pendingReview: "Pending review",
+        pendingReviewSub: "awaiting approval",
+        pendingReviewHint:
+          "Approval flow is not yet supported by the backend.",
+        disabled: "Disabled",
+        disabledSub: "recently retired",
+        expired: "Expired",
+        expiredSub: "effective_to lapsed",
+        highRisk: "High-risk rules",
+        highRiskSub: "severity = BLOCK",
+        // Legacy keys still consumed by some demos
+        totalRules: "Total rules",
         inactiveRules: "Inactive / scheduled",
         recentBreaches: "Recent breaches",
+        trendUnavailable:
+          "Week-over-week trend not available — no historical KPI snapshot endpoint yet.",
+      },
+      recentChanges: {
+        title: "Recent rule changes",
+        viewAll: "View all →",
+        empty: "No rule change history available yet.",
       },
       recentFailures: {
         title: "Recent compliance failures",
         description: "Latest open or recently-resolved breach records.",
         empty: "No compliance failures recorded yet.",
+        inboxLink: "Open breaches inbox →",
+        reviewCta: "Review",
+        preTrade: "pre-trade",
+        postTrade: "post-trade",
       },
+      search: {
+        placeholder: "Search rules: name, code, parameter…",
+        filterFund: "Fund",
+        filterAssetClass: "Asset class",
+        filterRuleType: "Rule type",
+        filterStatus: "Status",
+        filterSeverity: "Severity",
+        filterEffective: "Effective ▼",
+        filterOwner: "Owner",
+        filterApproval: "Approval ▼",
+        backendNote:
+          "Backend supports filter by rule_type_id + is_active only. Other facets need extensions to GET /compliance/rules.",
+      },
+      categories: {
+        title: "Categories",
+        empty: "No categorised rules to summarise yet.",
+      },
+      highRiskRules: {
+        title: "High-risk rules",
+        seeAll: "See all →",
+        empty: "No rules with default severity BLOCK.",
+      },
+      truncatedNotice:
+        "Showing the first {shown} of {total} rules — derived counts are computed on this window only.",
       goToSimulator: "Run pre-trade simulator",
       goToRules: "Open rule library",
     },
@@ -166,31 +232,16 @@ export const enComplianceMessages = {
         recheck: "Recheck",
         requestException: "Request exception",
         requestExceptionDisabled:
-          "Exception API not yet implemented (Missing API #10). The disabled state is intentional.",
+          "Exception request flow is not yet supported by the backend.",
         viewRule: "View rule",
       },
-    },
-
-    // Missing API checklist
-    missing: {
-      title: "Missing API checklist",
-      description:
-        "The frontend surfaces every feature that depends on a backend endpoint that does not exist yet. Disabled CTAs in the UI reference the row number here.",
-      thNumber: "#",
-      thName: "Name",
-      thEndpoint: "Endpoint",
-      thPurpose: "Purpose",
-      thPermission: "Permission",
-      thPriority: "Priority",
-      thBlocks: "Blocks",
-      thPhase: "Phase",
     },
 
     // Phase 2 — Post-trade breach inbox
     postTrade: {
       title: "Post-trade breach inbox",
       description:
-        "Compliance breaches recorded after trade capture or during periodic replay. Override (with reason) is real; full status transitions need backend API #8.",
+        "Compliance breaches recorded after trade capture or during periodic replay. Override (with reason) is supported; full status transitions are not yet available.",
       empty: "No breaches recorded.",
       filters: {
         title: "Filters",
@@ -225,7 +276,7 @@ export const enComplianceMessages = {
         override: "Override…",
         viewGroup: "View check group",
         statusTransitionDisabled:
-          "Status transitions require Missing API #8 (PATCH /compliance/breaches/{id}).",
+          "Status transitions are not yet supported by the backend.",
       },
       override: {
         title: "Override breach",
@@ -268,9 +319,9 @@ export const enComplianceMessages = {
       },
       header: {
         editUnavailable:
-          "Edit ships when Missing API #3 (PATCH /compliance/rules/{id}) lands.",
+          "Edit is not yet supported by the backend.",
         disableUnavailable:
-          "Disable ships when Missing API #4 (POST /compliance/rules/{id}/disable) lands.",
+          "Disable is not yet supported by the backend.",
       },
       rail: {
         status: "Status",
@@ -294,10 +345,10 @@ export const enComplianceMessages = {
       logic: {
         title: "Logic",
         description:
-          "Active parameter version. The Phase 2 builder ships create-only; editing the active version needs Missing API #3.",
+          "Active parameter version. The builder is create-only; editing the active version is not yet supported.",
         parametersTitle: "Active parameters",
         parametersUnavailable:
-          "Active-version payload is not exposed by the list endpoint (Missing API #1 + #2).",
+          "Active-version payload is not exposed by the list endpoint.",
       },
       scope: {
         title: "Scope",
@@ -315,17 +366,17 @@ export const enComplianceMessages = {
       approval: {
         title: "Approval",
         unavailable:
-          "Approval flow needs Missing API #5 (submit) and #6 (approve / reject).",
+          "Approval flow is not yet supported by the backend.",
       },
       audit: {
         title: "Audit trail",
         unavailable:
-          "Rule version history needs Missing API #2 (GET /compliance/rules/{id}/versions) and #12 (compliance audit log).",
+          "Rule version history and a compliance audit feed are not yet supported.",
       },
       settings: {
         title: "Settings",
         unavailable:
-          "Editing rule metadata, effective_to, or disabling needs Missing API #3 / #4.",
+          "Editing rule metadata, effective_to, or disabling is not yet supported.",
       },
     },
 
@@ -333,7 +384,7 @@ export const enComplianceMessages = {
     builder: {
       title: "New compliance rule",
       description:
-        "POST /compliance/rules creates and (optionally) activates a rule. Submit-for-approval, approve/reject, and disable are NOT yet wired — see Missing API #3–#6.",
+        "POST /compliance/rules creates and (optionally) activates a rule. Submit-for-approval, approve/reject, and disable are not yet supported by the backend.",
       lifecycleNotice:
         "This wizard creates a rule and activates it in one step. Full Draft → Pending → Approved lifecycle ships when the supporting endpoints exist.",
       steps: {
@@ -352,14 +403,14 @@ export const enComplianceMessages = {
         ruleTypeIdHelp:
           "Stable backend SPI identifier. Pick from the catalog or type it directly.",
         catalogUnavailable:
-          "Rule-type catalog endpoint missing (Missing API #7). Picker uses a static mirror of the seven self-registered backend rule packages.",
+          "No rule-type catalog endpoint yet — the picker uses a static mirror of the self-registered backend rule packages.",
       },
       scope: {
         effectiveFrom: "Effective from",
         effectiveTo: "Effective to (optional)",
         isActive: "Activate immediately",
         isActiveHelp:
-          "Uncheck to create the instance in an inactive state. Reactivation will need PATCH (Missing API #3).",
+          "Uncheck to create the instance in an inactive state. Reactivation is not yet supported.",
       },
       logic: {
         parametersTitle: "Parameters (JSON)",
@@ -391,11 +442,11 @@ export const enComplianceMessages = {
         backToLibrary: "Back to library",
       },
       lifecycleDisabled: {
-        submitForApproval: "Submit for approval (Missing API #5)",
-        approve: "Approve (Missing API #6)",
-        reject: "Reject (Missing API #6)",
-        disable: "Disable (Missing API #4)",
-        archive: "Archive (Missing API #4)",
+        submitForApproval: "Submit for approval (not yet supported)",
+        approve: "Approve (not yet supported)",
+        reject: "Reject (not yet supported)",
+        disable: "Disable (not yet supported)",
+        archive: "Archive (not yet supported)",
       },
       validation: {
         required: "Required.",
@@ -410,7 +461,7 @@ export const enComplianceMessages = {
       description:
         "Requests to override a BLOCK verdict before execution. Distinct from post-trade breach overrides.",
       notice:
-        "All exception endpoints are missing — see Missing API #9 (list), #10 (request), #11 (approve / reject). The form below is a UX preview; submit is disabled to avoid faking a backend.",
+        "Exception endpoints are not yet supported by the backend. The form below is a UX preview; submit is disabled to avoid faking a backend.",
       form: {
         title: "Request exception",
         failedRule: "Failed rule (rule type ID)",
@@ -425,7 +476,7 @@ export const enComplianceMessages = {
         attachmentNote:
           "Attachment upload is not yet supported by the backend.",
         submitDisabled:
-          "Cannot submit — Missing API #10 (POST /compliance/exceptions).",
+          "Cannot submit — exception API is not yet available.",
       },
       timeline: {
         title: "Status timeline",
@@ -455,7 +506,7 @@ export const enComplianceMessages = {
       export: {
         label: "Export CSV",
         disabled:
-          "CSV export requires Missing API #14 (GET /compliance/audit/export.csv).",
+          "CSV export is not yet supported by the backend.",
       },
     },
 
@@ -498,7 +549,7 @@ export const enComplianceMessages = {
       warnFromApproval:
         "Compliance returned a warning. Approval can proceed with acknowledgement.",
       submitForApprovalDisabled:
-        "Approval submission ships in a follow-up — see Missing API #5.",
+        "Approval submission is not yet supported by the backend.",
       submitForApproval: "Submit for approval",
       ownerLabel: "Owner",
       breakdownLabel: "Order breakdown",

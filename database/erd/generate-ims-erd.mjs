@@ -8,10 +8,19 @@ const migrationDir = path.join(repoRoot, "database", "migrations");
 const outDir = path.join(repoRoot, "database", "erd");
 const drawioPath = path.join(outDir, "ims-th-solution-erd.drawio");
 const notesPath = path.join(outDir, "ims-th-solution-erd-notes.md");
+const GENERATED_DATE =
+  process.env.IMS_ERD_GENERATED_DATE ||
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
 const COLORS = {
   iam: { main: "#4F46E5", fill: "#EEF2FF", stroke: "#3730A3" },
   permissions: { main: "#7C3AED", fill: "#F5F3FF", stroke: "#5B21B6" },
+  permissionWorkflow: { main: "#BE185D", fill: "#FDF2F8", stroke: "#9D174D" },
   workflow: { main: "#D97706", fill: "#FFF7ED", stroke: "#B45309" },
   compliance: { main: "#DC2626", fill: "#FEF2F2", stroke: "#991B1B" },
   investment: { main: "#059669", fill: "#ECFDF5", stroke: "#047857" },
@@ -41,12 +50,20 @@ const AUDIT_USER_COLUMNS = new Set([
   "created_by",
   "updated_by",
   "assigned_by",
+  "assigned_to",
   "granted_by",
   "added_by",
   "resolved_by",
   "overridden_by",
   "delegated_from",
+  "delegated_from_user_id",
   "approved_by",
+  "approver_user_id",
+  "actor_user_id",
+  "changed_by",
+  "closed_by",
+  "merged_by",
+  "rejected_by",
   "requested_by",
   "decided_by",
   "superseded_by",
@@ -59,6 +76,11 @@ const MANUAL_NOTES = [
       "investment__funds.id is the cross-module contract key used by workflow, compliance, scheduler, and permissions data rights. Most of those links are intentionally not declared as FKs to keep module boundaries loose.",
   },
   {
+    title: "Two permission namespaces now coexist",
+    body:
+      "The legacy permissions_* RBAC/grant tables remain active while the newer permission_* and approval_workflow_* tables add request, approval, merge, labeling, checks, and notification workflow. Be explicit about which path is authoritative during migration.",
+  },
+  {
     title: "Soft delete is not uniform",
     body:
       "funds, portfolios, instruments, and research reports use partial unique indexes with deleted_at IS NULL. iam_users and permissions_groups still have full unique constraints, so soft-deleted usernames/group names cannot be reused without a migration.",
@@ -69,9 +91,9 @@ const MANUAL_NOTES = [
       "investment ledger/snapshot tables use rejecting triggers. iam_audit_events uses rejecting triggers. compliance_check_records and compliance_overrides rely on privilege revokes, which do not stop the table owner. workflow transition_log is append-only by design comments, but not enforced by a DB trigger today.",
   },
   {
-    title: "Polymorphic scope columns need application validation",
+    title: "Polymorphic scope and subject columns need application validation",
     body:
-      "scope_type/scope_id appears in compliance bindings, workflow settings/rules, investment process assignments, and AUM snapshots. The database cannot enforce these conditional references directly.",
+      "scope_type/scope_id appears in compliance bindings, workflow settings/rules, investment process assignments, and AUM snapshots. The new permission grants also use subject_type/subject_id for USER/GROUP/ROLE targets. The database cannot enforce all of these conditional references directly.",
   },
   {
     title: "Research reports are deliberately loose in PoC scope",
@@ -107,8 +129,9 @@ const MANUAL_NOTES = [
 
 const PAGE_GROUPS = [
   {
-    name: "01 - IAM + Permissions",
-    description: "Identity, sessions, MFA, audit trail, RBAC groups, function catalog, and data grants.",
+    name: "01 - IAM + Core Permissions",
+    description: "Identity, sessions, MFA, audit trail, and the original permissions_* RBAC/grant tables.",
+    modules: ["iam", "permissions"],
     tables: [
       "iam_users",
       "iam_sessions",
@@ -125,8 +148,36 @@ const PAGE_GROUPS = [
     ],
   },
   {
-    name: "02 - Workflow + Scheduler",
+    name: "02 - Permission Approval Workflow",
+    description: "Financial-grade permission request workflow, approvals, comments, checks, labels, audit logs, and notifications.",
+    modules: ["permissionWorkflow"],
+    tables: [
+      "permission_roles",
+      "permission_user_role_assignments",
+      "permission_role_assignment_policies",
+      "permission_change_requests",
+      "permission_change_items",
+      "approval_workflow_settings",
+      "approval_workflow_steps",
+      "permission_request_approval_steps",
+      "permission_request_step_approvers",
+      "permission_request_comments",
+      "permission_request_checks",
+      "permission_request_revisions",
+      "approval_workflow_events",
+      "permission_labels",
+      "permission_change_request_labels",
+      "permission_function_definitions",
+      "permission_function_rights",
+      "permission_data_rights",
+      "audit_logs",
+      "notification_settings",
+    ],
+  },
+  {
+    name: "03 - Workflow + Scheduler",
     description: "Business-day state machine, transition audit, scheduler configuration, run audit, and control decisions.",
+    modules: ["workflow"],
     tables: [
       "workflow__day_states",
       "workflow__transition_log",
@@ -140,8 +191,9 @@ const PAGE_GROUPS = [
     ],
   },
   {
-    name: "03 - Compliance",
+    name: "04 - Compliance",
     description: "Rule definitions, versioned parameters, scoped bindings, immutable check records, breaches, and overrides.",
+    modules: ["compliance"],
     tables: [
       "compliance_rule_instances",
       "compliance_rule_instance_versions",
@@ -155,8 +207,9 @@ const PAGE_GROUPS = [
     ],
   },
   {
-    name: "04 - Investment Reference + Master",
+    name: "05 - Investment Reference + Master",
     description: "Taxonomy, fund/contract master, portfolios, instrument master, external identifiers, and research reports.",
+    modules: ["investment"],
     tables: [
       "investment__asset_classes",
       "investment__asset_subtypes",
@@ -173,8 +226,9 @@ const PAGE_GROUPS = [
     ],
   },
   {
-    name: "05 - Investment Process + Ledger",
+    name: "06 - Investment Process + Ledger",
     description: "Process authorization, append-only trade/cash ledgers, mutable projections, pricing, valuation, NAV, and AUM snapshots.",
+    modules: ["investment"],
     tables: [
       "investment__process_steps",
       "investment__process_groups",
@@ -192,8 +246,9 @@ const PAGE_GROUPS = [
     ],
   },
   {
-    name: "06 - Market Data",
+    name: "07 - Market Data",
     description: "Provider symbol mapping, price/quote snapshots, and provider request observability.",
+    modules: ["market"],
     tables: ["market_symbols", "market_data_snapshots", "provider_requests_log"],
   },
 ];
@@ -282,6 +337,62 @@ const INFERRED_RELATIONSHIPS = [
     toTable: "investment__funds",
     toColumn: "id",
     note: "VARCHAR contract grant, fund.id is UUID",
+  },
+  {
+    fromTable: "permission_function_rights",
+    fromColumn: "subject_id",
+    toTable: "iam_users",
+    toColumn: "id",
+    note: "when subject_type = USER",
+  },
+  {
+    fromTable: "permission_function_rights",
+    fromColumn: "subject_id",
+    toTable: "permissions_groups",
+    toColumn: "id",
+    note: "when subject_type = GROUP",
+  },
+  {
+    fromTable: "permission_function_rights",
+    fromColumn: "subject_id",
+    toTable: "permission_roles",
+    toColumn: "id",
+    note: "when subject_type = ROLE",
+  },
+  {
+    fromTable: "permission_data_rights",
+    fromColumn: "subject_id",
+    toTable: "iam_users",
+    toColumn: "id",
+    note: "when subject_type = USER",
+  },
+  {
+    fromTable: "permission_data_rights",
+    fromColumn: "subject_id",
+    toTable: "permissions_groups",
+    toColumn: "id",
+    note: "when subject_type = GROUP",
+  },
+  {
+    fromTable: "permission_data_rights",
+    fromColumn: "subject_id",
+    toTable: "permission_roles",
+    toColumn: "id",
+    note: "when subject_type = ROLE",
+  },
+  {
+    fromTable: "approval_workflow_steps",
+    fromColumn: "required_role_code",
+    toTable: "permission_roles",
+    toColumn: "role_code",
+    note: "role lookup by code, no FK",
+  },
+  {
+    fromTable: "permission_request_step_approvers",
+    fromColumn: "approver_role_code",
+    toTable: "permission_roles",
+    toColumn: "role_code",
+    note: "role lookup by code, no FK",
   },
   {
     fromTable: "investment__aum_snapshots",
@@ -779,6 +890,14 @@ function parseRevoke(schema, stmt) {
 function moduleForTable(tableName) {
   if (tableName.startsWith("iam_")) return "iam";
   if (tableName.startsWith("permissions_")) return "permissions";
+  if (
+    tableName.startsWith("permission_") ||
+    tableName.startsWith("approval_workflow_") ||
+    tableName === "audit_logs" ||
+    tableName === "notification_settings"
+  ) {
+    return "permissionWorkflow";
+  }
   if (tableName.startsWith("workflow__")) return "workflow";
   if (tableName.startsWith("compliance_")) return "compliance";
   if (tableName.startsWith("investment__")) return "investment";
@@ -1010,7 +1129,7 @@ function overviewPage(schema) {
   const cells = headerCells(
     "overview",
     "IMS-TH-SOLUTION Database ERD",
-    `${schema.tables.size} tables generated from ${schema.migrations.length} PostgreSQL migration files. Multi-page draw.io ERD, source date 2026-05-18.`,
+    `${schema.tables.size} tables generated from ${schema.migrations.length} PostgreSQL migration files. Multi-page draw.io ERD, source date ${GENERATED_DATE}.`,
     width,
   );
 
@@ -1028,9 +1147,10 @@ function overviewPage(schema) {
   );
 
   const groups = [
-    { id: "overview_iam", title: "IAM + Permissions", modules: ["iam", "permissions"], x: 40, y: 430, w: 1160, h: 760 },
-    { id: "overview_workflow", title: "Workflow + Scheduler", modules: ["workflow"], x: 1240, y: 430, w: 900, h: 760 },
-    { id: "overview_compliance", title: "Compliance", modules: ["compliance"], x: 2180, y: 430, w: 900, h: 760 },
+    { id: "overview_iam", title: "IAM + Core Permissions", modules: ["iam", "permissions"], x: 40, y: 430, w: 1160, h: 760 },
+    { id: "overview_permission_workflow", title: "Permission Approval Workflow", modules: ["permissionWorkflow"], x: 1240, y: 430, w: 1760, h: 760 },
+    { id: "overview_workflow", title: "Workflow + Scheduler", modules: ["workflow"], x: 3040, y: 430, w: 850, h: 760 },
+    { id: "overview_compliance", title: "Compliance", modules: ["compliance"], x: 3930, y: 430, w: 850, h: 760 },
     { id: "overview_investment", title: "Investment", modules: ["investment"], x: 40, y: 1240, w: 3040, h: 1800 },
     { id: "overview_market", title: "Market Data", modules: ["market"], x: 3120, y: 1240, w: 780, h: 460 },
   ];
@@ -1084,7 +1204,7 @@ function overviewPage(schema) {
 function overviewCriticalNotes() {
   const cells = [];
   const x = 3940;
-  const y = 430;
+  const y = 1240;
   const w = 1200;
   const h = 1270;
   const items = MANUAL_NOTES.slice(0, 8)
@@ -1109,12 +1229,14 @@ function overviewContextEdges() {
   const style =
     "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#334155;strokeWidth=2;fontSize=12;fontColor=#0F172A;";
   return [
-    edge("overview_context_1", "users, roles, audit actors", style, "overview_iam", "overview_workflow"),
-    edge("overview_context_2", "users, roles, audit actors", style, "overview_iam", "overview_compliance"),
-    edge("overview_context_3", "users, roles, audit actors", style, "overview_iam", "overview_investment"),
-    edge("overview_context_4", "contract_id = fund.id", style, "overview_investment", "overview_workflow"),
-    edge("overview_context_5", "portfolio/contract checks", style, "overview_investment", "overview_compliance"),
-    edge("overview_context_6", "symbol/provider data", style, "overview_market", "overview_investment"),
+    edge("overview_context_1", "users and groups", style, "overview_iam", "overview_permission_workflow"),
+    edge("overview_context_2", "users, roles, audit actors", style, "overview_iam", "overview_workflow"),
+    edge("overview_context_3", "users, roles, audit actors", style, "overview_iam", "overview_compliance"),
+    edge("overview_context_4", "users, roles, audit actors", style, "overview_iam", "overview_investment"),
+    edge("overview_context_5", "contract_id = fund.id", style, "overview_investment", "overview_workflow"),
+    edge("overview_context_6", "portfolio/contract checks", style, "overview_investment", "overview_compliance"),
+    edge("overview_context_7", "fund/portfolio grants", style, "overview_permission_workflow", "overview_investment"),
+    edge("overview_context_8", "symbol/provider data", style, "overview_market", "overview_investment"),
   ];
 }
 
@@ -1157,6 +1279,9 @@ function detailPage(schema, group, idx) {
 }
 
 function detailPageNote(name) {
+  if (name.includes("Permission Approval")) {
+    return "This page is the newer permission-request and approval workflow surface. It coexists with the older permissions_* grant tables, so rollout needs a clear migration/evaluation boundary.";
+  }
   if (name.includes("Workflow")) {
     return "contract_id is not FK-enforced here; operationally it maps to investment__funds.id. transition_log is described as append-only, but this migration set does not add a DB no-update/no-delete trigger.";
   }
@@ -1205,7 +1330,8 @@ function criticalPage(schema) {
   const inventory = [
     `Total tables: ${schema.tables.size}`,
     `IAM: ${counts.get("iam") || 0}`,
-    `Permissions: ${counts.get("permissions") || 0}`,
+    `Core permissions: ${counts.get("permissions") || 0}`,
+    `Permission workflow: ${counts.get("permissionWorkflow") || 0}`,
     `Workflow: ${counts.get("workflow") || 0}`,
     `Compliance: ${counts.get("compliance") || 0}`,
     `Investment: ${counts.get("investment") || 0}`,
@@ -1225,7 +1351,8 @@ function criticalPage(schema) {
     ),
   );
 
-  return diagramXml("ims_critical", "07 - Critical Notes", width, height, cells);
+  const criticalPageName = `${String(PAGE_GROUPS.length + 1).padStart(2, "0")} - Critical Notes`;
+  return diagramXml("ims_critical", criticalPageName, width, height, cells);
 }
 
 function buildDrawio(schema) {
@@ -1241,13 +1368,14 @@ function buildNotes(schema) {
   const lines = [];
   lines.push("# IMS-TH-SOLUTION ERD Notes");
   lines.push("");
-  lines.push("Generated from `database/migrations/*.up.sql` on 2026-05-18.");
+  lines.push(`Generated from \`database/migrations/*.up.sql\` on ${GENERATED_DATE}.`);
   lines.push("");
   lines.push("## Inventory");
   lines.push("");
   lines.push(`- Total tables: ${schema.tables.size}`);
   lines.push(`- IAM: ${counts.get("iam") || 0}`);
-  lines.push(`- Permissions: ${counts.get("permissions") || 0}`);
+  lines.push(`- Core permissions: ${counts.get("permissions") || 0}`);
+  lines.push(`- Permission workflow: ${counts.get("permissionWorkflow") || 0}`);
   lines.push(`- Workflow: ${counts.get("workflow") || 0}`);
   lines.push(`- Compliance: ${counts.get("compliance") || 0}`);
   lines.push(`- Investment: ${counts.get("investment") || 0}`);
@@ -1257,7 +1385,7 @@ function buildNotes(schema) {
   lines.push("");
   lines.push("- 00 - Overview");
   for (const group of PAGE_GROUPS) lines.push(`- ${group.name}`);
-  lines.push("- 07 - Critical Notes");
+  lines.push(`- ${String(PAGE_GROUPS.length + 1).padStart(2, "0")} - Critical Notes`);
   lines.push("");
   lines.push("## Critical Things To Notice");
   lines.push("");

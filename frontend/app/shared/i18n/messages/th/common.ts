@@ -56,6 +56,7 @@ export const thCommonMessages = {
     personalSettings: "การตั้งค่าส่วนบุคคล",
     investment: "การลงทุน",
     investmentResearch: "บทวิเคราะห์การลงทุน",
+    marketData: "ข้อมูลตลาด",
     administration: "การดูแลระบบ",
     administrationSettings: "การตั้งค่าการดูแลระบบ",
   },

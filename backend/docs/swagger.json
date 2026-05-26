@@ -1754,6 +1754,173 @@
                 }
             }
         },
+        "/integration/dashboard/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the caller's full dashboard read model: tasks, workflow states, and aggregate counts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal dashboard snapshot",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/DashboardSnapshotDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/tasks/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the caller's task feed, optionally filtered by module, priority, or status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal task list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by module (investment|workflow|compliance)",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by priority (HIGH|MEDIUM|LOW|INFO)",
+                        "name": "priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (PENDING|IN_PROGRESS|COMPLETED)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/TaskListDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/tasks/my/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregate task counts for the caller without the full task list.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal task summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/TaskSummaryDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/funds": {
             "get": {
                 "security": [
@@ -3254,6 +3421,94 @@
                 }
             }
         },
+        "/investment/portfolios/{id}/transactions/simulate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Ledger"
+                ],
+                "summary": "Simulate Portfolio Transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction simulation payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionSimulationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/portfolios/{id}/transactions/{txnId}/reverse": {
             "post": {
                 "security": [
@@ -3913,6 +4168,494 @@
                 }
             }
         },
+        "/investment/research-reports": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Paginated list of research reports with optional filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "List Investment Research Reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "DRAFT | ACTIVE | EXPIRED | REJECTED",
+                        "name": "report_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED",
+                        "name": "review_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "BUY | SELL | HOLD",
+                        "name": "recommendation",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact instrument code filter",
+                        "name": "instrument_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Owner user UUID",
+                        "name": "owner_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive lower bound YYYY-MM-DD",
+                        "name": "report_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive upper bound YYYY-MM-DD",
+                        "name": "report_date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on report_no/instrument_code/report_title",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new DRAFT research report.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Create Investment Research Report",
+                "parameters": [
+                    {
+                        "description": "Research report create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateResearchReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one research report by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Get Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Apply partial updates to a research report. Refused when the report has been deleted or its review is completed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Update Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Research report update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateResearchReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a research report. Only allowed while review_status = NOT_SUBMITTED.",
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Delete Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}/cancel-submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused once review has been completed.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Cancel Submission Of Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval workflow is invoked.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Submit Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/market-data/history": {
             "get": {
                 "security": [
@@ -4049,6 +4792,210 @@
                 }
             }
         },
+        "/market-data/import-batches": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a chunked market data import batch for the given symbols.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Create Market Data Import Batch",
+                "parameters": [
+                    {
+                        "description": "Import batch payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateImportBatchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CreateImportBatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns batch status with chunk summary and error rows.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Get Market Data Import Batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ImportBatchStatusResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}/errors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns rejected/failed/warning items for the batch.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "List Market Data Import Batch Errors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ImportChunkItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs all chunks for the batch synchronously.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Run Market Data Import Batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RunImportBatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/market-data/provider-health": {
             "get": {
                 "security": [
@@ -4152,6 +5099,603 @@
                     },
                     "502": {
                         "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/screen/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search canonical securities with latest snapshot data and add-to-watchlist hint.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Market Data screen — search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Free-text query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum rows (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenSearchResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/screen/watchlist": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Canonical securities joined with their latest snapshot data. Frontend-safe DTO.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Market Data screen — watchlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Maximum rows (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenWatchlistResponseDTO"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Register a new canonical IMS security.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Create canonical security",
+                "parameters": [
+                    {
+                        "description": "Security payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateSecurityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search canonical securities by query, asset type, provider, and status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Search canonical securities",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Free-text query against ims_symbol/display_symbol/name/isin",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by AssetType (EQUITY, BOND, FX, ...)",
+                        "name": "asset_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Only securities with an ACTIVE mapping for this provider_code",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Get canonical security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Patch canonical security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Patch payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateSecurityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}/mappings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "List provider mappings for a security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MappingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Add provider mapping to a security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Provider mapping payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AddProviderMappingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ProviderMappingDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}/mappings/{mapping_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the mapping as INACTIVE rather than removing it physically.",
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Soft-delete a provider mapping",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Mapping id",
+                        "name": "mapping_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "List unmapped provider symbol candidates",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by candidate_status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by provider_code",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by import batch id",
+                        "name": "batch_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CandidatesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates/{candidate_id}/map": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Map a candidate to an existing security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate id",
+                        "name": "candidate_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Security id to map to",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MapCandidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates/{candidate_id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Reject an unmapped candidate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate id",
+                        "name": "candidate_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RejectCandidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -4445,6 +5989,35 @@
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "AddProviderMappingRequest": {
+            "type": "object",
+            "properties": {
+                "confidence_score": {
+                    "type": "string"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_symbol": {
                     "type": "string"
                 }
             }
@@ -4747,6 +6320,17 @@
                 }
             }
         },
+        "CandidatesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UnmappedCandidateDTO"
+                    }
+                }
+            }
+        },
         "CashBalanceResponse": {
             "type": "object",
             "properties": {
@@ -4761,6 +6345,23 @@
                 },
                 "version": {
                     "type": "integer"
+                }
+            }
+        },
+        "CashProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "cash_impact": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_balance": {
+                    "type": "string"
+                },
+                "projected_balance": {
+                    "type": "string"
                 }
             }
         },
@@ -4881,6 +6482,49 @@
                 }
             }
         },
+        "ComplianceBreachPreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "CompliancePreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ComplianceBreachPreviewResponse"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
         "ComputeFundAUMRequest": {
             "type": "object",
             "required": [
@@ -4977,6 +6621,58 @@
                 "short_name": {
                     "type": "string",
                     "maxLength": 80
+                }
+            }
+        },
+        "CreateImportBatchRequest": {
+            "type": "object",
+            "properties": {
+                "chunk_size": {
+                    "type": "integer"
+                },
+                "history_limit": {
+                    "type": "integer"
+                },
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "import_type": {
+                    "type": "string"
+                },
+                "include_history": {
+                    "type": "boolean"
+                },
+                "include_quote": {
+                    "type": "boolean"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "symbols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "CreateImportBatchResponse": {
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string"
+                },
+                "reused": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
                 }
             }
         },
@@ -5092,6 +6788,82 @@
                 }
             }
         },
+        "CreateResearchReportRequest": {
+            "type": "object",
+            "required": [
+                "author_user_id",
+                "instrument_code",
+                "investment_analysis",
+                "owner_user_id",
+                "recommendation",
+                "report_date",
+                "report_no"
+            ],
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string",
+                    "minLength": 25
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string",
+                    "enum": [
+                        "BUY",
+                        "SELL",
+                        "HOLD"
+                    ]
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_no": {
+                    "type": "string",
+                    "maxLength": 60
+                },
+                "report_title": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateRuleInstanceRequest": {
             "type": "object",
             "properties": {
@@ -5136,6 +6908,50 @@
                 }
             }
         },
+        "CreateSecurityRequest": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "auto_build_ims_symbol": {
+                    "type": "boolean"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateUserRequest": {
             "type": "object",
             "required": [
@@ -5158,6 +6974,29 @@
                 "username": {
                     "type": "string",
                     "minLength": 3
+                }
+            }
+        },
+        "DashboardSnapshotDTO": {
+            "type": "object",
+            "properties": {
+                "lastRefreshed": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/TaskSummaryDTO"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskDTO"
+                    }
+                },
+                "workflowStates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WorkflowStateDTO"
+                    }
                 }
             }
         },
@@ -5385,6 +7224,137 @@
                     "type": "string"
                 },
                 "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ImportBatch": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "batch_id": {
+                    "type": "string"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "import_type": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
+                },
+                "warning_records": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ImportBatchStatusResponseDTO": {
+            "type": "object",
+            "properties": {
+                "batch": {
+                    "$ref": "#/definitions/ImportBatch"
+                },
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkSummary"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkItem"
+                    }
+                }
+            }
+        },
+        "ImportChunkItem": {
+            "type": "object",
+            "properties": {
+                "chunk_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_code": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "item_id": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                }
+            }
+        },
+        "ImportChunkSummary": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "chunk_id": {
+                    "type": "string"
+                },
+                "chunk_index": {
+                    "type": "integer"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_records": {
+                    "type": "integer"
+                },
+                "warning_records": {
                     "type": "integer"
                 }
             }
@@ -5722,6 +7692,161 @@
                 }
             }
         },
+        "MapCandidateRequest": {
+            "type": "object",
+            "properties": {
+                "security_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "MappingsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderMappingDTO"
+                    }
+                }
+            }
+        },
+        "MarketDataScreenRowDTO": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "change_amount": {
+                    "type": "string"
+                },
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "data_quality_status": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "freshness_status": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "last_price": {
+                    "type": "string"
+                },
+                "last_update_at": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "provider_badges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderBadgeDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                },
+                "watching": {
+                    "type": "boolean"
+                },
+                "yield_to_maturity": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarketDataScreenSearchItemDTO": {
+            "type": "object",
+            "properties": {
+                "action_hint": {
+                    "type": "string"
+                },
+                "asset_type": {
+                    "type": "string"
+                },
+                "change_amount": {
+                    "type": "string"
+                },
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "data_quality_status": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "freshness_status": {
+                    "type": "string"
+                },
+                "has_active_mapping": {
+                    "type": "boolean"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "last_price": {
+                    "type": "string"
+                },
+                "last_update_at": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "provider_badges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderBadgeDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                },
+                "watching": {
+                    "type": "boolean"
+                },
+                "yield_to_maturity": {
+                    "type": "string"
+                }
+            }
+        },
         "MeResponse": {
             "type": "object",
             "properties": {
@@ -5870,6 +7995,32 @@
                 },
                 "version": {
                     "type": "integer"
+                }
+            }
+        },
+        "PositionProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "current_average_cost": {
+                    "type": "string"
+                },
+                "current_cost_basis": {
+                    "type": "string"
+                },
+                "current_quantity": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "projected_average_cost": {
+                    "type": "string"
+                },
+                "projected_cost_basis": {
+                    "type": "string"
+                },
+                "projected_quantity": {
+                    "type": "string"
                 }
             }
         },
@@ -6042,6 +8193,9 @@
                 "exchange": {
                     "type": "string"
                 },
+                "fees": {
+                    "type": "string"
+                },
                 "order_id": {
                     "type": "string"
                 },
@@ -6191,6 +8345,17 @@
                 }
             }
         },
+        "ProviderBadgeDTO": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                }
+            }
+        },
         "ProviderHealthResponse": {
             "type": "object",
             "properties": {
@@ -6216,6 +8381,44 @@
                     "type": "string"
                 },
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProviderMappingDTO": {
+            "type": "object",
+            "properties": {
+                "confidence_score": {
+                    "type": "string"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "mapping_id": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "security_id": {
                     "type": "string"
                 }
             }
@@ -6379,6 +8582,120 @@
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "RejectCandidateRequest": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "ResearchReportListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ResearchReportResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResearchReportResponse": {
+            "type": "object",
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string"
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "post_submission_note": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "rejection_reason": {
+                    "type": "string"
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_no": {
+                    "type": "string"
+                },
+                "report_status": {
+                    "type": "string"
+                },
+                "report_title": {
+                    "type": "string"
+                },
+                "review_status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "updated_by": {
                     "type": "string"
                 }
             }
@@ -6547,6 +8864,44 @@
                 }
             }
         },
+        "RunImportBatchResponse": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "batch_id": {
+                    "type": "string"
+                },
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkSummary"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkItem"
+                    }
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
+                },
+                "warning_records": {
+                    "type": "integer"
+                }
+            }
+        },
         "RunValuationRequest": {
             "type": "object",
             "required": [
@@ -6564,6 +8919,39 @@
                 },
                 "total_units": {
                     "type": "string"
+                }
+            }
+        },
+        "ScreenSearchResponseDTO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MarketDataScreenSearchItemDTO"
+                    }
+                }
+            }
+        },
+        "ScreenWatchlistResponseDTO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MarketDataScreenRowDTO"
+                    }
+                }
+            }
+        },
+        "SearchResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SecurityDTO"
+                    }
                 }
             }
         },
@@ -6596,6 +8984,56 @@
                 }
             }
         },
+        "SecurityDTO": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "provider_mappings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderMappingDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "SessionResponse": {
             "type": "object",
             "properties": {
@@ -6616,6 +9054,117 @@
                 },
                 "user_agent": {
                     "type": "string"
+                }
+            }
+        },
+        "SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "TaskDTO": {
+            "type": "object",
+            "properties": {
+                "actionUrl": {
+                    "type": "string"
+                },
+                "allowedActions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "businessDate": {
+                    "type": "string"
+                },
+                "canAct": {
+                    "type": "boolean"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "module": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "sourceRecordId": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "taskId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "TaskListDTO": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/TaskSummaryDTO"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskDTO"
+                    }
+                }
+            }
+        },
+        "TaskSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "byModule": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "byPriority": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "highPriority": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -6710,6 +9259,35 @@
                 }
             }
         },
+        "TransactionSimulationResponse": {
+            "type": "object",
+            "properties": {
+                "cash": {
+                    "$ref": "#/definitions/CashProjectionResponse"
+                },
+                "compliance": {
+                    "$ref": "#/definitions/CompliancePreviewResponse"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "position": {
+                    "$ref": "#/definitions/PositionProjectionResponse"
+                },
+                "transaction_type": {
+                    "type": "string"
+                }
+            }
+        },
         "TransitionEntry": {
             "type": "object",
             "properties": {
@@ -6776,6 +9354,56 @@
                     "type": "string"
                 },
                 "workflowDayId": {
+                    "type": "string"
+                }
+            }
+        },
+        "UnmappedCandidateDTO": {
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string"
+                },
+                "candidate_id": {
+                    "type": "string"
+                },
+                "candidate_status": {
+                    "type": "string"
+                },
+                "confidence_score": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_name": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "rejected_reason": {
+                    "type": "string"
+                },
+                "resolved_at": {
+                    "type": "string"
+                },
+                "suggested_security_id": {
                     "type": "string"
                 }
             }
@@ -6881,6 +9509,109 @@
                     "type": "string"
                 },
                 "style_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateResearchReportRequest": {
+            "type": "object",
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string"
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "post_submission_note": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "rejection_reason": {
+                    "type": "string"
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_status": {
+                    "type": "string"
+                },
+                "report_title": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateSecurityRequest": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -7018,6 +9749,23 @@
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "WorkflowStateDTO": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "currentState": {
+                    "type": "string"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }

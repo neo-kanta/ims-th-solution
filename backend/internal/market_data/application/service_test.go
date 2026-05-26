@@ -306,11 +306,12 @@ func (p *fakeProvider) ProviderName() string {
 }
 
 type fakeRepository struct {
-	latestQuote *domain.Quote
-	savedQuote  *domain.Quote
-	dailyBars   []domain.PriceBar
-	logs        []domain.ProviderRequestLog
-	mapping     *domain.SymbolMapping
+	latestQuote     *domain.Quote
+	savedQuote      *domain.Quote
+	savedQuoteCalls int
+	dailyBars       []domain.PriceBar
+	logs            []domain.ProviderRequestLog
+	mapping         *domain.SymbolMapping
 }
 
 func (r *fakeRepository) UpsertSymbol(ctx context.Context, mapping domain.SymbolMapping) error {
@@ -328,6 +329,7 @@ func (r *fakeRepository) GetSymbolMapping(ctx context.Context, symbol string) (*
 func (r *fakeRepository) SaveQuote(ctx context.Context, quote domain.Quote) error {
 	q := quote
 	r.savedQuote = &q
+	r.savedQuoteCalls++
 	return nil
 }
 

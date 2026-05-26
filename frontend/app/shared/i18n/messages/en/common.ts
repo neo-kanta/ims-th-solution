@@ -56,6 +56,7 @@ export const enCommonMessages = {
     personalSettings: "Personal settings",
     investment: "Investment",
     investmentResearch: "Investment research",
+    marketData: "Market data",
     administration: "Administration",
     administrationSettings: "Administration settings",
   },

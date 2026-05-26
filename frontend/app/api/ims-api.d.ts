@@ -4126,6 +4126,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/portfolios/{id}/transactions/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate Portfolio Transaction
+         * @description Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Transaction simulation payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostTransactionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TransactionSimulationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/portfolios/{id}/transactions/{txnId}/reverse": {
         parameters: {
             query?: never;
@@ -5706,6 +5816,266 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/market-data/import-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Market Data Import Batch
+         * @description Create a chunked market data import batch for the given symbols.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Import batch payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateImportBatchRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateImportBatchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Market Data Import Batch
+         * @description Returns batch status with chunk summary and error rows.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportBatchStatusResponseDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Market Data Import Batch Errors
+         * @description Returns rejected/failed/warning items for the batch.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportChunkItem"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Market Data Import Batch
+         * @description Runs all chunks for the batch synchronously.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunImportBatchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/market-data/provider-health": {
         parameters: {
             query?: never;
@@ -5846,6 +6216,662 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/screen/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Data screen — search
+         * @description Search canonical securities with latest snapshot data and add-to-watchlist hint.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Free-text query */
+                    query?: string;
+                    /** @description Maximum rows (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScreenSearchResponseDTO"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/screen/watchlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Data screen — watchlist
+         * @description Canonical securities joined with their latest snapshot data. Frontend-safe DTO.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Maximum rows (default 100, max 500) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScreenWatchlistResponseDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create canonical security
+         * @description Register a new canonical IMS security.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Security payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateSecurityRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search canonical securities
+         * @description Search canonical securities by query, asset type, provider, and status.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Free-text query against ims_symbol/display_symbol/name/isin */
+                    query?: string;
+                    /** @description Filter by AssetType (EQUITY, BOND, FX, ...) */
+                    asset_type?: string;
+                    /** @description Only securities with an ACTIVE mapping for this provider_code */
+                    provider?: string;
+                    /** @description Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED) */
+                    status?: string;
+                    /** @description Result limit (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SearchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get canonical security */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch canonical security */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Patch payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateSecurityRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}/mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List provider mappings for a security */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MappingsResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add provider mapping to a security */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Provider mapping payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddProviderMappingRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProviderMappingDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}/mappings/{mapping_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a provider mapping
+         * @description Marks the mapping as INACTIVE rather than removing it physically.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                    /** @description Mapping id */
+                    mapping_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List unmapped provider symbol candidates */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by candidate_status */
+                    status?: string;
+                    /** @description Filter by provider_code */
+                    provider?: string;
+                    /** @description Filter by import batch id */
+                    batch_id?: string;
+                    /** @description Result limit (default 100, max 500) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidatesResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates/{candidate_id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Map a candidate to an existing security */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Candidate id */
+                    candidate_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Security id to map to */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MapCandidateRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates/{candidate_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject an unmapped candidate */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Candidate id */
+                    candidate_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Rejection reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RejectCandidateRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -6197,6 +7223,16 @@ export interface components {
             source?: string;
             valuation_ccy?: string;
         };
+        AddProviderMappingRequest: {
+            confidence_score?: string;
+            is_primary?: boolean;
+            priority?: number;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_symbol?: string;
+        };
         AdminResetPasswordRequest: {
             new_password: string;
         };
@@ -6294,11 +7330,20 @@ export interface components {
             severity?: string;
             verdict?: string;
         };
+        CandidatesResponse: {
+            items?: components["schemas"]["UnmappedCandidateDTO"][];
+        };
         CashBalanceResponse: {
             balance?: string;
             currency?: string;
             last_business_date?: string;
             version?: number;
+        };
+        CashProjectionResponse: {
+            cash_impact?: string;
+            currency?: string;
+            current_balance?: string;
+            projected_balance?: string;
         };
         ChangePasswordRequest: {
             new_password: string;
@@ -6344,6 +7389,20 @@ export interface components {
             /** @description raw verdict from rule */
             verdict?: string;
         };
+        ComplianceBreachPreviewResponse: {
+            breach_id?: string;
+            message?: string;
+            overridable?: boolean;
+            rule_type_id?: string;
+            severity?: string;
+            verdict?: string;
+        };
+        CompliancePreviewResponse: {
+            breaches?: components["schemas"]["ComplianceBreachPreviewResponse"][];
+            check_group_id?: string;
+            rules_evaluated?: number;
+            verdict?: string;
+        };
         ComputeFundAUMRequest: {
             business_date: string;
         };
@@ -6373,6 +7432,23 @@ export interface components {
             name: string;
             risk_profile?: string;
             short_name?: string;
+        };
+        CreateImportBatchRequest: {
+            chunk_size?: number;
+            history_limit?: number;
+            idempotency_key?: string;
+            import_type?: string;
+            include_history?: boolean;
+            include_quote?: boolean;
+            provider?: string;
+            symbols?: string[];
+        };
+        CreateImportBatchResponse: {
+            batch_id?: string;
+            reused?: boolean;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
         };
         CreateInstrumentRequest: {
             asset_class_id: string;
@@ -6445,6 +7521,21 @@ export interface components {
         CreateRuleInstanceResult: {
             instance?: components["schemas"]["RuleInstance"];
             version?: components["schemas"]["RuleInstanceVersion"];
+        };
+        CreateSecurityRequest: {
+            asset_type?: string;
+            auto_build_ims_symbol?: boolean;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            ims_symbol?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            status?: string;
         };
         CreateUserRequest: {
             display_name: string;
@@ -6559,6 +7650,49 @@ export interface components {
             quantity?: string;
             version?: number;
         };
+        ImportBatch: {
+            accepted_records?: number;
+            batch_id?: string;
+            completed_at?: string;
+            created_at?: string;
+            created_by?: string;
+            error_message?: string;
+            idempotency_key?: string;
+            import_type?: string;
+            provider?: string;
+            rejected_records?: number;
+            started_at?: string;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
+            warning_records?: number;
+        };
+        ImportBatchStatusResponseDTO: {
+            batch?: components["schemas"]["ImportBatch"];
+            chunks?: components["schemas"]["ImportChunkSummary"][];
+            errors?: components["schemas"]["ImportChunkItem"][];
+        };
+        ImportChunkItem: {
+            chunk_id?: string;
+            created_at?: string;
+            error_code?: string;
+            error_message?: string;
+            item_id?: string;
+            provider_symbol?: string;
+            security_id?: string;
+            status?: string;
+            symbol?: string;
+        };
+        ImportChunkSummary: {
+            accepted_records?: number;
+            chunk_id?: string;
+            chunk_index?: number;
+            error_message?: string;
+            rejected_records?: number;
+            status?: string;
+            total_records?: number;
+            warning_records?: number;
+        };
         ImportMarketDataRequest: {
             history_limit?: number;
             include_history?: boolean;
@@ -6669,6 +7803,56 @@ export interface components {
         MFAVerifyRequest: {
             totp_code: string;
         };
+        MapCandidateRequest: {
+            security_id?: string;
+        };
+        MappingsResponse: {
+            items?: components["schemas"]["ProviderMappingDTO"][];
+        };
+        MarketDataScreenRowDTO: {
+            asset_type?: string;
+            change_amount?: string;
+            change_percent?: string;
+            currency?: string;
+            data_quality_status?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            freshness_status?: string;
+            ims_symbol?: string;
+            last_price?: string;
+            last_update_at?: string;
+            mapping_status?: string;
+            name?: string;
+            pinned?: boolean;
+            provider_badges?: components["schemas"]["ProviderBadgeDTO"][];
+            security_id?: string;
+            volume?: number;
+            watching?: boolean;
+            yield_to_maturity?: string;
+        };
+        MarketDataScreenSearchItemDTO: {
+            action_hint?: string;
+            asset_type?: string;
+            change_amount?: string;
+            change_percent?: string;
+            currency?: string;
+            data_quality_status?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            freshness_status?: string;
+            has_active_mapping?: boolean;
+            ims_symbol?: string;
+            last_price?: string;
+            last_update_at?: string;
+            mapping_status?: string;
+            name?: string;
+            pinned?: boolean;
+            provider_badges?: components["schemas"]["ProviderBadgeDTO"][];
+            security_id?: string;
+            volume?: number;
+            watching?: boolean;
+            yield_to_maturity?: string;
+        };
         MeResponse: {
             permissions?: components["schemas"]["PermissionsResp"];
             user?: components["schemas"]["UserResponse"];
@@ -6720,6 +7904,15 @@ export interface components {
             updated_at?: string;
             valuation_currency?: string;
             version?: number;
+        };
+        PositionProjectionResponse: {
+            current_average_cost?: string;
+            current_cost_basis?: string;
+            current_quantity?: string;
+            instrument_id?: string;
+            projected_average_cost?: string;
+            projected_cost_basis?: string;
+            projected_quantity?: string;
         };
         PostPriceSnapshotRequest: {
             business_date: string;
@@ -6774,6 +7967,7 @@ export interface components {
             contract_id?: string;
             currency?: string;
             exchange?: string;
+            fees?: string;
             order_id?: string;
             portfolio_id?: string;
             price?: string;
@@ -6826,6 +8020,10 @@ export interface components {
             price_source?: string;
             provider_ref?: string;
         };
+        ProviderBadgeDTO: {
+            label?: string;
+            provider_code?: string;
+        };
         ProviderHealthResponse: {
             configured?: boolean;
             healthy?: boolean;
@@ -6835,6 +8033,19 @@ export interface components {
             official?: boolean;
             provider_name?: string;
             role?: string;
+        };
+        ProviderMappingDTO: {
+            confidence_score?: string;
+            is_primary?: boolean;
+            mapping_id?: string;
+            mapping_status?: string;
+            priority?: number;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_symbol?: string;
+            security_id?: string;
         };
         Quote: {
             as_of?: string;
@@ -6890,6 +8101,9 @@ export interface components {
             isActive?: boolean;
             name?: string;
             updatedAt?: string;
+        };
+        RejectCandidateRequest: {
+            reason?: string;
         };
         ResearchReportListResponse: {
             items?: components["schemas"]["ResearchReportResponse"][];
@@ -6985,12 +8199,32 @@ export interface components {
             type_id?: string;
             version?: string;
         };
+        RunImportBatchResponse: {
+            accepted_records?: number;
+            batch_id?: string;
+            chunks?: components["schemas"]["ImportChunkSummary"][];
+            errors?: components["schemas"]["ImportChunkItem"][];
+            rejected_records?: number;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
+            warning_records?: number;
+        };
         RunValuationRequest: {
             business_date: string;
             fx_rates?: {
                 [key: string]: string;
             };
             total_units?: string;
+        };
+        ScreenSearchResponseDTO: {
+            items?: components["schemas"]["MarketDataScreenSearchItemDTO"][];
+        };
+        ScreenWatchlistResponseDTO: {
+            items?: components["schemas"]["MarketDataScreenRowDTO"][];
+        };
+        SearchResponse: {
+            items?: components["schemas"]["SecurityDTO"][];
         };
         Sector: {
             code?: string;
@@ -7001,6 +8235,22 @@ export interface components {
             name?: string;
             parentID?: string;
             updatedAt?: string;
+        };
+        SecurityDTO: {
+            asset_type?: string;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            ims_symbol?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            provider_mappings?: components["schemas"]["ProviderMappingDTO"][];
+            security_id?: string;
+            status?: string;
         };
         SessionResponse: {
             created_at?: string;
@@ -7079,6 +8329,16 @@ export interface components {
             status?: string;
             transaction_type?: string;
         };
+        TransactionSimulationResponse: {
+            cash?: components["schemas"]["CashProjectionResponse"];
+            compliance?: components["schemas"]["CompliancePreviewResponse"];
+            gross_amount?: string;
+            instrument_id?: string;
+            net_amount?: string;
+            portfolio_id?: string;
+            position?: components["schemas"]["PositionProjectionResponse"];
+            transaction_type?: string;
+        };
         TransitionEntry: {
             action?: string;
             actorId?: string;
@@ -7104,6 +8364,23 @@ export interface components {
             toState?: string;
             transitionId?: string;
             workflowDayId?: string;
+        };
+        UnmappedCandidateDTO: {
+            batch_id?: string;
+            candidate_id?: string;
+            candidate_status?: string;
+            confidence_score?: string;
+            created_at?: string;
+            isin?: string;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_name?: string;
+            provider_symbol?: string;
+            rejected_reason?: string;
+            resolved_at?: string;
+            suggested_security_id?: string;
         };
         UpdateFundRequest: {
             benchmark?: string;
@@ -7161,6 +8438,19 @@ export interface components {
             report_date?: string;
             report_status?: string;
             report_title?: string;
+        };
+        UpdateSecurityRequest: {
+            asset_type?: string;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            status?: string;
         };
         UserResponse: {
             display_name?: string;

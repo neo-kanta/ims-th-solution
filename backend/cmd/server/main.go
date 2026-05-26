@@ -19,8 +19,11 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/audit"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/integration"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/permissions"
+	referencedata "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
@@ -101,7 +104,10 @@ func main() {
 		iamModule,
 		auditModule.Recorder(),
 	)
-	marketDataModule := marketdata.NewModule(pool, cfg, redisClient)
+	referenceDataModule := referencedata.NewModule(pool)
+	marketDataModule := marketdata.NewModule(pool, cfg, redisClient, referenceDataModule.Resolver())
+	integrationModule := integration.NewModule(pool, iamModule)
+	permissionsModule := permissions.NewModule(pool, iamModule)
 	healthHandler := NewHealthHandler(pool, redisClient)
 
 	schedulerCtx, stopScheduler := context.WithCancel(context.Background())
@@ -132,7 +138,10 @@ func main() {
 			complianceModule.RegisterRoutes(r)
 			workflowModule.RegisterRoutes(r)
 			investmentModule.RegisterRoutes(r)
+			referenceDataModule.RegisterRoutes(r)
 			marketDataModule.RegisterRoutes(r)
+			integrationModule.RegisterRoutes(r)
+			permissionsModule.RegisterRoutes(r)
 		})
 	})
 
