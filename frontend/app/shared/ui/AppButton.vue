@@ -11,6 +11,8 @@ interface Props {
   loading?: boolean;
   disabled?: boolean;
   icon?: boolean;
+  type?: "button" | "submit" | "reset";
+  fullWidth?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -19,6 +21,8 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   disabled: false,
   icon: false,
+  type: "button",
+  fullWidth: false,
 });
 
 const emit = defineEmits<{
@@ -40,11 +44,13 @@ const iconSizeMap: Record<NonNullable<Props["size"]>, string> = {
 
 <template>
   <button
+    :type="type"
     class="btn"
     :class="[
       `btn-${variant}`,
       `btn-${size}`,
       icon ? iconSizeMap[size] : undefined,
+      { 'btn-full-width': fullWidth },
     ]"
     :disabled="disabled || loading"
     @click="handleClick"
@@ -90,6 +96,11 @@ const iconSizeMap: Record<NonNullable<Props["size"]>, string> = {
 .btn-icon {
   width: 40px;
   height: 40px;
+}
+
+.btn-full-width {
+  width: 100%;
+  justify-content: center;
 }
 
 .btn-spinner {
