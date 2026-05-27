@@ -66,6 +66,7 @@ type PreTradeRequest struct {
 	Side         string `json:"side"` // BUY | SELL
 	Quantity     string `json:"quantity"`
 	Price        string `json:"price"`
+	Fees         string `json:"fees,omitempty"`
 	Currency     string `json:"currency"`
 	Exchange     string `json:"exchange"`
 }
@@ -121,6 +122,14 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 		httputil.BadRequest(w, "invalid price")
 		return
 	}
+	fees := decimal.Zero
+	if req.Fees != "" {
+		fees, err = decimal.NewFromString(req.Fees)
+		if err != nil {
+			httputil.BadRequest(w, "invalid fees")
+			return
+		}
+	}
 
 	actor := actorFromCtx(r)
 
@@ -135,6 +144,7 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 		Side:         vo.OrderSide(req.Side),
 		Quantity:     qty,
 		Price:        price,
+		Fees:         fees,
 		Currency:     req.Currency,
 		Exchange:     req.Exchange,
 	})

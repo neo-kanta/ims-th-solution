@@ -50,6 +50,44 @@ type PostTransactionResult struct {
 	Transaction *entity.PortfolioTransaction
 }
 
+// SimulateTransactionResult is the dry-run preview for a transaction request.
+type SimulateTransactionResult struct {
+	PortfolioID     uuid.UUID
+	TransactionType vo.TransactionType
+	InstrumentID    *uuid.UUID
+	GrossAmount     decimal.Decimal
+	NetAmount       decimal.Decimal
+	Cash            CashProjection
+	Position        *PositionProjection
+	Compliance      *CompliancePreview
+}
+
+type CashProjection struct {
+	Currency         string
+	CurrentBalance   decimal.Decimal
+	CashImpact       decimal.Decimal
+	ProjectedBalance decimal.Decimal
+}
+
+type PositionProjection struct {
+	InstrumentID         uuid.UUID
+	CurrentQuantity      decimal.Decimal
+	CurrentAverageCost   decimal.Decimal
+	CurrentCostBasis     decimal.Decimal
+	ProjectedQuantity    decimal.Decimal
+	ProjectedAverageCost decimal.Decimal
+	ProjectedCostBasis   decimal.Decimal
+}
+
+type CompliancePreview struct {
+	CheckGroupID   uuid.UUID
+	Verdict        contract.ComplianceVerdict
+	RulesEvaluated int
+	Breaches       []contract.ProposedOrderBreach
+}
+
+type transactionRunner func(context.Context, *pgxpool.Pool, func(pgx.Tx) error) error
+
 // PostTransactionHandler posts a new ledger row and updates the position +
 // cash projections in a single DB transaction.
 //
@@ -65,6 +103,7 @@ type PostTransactionHandler struct {
 	funds       domain.FundRepository
 	instruments domain.InstrumentRepository
 	positions   domain.PortfolioPositionRepository
+	cash        domain.CashLedgerRepository
 	txns        domain.PortfolioTransactionRepository
 	projector   *service.PortfolioProjector
 
@@ -72,7 +111,9 @@ type PostTransactionHandler struct {
 	compliance contract.ComplianceChecker
 	audit      contract.AuditLogger
 
-	now func() time.Time
+	now    func() time.Time
+	newID  func() uuid.UUID
+	withTx transactionRunner
 }
 
 // NewPostTransactionHandler wires the handler. `now` may be nil — defaults to
@@ -83,6 +124,7 @@ func NewPostTransactionHandler(
 	funds domain.FundRepository,
 	instruments domain.InstrumentRepository,
 	positions domain.PortfolioPositionRepository,
+	cash domain.CashLedgerRepository,
 	txns domain.PortfolioTransactionRepository,
 	projector *service.PortfolioProjector,
 	workflow contract.WorkflowStateProvider,
@@ -99,12 +141,15 @@ func NewPostTransactionHandler(
 		funds:       funds,
 		instruments: instruments,
 		positions:   positions,
+		cash:        cash,
 		txns:        txns,
 		projector:   projector,
 		workflow:    workflow,
 		compliance:  compliance,
 		audit:       audit,
 		now:         now,
+		newID:       uuid.New,
+		withTx:      withTransaction,
 	}
 }
 
@@ -116,11 +161,173 @@ func (h *PostTransactionHandler) Handle(
 	if h == nil {
 		return nil, fmt.Errorf("post transaction handler not initialised")
 	}
+	txID := h.nextID()
+	prep, err := h.prepareTransaction(ctx, req, false, false, false, txID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := h.now()
+	tx := &entity.PortfolioTransaction{
+		ID:                    txID,
+		PortfolioID:           prep.portfolio.ID,
+		FundID:                prep.portfolio.FundID,
+		InstrumentID:          req.InstrumentID,
+		TransactionType:       req.TransactionType,
+		Side:                  req.Side,
+		Quantity:              req.Quantity,
+		Price:                 req.Price,
+		Currency:              req.Currency,
+		GrossAmount:           prep.gross,
+		Fees:                  req.Fees,
+		NetAmount:             prep.net,
+		FxRateToBase:          req.FxRateToBase,
+		BusinessDate:          req.BusinessDate,
+		SettlementDate:        req.SettlementDate,
+		SourceDecisionID:      req.SourceDecisionID,
+		SourceExecutionID:     req.SourceExecutionID,
+		ReversesTransactionID: nil,
+		ExternalRef:           req.ExternalRef,
+		Reason:                req.Reason,
+		Status:                vo.TransactionStatusPosted,
+		CreatedAt:             now,
+		CreatedBy:             req.ActorID,
+	}
+
+	// Persist + project in one DB tx. The workflow day row is locked first in
+	// this same transaction, so state transitions cannot move it out of
+	// DAY_OPEN between compliance, ledger insert, and projection updates.
+	err = h.runTransaction(ctx, func(dbtx pgx.Tx) error {
+		if err := h.lockWorkflowDayForPosting(ctx, dbtx, prep.fund.ID, req.BusinessDate); err != nil {
+			return err
+		}
+
+		complianceResult, err := h.checkCompliance(ctx, req, prep.portfolio, prep.fund, prep.instrument, prep.quantity, prep.price, false, txID)
+		if err != nil {
+			return err
+		}
+		if err := enforceComplianceResult(req, complianceResult); err != nil {
+			return err
+		}
+
+		if req.TransactionType.IsSellLike() && req.InstrumentID != nil {
+			lockedPos, posErr := h.positions.GetForUpdate(ctx, dbtx, req.PortfolioID, *req.InstrumentID)
+			if posErr != nil {
+				return fmt.Errorf("locking position for sell: %w", posErr)
+			}
+			have := decimal.Zero
+			avg := decimal.Zero
+			if lockedPos != nil {
+				have = lockedPos.Quantity
+				avg = lockedPos.AverageCost
+			}
+			if prep.quantity.GreaterThan(have) {
+				return &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationOversell)}
+			}
+			priceBase := prep.price
+			feesBase := req.Fees
+			if req.FxRateToBase != nil {
+				priceBase = priceBase.Mul(*req.FxRateToBase)
+				feesBase = feesBase.Mul(*req.FxRateToBase)
+			}
+			tx.RealisedPnLBase = prep.quantity.Mul(priceBase.Sub(avg)).Sub(feesBase)
+		}
+
+		if err := h.txns.Insert(ctx, dbtx, tx); err != nil {
+			return fmt.Errorf("inserting transaction: %w", err)
+		}
+		if err := h.projector.Apply(ctx, dbtx, tx, +1); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Audit. Failure to log does not roll back the post — the audit
+	//    logger is fire-and-forget by contract.
+	_ = h.audit.LogAction(contract.AuditEntry{
+		ActorID:      req.ActorID.String(),
+		Action:       "INVESTMENT_TRANSACTION_POSTED",
+		Module:       "investment",
+		ResourceType: "INVESTMENT_TRANSACTION",
+		ResourceID:   tx.ID.String(),
+		Details: map[string]any{
+			"portfolio_id":     prep.portfolio.ID,
+			"fund_id":          prep.fund.ID,
+			"transaction_type": string(req.TransactionType),
+			"net_amount":       prep.net.String(),
+			"currency":         req.Currency,
+		},
+		BusinessDate: req.BusinessDate,
+	})
+
+	return &PostTransactionResult{Transaction: tx}, nil
+}
+
+// Simulate runs the same validation, workflow, and pre-trade compliance gates
+// as Handle, then returns the projected ledger/cash/position impact without
+// mutating investment tables.
+func (h *PostTransactionHandler) Simulate(
+	ctx context.Context,
+	req PostTransactionRequest,
+) (*SimulateTransactionResult, error) {
+	if h == nil {
+		return nil, fmt.Errorf("post transaction handler not initialised")
+	}
+	prep, err := h.prepareTransaction(ctx, req, true, true, false, h.nextID())
+	if err != nil {
+		return nil, err
+	}
+
+	cash, err := h.projectCash(ctx, req.PortfolioID, req.Currency, prep.net)
+	if err != nil {
+		return nil, err
+	}
+	position, err := projectPosition(req, prep.position, prep.quantity, prep.price)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SimulateTransactionResult{
+		PortfolioID:     prep.portfolio.ID,
+		TransactionType: req.TransactionType,
+		InstrumentID:    req.InstrumentID,
+		GrossAmount:     prep.gross,
+		NetAmount:       prep.net,
+		Cash:            cash,
+		Position:        position,
+		Compliance:      compliancePreview(prep.compliance),
+	}, nil
+}
+
+type preparedTransaction struct {
+	portfolio  *entity.Portfolio
+	fund       *entity.Fund
+	instrument *entity.Instrument
+	position   *entity.PortfolioPosition
+
+	quantity decimal.Decimal
+	price    decimal.Decimal
+	gross    decimal.Decimal
+	net      decimal.Decimal
+
+	compliance *contract.ProposedOrderResult
+}
+
+func (h *PostTransactionHandler) prepareTransaction(
+	ctx context.Context,
+	req PostTransactionRequest,
+	dryRun bool,
+	evaluateCompliance bool,
+	enforceCompliance bool,
+	orderID uuid.UUID,
+) (*preparedTransaction, error) {
 	if err := validatePostRequest(req); err != nil {
 		return nil, err
 	}
 
-	// 1. Load context entities (portfolio, fund, instrument, position).
 	portfolio, err := h.portfolios.GetByID(ctx, req.PortfolioID)
 	if err != nil {
 		return nil, fmt.Errorf("loading portfolio: %w", err)
@@ -152,7 +359,7 @@ func (h *PostTransactionHandler) Handle(
 	}
 
 	var position *entity.PortfolioPosition
-	if req.InstrumentID != nil && req.TransactionType.IsSellLike() {
+	if req.InstrumentID != nil && req.TransactionType.IsSecurityTrade() {
 		positions, listErr := h.positions.ListByPortfolio(ctx, req.PortfolioID)
 		if listErr != nil {
 			return nil, fmt.Errorf("loading positions: %w", listErr)
@@ -165,7 +372,6 @@ func (h *PostTransactionHandler) Handle(
 		}
 	}
 
-	// 2. Evaluate workflow gates (read-side; we re-check inside the tx).
 	if h.workflow == nil {
 		return nil, &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationTradingNotAllowed), Detail: "workflow gate unavailable"}
 	}
@@ -206,124 +412,35 @@ func (h *PostTransactionHandler) Handle(
 		return nil, &domain.ErrPostPreconditionFailed{Violation: string(violation)}
 	}
 
-	if err := h.checkCompliance(ctx, req, portfolio, fund, instrument, quantity, price); err != nil {
-		return nil, err
+	var complianceResult *contract.ProposedOrderResult
+	if evaluateCompliance {
+		complianceResult, err = h.checkCompliance(ctx, req, portfolio, fund, instrument, quantity, price, dryRun, orderID)
+		if err != nil {
+			return nil, err
+		}
+		if enforceCompliance {
+			if err := enforceComplianceResult(req, complianceResult); err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	// 3. Compute monetary amounts deterministically.
 	gross, net, err := deriveAmounts(req, quantity, price)
 	if err != nil {
 		return nil, err
 	}
 
-	now := h.now()
-	tx := &entity.PortfolioTransaction{
-		ID:                    uuid.New(),
-		PortfolioID:           portfolio.ID,
-		FundID:                portfolio.FundID,
-		InstrumentID:          req.InstrumentID,
-		TransactionType:       req.TransactionType,
-		Side:                  req.Side,
-		Quantity:              req.Quantity,
-		Price:                 req.Price,
-		Currency:              req.Currency,
-		GrossAmount:           gross,
-		Fees:                  req.Fees,
-		NetAmount:             net,
-		FxRateToBase:          req.FxRateToBase,
-		BusinessDate:          req.BusinessDate,
-		SettlementDate:        req.SettlementDate,
-		SourceDecisionID:      req.SourceDecisionID,
-		SourceExecutionID:     req.SourceExecutionID,
-		ReversesTransactionID: nil,
-		ExternalRef:           req.ExternalRef,
-		Reason:                req.Reason,
-		Status:                vo.TransactionStatusPosted,
-		CreatedAt:             now,
-		CreatedBy:             req.ActorID,
-	}
-
-	// 4. Persist + project in one DB tx. Workflow lock is re-evaluated inside
-	//    the tx via the contract; race window from step 2 is closed.
-	err = withTransaction(ctx, h.pool, func(dbtx pgx.Tx) error {
-		tradeAllowedNow, tradeErr := h.workflow.IsTradeAllowed(ctx, fund.ID, req.BusinessDate)
-		if tradeErr != nil {
-			return fmt.Errorf("re-checking trade-allowed: %w", tradeErr)
-		}
-		if !tradeAllowedNow {
-			return &domain.ErrPostPreconditionFailed{
-				Violation: string(policy.PostViolationTradingNotAllowed),
-				Detail:    "workflow state changed during post",
-			}
-		}
-		// Re-check the lock under the implicit FOR-SHARE semantics that the
-		// workflow provider implements when called inside a tx. The provider
-		// returns true if MANAGER_APPROVED or beyond.
-		lockedNow, lockErr := h.workflow.IsTransactionLocked(ctx, fund.ID, req.BusinessDate)
-		if lockErr != nil {
-			return fmt.Errorf("re-checking transaction lock: %w", lockErr)
-		}
-		if lockedNow && !(req.AllowForcePost && req.TransactionType == vo.TransactionTypeReversal) {
-			return &domain.ErrPostPreconditionFailed{
-				Violation: string(policy.PostViolationTransactionLocked),
-				Detail:    "lock acquired during post",
-			}
-		}
-
-		if req.TransactionType.IsSellLike() && req.InstrumentID != nil {
-			lockedPos, posErr := h.positions.GetForUpdate(ctx, dbtx, req.PortfolioID, *req.InstrumentID)
-			if posErr != nil {
-				return fmt.Errorf("locking position for sell: %w", posErr)
-			}
-			have := decimal.Zero
-			avg := decimal.Zero
-			if lockedPos != nil {
-				have = lockedPos.Quantity
-				avg = lockedPos.AverageCost
-			}
-			if quantity.GreaterThan(have) {
-				return &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationOversell)}
-			}
-			priceBase := price
-			feesBase := req.Fees
-			if req.FxRateToBase != nil {
-				priceBase = priceBase.Mul(*req.FxRateToBase)
-				feesBase = feesBase.Mul(*req.FxRateToBase)
-			}
-			tx.RealisedPnLBase = quantity.Mul(priceBase.Sub(avg)).Sub(feesBase)
-		}
-
-		if err := h.txns.Insert(ctx, dbtx, tx); err != nil {
-			return fmt.Errorf("inserting transaction: %w", err)
-		}
-		if err := h.projector.Apply(ctx, dbtx, tx, +1); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// 5. Audit. Failure to log does not roll back the post — the audit
-	//    logger is fire-and-forget by contract.
-	_ = h.audit.LogAction(contract.AuditEntry{
-		ActorID:      req.ActorID.String(),
-		Action:       "INVESTMENT_TRANSACTION_POSTED",
-		Module:       "investment",
-		ResourceType: "INVESTMENT_TRANSACTION",
-		ResourceID:   tx.ID.String(),
-		Details: map[string]any{
-			"portfolio_id":     portfolio.ID,
-			"fund_id":          fund.ID,
-			"transaction_type": string(req.TransactionType),
-			"net_amount":       net.String(),
-			"currency":         req.Currency,
-		},
-		BusinessDate: req.BusinessDate,
-	})
-
-	return &PostTransactionResult{Transaction: tx}, nil
+	return &preparedTransaction{
+		portfolio:  portfolio,
+		fund:       fund,
+		instrument: instrument,
+		position:   position,
+		quantity:   quantity,
+		price:      price,
+		gross:      gross,
+		net:        net,
+		compliance: complianceResult,
+	}, nil
 }
 
 func (h *PostTransactionHandler) checkCompliance(
@@ -334,54 +451,231 @@ func (h *PostTransactionHandler) checkCompliance(
 	instrument *entity.Instrument,
 	qty decimal.Decimal,
 	price decimal.Decimal,
-) error {
+	dryRun bool,
+	orderID uuid.UUID,
+) (*contract.ProposedOrderResult, error) {
 	if !req.TransactionType.IsSecurityTrade() {
-		return nil
+		return nil, nil
 	}
 	decisionID := ""
 	if req.SourceDecisionID != nil {
 		decisionID = req.SourceDecisionID.String()
 	}
 	if h.compliance == nil {
-		return &domain.ErrComplianceRejected{DecisionID: decisionID, Message: "pre-trade compliance gate unavailable"}
+		return nil, &domain.ErrComplianceRejected{DecisionID: decisionID, Message: "pre-trade compliance gate unavailable"}
 	}
 	side := contract.ComplianceOrderSideBuy
 	if req.TransactionType.IsSellLike() {
 		side = contract.ComplianceOrderSideSell
 	}
-	result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
+	if orderID == uuid.Nil {
+		orderID = h.nextID()
+	}
+	check := contract.ProposedOrderCheck{
 		PortfolioID:  portfolio.ID,
 		ContractID:   fund.ID,
 		BusinessDate: req.BusinessDate,
 		Actor:        req.ActorID.String(),
-		OrderID:      uuid.New(),
+		OrderID:      orderID,
 		Ticker:       instrument.PrimaryTicker,
 		Side:         side,
 		Quantity:     qty,
 		Price:        price,
+		Fees:         req.Fees,
 		Currency:     req.Currency,
 		Exchange:     instrument.PrimaryExchange,
-	})
-	if err != nil {
-		return &domain.ErrComplianceRejected{DecisionID: decisionID, Message: err.Error()}
 	}
-	if result == nil || result.Verdict == contract.ComplianceVerdictBlock {
-		if result != nil {
-			rules := make([]string, 0)
-			for _, b := range result.Breaches {
-				if b.Verdict == contract.ComplianceVerdictBlock {
-					rules = append(rules, b.RuleTypeID)
-				}
-			}
-			return &domain.ErrComplianceRejected{
-				DecisionID:   decisionID,
-				CheckGroupID: result.CheckGroupID.String(),
-				Message:      fmt.Sprintf("blocked rules: %v", rules),
-			}
+	var result *contract.ProposedOrderResult
+	var err error
+	if dryRun {
+		if simulator, ok := h.compliance.(contract.ComplianceSimulator); ok {
+			result, err = simulator.SimulateProposedOrder(ctx, check)
+		} else {
+			return nil, &domain.ErrComplianceRejected{DecisionID: decisionID, Message: "dry-run compliance gate unavailable"}
 		}
-		return &domain.ErrComplianceRejected{DecisionID: decisionID, Message: "empty compliance result"}
+	} else {
+		result, err = h.compliance.CheckProposedOrder(ctx, check)
+	}
+	if err != nil {
+		return nil, &domain.ErrComplianceRejected{DecisionID: decisionID, Message: err.Error()}
+	}
+	if result == nil {
+		return nil, &domain.ErrComplianceRejected{DecisionID: decisionID, Message: "empty compliance result"}
+	}
+	return result, nil
+}
+
+func enforceComplianceResult(req PostTransactionRequest, result *contract.ProposedOrderResult) error {
+	if result == nil || result.Verdict != contract.ComplianceVerdictBlock {
+		return nil
+	}
+	decisionID := ""
+	if req.SourceDecisionID != nil {
+		decisionID = req.SourceDecisionID.String()
+	}
+	rules := make([]string, 0)
+	for _, b := range result.Breaches {
+		if b.Verdict == contract.ComplianceVerdictBlock {
+			rules = append(rules, b.RuleTypeID)
+		}
+	}
+	return &domain.ErrComplianceRejected{
+		DecisionID:   decisionID,
+		CheckGroupID: result.CheckGroupID.String(),
+		Message:      fmt.Sprintf("blocked rules: %v", rules),
+	}
+}
+
+func (h *PostTransactionHandler) nextID() uuid.UUID {
+	if h != nil && h.newID != nil {
+		return h.newID()
+	}
+	return uuid.New()
+}
+
+func (h *PostTransactionHandler) runTransaction(ctx context.Context, fn func(pgx.Tx) error) error {
+	runner := withTransaction
+	if h != nil && h.withTx != nil {
+		runner = h.withTx
+	}
+	return runner(ctx, h.pool, fn)
+}
+
+func (h *PostTransactionHandler) lockWorkflowDayForPosting(
+	ctx context.Context,
+	tx pgx.Tx,
+	contractID uuid.UUID,
+	businessDate time.Time,
+) error {
+	locker, ok := h.workflow.(contract.WorkflowTradeDayLocker)
+	if !ok {
+		return &domain.ErrPostPreconditionFailed{
+			Violation: string(policy.PostViolationTradingNotAllowed),
+			Detail:    "workflow row lock gate unavailable",
+		}
+	}
+	locked, err := locker.LockTradeDayForPost(ctx, tx, contractID, businessDate)
+	if err != nil {
+		return fmt.Errorf("locking workflow day for post: %w", err)
+	}
+	if locked == nil || !locked.Exists {
+		return &domain.ErrPostPreconditionFailed{
+			Violation: string(policy.PostViolationTradingNotAllowed),
+			Detail:    "workflow day is missing or not open",
+		}
+	}
+	if locked.CurrentState != contract.WorkflowStateDayOpen {
+		return &domain.ErrPostPreconditionFailed{
+			Violation: string(policy.PostViolationTradingNotAllowed),
+			Detail:    fmt.Sprintf("workflow day state is %s", locked.CurrentState),
+		}
 	}
 	return nil
+}
+
+func (h *PostTransactionHandler) projectCash(
+	ctx context.Context,
+	portfolioID uuid.UUID,
+	currency string,
+	impact decimal.Decimal,
+) (CashProjection, error) {
+	if h.cash == nil {
+		return CashProjection{}, fmt.Errorf("cash repository not initialised")
+	}
+	balances, err := h.cash.ListBalances(ctx, portfolioID)
+	if err != nil {
+		return CashProjection{}, fmt.Errorf("loading cash balances: %w", err)
+	}
+	current := decimal.Zero
+	for _, b := range balances {
+		if b.Currency == currency {
+			current = b.Balance
+			break
+		}
+	}
+	return CashProjection{
+		Currency:         currency,
+		CurrentBalance:   current,
+		CashImpact:       impact,
+		ProjectedBalance: current.Add(impact),
+	}, nil
+}
+
+func projectPosition(
+	req PostTransactionRequest,
+	current *entity.PortfolioPosition,
+	qty decimal.Decimal,
+	price decimal.Decimal,
+) (*PositionProjection, error) {
+	if !req.TransactionType.IsSecurityTrade() || req.InstrumentID == nil {
+		return nil, nil
+	}
+
+	oldQty := decimal.Zero
+	oldAvg := decimal.Zero
+	oldBasis := decimal.Zero
+	if current != nil {
+		oldQty = current.Quantity
+		oldAvg = current.AverageCost
+		oldBasis = current.CostBasis
+	}
+
+	priceBase := price
+	feesBase := req.Fees
+	if req.FxRateToBase != nil {
+		priceBase = priceBase.Mul(*req.FxRateToBase)
+		feesBase = feesBase.Mul(*req.FxRateToBase)
+	}
+
+	projectedQty := oldQty
+	projectedAvg := oldAvg
+	projectedBasis := oldBasis
+	switch {
+	case req.TransactionType.IsBuyLike():
+		out := policy.ApplyBuyAverageCost(policy.AverageCostInputs{
+			OldQuantity:    oldQty,
+			OldAverageCost: oldAvg,
+			BuyQuantity:    qty,
+			BuyPriceBase:   priceBase,
+			BuyFeesBase:    feesBase,
+		})
+		projectedQty = out.NewQuantity
+		projectedAvg = out.NewAverageCost
+		projectedBasis = out.NewCostBasis
+	case req.TransactionType.IsSellLike():
+		out := policy.ApplySellAverageCost(policy.SellInputs{
+			OldQuantity:    oldQty,
+			OldAverageCost: oldAvg,
+			SellQuantity:   qty,
+			SellPriceBase:  priceBase,
+			SellFeesBase:   feesBase,
+		})
+		projectedQty = out.NewQuantity
+		projectedAvg = out.NewAverageCost
+		projectedBasis = out.NewCostBasis
+	}
+
+	return &PositionProjection{
+		InstrumentID:         *req.InstrumentID,
+		CurrentQuantity:      oldQty,
+		CurrentAverageCost:   oldAvg,
+		CurrentCostBasis:     oldBasis,
+		ProjectedQuantity:    projectedQty,
+		ProjectedAverageCost: projectedAvg,
+		ProjectedCostBasis:   projectedBasis,
+	}, nil
+}
+
+func compliancePreview(result *contract.ProposedOrderResult) *CompliancePreview {
+	if result == nil {
+		return nil
+	}
+	return &CompliancePreview{
+		CheckGroupID:   result.CheckGroupID,
+		Verdict:        result.Verdict,
+		RulesEvaluated: result.RulesEvaluated,
+		Breaches:       result.Breaches,
+	}
 }
 
 func validateTickSize(inst *entity.Instrument, price *decimal.Decimal) error {

@@ -1,6 +1,8 @@
 package response
 
 import (
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/command"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/query"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/entity"
 )
 
@@ -157,6 +159,56 @@ func FromCashBalance(b *entity.CashBalance) CashBalanceResponse {
 	}
 }
 
+// FromSimulation converts a dry-run command result into the HTTP DTO.
+func FromSimulation(s *command.SimulateTransactionResult) TransactionSimulationResponse {
+	if s == nil {
+		return TransactionSimulationResponse{}
+	}
+	out := TransactionSimulationResponse{
+		PortfolioID:     s.PortfolioID,
+		TransactionType: string(s.TransactionType),
+		InstrumentID:    s.InstrumentID,
+		GrossAmount:     s.GrossAmount.String(),
+		NetAmount:       s.NetAmount.String(),
+		Cash: CashProjectionResponse{
+			Currency:         s.Cash.Currency,
+			CurrentBalance:   s.Cash.CurrentBalance.String(),
+			CashImpact:       s.Cash.CashImpact.String(),
+			ProjectedBalance: s.Cash.ProjectedBalance.String(),
+		},
+	}
+	if s.Position != nil {
+		out.Position = &PositionProjectionResponse{
+			InstrumentID:         s.Position.InstrumentID,
+			CurrentQuantity:      s.Position.CurrentQuantity.String(),
+			CurrentAverageCost:   s.Position.CurrentAverageCost.String(),
+			CurrentCostBasis:     s.Position.CurrentCostBasis.String(),
+			ProjectedQuantity:    s.Position.ProjectedQuantity.String(),
+			ProjectedAverageCost: s.Position.ProjectedAverageCost.String(),
+			ProjectedCostBasis:   s.Position.ProjectedCostBasis.String(),
+		}
+	}
+	if s.Compliance != nil {
+		cp := &CompliancePreviewResponse{
+			CheckGroupID:   s.Compliance.CheckGroupID,
+			Verdict:        string(s.Compliance.Verdict),
+			RulesEvaluated: s.Compliance.RulesEvaluated,
+		}
+		for _, b := range s.Compliance.Breaches {
+			cp.Breaches = append(cp.Breaches, ComplianceBreachPreviewResponse{
+				BreachID:    b.BreachID,
+				RuleTypeID:  b.RuleTypeID,
+				Verdict:     string(b.Verdict),
+				Severity:    b.Severity,
+				Message:     b.Message,
+				Overridable: b.Overridable,
+			})
+		}
+		out.Compliance = cp
+	}
+	return out
+}
+
 // FromValuation converts an entity.ValuationSnapshot (with optional lines).
 func FromValuation(v *entity.ValuationSnapshot) ValuationResponse {
 	if v == nil {
@@ -219,6 +271,38 @@ func FromNAV(n *entity.NAVSnapshot) NAVResponse {
 	}
 }
 
+// FromFundNAV converts a fund-level NAV query result into a FundNAVResponse.
+// Decimal fields are serialised as strings so the wire value preserves the
+// repository's precision. Optional pointer fields are emitted only when set.
+func FromFundNAV(r *query.GetLatestFundNAVResult) FundNAVResponse {
+	if r == nil || r.Fund == nil {
+		return FundNAVResponse{}
+	}
+	out := FundNAVResponse{
+		FundID:         r.Fund.ID.String(),
+		BusinessDate:   FormatDate(r.BusinessDate),
+		ValuationCcy:   r.ValuationCcy,
+		MarketValue:    r.MarketValue.String(),
+		AUM:            r.AUM.String(),
+		CashBalance:    r.CashBalance.String(),
+		UnrealisedPnL:  r.UnrealisedPnL.String(),
+		RealisedPnL:    r.RealisedPnL.String(),
+		HasStaleInputs: r.HasStaleInputs,
+		IsIndicative:   r.IsIndicative,
+		PortfolioCount: r.PortfolioCount,
+	}
+	if r.ROI != nil {
+		out.ROI = r.ROI.String()
+	}
+	if r.TotalUnits != nil {
+		out.TotalUnits = r.TotalUnits.String()
+	}
+	if r.NAVPerUnit != nil {
+		out.NAVPerUnit = r.NAVPerUnit.String()
+	}
+	return out
+}
+
 // FromAUM converts an entity.AUMSnapshot.
 func FromAUM(a *entity.AUMSnapshot) AUMResponse {
 	if a == nil {
@@ -233,6 +317,43 @@ func FromAUM(a *entity.AUMSnapshot) AUMResponse {
 		ValuationCcy: a.ValuationCcy,
 		Source:       string(a.Source),
 		CreatedAt:    a.CreatedAt,
+	}
+}
+
+// FromResearchReport converts an entity.ResearchReport into a
+// ResearchReportResponse for HTTP transport.
+func FromResearchReport(r *entity.ResearchReport) ResearchReportResponse {
+	if r == nil {
+		return ResearchReportResponse{}
+	}
+	return ResearchReportResponse{
+		ID:                   r.ID,
+		ReportNo:             r.ReportNo,
+		ReportDate:           FormatDate(r.ReportDate),
+		EffectiveDate:        FormatDatePtr(r.EffectiveDate),
+		OwnerUserID:          r.OwnerUserID,
+		AuthorUserID:         r.AuthorUserID,
+		ApplicableContractID: r.ApplicableContractID,
+		InstrumentType:       r.InstrumentType,
+		InstrumentCode:       r.InstrumentCode,
+		InstrumentName:       r.InstrumentName,
+		Market:               r.Market,
+		Currency:             r.Currency,
+		Recommendation:       string(r.Recommendation),
+		ReportTitle:          r.ReportTitle,
+		CompanyOverview:      r.CompanyOverview,
+		CompanyOutlook:       r.CompanyOutlook,
+		ESGComment:           r.ESGComment,
+		FinancialStatus:      r.FinancialStatus,
+		InvestmentAnalysis:   r.InvestmentAnalysis,
+		RejectionReason:      r.RejectionReason,
+		PostSubmissionNote:   r.PostSubmissionNote,
+		ReportStatus:         string(r.ReportStatus),
+		ReviewStatus:         string(r.ReviewStatus),
+		CreatedAt:            r.CreatedAt,
+		CreatedBy:            r.CreatedBy,
+		UpdatedAt:            r.UpdatedAt,
+		UpdatedBy:            r.UpdatedBy,
 	}
 }
 

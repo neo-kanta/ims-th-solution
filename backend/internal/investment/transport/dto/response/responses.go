@@ -121,6 +121,52 @@ type CashBalanceResponse struct {
 	Version          int     `json:"version"`
 }
 
+// TransactionSimulationResponse previews a post without mutating investment
+// ledger, position, or cash tables.
+type TransactionSimulationResponse struct {
+	PortfolioID     uuid.UUID                   `json:"portfolio_id"`
+	TransactionType string                      `json:"transaction_type"`
+	InstrumentID    *uuid.UUID                  `json:"instrument_id,omitempty"`
+	GrossAmount     string                      `json:"gross_amount"`
+	NetAmount       string                      `json:"net_amount"`
+	Cash            CashProjectionResponse      `json:"cash"`
+	Position        *PositionProjectionResponse `json:"position,omitempty"`
+	Compliance      *CompliancePreviewResponse  `json:"compliance,omitempty"`
+}
+
+type CashProjectionResponse struct {
+	Currency         string `json:"currency"`
+	CurrentBalance   string `json:"current_balance"`
+	CashImpact       string `json:"cash_impact"`
+	ProjectedBalance string `json:"projected_balance"`
+}
+
+type PositionProjectionResponse struct {
+	InstrumentID         uuid.UUID `json:"instrument_id"`
+	CurrentQuantity      string    `json:"current_quantity"`
+	CurrentAverageCost   string    `json:"current_average_cost"`
+	CurrentCostBasis     string    `json:"current_cost_basis"`
+	ProjectedQuantity    string    `json:"projected_quantity"`
+	ProjectedAverageCost string    `json:"projected_average_cost"`
+	ProjectedCostBasis   string    `json:"projected_cost_basis"`
+}
+
+type CompliancePreviewResponse struct {
+	CheckGroupID   uuid.UUID                         `json:"check_group_id"`
+	Verdict        string                            `json:"verdict"`
+	RulesEvaluated int                               `json:"rules_evaluated"`
+	Breaches       []ComplianceBreachPreviewResponse `json:"breaches,omitempty"`
+}
+
+type ComplianceBreachPreviewResponse struct {
+	BreachID    uuid.UUID `json:"breach_id"`
+	RuleTypeID  string    `json:"rule_type_id"`
+	Verdict     string    `json:"verdict"`
+	Severity    string    `json:"severity"`
+	Message     string    `json:"message"`
+	Overridable bool      `json:"overridable"`
+}
+
 // ValuationLineResponse mirrors entity.ValuationHoldingLine.
 type ValuationLineResponse struct {
 	InstrumentID    uuid.UUID  `json:"instrument_id"`
@@ -254,6 +300,73 @@ type ComputeFundAUMResponse struct {
 	Snapshot       AUMResponse `json:"snapshot"`
 	PortfolioCount int         `json:"portfolio_count"`
 	Idempotent     bool        `json:"idempotent"`
+}
+
+// FundNAVResponse is the aggregated fund-level latest valuation, served by
+// GET /investment/funds/{id}/nav/latest. Values mirror entity.ValuationSnapshot
+// for one or more portfolios under the same fund. Decimal fields are emitted
+// as strings to preserve precision.
+type FundNAVResponse struct {
+	FundID         string  `json:"fund_id"`
+	BusinessDate   string  `json:"business_date"`
+	ValuationCcy   string  `json:"valuation_ccy"`
+	MarketValue    string  `json:"market_value"`
+	AUM            string  `json:"aum"`
+	CashBalance    string  `json:"cash_balance"`
+	UnrealisedPnL  string  `json:"unrealised_pnl"`
+	RealisedPnL    string  `json:"realised_pnl"`
+	ROI            string  `json:"roi,omitempty"`
+	TotalUnits     string  `json:"total_units,omitempty"`
+	NAVPerUnit     string  `json:"nav_per_unit,omitempty"`
+	HasStaleInputs bool    `json:"has_stale_inputs"`
+	IsIndicative   bool    `json:"is_indicative"`
+	PortfolioCount int     `json:"portfolio_count"`
+}
+
+// ResearchReportResponse mirrors entity.ResearchReport for HTTP transport.
+type ResearchReportResponse struct {
+	ID                   uuid.UUID  `json:"id"`
+	ReportNo             string     `json:"report_no"`
+	ReportDate           string     `json:"report_date"`
+	EffectiveDate        *string    `json:"effective_date,omitempty"`
+	OwnerUserID          uuid.UUID  `json:"owner_user_id"`
+	AuthorUserID         uuid.UUID  `json:"author_user_id"`
+	ApplicableContractID *uuid.UUID `json:"applicable_contract_id,omitempty"`
+
+	InstrumentType string `json:"instrument_type,omitempty"`
+	InstrumentCode string `json:"instrument_code"`
+	InstrumentName string `json:"instrument_name,omitempty"`
+	Market         string `json:"market,omitempty"`
+	Currency       string `json:"currency,omitempty"`
+
+	Recommendation string `json:"recommendation"`
+	ReportTitle    string `json:"report_title,omitempty"`
+
+	CompanyOverview    string `json:"company_overview,omitempty"`
+	CompanyOutlook     string `json:"company_outlook,omitempty"`
+	ESGComment         string `json:"esg_comment,omitempty"`
+	FinancialStatus    string `json:"financial_status,omitempty"`
+	InvestmentAnalysis string `json:"investment_analysis"`
+
+	RejectionReason    string `json:"rejection_reason,omitempty"`
+	PostSubmissionNote string `json:"post_submission_note,omitempty"`
+
+	ReportStatus string `json:"report_status"`
+	ReviewStatus string `json:"review_status"`
+
+	CreatedAt time.Time  `json:"created_at"`
+	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	UpdatedBy *uuid.UUID `json:"updated_by,omitempty"`
+}
+
+// ResearchReportListResponse is the wire shape for paginated research-report
+// list calls. Mirrors the fund/portfolio list pattern.
+type ResearchReportListResponse struct {
+	Items []ResearchReportResponse `json:"items"`
+	Total int                      `json:"total"`
+	Page  int                      `json:"page"`
+	Limit int                      `json:"limit"`
 }
 
 // FormatDecimal returns "" for nil pointers, otherwise a decimal string.

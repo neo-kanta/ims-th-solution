@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
 
@@ -16,6 +17,21 @@ import (
 type WorkflowStateProvider interface {
 	IsTradeAllowed(ctx context.Context, contractID uuid.UUID, businessDate time.Time) (bool, error)
 	IsTransactionLocked(ctx context.Context, contractID uuid.UUID, businessDate time.Time) (bool, error)
+}
+
+const WorkflowStateDayOpen = "DAY_OPEN"
+
+// WorkflowDayLock is the minimal workflow state returned after locking a day row.
+type WorkflowDayLock struct {
+	Exists       bool
+	CurrentState string
+}
+
+// WorkflowTradeDayLocker locks a workflow day row inside the caller's active
+// database transaction. Posting code uses this to prevent workflow transitions
+// from moving a day out of DAY_OPEN between the final guard and ledger insert.
+type WorkflowTradeDayLocker interface {
+	LockTradeDayForPost(ctx context.Context, tx pgx.Tx, contractID uuid.UUID, businessDate time.Time) (*WorkflowDayLock, error)
 }
 
 // PermissionChecker defines the cross-module interface for permission verification.
@@ -75,6 +91,7 @@ type ProposedOrderCheck struct {
 	Side     ComplianceOrderSide
 	Quantity decimal.Decimal
 	Price    decimal.Decimal
+	Fees     decimal.Decimal
 	Currency string
 	Exchange string
 }
@@ -106,6 +123,12 @@ type ProposedOrderResult struct {
 // The implementation MUST be synchronous and idempotent with respect to CheckGroupID.
 type ComplianceChecker interface {
 	CheckProposedOrder(ctx context.Context, req ProposedOrderCheck) (*ProposedOrderResult, error)
+}
+
+// ComplianceSimulator is an optional extension for callers that need the same
+// pre-trade verdict without persisting compliance check records or breaches.
+type ComplianceSimulator interface {
+	SimulateProposedOrder(ctx context.Context, req ProposedOrderCheck) (*ProposedOrderResult, error)
 }
 
 // PostTradeBreach captures a single persistent breach discovered by the

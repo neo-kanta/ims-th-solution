@@ -2376,6 +2376,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/investment/funds/{id}/nav/latest": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Aggregate latest per-portfolio valuations into a fund-level NAV view (read-only; no side effects).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Latest Fund NAV",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundNAVResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/instruments": {
             "get": {
                 "security": [
@@ -7117,6 +7181,53 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "FundNAVResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cash_balance": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_stale_inputs": {
+                    "type": "boolean"
+                },
+                "is_indicative": {
+                    "type": "boolean"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "nav_per_unit": {
+                    "type": "string"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "realised_pnl": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "total_units": {
+                    "type": "string"
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
                 }
             }
         },

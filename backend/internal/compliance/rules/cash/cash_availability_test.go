@@ -39,6 +39,10 @@ func navBundle(cashBalance, reservedCash float64) spi.DataBundle {
 }
 
 func buyInput(qty, price float64) spi.CheckInput {
+	return buyInputWithFees(qty, price, 0)
+}
+
+func buyInputWithFees(qty, price, fees float64) spi.CheckInput {
 	return spi.CheckInput{
 		PortfolioID:  uuid.New(),
 		ContractID:   uuid.New(),
@@ -49,6 +53,7 @@ func buyInput(qty, price float64) spi.CheckInput {
 			Side:     vo.OrderSideBuy,
 			Quantity: decimal.NewFromFloat(qty),
 			Price:    decimal.NewFromFloat(price),
+			Fees:     decimal.NewFromFloat(fees),
 		},
 	}
 }
@@ -83,6 +88,44 @@ func TestCashAvailability_InsufficientCash_Blocks(t *testing.T) {
 	}
 	if result.Evidence.ThresholdBreached == nil {
 		t.Error("expected ThresholdBreached in evidence")
+	}
+}
+
+func TestCashAvailability_GrossCoveredButFeesNotCovered_Blocks(t *testing.T) {
+	t.Parallel()
+	r := getRule()
+
+	// Gross = 1M and available = 1M, but fees require another 10K.
+	bundle := navBundle(1_000_000, 0)
+	result, err := r.Evaluate(context.Background(), buyInputWithFees(100, 10000, 10_000), bundle, makeParams(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Verdict != vo.VerdictBlock {
+		t.Errorf("expected BLOCK when fees exceed remaining cash, got %v: %s", result.Verdict, result.Message)
+	}
+	if got := result.Evidence.Metrics["required_cash"]; got != "1010000.00" {
+		t.Errorf("expected fee-inclusive required_cash metric, got %q", got)
+	}
+	if result.Evidence.ThresholdBreached == nil || result.Evidence.ThresholdBreached.Limit != "1010000.00" {
+		t.Errorf("expected required cash threshold limit, got %#v", result.Evidence.ThresholdBreached)
+	}
+}
+
+func TestCashAvailability_GrossAndFeesCovered_Passes(t *testing.T) {
+	t.Parallel()
+	r := getRule()
+
+	bundle := navBundle(1_010_000, 0)
+	result, err := r.Evaluate(context.Background(), buyInputWithFees(100, 10000, 10_000), bundle, makeParams(0))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Verdict != vo.VerdictPass {
+		t.Errorf("expected PASS when gross plus fees are covered, got %v: %s", result.Verdict, result.Message)
+	}
+	if got := result.Evidence.Metrics["required_cash"]; got != "1010000.00" {
+		t.Errorf("expected fee-inclusive required_cash metric, got %q", got)
 	}
 }
 

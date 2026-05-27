@@ -170,3 +170,60 @@ type RunValuationRequest struct {
 type ComputeFundAUMRequest struct {
 	BusinessDate string `json:"business_date" validate:"required"`
 }
+
+// ─── Research Reports ─────────────────────────────────────────────────────────
+
+// CreateResearchReportRequest is the JSON body for POST /investment/research-reports.
+type CreateResearchReportRequest struct {
+	ReportNo             string     `json:"report_no"            validate:"required,max=60"`
+	ReportDate           string     `json:"report_date"          validate:"required"`
+	EffectiveDate        string     `json:"effective_date"`
+	OwnerUserID          uuid.UUID  `json:"owner_user_id"        validate:"required"`
+	AuthorUserID         uuid.UUID  `json:"author_user_id"       validate:"required"`
+	ApplicableContractID *uuid.UUID `json:"applicable_contract_id"`
+
+	InstrumentType string `json:"instrument_type"`
+	InstrumentCode string `json:"instrument_code" validate:"required,max=40"`
+	InstrumentName string `json:"instrument_name"`
+	Market         string `json:"market"`
+	Currency       string `json:"currency"`
+
+	Recommendation string `json:"recommendation" validate:"required,oneof=BUY SELL HOLD"`
+	ReportTitle    string `json:"report_title"`
+
+	CompanyOverview    string `json:"company_overview"`
+	CompanyOutlook     string `json:"company_outlook"`
+	ESGComment         string `json:"esg_comment"`
+	FinancialStatus    string `json:"financial_status"`
+	InvestmentAnalysis string `json:"investment_analysis" validate:"required,min=25"`
+}
+
+// UpdateResearchReportRequest is the JSON body for PUT /investment/research-reports/{id}.
+// Only fields set on the wire are applied (pointer-based partial update).
+type UpdateResearchReportRequest struct {
+	ReportDate           *string    `json:"report_date"`
+	EffectiveDate        *string    `json:"effective_date"`
+	OwnerUserID          *uuid.UUID `json:"owner_user_id"`
+	AuthorUserID         *uuid.UUID `json:"author_user_id"`
+	ApplicableContractID *uuid.UUID `json:"applicable_contract_id"`
+
+	InstrumentType *string `json:"instrument_type"`
+	InstrumentCode *string `json:"instrument_code"`
+	InstrumentName *string `json:"instrument_name"`
+	Market         *string `json:"market"`
+	Currency       *string `json:"currency"`
+
+	Recommendation *string `json:"recommendation"`
+	ReportTitle    *string `json:"report_title"`
+
+	CompanyOverview    *string `json:"company_overview"`
+	CompanyOutlook     *string `json:"company_outlook"`
+	ESGComment         *string `json:"esg_comment"`
+	FinancialStatus    *string `json:"financial_status"`
+	InvestmentAnalysis *string `json:"investment_analysis"`
+
+	RejectionReason    *string `json:"rejection_reason"`
+	PostSubmissionNote *string `json:"post_submission_note"`
+
+	ReportStatus *string `json:"report_status"`
+}

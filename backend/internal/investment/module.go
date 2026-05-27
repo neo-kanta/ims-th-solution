@@ -11,6 +11,7 @@ import (
 
 	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/command"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/query"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/infrastructure/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/infrastructure/persistence"
@@ -35,6 +36,7 @@ type Module struct {
 	prices      *persistence.PostgresPriceRepository
 	valuation   *persistence.PostgresValuationRepository
 	taxonomy    *persistence.PostgresTaxonomyRepository
+	research    *persistence.PostgresResearchReportRepository
 
 	// Cross-module adapters
 	permissionAdapter *adapter.PermissionCheckerAdapter
@@ -53,10 +55,15 @@ type Module struct {
 	postPrice     *command.PostPriceSnapshotHandler
 	fundAUM       *command.ComputeFundAUMHandler
 
+	// Application queries
+	fundNAVQuery *query.GetLatestFundNAVHandler
+
 	submitDecision *command.SubmitDecisionForExecutionHandler
+	researchCmd    *command.ResearchReportCommandHandler
 
 	// Transport
-	handler *handler.InvestmentHandler
+	handler         *handler.InvestmentHandler
+	researchHandler *handler.ResearchReportHandler
 
 	// Middleware-side permission checker (uses the IAM port — its
 	// HasFunctionPermission signature already matches middleware.PermissionChecker).
@@ -98,6 +105,7 @@ func NewModule(
 	m.prices = persistence.NewPostgresPriceRepository(pool)
 	m.valuation = persistence.NewPostgresValuationRepository(pool)
 	m.taxonomy = persistence.NewPostgresTaxonomyRepository(pool)
+	m.research = persistence.NewPostgresResearchReportRepository(pool)
 
 	// ── Adapters ──────────────────────────────────────────────────────────
 	m.permissionAdapter = adapter.NewPermissionCheckerAdapter(iamPort)
@@ -122,7 +130,7 @@ func NewModule(
 	m.instrumentCmd = command.NewInstrumentCommandHandler(pool, m.instruments, m.auditAdapter, nil)
 	m.postTxn = command.NewPostTransactionHandler(
 		pool, m.portfolios, m.funds, m.instruments,
-		m.positions, m.txns, m.projector,
+		m.positions, m.cash, m.txns, m.projector,
 		workflow, compliance, m.auditAdapter, nil,
 	)
 	m.reverseTxn = command.NewReverseTransactionHandler(
@@ -130,6 +138,10 @@ func NewModule(
 	)
 	m.postPrice = command.NewPostPriceSnapshotHandler(pool, m.prices, m.instruments, m.auditAdapter, nil)
 	m.fundAUM = command.NewComputeFundAUMHandler(pool, m.funds, m.portfolios, m.valuation, m.auditAdapter, nil)
+	m.researchCmd = command.NewResearchReportCommandHandler(pool, m.research, m.auditAdapter, nil)
+
+	// ── Application queries ───────────────────────────────────────────────
+	m.fundNAVQuery = query.NewGetLatestFundNAVHandler(m.funds, m.portfolios, m.cash, m.valuation)
 
 	// Existing decision-submit pipeline (compliance pre-trade gate).
 	// Persistence for the Decision aggregate is not yet implemented; keep
@@ -146,7 +158,9 @@ func NewModule(
 		m.postTxn, m.reverseTxn, m.postPrice,
 		m.fundAUM,
 		m.valuationRun,
+		m.fundNAVQuery,
 	)
+	m.researchHandler = handler.NewResearchReportHandler(m.research, m.researchCmd)
 
 	return m
 }
@@ -220,6 +234,10 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 
 		// ── Ledger (post / reverse) ─────────────────────────────────────
 		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerSimulate))
+			r.Post("/portfolios/{id}/transactions/simulate", h.SimulateTransaction)
+		})
+		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerPost))
 			r.Post("/portfolios/{id}/transactions", h.PostTransaction)
 		})
@@ -239,6 +257,7 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationView))
 			r.Get("/portfolios/{id}/valuations", h.ListValuations)
 			r.Get("/portfolios/{id}/valuations/latest", h.GetLatestValuation)
+			r.Get("/funds/{id}/nav/latest", h.GetLatestFundNAV)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationRun))
@@ -250,6 +269,36 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeFundAUMCompute))
 			r.Post("/funds/{id}/aum/compute", h.ComputeFundAUM)
 		})
+
+		// ── Research reports (CRUD + simple submit/cancel) ──────────────
+		if m.researchHandler != nil {
+			rh := m.researchHandler
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchView))
+				r.Get("/research-reports", rh.ListResearchReports)
+				r.Get("/research-reports/{id}", rh.GetResearchReport)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchCreate))
+				r.Post("/research-reports", rh.CreateResearchReport)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchUpdate))
+				r.Put("/research-reports/{id}", rh.UpdateResearchReport)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchDelete))
+				r.Delete("/research-reports/{id}", rh.DeleteResearchReport)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchSubmit))
+				r.Post("/research-reports/{id}/submit", rh.SubmitResearchReport)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeResearchCancelSubmit))
+				r.Post("/research-reports/{id}/cancel-submit", rh.CancelSubmitResearchReport)
+			})
+		}
 	})
 }
 

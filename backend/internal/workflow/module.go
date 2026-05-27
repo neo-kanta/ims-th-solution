@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow/application/command"
@@ -35,6 +36,7 @@ import (
 
 // Compile-time assertion that *Module satisfies the cross-module contract.
 var _ contract.WorkflowStateProvider = (*Module)(nil)
+var _ contract.WorkflowTradeDayLocker = (*Module)(nil)
 
 // Module owns the workflow state machine, its persistence, and its HTTP transport.
 type Module struct {
@@ -143,10 +145,11 @@ func (m *Module) StartScheduler(ctx context.Context, interval time.Duration) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// contract.WorkflowStateProvider implementation
+// contract workflow guard implementations
 //
 // Exposed to other modules (investment, compliance) via pkg/contract.
-// Both methods read the current workflow__day_states row without locking.
+// Read-side methods do not lock. LockTradeDayForPost uses SELECT FOR UPDATE
+// inside the caller's transaction for the final ledger-post guard.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // IsTradeAllowed reports whether investment trading is permitted for the given
@@ -184,4 +187,32 @@ func (m *Module) IsTransactionLocked(ctx context.Context, contractID uuid.UUID, 
 		return false, nil
 	}
 	return day.IsTransactionLocked(), nil
+}
+
+// LockTradeDayForPost locks the workflow day row inside the caller's
+// transaction and returns its current state. The investment posting flow then
+// enforces DAY_OPEN while the row lock is held.
+func (m *Module) LockTradeDayForPost(
+	ctx context.Context,
+	tx pgx.Tx,
+	contractID uuid.UUID,
+	businessDate time.Time,
+) (*contract.WorkflowDayLock, error) {
+	if m == nil || m.dayRepo == nil {
+		return nil, fmt.Errorf("workflow module not initialised")
+	}
+	if tx == nil {
+		return nil, fmt.Errorf("workflow: transaction is required")
+	}
+	day, err := m.dayRepo.GetForUpdate(ctx, tx, contractID, businessDate)
+	if err != nil {
+		return nil, fmt.Errorf("workflow: locking day state: %w", err)
+	}
+	if day == nil {
+		return &contract.WorkflowDayLock{Exists: false}, nil
+	}
+	return &contract.WorkflowDayLock{
+		Exists:       true,
+		CurrentState: string(day.CurrentState),
+	}, nil
 }

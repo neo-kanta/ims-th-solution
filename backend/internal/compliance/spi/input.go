@@ -30,6 +30,7 @@ type ProposedOrder struct {
 	Side     vo.OrderSide    `json:"side"`
 	Quantity decimal.Decimal `json:"quantity"`
 	Price    decimal.Decimal `json:"price"`
+	Fees     decimal.Decimal `json:"fees"`
 	Currency string          `json:"currency"`
 	Exchange string          `json:"exchange"`
 }
@@ -37,4 +38,10 @@ type ProposedOrder struct {
 // TradeValue returns Quantity * Price.
 func (o *ProposedOrder) TradeValue() decimal.Decimal {
 	return o.Quantity.Mul(o.Price)
+}
+
+// RequiredCash returns the cash required to settle a BUY order. SELL orders do
+// not require upfront cash, so callers that skip SELL checks need not use it.
+func (o *ProposedOrder) RequiredCash() decimal.Decimal {
+	return o.TradeValue().Add(o.Fees)
 }

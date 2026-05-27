@@ -13,6 +13,34 @@ const (
 	CodeManage = "PERMISSIONS_MANAGE"
 )
 
+// Fine-grained permission-management codes stored in the new
+// permission_function_definitions catalog. These are intentionally not emitted
+// by Provider.Permissions because the legacy catalog table currently enforces
+// uppercase codes for existing modules.
+const (
+	CodeUsersView          = "permission.users.view"
+	CodeGroupsView         = "permission.groups.view"
+	CodeRolesView          = "permission.roles.view"
+	CodeFunctionRightsView = "permission.function_rights.view"
+	CodeDataRightsView     = "permission.data_rights.view"
+
+	CodeChangeRequestCreate  = "permission.change_request.create"
+	CodeChangeRequestSubmit  = "permission.change_request.submit"
+	CodeChangeRequestReview  = "permission.change_request.review"
+	CodeChangeRequestApprove = "permission.change_request.approve"
+	CodeChangeRequestMerge   = "permission.change_request.merge"
+	CodeChangeRequestReject  = "permission.change_request.reject"
+	CodeChangeRequestClose   = "permission.change_request.close"
+	CodeChangeRequestCancel  = "permission.change_request.cancel"
+
+	CodeAuditView            = "permission.audit.view"
+	CodeAuditExport          = "permission.audit.export"
+	CodeNotificationView     = "permission.notification.view"
+	CodeNotificationEdit     = "permission.notification.edit"
+	CodeLabelsManage         = "permission.change_request.create"
+	CodeApprovalSettingsView = "permission.change_request.review"
+)
+
 // Provider implements contract.PermissionCatalog for the permissions module.
 type Provider struct{}
 
