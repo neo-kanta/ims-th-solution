@@ -4,6 +4,9 @@ export const thHoldingsMessages = {
       title: "สถานะสินทรัพย์",
       subtitle:
         "ภาพรวมรายวันของสินทรัพย์สภาพคล่อง สินทรัพย์ที่มีความเสี่ยง และการจัดสรรของกองทุน fund-alpha ตัวเลขสะท้อนข้อมูล Accounting Closing ล่าสุด",
+      subtitleTemplate:
+        "ภาพรวมรายวันของสินทรัพย์สภาพคล่อง สินทรัพย์ที่มีความเสี่ยง และการจัดสรรของกองทุน {fund} ตัวเลขสะท้อนข้อมูล Accounting Closing ล่าสุด",
+      unknownFund: "กองทุนนี้",
       loading: "กำลังโหลดข้อมูล…",
       empty: "ไม่มีข้อมูลถือครองสำหรับวันที่เลือก",
       errorTitle: "โหลดข้อมูลถือครองไม่สำเร็จ",
@@ -17,6 +20,7 @@ export const thHoldingsMessages = {
     },
     workspaceTabs: {
       holdings: "การถือครอง",
+      operation: "ปฏิบัติการ",
       stages: "ขั้นตอน",
       decisions: "การตัดสินใจ",
       compliance: "กำกับดูแล",
@@ -104,11 +108,30 @@ export const thHoldingsMessages = {
         total: "ความเสี่ยงรวม",
       },
     },
+    positions: {
+      cardTitle: "ตำแหน่ง",
+      cardSubtitle: "{positions} ตำแหน่ง ใน {portfolios} พอร์ตโฟลิโอ",
+      ticker: "รหัสหลักทรัพย์",
+      name: "ชื่อ",
+      assetClass: "ประเภทสินทรัพย์",
+      quantity: "จำนวน",
+      avgCost: "ต้นทุนเฉลี่ย",
+      costBasis: "มูลค่าต้นทุน",
+      cashLabel: "CASH",
+      cashBalance: "เงินสดคงเหลือ",
+      subtotal: "ผลรวม — มูลค่าต้นทุน (ไม่รวมเงินสด)",
+      empty: "ยังไม่มีตำแหน่งในพอร์ตนี้",
+      loading: "กำลังโหลดตำแหน่ง…",
+      note:
+        "จำนวน ต้นทุนเฉลี่ย และมูลค่าต้นทุน มาจากข้อมูลโปรเจคชันของพอร์ตจริง มูลค่าตลาดและกำไรขาดทุนยังไม่รับรู้รายตำแหน่งจะปรากฏเมื่อเชื่อมต่อ endpoint ราคาแล้ว",
+    },
     ratios: {
       title: "อัตราส่วนพิเศษ",
       subtitle: "เพดานและขั้นต่ำตามนโยบาย",
       foreignExposure: "สัดส่วนการลงทุนต่างประเทศรวม",
       equityBankTierDebt: "สัดส่วนหุ้น + ตราสารหนี้ขั้นธนาคาร",
+      placeholder:
+        "ตัวชี้วัดอัตราส่วนตาม IRG จะปรากฏที่นี่เมื่อ endpoint นโยบายเชื่อมต่อกับชุดกฎที่ใช้งานจริงแล้ว",
       status: {
         OK: "ปกติ",
         WARNING: "เตือน",
@@ -118,17 +141,40 @@ export const thHoldingsMessages = {
     allocation: {
       title: "การจัดสรร",
       byLabel: "ตาม",
+      placeholderSubtitle: "แยกตามภาคและประเทศ",
+      liveSubtitle: "ประเภทสินทรัพย์ / ภาค / ประเทศ / สกุลเงิน",
+      placeholder:
+        "การจัดสรรตามภาค, ประเทศ และสกุลเงิน จะปรากฏที่นี่เมื่อ endpoint สำหรับ holdings-allocation พร้อมใช้งานจาก investment module",
+      emptyForDimension: "ไม่มีข้อมูลสำหรับมิตินี้",
+      loading: "กำลังโหลดการจัดสรร…",
+      dimensionAria: "มิติการจัดสรร",
       dimensions: {
         country: "ประเทศ",
         category: "หมวด",
         industry: "อุตสาหกรรม",
         currency: "สกุลเงิน",
+        assetClass: "ประเภทสินทรัพย์",
+        sector: "ภาค",
       },
       total: "รวม",
     },
     navHistory: {
       title: "ประวัติ Unit NAV",
       subtitle: "{days} วันทำการ (Q{quarter})",
+      placeholderSubtitle: "ชุดข้อมูล NAV ต่อหน่วยรายวัน",
+      liveSubtitle: "ชุดข้อมูล NAV / AUM รายวัน",
+      placeholder:
+        "ประวัติ NAV ต่อหน่วยจะปรากฏที่นี่เมื่อ endpoint สำหรับข้อมูลเวลาเชื่อมต่อแล้ว",
+      unitNavLabel: "NAV ต่อหน่วย",
+      aumLabel: "AUM",
+      loading: "กำลังโหลดประวัติ NAV…",
+      empty: "ไม่มีข้อมูล NAV ในช่วงที่เลือก",
+      chartAria: "แผนภูมิประวัติ NAV",
+      expandTitle: "ขยาย",
+      closeAria: "ปิดแผนภูมิเต็มจอ",
+      fullscreenAria: "ประวัติ NAV — เต็มจอ",
+      points: "จุดข้อมูล",
+      window: "ช่วง",
       high: "สูงสุด",
       low: "ต่ำสุด",
       latest: "ล่าสุด",
@@ -198,5 +244,9 @@ export const thHoldingsMessages = {
     },
     mockDisclaimer:
       "ใช้ข้อมูลตัวอย่าง — รอเชื่อมต่อกับ backend",
+    partialMockDisclaimer:
+      "ส่วนหัว, KPI และสถานะข้อมูลใหม่สดสะท้อนข้อมูลจริงในฐานข้อมูล ส่วนตารางทรัพย์สิน การจัดสรร อัตราส่วนพิเศษ และกราฟ NAV ยังเป็นข้อมูลตัวอย่างจนกว่า API จะพร้อมใช้งาน",
+    livePanelsNote:
+      "ส่วนหัว, KPI, สถานะข้อมูล, ตารางตำแหน่ง, การจัดสรร และกราฟ NAV สะท้อนข้อมูลจริงในฐานข้อมูล มีเพียงอัตราส่วนพิเศษที่ยังเป็น placeholder จนกว่า endpoint อัตราส่วนตามนโยบาย IRG จะเชื่อมต่อ",
   },
 } as const;

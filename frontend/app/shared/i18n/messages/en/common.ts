@@ -57,6 +57,12 @@ export const enCommonMessages = {
     investment: "Investment",
     investmentResearch: "Investment research",
     marketData: "Market data",
+    marketDataTabs: {
+      watchlist: "Data",
+      securities: "Securities",
+      unmapped: "Unmapped",
+      settings: "Settings",
+    },
     administration: "Administration",
     administrationSettings: "Administration settings",
   },

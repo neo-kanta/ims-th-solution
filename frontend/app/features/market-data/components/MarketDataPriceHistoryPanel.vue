@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MarketPricePoint } from "../market-data.types";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{
   history: MarketPricePoint[];
@@ -11,6 +12,7 @@ const emit = defineEmits<{
   (e: "import-history-30"): void;
   (e: "import-history-250"): void;
 }>();
+const { t } = useI18n();
 
 const CHART_WIDTH = 720;
 const CHART_HEIGHT = 200;
@@ -73,12 +75,12 @@ function formatDate(s: string): string {
   <article class="card md-sec-card md-sec-history">
     <header class="card-header md-sec-history__head">
       <div>
-        <span class="card-title">Price history</span>
+        <span class="card-title">{{ t("marketData.headings.priceHistory") }}</span>
         <div class="card-subtitle">
           <template v-if="summary">
             {{ summary.count }} bars · {{ formatDate(summary.first.date) }} → {{ formatDate(summary.last.date) }}
           </template>
-          <template v-else>No history loaded</template>
+          <template v-else>{{ t("marketData.messages.noHistoryLoaded") }}</template>
         </div>
       </div>
       <div
@@ -98,7 +100,7 @@ function formatDate(s: string): string {
           :class="isPositive ? 'md-sec-history__chart--up' : 'md-sec-history__chart--down'"
           :viewBox="`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`"
           role="img"
-          aria-label="Price history chart"
+          :aria-label="t('marketData.headings.priceHistory')"
         >
           <polyline
             :points="polyline"
@@ -115,13 +117,13 @@ function formatDate(s: string): string {
       </div>
 
       <div v-else-if="loading" class="md-sec-history__empty">
-        Loading price history…
+        {{ t("marketData.messages.loadingPriceHistory") }}
       </div>
 
       <div v-else class="md-sec-history__empty">
-        <p class="md-sec-history__empty-title">No price history yet</p>
+        <p class="md-sec-history__empty-title">{{ t("marketData.messages.emptyPriceHistory") }}</p>
         <p class="md-sec-history__empty-text">
-          Import recent bars to populate the chart.
+          {{ t("marketData.messages.importRecentBars") }}
         </p>
         <div class="md-sec-history__empty-actions">
           <button
@@ -129,13 +131,13 @@ function formatDate(s: string): string {
             type="button"
             :disabled="isRunning"
             @click="emit('import-history-30')"
-          >Import 30 days</button>
+          >{{ t("marketData.actions.importHistory30") }}</button>
           <button
             class="btn btn-primary btn-sm"
             type="button"
             :disabled="isRunning"
             @click="emit('import-history-250')"
-          >Import 250 days</button>
+          >{{ t("marketData.actions.importHistory250") }}</button>
         </div>
       </div>
     </div>

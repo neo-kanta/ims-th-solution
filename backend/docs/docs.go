@@ -2282,6 +2282,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/investment/funds/{id}/allocation": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Compute asset-class, sector, country and currency breakdowns for a fund (read-only).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Fund Allocation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundAllocationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/funds/{id}/aum/compute": {
             "post": {
                 "security": [
@@ -2363,6 +2427,76 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/nav-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Time series of NAV-per-unit (unitised funds) or AUM (non-unitised) over a range.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Fund NAV History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M)",
+                        "name": "range",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundNAVHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -6170,6 +6304,27 @@ const docTemplate = `{
                 }
             }
         },
+        "AllocationBucketResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "stable machine key",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "human label",
+                    "type": "string"
+                },
+                "market_value": {
+                    "description": "decimal string in valuation_ccy",
+                    "type": "string"
+                },
+                "pct_of_nav": {
+                    "description": "0..100, two-decimal precision",
+                    "type": "string"
+                }
+            }
+        },
         "AssetClass": {
             "type": "object",
             "properties": {
@@ -6681,6 +6836,10 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255
                 },
+                "require_pretrade_preview": {
+                    "description": "RequirePretradePreview controls the trade-ticket UX on the Operation tab.\nWhen true the UI must run a pre-trade simulation before allowing a post;\nwhen false it posts directly (server still enforces gates).",
+                    "type": "boolean"
+                },
                 "risk_profile": {
                     "type": "string"
                 },
@@ -7135,6 +7294,53 @@ const docTemplate = `{
                 }
             }
         },
+        "FundAllocationResponse": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string"
+                },
+                "by_asset_class": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_country": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_currency": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_sector": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "total_cash": {
+                    "type": "string"
+                },
+                "total_nav": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
         "FundCategory": {
             "type": "object",
             "properties": {
@@ -7181,6 +7387,47 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "FundNAVHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "delta_pct": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "high": {
+                    "type": "string"
+                },
+                "is_empty": {
+                    "type": "boolean"
+                },
+                "latest": {
+                    "type": "string"
+                },
+                "low": {
+                    "type": "string"
+                },
+                "range": {
+                    "type": "string"
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/NAVHistoryPointResponse"
+                    }
+                },
+                "to": {
+                    "type": "string"
                 }
             }
         },
@@ -7266,6 +7513,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "require_pretrade_preview": {
+                    "type": "boolean"
                 },
                 "risk_profile": {
                     "type": "string"
@@ -7968,6 +8218,20 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/UserResponse"
+                }
+            }
+        },
+        "NAVHistoryPointResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "nav_per_unit": {
+                    "type": "string"
                 }
             }
         },
@@ -9545,6 +9809,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "require_pretrade_preview": {
+                    "type": "boolean"
                 },
                 "risk_profile": {
                     "type": "string"

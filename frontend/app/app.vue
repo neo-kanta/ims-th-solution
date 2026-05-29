@@ -6,4 +6,5 @@ useTheme();
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+  <AppToastProvider />
 </template>

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 // Auth layout — used for login/register pages
 const config = useRuntimeConfig();
-const appEnv = config.public.appEnv || "PROD";
+// runtimeConfig values come back as `unknown`/`{}` until they have an
+// explicit slot in nuxt.config.ts — coerce defensively so .toLowerCase()
+// type-checks for the env badge class lookup.
+const appEnv = String(config.public.appEnv ?? "PROD");
 const { t } = useI18n();
 </script>
 

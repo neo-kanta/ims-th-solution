@@ -26,20 +26,18 @@ const distancePct = (w: typeof watchlist[0]) =>
 
 <template>
   <div>
-    <div class="page-header">
-      <div>
-        <div class="breadcrumb" style="margin-bottom:4px;"><span>Portfolio</span><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">Watchlist</span></div>
-        <h1 class="page-title">Watchlist</h1>
-        <p class="page-desc">Monitor selected instruments with threshold-based alert rules</p>
-      </div>
-      <div style="display:flex;gap:8px;">
+    <AppPageHeader
+      title="Watchlist"
+      description="Monitor selected instruments with threshold-based alert rules"
+    >
+      <template #actions>
         <button class="btn btn-secondary btn-sm" @click="showRuleDrawer=true">Manage Rules</button>
         <button class="btn btn-primary btn-sm" @click="showAddDrawer=true">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
           Add to Watchlist
         </button>
-      </div>
-    </div>
+      </template>
+    </AppPageHeader>
 
     <!-- Stats -->
     <div class="grid-4" style="margin-bottom:16px;">

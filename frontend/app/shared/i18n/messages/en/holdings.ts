@@ -4,6 +4,9 @@ export const enHoldingsMessages = {
       title: "Asset positions",
       subtitle:
         "A daily snapshot of liquid, exposed, and allocated positions for fund-alpha. Numbers reflect the most recent Accounting Closing.",
+      subtitleTemplate:
+        "A daily snapshot of liquid, exposed, and allocated positions for {fund}. Numbers reflect the most recent Accounting Closing.",
+      unknownFund: "this fund",
       loading: "Loading holdings…",
       empty: "No holdings to show for the selected date.",
       errorTitle: "Failed to load holdings",
@@ -17,6 +20,7 @@ export const enHoldingsMessages = {
     },
     workspaceTabs: {
       holdings: "Holdings",
+      operation: "Operation",
       stages: "Stages",
       decisions: "Decisions",
       compliance: "Compliance",
@@ -104,11 +108,30 @@ export const enHoldingsMessages = {
         total: "Total exposure",
       },
     },
+    positions: {
+      cardTitle: "Positions",
+      cardSubtitle: "{positions} positions across {portfolios} portfolios",
+      ticker: "Ticker",
+      name: "Name",
+      assetClass: "Asset class",
+      quantity: "Quantity",
+      avgCost: "Avg cost",
+      costBasis: "Cost basis",
+      cashLabel: "CASH",
+      cashBalance: "Cash balance",
+      subtotal: "Subtotal — cost basis (excludes cash)",
+      empty: "No positions have been posted to this portfolio yet.",
+      loading: "Loading positions…",
+      note:
+        "Quantity, average cost and cost basis come from the live portfolio projection. Mark-to-market and per-row unrealised P&L will appear once the per-instrument price-read endpoint lands.",
+    },
     ratios: {
       title: "Special ratios",
       subtitle: "Policy floors and ceilings",
       foreignExposure: "Total foreign exposure",
       equityBankTierDebt: "Equity + bank-tier debt concentration",
+      placeholder:
+        "IRG-derived ratio gauges will surface here once the policy ratios endpoint is connected to the live ruleset.",
       status: {
         OK: "OK",
         WARNING: "Warning",
@@ -118,17 +141,40 @@ export const enHoldingsMessages = {
     allocation: {
       title: "Allocation",
       byLabel: "by",
+      placeholderSubtitle: "Sector and country breakdowns",
+      liveSubtitle: "Asset class / sector / country / currency",
+      placeholder:
+        "Sector, country and currency allocation will appear once the holdings-allocation endpoint is exposed by the investment module.",
+      emptyForDimension: "No allocation data for this dimension.",
+      loading: "Loading allocation…",
+      dimensionAria: "Allocation dimension",
       dimensions: {
         country: "Country",
         category: "Category",
         industry: "Industry",
         currency: "Currency",
+        assetClass: "Asset class",
+        sector: "Sector",
       },
       total: "Total",
     },
     navHistory: {
       title: "Unit NAV history",
       subtitle: "{days} business days (Q{quarter})",
+      placeholderSubtitle: "Daily NAV-per-unit series",
+      liveSubtitle: "Daily NAV / AUM series",
+      placeholder:
+        "Historical NAV-per-unit series will appear here once the time-series read endpoint is wired up.",
+      unitNavLabel: "NAV / unit",
+      aumLabel: "AUM",
+      loading: "Loading NAV history…",
+      empty: "No NAV history available for this range.",
+      chartAria: "NAV history line chart",
+      expandTitle: "Expand",
+      closeAria: "Close fullscreen chart",
+      fullscreenAria: "NAV history — fullscreen",
+      points: "Points",
+      window: "Window",
       high: "High",
       low: "Low",
       latest: "Latest",
@@ -198,5 +244,9 @@ export const enHoldingsMessages = {
     },
     mockDisclaimer:
       "Showing mock data — backend integration pending.",
+    partialMockDisclaimer:
+      "Header, KPIs and freshness reflect live database state; the asset breakdown, allocation, special ratios and NAV history chart are still preview data until those backend endpoints land.",
+    livePanelsNote:
+      "Header, KPIs, freshness flag, positions table, allocation breakdowns and the NAV history chart all reflect live database state. Only special ratios remain a placeholder until the IRG policy-ratio endpoint is wired up.",
   },
 } as const;

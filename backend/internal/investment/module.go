@@ -56,7 +56,9 @@ type Module struct {
 	fundAUM       *command.ComputeFundAUMHandler
 
 	// Application queries
-	fundNAVQuery *query.GetLatestFundNAVHandler
+	fundNAVQuery   *query.GetLatestFundNAVHandler
+	fundAllocQuery *query.GetFundAllocationHandler
+	fundNAVHistory *query.GetFundNAVHistoryHandler
 
 	submitDecision *command.SubmitDecisionForExecutionHandler
 	researchCmd    *command.ResearchReportCommandHandler
@@ -142,6 +144,10 @@ func NewModule(
 
 	// ── Application queries ───────────────────────────────────────────────
 	m.fundNAVQuery = query.NewGetLatestFundNAVHandler(m.funds, m.portfolios, m.cash, m.valuation)
+	m.fundAllocQuery = query.NewGetFundAllocationHandler(
+		m.funds, m.portfolios, m.valuation, m.cash, pool,
+	)
+	m.fundNAVHistory = query.NewGetFundNAVHistoryHandler(m.funds, m.portfolios, m.valuation)
 
 	// Existing decision-submit pipeline (compliance pre-trade gate).
 	// Persistence for the Decision aggregate is not yet implemented; keep
@@ -159,6 +165,8 @@ func NewModule(
 		m.fundAUM,
 		m.valuationRun,
 		m.fundNAVQuery,
+		m.fundAllocQuery,
+		m.fundNAVHistory,
 	)
 	m.researchHandler = handler.NewResearchReportHandler(m.research, m.researchCmd)
 
@@ -258,6 +266,8 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 			r.Get("/portfolios/{id}/valuations", h.ListValuations)
 			r.Get("/portfolios/{id}/valuations/latest", h.GetLatestValuation)
 			r.Get("/funds/{id}/nav/latest", h.GetLatestFundNAV)
+			r.Get("/funds/{id}/allocation", h.GetFundAllocation)
+			r.Get("/funds/{id}/nav-history", h.GetFundNAVHistory)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationRun))

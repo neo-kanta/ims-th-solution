@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SecuritySearchResult, SearchFilter } from "../market-data.types";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 
 const props = defineProps<{
   query: string;
@@ -15,18 +16,19 @@ const emit = defineEmits<{
   (e: "add", id: string): void;
   (e: "open", id: string): void;
 }>();
+const { t } = useI18n();
 
 function onOpen(id: string) {
   emit("open", id);
 }
 
-const filters: { value: SearchFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "stocks", label: "Stocks" },
-  { value: "bonds", label: "Bonds" },
-  { value: "etfs", label: "ETFs" },
-  { value: "fx", label: "FX" },
-  { value: "sources", label: "All sources" },
+const filters: { value: SearchFilter; labelKey: AppTranslationKey }[] = [
+  { value: "all", labelKey: "marketData.filters.all" },
+  { value: "stocks", labelKey: "marketData.filters.stocks" },
+  { value: "bonds", labelKey: "marketData.filters.bonds" },
+  { value: "etfs", labelKey: "marketData.filters.etfs" },
+  { value: "fx", labelKey: "marketData.filters.fx" },
+  { value: "sources", labelKey: "marketData.filters.allSources" },
 ];
 
 function onInput(e: Event) {
@@ -42,8 +44,8 @@ function changeFilter(v: SearchFilter) {
   <div class="card md-search-panel">
     <div class="card-header">
       <div>
-        <span class="card-title">Find &amp; import security</span>
-        <div class="card-subtitle">Search reference data across providers</div>
+        <span class="card-title">{{ t("marketData.headings.findImportSecurity") }}</span>
+        <div class="card-subtitle">{{ t("marketData.messages.searchPrompt") }}</div>
       </div>
     </div>
 
@@ -57,12 +59,12 @@ function changeFilter(v: SearchFilter) {
           <input
             class="form-input"
             :value="props.query"
-            placeholder="Search by ticker, ISIN/CUSIP, symbol, or name"
-            aria-label="Search securities"
+            :placeholder="t('marketData.placeholders.searchSecurities')"
+            :aria-label="t('marketData.labels.search')"
             @input="onInput"
           />
         </div>
-        <div class="md-chip-row" role="tablist" aria-label="Source filter">
+        <div class="md-chip-row" role="tablist" :aria-label="t('marketData.labels.source')">
           <button
             v-for="f in filters"
             :key="f.value"
@@ -71,21 +73,21 @@ function changeFilter(v: SearchFilter) {
             :class="{ 'md-chip--active': props.filter === f.value }"
             @click="changeFilter(f.value)"
           >
-            {{ f.label }}
+            {{ t(f.labelKey) }}
           </button>
         </div>
       </div>
 
       <div class="md-search-results">
         <div class="md-search-results__head">
-          Top matches
-          <span v-if="props.loading" class="md-text-muted"> · searching…</span>
+          {{ t("marketData.messages.topMatches") }}
+          <span v-if="props.loading" class="md-text-muted"> &middot; {{ t("marketData.messages.searching") }}</span>
         </div>
         <div v-if="props.error && props.results.length === 0" class="md-empty">
           {{ props.error }}
         </div>
         <div v-else-if="!props.loading && props.results.length === 0" class="md-empty">
-          {{ props.query ? `No matches for "${props.query}"` : "Type a ticker, ISIN or symbol to search." }}
+          {{ props.query ? t("marketData.messages.noMatches", { query: props.query }) : t("marketData.messages.searchPrompt") }}
         </div>
         <div v-else class="md-search-list">
           <div
@@ -94,7 +96,7 @@ function changeFilter(v: SearchFilter) {
             class="md-search-row-item md-search-row-item--clickable"
             role="button"
             tabindex="0"
-            :aria-label="`Open detail for ${row.symbol}`"
+            :aria-label="`${t('marketData.actions.open')} ${row.symbol}`"
             @click="onOpen(row.id)"
             @keydown.enter.prevent="onOpen(row.id)"
             @keydown.space.prevent="onOpen(row.id)"
@@ -106,7 +108,7 @@ function changeFilter(v: SearchFilter) {
             </div>
             <div class="md-search-row-item__price">
               <div class="md-num">{{ row.currency }}{{ row.price.toLocaleString(undefined, { minimumFractionDigits: 2 }) }}</div>
-              <div v-if="row.ytm != null" class="md-text-muted md-num">YTM {{ row.ytm.toFixed(2) }}%</div>
+              <div v-if="row.ytm != null" class="md-text-muted md-num">{{ t("marketData.labels.ytm") }} {{ row.ytm.toFixed(2) }}%</div>
               <div
                 v-else-if="row.change != null"
                 class="md-num"
@@ -127,9 +129,9 @@ function changeFilter(v: SearchFilter) {
               <button
                 class="btn btn-sm btn-secondary"
                 type="button"
-                :aria-label="`Open ${row.symbol}`"
+                :aria-label="`${t('marketData.actions.open')} ${row.symbol}`"
                 @click.stop="onOpen(row.id)"
-              >Open</button>
+              >{{ t("marketData.actions.open") }}</button>
               <button
                 class="btn btn-sm"
                 :class="row.watching ? 'btn-secondary' : 'btn-primary'"
@@ -137,7 +139,7 @@ function changeFilter(v: SearchFilter) {
                 :disabled="row.watching"
                 @click.stop="$emit('add', row.id)"
               >
-                {{ row.watching ? "Watching" : "Add" }}
+                {{ row.watching ? t("marketData.actions.watching") : t("marketData.actions.add") }}
               </button>
             </div>
           </div>

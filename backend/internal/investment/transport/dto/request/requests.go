@@ -21,20 +21,25 @@ type CreateFundRequest struct {
 	Benchmark      string     `json:"benchmark"`
 	RiskProfile    string     `json:"risk_profile"`
 	HasUnits       bool       `json:"has_units"`
-	ExternalPAMRef string     `json:"external_pam_ref"`
+	// RequirePretradePreview controls the trade-ticket UX on the Operation tab.
+	// When true the UI must run a pre-trade simulation before allowing a post;
+	// when false it posts directly (server still enforces gates).
+	RequirePretradePreview bool   `json:"require_pretrade_preview"`
+	ExternalPAMRef         string `json:"external_pam_ref"`
 }
 
 // UpdateFundRequest is the JSON body for PUT /investment/funds/{id}.
 type UpdateFundRequest struct {
-	ExpectedVersion int        `json:"expected_version" validate:"required,min=1"`
-	Name            *string    `json:"name"`
-	ShortName       *string    `json:"short_name"`
-	FundCategoryID  *uuid.UUID `json:"fund_category_id"`
-	ManagerUserID   *uuid.UUID `json:"manager_user_id"`
-	Benchmark       *string    `json:"benchmark"`
-	RiskProfile     *string    `json:"risk_profile"`
-	Status          *string    `json:"status"`
-	ExternalPAMRef  *string    `json:"external_pam_ref"`
+	ExpectedVersion        int        `json:"expected_version" validate:"required,min=1"`
+	Name                   *string    `json:"name"`
+	ShortName              *string    `json:"short_name"`
+	FundCategoryID         *uuid.UUID `json:"fund_category_id"`
+	ManagerUserID          *uuid.UUID `json:"manager_user_id"`
+	Benchmark              *string    `json:"benchmark"`
+	RiskProfile            *string    `json:"risk_profile"`
+	Status                 *string    `json:"status"`
+	ExternalPAMRef         *string    `json:"external_pam_ref"`
+	RequirePretradePreview *bool      `json:"require_pretrade_preview"`
 }
 
 // DeleteFundRequest is the JSON body for DELETE /investment/funds/{id}.

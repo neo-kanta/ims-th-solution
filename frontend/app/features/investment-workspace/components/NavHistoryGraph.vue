@@ -113,7 +113,9 @@ function formatDateLabel(dateStr: string): string {
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const mIdx = parseInt(parts[1], 10) - 1;
-      return `${months[mIdx]} ${parts[2]}`;
+      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
+      const day = parseInt(parts[2], 10).toString();
+      return t("holdings.dateFormats.dayMonth" as any, { month, day }, `${month} ${day}`);
     }
   } catch (e) {}
   return dateStr;

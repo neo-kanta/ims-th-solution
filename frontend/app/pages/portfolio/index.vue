@@ -1,278 +1,391 @@
 <script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+
+import AppButton from "~/shared/ui/AppButton.vue";
+import AppCard from "~/shared/ui/AppCard.vue";
+import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
+
+import CashBalancesCard from "~/features/investment-ledger/components/CashBalancesCard.vue";
+import HoldingsTable from "~/features/investment-ledger/components/HoldingsTable.vue";
+import OrderTicketDrawer from "~/features/investment-ledger/components/OrderTicketDrawer.vue";
+import TransactionLedgerTable from "~/features/investment-ledger/components/TransactionLedgerTable.vue";
+import { useInstrumentDirectory } from "~/features/investment-ledger/composables/useInstrumentDirectory";
+import { useOrderTicket } from "~/features/investment-ledger/composables/useOrderTicket";
+import { usePortfolioDirectory } from "~/features/investment-ledger/composables/usePortfolioDirectory";
+import { usePortfolioLedger } from "~/features/investment-ledger/composables/usePortfolioLedger";
+import { shortenId, todayIso } from "~/features/investment-ledger/lib/ledgerFormat";
+
 definePageMeta({
-  layout: 'dashboard',
-  middleware: ['auth', 'permission'],
-  meta: { permission: 'PORTFOLIO_VIEW' },
-})
+  layout: "dashboard",
+  middleware: ["auth", "permission"],
+  permission: "INVESTMENT_PORTFOLIO_VIEW",
+});
 
-const activeTab      = ref('holdings')
-const selectedPos    = ref<string | null>(null)
-const showPosDrawer  = ref(false)
-const staleNAVWarn   = ref(true)
-const filterContract = ref('ABCFLEX1')
+const authStore = useAuthStore();
+const canSimulate = computed(() => authStore.hasPermission("INVESTMENT_LEDGER_SIMULATE"));
+const canPost = computed(() => authStore.hasPermission("INVESTMENT_LEDGER_POST"));
 
-const holdings = [
-  { id: 'h1', security: 'CPALL TB',   category: 'Equity', sector: 'Commerce',     qty: 500000, avgCost: 45.20, lastNav: 49.10, mktValue: 24550000, unrealPL: 1950000, plPct: 8.63, weight: 23.4 },
-  { id: 'h2', security: 'PTT TB',     category: 'Equity', sector: 'Energy',       qty: 200000, avgCost: 68.50, lastNav: 69.00, mktValue: 13800000, unrealPL: 100000,  plPct: 0.73, weight: 13.2 },
-  { id: 'h3', security: 'ADVANC TB',  category: 'Equity', sector: 'Technology',   qty: 120000, avgCost: 235.0, lastNav: 240.5, mktValue: 28860000, unrealPL: 660000,  plPct: 2.34, weight: 27.5 },
-  { id: 'h4', security: 'KBANK TB',   category: 'Equity', sector: 'Banking',      qty: 80000,  avgCost: 145.0, lastNav: 142.0, mktValue: 11360000, unrealPL: -240000, plPct: -2.07, weight: 10.8 },
-  { id: 'h5', security: 'THB Cash',   category: 'Cash',   sector: '—',            qty: 1,      avgCost: 12450000, lastNav: 12450000, mktValue: 12450000, unrealPL: 0, plPct: 0, weight: 11.9 },
-  { id: 'h6', security: 'GOVT10Y',    category: 'Bonds',  sector: 'Government',   qty: 1000,   avgCost: 9950, lastNav: 10020, mktValue: 10020000, unrealPL: 70000, plPct: 0.70, weight: 9.6 },
-  { id: 'h7', security: 'AOT TB',     category: 'Equity', sector: 'Transport',    qty: 100000, avgCost: 62.0,  lastNav: 60.5,  mktValue: 6050000,  unrealPL: -150000, plPct: -2.42, weight: 5.8 },
-]
+const portfolios = usePortfolioDirectory();
+const ledger = usePortfolioLedger();
+const instruments = useInstrumentDirectory();
+const ticket = useOrderTicket();
 
-const totalValue    = computed(() => holdings.reduce((s, h) => s + h.mktValue, 0))
-const totalUnrealPL = computed(() => holdings.reduce((s, h) => s + h.unrealPL, 0))
-const totalCost     = computed(() => holdings.reduce((s, h) => s + (h.avgCost * (h.category === 'Cash' ? 1 : h.qty)), 0))
+const activeTab = ref<"holdings" | "ledger">("holdings");
+const showTicket = ref(false);
 
-const txns = [
-  { date: '2026-03-13', type: 'SELL', security: 'PTT TB',    qty: 20000, price: 69.00, amount: 1380000, status: 'SETTLED' },
-  { date: '2026-03-12', type: 'BUY',  security: 'ADVANC TB', qty: 15000, price: 240.0, amount: 3600000, status: 'SETTLED' },
-  { date: '2026-03-11', type: 'BUY',  security: 'CPALL TB',  qty: 30000, price: 48.50, amount: 1455000, status: 'SETTLED' },
-  { date: '2026-03-10', type: 'SELL', security: 'AOT TB',    qty: 5000,  price: 61.20, amount: 306000,  status: 'SETTLED' },
-]
+const activePortfolioId = computed(() => portfolios.activePortfolioId.value);
+const activePortfolio = computed(() => portfolios.activePortfolio.value);
+
+const summaryCash = computed(() => ledger.cash.value);
+
+onMounted(async () => {
+  // The watcher below picks up the activePortfolioId change inside load()
+  // and triggers refreshAll on its own — don't double-fetch here.
+  await portfolios.load();
+  // Kick instrument directory load in parallel — the ledger tables enrich
+  // ticker labels from this list, and the ticket reuses it instantly.
+  void instruments.ensureLoaded();
+});
+
+watch(activePortfolioId, async (next) => {
+  if (!next) {
+    ledger.reset();
+    return;
+  }
+  await ledger.refreshAll(next);
+});
+
+function onPortfolioChange(event: Event) {
+  const id = (event.target as HTMLSelectElement).value;
+  if (id) portfolios.setActive(id);
+}
+
+function openTicket() {
+  if (!activePortfolioId.value || !activePortfolio.value) return;
+  ticket.open(activePortfolioId.value, {
+    currency: activePortfolio.value.valuation_currency ?? activePortfolio.value.base_currency,
+    business_date: todayIso(),
+  });
+  showTicket.value = true;
+}
+
+function closeTicket() {
+  showTicket.value = false;
+  ticket.close();
+}
+
+async function onTransactionPosted() {
+  if (!activePortfolioId.value) return;
+  // Refresh ledger sections immediately so the operator sees the new state
+  // before they decide whether to dismiss the drawer.
+  await ledger.refreshAll(activePortfolioId.value);
+  activeTab.value = "ledger";
+}
+
+async function refreshLedger() {
+  if (!activePortfolioId.value) return;
+  await ledger.refreshAll(activePortfolioId.value);
+}
 </script>
 
 <template>
-  <div>
-    <div class="page-header">
-      <div>
-        <div class="breadcrumb" style="margin-bottom:4px;"><span>Portfolio</span><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">Portfolio Management</span></div>
-        <h1 class="page-title">Portfolio Management</h1>
-        <p class="page-desc">Holdings, valuations, simulated P&amp;L, and transaction ledger — paper trading phase</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <select v-model="filterContract" class="form-select" style="height:30px;font-size:12.5px;width:140px;padding:0 8px;">
-          <option>ABCFLEX1</option><option>ABCFLEX2</option><option>ABCEQ1</option><option>ABCBOND1</option>
+  <section class="portfolio-page">
+    <AppPageHeader
+      title="Portfolio operations"
+      description="Live holdings, cash, and transaction ledger backed by the investment service. Use Simulate to preview pre-trade compliance, cash impact, and position changes before posting."
+    >
+      <template #actions>
+        <select
+          v-if="portfolios.portfolios.value.length > 0"
+          class="portfolio-page__select"
+          :value="activePortfolioId ?? ''"
+          aria-label="Select portfolio"
+          @change="onPortfolioChange"
+        >
+          <option
+            v-for="p in portfolios.portfolios.value"
+            :key="p.id"
+            :value="p.id ?? ''"
+          >
+            {{ p.code ?? shortenId(p.id) }}<span v-if="p.name"> — {{ p.name }}</span>
+            <span v-if="p.base_currency"> · {{ p.base_currency }}</span>
+          </option>
         </select>
-        <button class="btn btn-secondary btn-sm">Export</button>
-      </div>
+        <AppButton variant="secondary" size="sm" :disabled="!activePortfolioId" @click="refreshLedger">
+          Refresh
+        </AppButton>
+        <AppButton
+          variant="primary"
+          size="sm"
+          :disabled="!activePortfolioId || !canSimulate"
+          @click="openTicket"
+        >
+          New order
+        </AppButton>
+      </template>
+    </AppPageHeader>
+
+    <div v-if="portfolios.loading.value" class="portfolio-page__notice">
+      Loading portfolios…
     </div>
 
-    <!-- Stale NAV warning -->
-    <div v-if="staleNAVWarn" class="alert alert-warning" style="margin-bottom:14px;">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;"><path d="M8 2L1 14h14L8 2z"/></svg>
-      <div><strong>Stale NAV Warning:</strong> Market data for AOT TB has not been refreshed in over 4 hours. Valuations may be inaccurate.</div>
-      <button class="btn btn-warning btn-sm" style="margin-left:auto;flex-shrink:0;" @click="staleNAVWarn=false">Dismiss</button>
+    <div v-else-if="portfolios.error.value" class="portfolio-page__notice portfolio-page__notice--error" role="alert">
+      {{ portfolios.error.value }}
     </div>
 
-    <!-- Summary Stats -->
-    <div class="grid-4" style="margin-bottom:16px;">
-      <div class="stat-card">
-        <div class="stat-card-label">Total Portfolio Value</div>
-        <div class="stat-card-value numeric" style="font-size:20px;">฿{{ (totalValue/1000000).toFixed(2) }}M</div>
-        <div class="stat-card-meta">As of 13 Mar 2026 14:30</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Total Cost Basis</div>
-        <div class="stat-card-value numeric" style="font-size:20px;">฿{{ (totalCost/1000000).toFixed(2) }}M</div>
-        <div class="stat-card-meta">Average cost across holdings</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Unrealized P&amp;L</div>
-        <div class="stat-card-value numeric" style="font-size:20px;" :class="totalUnrealPL >= 0 ? 'positive' : 'negative'">
-          {{ totalUnrealPL >= 0 ? '+' : '' }}฿{{ (totalUnrealPL/1000000).toFixed(2) }}M
-        </div>
-        <div class="stat-card-meta" :class="totalUnrealPL >= 0 ? 'positive' : 'negative'">
-          {{ ((totalUnrealPL / totalCost) * 100).toFixed(2) }}% on cost
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-label">Cash Position</div>
-        <div class="stat-card-value numeric" style="font-size:20px;">฿12.45M</div>
-        <div class="stat-card-meta">11.9% of portfolio</div>
-      </div>
+    <div v-else-if="portfolios.portfolios.value.length === 0" class="portfolio-page__notice">
+      No portfolios are visible with your current permissions.
     </div>
 
-    <!-- Category Allocation Mini Chart -->
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-header"><span class="card-title">Asset Allocation</span><span style="font-size:12px;color:#64748b;">{{ filterContract }}</span></div>
-      <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-          <div v-for="cat in [
-            { name: 'Equity',    weight: 80.7, color: '#2563eb' },
-            { name: 'Bonds',     weight: 9.6,  color: '#0891b2' },
-            { name: 'Cash',      weight: 11.9, color: '#64748b' },
-            { name: 'Limit (Eq)', weight: 75,  color: '#dc2626', isLimit: true },
-            { name: 'Limit (Bd)', weight: 30,  color: '#d97706', isLimit: true },
-          ]" :key="cat.name" style="text-align:center;">
-            <div style="display:flex;align-items:flex-end;justify-content:center;height:60px;margin-bottom:4px;">
-              <div style="width:32px;border-radius:3px 3px 0 0;transition:height 0.3s;"
-                :style="`height:${Math.min(cat.weight,100) * 0.6}px;background:${cat.isLimit ? 'repeating-linear-gradient(45deg,' + cat.color + ',' + cat.color + ' 2px,transparent 2px,transparent 6px)' : cat.color};border:${cat.isLimit ? '1px dashed ' + cat.color : 'none'};`"
-              ></div>
+    <template v-else>
+      <div v-if="!canSimulate" class="portfolio-page__notice portfolio-page__notice--warn">
+        You can view this portfolio but cannot simulate or post orders. Required permissions:
+        <code>INVESTMENT_LEDGER_SIMULATE</code> and <code>INVESTMENT_LEDGER_POST</code>.
+      </div>
+
+      <div class="portfolio-page__grid">
+        <AppCard
+          v-if="activePortfolio"
+          :title="activePortfolio.code ?? 'Portfolio'"
+          :subtitle="`${activePortfolio.name ?? 'Unnamed portfolio'} · ${activePortfolio.base_currency ?? '—'} · ${activePortfolio.status ?? '—'}`"
+        >
+          <dl class="portfolio-page__meta">
+            <div>
+              <dt>Strategy</dt>
+              <dd>{{ activePortfolio.strategy_code ?? "—" }}</dd>
             </div>
-            <div style="font-size:13px;font-weight:700;" :style="`color:${cat.isLimit ? cat.color : '#0f172a'}`">{{ cat.weight }}%</div>
-            <div style="font-size:11px;color:#94a3b8;">{{ cat.name }}</div>
-          </div>
-        </div>
-        <div class="alert alert-error" style="margin-top:12px;">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;"><path d="M8 2L1 14h14L8 2z"/></svg>
-          <div style="font-size:12px;"><strong>Category limit breach:</strong> Equity allocation (80.7%) exceeds the configured IRG limit of 75%. No further BUY decisions for equity will pass IRG until rebalanced.</div>
-        </div>
-      </div>
-    </div>
+            <div>
+              <dt>Tax lot method</dt>
+              <dd>{{ activePortfolio.tax_lot_method ?? "—" }}</dd>
+            </div>
+            <div>
+              <dt>Valuation ccy</dt>
+              <dd>{{ activePortfolio.valuation_currency ?? activePortfolio.base_currency ?? "—" }}</dd>
+            </div>
+            <div>
+              <dt>Inception</dt>
+              <dd>{{ activePortfolio.inception_date ?? "—" }}</dd>
+            </div>
+            <div>
+              <dt>Holdings</dt>
+              <dd>{{ ledger.holdings.value.length }}</dd>
+            </div>
+            <div>
+              <dt>Transactions</dt>
+              <dd>{{ ledger.transactionsTotal.value }}</dd>
+            </div>
+          </dl>
+        </AppCard>
 
-    <!-- Tabs: Holdings / Transactions -->
-    <div class="card">
-      <div class="card-header" style="padding-bottom:0;">
-        <div class="tab-bar" style="border-bottom:none;flex:1;">
-          <div class="tab-item" :class="activeTab==='holdings'?'active':''" @click="activeTab='holdings'">Holdings <span class="tab-count">{{ holdings.length }}</span></div>
-          <div class="tab-item" :class="activeTab==='txns'?'active':''" @click="activeTab='txns'">Transaction Ledger <span class="tab-count">{{ txns.length }}</span></div>
-        </div>
+        <AppCard title="Cash on hand" subtitle="Balances by settlement currency">
+          <CashBalancesCard
+            :balances="summaryCash"
+            :loading="ledger.loadingCash.value"
+            :error="ledger.cashError.value"
+          />
+        </AppCard>
       </div>
 
-      <!-- Holdings Table -->
-      <template v-if="activeTab==='holdings'">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="sortable sorted">Security</th>
-              <th>Category</th>
-              <th>Sector</th>
-              <th class="col-right">Quantity</th>
-              <th class="col-right">Avg Cost</th>
-              <th class="col-right">Last NAV</th>
-              <th class="col-right">Mkt Value (฿)</th>
-              <th class="col-right">Unrealized P&amp;L</th>
-              <th class="col-right">P&amp;L %</th>
-              <th class="col-right">Weight</th>
-              <th class="col-action"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="h in holdings" :key="h.id"
-              @click="selectedPos=h.id; showPosDrawer=true"
-              style="cursor:pointer;"
-              :class="h.plPct < -5 ? 'row-error' : ''"
+      <AppCard
+        :title="activeTab === 'holdings' ? 'Holdings' : 'Transaction ledger'"
+        :subtitle="
+          activeTab === 'holdings'
+            ? 'Current positions and average cost basis.'
+            : 'Most recent posted transactions for this portfolio.'
+        "
+      >
+        <template #header-actions>
+          <div class="portfolio-page__tabs" role="tablist">
+            <button
+              type="button"
+              class="portfolio-page__tab"
+              :class="{ 'portfolio-page__tab--active': activeTab === 'holdings' }"
+              role="tab"
+              :aria-selected="activeTab === 'holdings'"
+              @click="activeTab = 'holdings'"
             >
-              <td style="font-weight:600;">{{ h.security }}</td>
-              <td><span class="badge badge-neutral" style="font-size:10px;">{{ h.category }}</span></td>
-              <td style="font-size:12.5px;color:#64748b;">{{ h.sector }}</td>
-              <td class="col-right numeric">{{ h.category === 'Cash' ? '—' : h.qty.toLocaleString() }}</td>
-              <td class="col-right numeric">{{ h.category === 'Cash' ? '—' : '฿' + h.avgCost.toFixed(2) }}</td>
-              <td class="col-right numeric">
-                <span :class="h.security === 'AOT TB' ? 'badge badge-warning' : ''" style="font-size:h.security==='AOT TB'?'11px':''">
-                  ฿{{ h.lastNav.toLocaleString() }}
-                </span>
-              </td>
-              <td class="col-right numeric" style="font-weight:600;">฿{{ h.mktValue.toLocaleString() }}</td>
-              <td class="col-right numeric" :class="h.unrealPL >= 0 ? 'positive' : 'negative'">
-                {{ h.unrealPL >= 0 ? '+' : '' }}฿{{ h.unrealPL.toLocaleString() }}
-              </td>
-              <td class="col-right numeric" :class="h.plPct >= 0 ? 'positive' : 'negative'">
-                {{ h.plPct >= 0 ? '+' : '' }}{{ h.plPct.toFixed(2) }}%
-              </td>
-              <td class="col-right">
-                <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;">
-                  <div style="width:40px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;">
-                    <div :style="`width:${h.weight}%;height:100%;background:#2563eb;`"></div>
-                  </div>
-                  <span class="numeric" style="font-size:12px;color:#374151;">{{ h.weight }}%</span>
-                </div>
-              </td>
-              <td class="col-action">
-                <button class="btn btn-ghost btn-icon-sm">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 4h14M1 8h10M1 12h6"/></svg>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0;">
-              <td colspan="6" style="padding:8px 12px;font-size:12.5px;color:#374151;">Total</td>
-              <td class="col-right numeric" style="padding:8px 12px;">฿{{ totalValue.toLocaleString() }}</td>
-              <td class="col-right numeric" style="padding:8px 12px;" :class="totalUnrealPL >= 0 ? 'positive' : 'negative'">
-                {{ totalUnrealPL >= 0 ? '+' : '' }}฿{{ totalUnrealPL.toLocaleString() }}
-              </td>
-              <td class="col-right numeric" style="padding:8px 12px;" :class="totalUnrealPL >= 0 ? 'positive' : 'negative'">
-                {{ ((totalUnrealPL / totalCost)*100).toFixed(2) }}%
-              </td>
-              <td style="padding:8px 12px;" class="col-right">100%</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </template>
+              Holdings
+              <span class="portfolio-page__tab-count">{{ ledger.holdings.value.length }}</span>
+            </button>
+            <button
+              type="button"
+              class="portfolio-page__tab"
+              :class="{ 'portfolio-page__tab--active': activeTab === 'ledger' }"
+              role="tab"
+              :aria-selected="activeTab === 'ledger'"
+              @click="activeTab = 'ledger'"
+            >
+              Ledger
+              <span class="portfolio-page__tab-count">{{ ledger.transactionsTotal.value }}</span>
+            </button>
+          </div>
+        </template>
 
-      <!-- Transactions Table -->
-      <template v-if="activeTab==='txns'">
-        <div class="card-header" style="border-top:1px solid #f1f5f9;">
-          <div class="filter-bar">
-            <select class="form-select" style="height:28px;font-size:12px;width:100px;padding:0 8px;"><option>All Types</option><option>BUY</option><option>SELL</option></select>
-            <input class="form-input" type="date" style="height:28px;font-size:12px;width:130px;" value="2026-03-10" />
-            <span style="color:#94a3b8;font-size:13px;">to</span>
-            <input class="form-input" type="date" style="height:28px;font-size:12px;width:130px;" value="2026-03-13" />
-          </div>
-        </div>
-        <table class="data-table">
-          <thead><tr>
-            <th>Date</th><th>Type</th><th>Security</th><th class="col-right">Quantity</th>
-            <th class="col-right">Price (฿)</th><th class="col-right">Amount (฿)</th><th>Status</th>
-          </tr></thead>
-          <tbody>
-            <tr v-for="t in txns" :key="t.date+t.security">
-              <td class="col-mono" style="color:#475569;">{{ t.date }}</td>
-              <td><span class="badge" :class="t.type==='BUY'?'badge-info':'badge-error'" style="font-size:10px;">{{ t.type }}</span></td>
-              <td style="font-weight:600;">{{ t.security }}</td>
-              <td class="col-right numeric">{{ t.qty.toLocaleString() }}</td>
-              <td class="col-right numeric">฿{{ t.price.toFixed(2) }}</td>
-              <td class="col-right numeric" style="font-weight:600;">฿{{ t.amount.toLocaleString() }}</td>
-              <td><span class="badge badge-teal" style="font-size:10px;">{{ t.status }}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </template>
-      <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;color:#64748b;">{{ activeTab==='holdings' ? holdings.length + ' positions' : txns.length + ' transactions' }}</span>
-        <button class="btn btn-secondary btn-sm">Export CSV</button>
-      </div>
-    </div>
-
-    <!-- Position Detail Drawer -->
-    <template v-if="showPosDrawer && selectedPos">
-      <div class="drawer-overlay" @click="showPosDrawer=false"></div>
-      <div class="drawer">
-        <div class="drawer-header">
-          <div>
-            <div class="drawer-title">Position Detail</div>
-            <div class="drawer-subtitle">{{ holdings.find(h=>h.id===selectedPos)?.security }} &nbsp;·&nbsp; {{ filterContract }}</div>
-          </div>
-          <button class="btn btn-ghost btn-icon-sm" @click="showPosDrawer=false"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg></button>
-        </div>
-        <div class="drawer-body" style="display:flex;flex-direction:column;gap:16px;" v-if="holdings.find(h=>h.id===selectedPos) as any">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div style="padding:10px 12px;background:#f8fafc;border-radius:5px;border:1px solid #e2e8f0;" v-for="field in [
-              {label:'Quantity', value: holdings.find(h=>h.id===selectedPos)?.qty?.toLocaleString()},
-              {label:'Avg Cost', value:'฿' + holdings.find(h=>h.id===selectedPos)?.avgCost?.toFixed(2)},
-              {label:'Last NAV', value:'฿' + holdings.find(h=>h.id===selectedPos)?.lastNav?.toLocaleString()},
-              {label:'Market Value', value:'฿' + holdings.find(h=>h.id===selectedPos)?.mktValue?.toLocaleString()},
-              {label:'Unrealized P&L', value:(holdings.find(h=>h.id===selectedPos)?.unrealPL??0)>=0?'+฿'+(holdings.find(h=>h.id===selectedPos)?.unrealPL??0).toLocaleString():'฿'+(holdings.find(h=>h.id===selectedPos)?.unrealPL??0).toLocaleString()},
-              {label:'P&L %', value:((holdings.find(h=>h.id===selectedPos)?.plPct??0)>=0?'+':'')+holdings.find(h=>h.id===selectedPos)?.plPct?.toFixed(2)+'%'},
-            ]" :key="field.label">
-              <div class="text-label" style="margin-bottom:3px;">{{ field.label }}</div>
-              <div class="numeric" style="font-size:14px;font-weight:600;">{{ field.value }}</div>
-            </div>
-          </div>
-          <div>
-            <div class="text-label" style="margin-bottom:6px;">Valuation History (7 days)</div>
-            <div style="display:flex;align-items:flex-end;gap:3px;height:60px;padding:0 4px;">
-              <div v-for="(v,i) in [44.8,45.2,46.1,47.5,48.0,48.8,49.1]" :key="i"
-                style="flex:1;background:#dbeafe;border-radius:2px 2px 0 0;min-height:4px;"
-                :style="`height:${((v-44)/6)*100}%;`"
-                :title="'฿' + v"
-              ></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:3px;">
-              <span>Mar 7</span><span>Mar 8</span><span>Mar 9</span><span>Mar 10</span><span>Mar 11</span><span>Mar 12</span><span>Mar 13</span>
-            </div>
-          </div>
-        </div>
-        <div class="drawer-footer">
-          <button class="btn btn-secondary btn-sm" @click="showPosDrawer=false">Close</button>
-          <button class="btn btn-primary btn-sm">Create Decision</button>
-        </div>
-      </div>
+        <HoldingsTable
+          v-if="activeTab === 'holdings'"
+          :holdings="ledger.holdings.value"
+          :instruments="instruments.items.value"
+          :base-currency="activePortfolio?.base_currency ?? ''"
+          :loading="ledger.loadingHoldings.value"
+          :error="ledger.holdingsError.value"
+        />
+        <TransactionLedgerTable
+          v-else
+          :transactions="ledger.transactions.value"
+          :instruments="instruments.items.value"
+          :loading="ledger.loadingTransactions.value"
+          :error="ledger.transactionsError.value"
+        />
+      </AppCard>
     </template>
-  </div>
+
+    <OrderTicketDrawer
+      :open="showTicket"
+      :portfolio="activePortfolio"
+      :ticket="ticket"
+      :can-simulate="canSimulate"
+      :can-post="canPost"
+      @close="closeTicket"
+      @posted="onTransactionPosted"
+    />
+  </section>
 </template>
+
+<style scoped>
+.portfolio-page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.portfolio-page__select {
+  height: 36px;
+  min-width: 220px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.portfolio-page__select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.portfolio-page__notice {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-card-muted);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.portfolio-page__notice--error {
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border-color: var(--alert-danger-border);
+}
+
+.portfolio-page__notice--warn {
+  background: var(--alert-warning-bg);
+  color: var(--alert-warning-text);
+  border-color: var(--alert-warning-border);
+}
+
+.portfolio-page__notice code {
+  font-family: var(--font-family-mono);
+  font-size: 0.85em;
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+}
+
+.portfolio-page__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--space-4);
+}
+
+.portfolio-page__meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+
+.portfolio-page__meta > div {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card-muted);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.portfolio-page__meta dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.portfolio-page__meta dd {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-page__tabs {
+  display: inline-flex;
+  background: var(--bg-card-muted);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.portfolio-page__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.portfolio-page__tab--active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.portfolio-page__tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 960px) {
+  .portfolio-page__grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

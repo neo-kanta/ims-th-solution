@@ -3,11 +3,13 @@
  *
  * Backend has no aggregator endpoint yet, so we compose the view model from
  * four reads:
- *   1. GET /reference-data/securities/{id}          — identity + mappings
- *      (with a search fallback for IMS-symbol URLs)
- *   2. GET /market-data/quote?symbol=…              — latest quote
- *   3. GET /market-data/history?symbol=…&limit=250  — price history
- *   4. (TODO) GET /market-data/sync-activity?security_id=…
+ *   1. GET /api/v1/reference-data/securities/{id}  — canonical identity +
+ *      mappings (with a search fallback for IMS-symbol URLs). This endpoint
+ *      belongs to the Market Data feature on the frontend; "reference data"
+ *      is a backend-internal name.
+ *   2. GET /api/v1/market-data/quote?symbol=…              — latest quote
+ *   3. GET /api/v1/market-data/history?symbol=…&limit=250  — price history
+ *   4. (TODO) GET /api/v1/market-data/sync-activity?security_id=…
  *      — not implemented on the backend; we render an empty state.
  *
  * Sync actions go through the import-batches endpoints, exactly mirroring the
@@ -18,11 +20,11 @@
  */
 import { marketDataApi } from "../services/marketDataApi";
 import type { ApiPriceBar, ApiQuote } from "../services/marketDataApi";
-import { referenceDataApi } from "~/features/reference-data/services/referenceDataApi";
+import { marketDataCatalogApi } from "../services/marketDataCatalogApi";
 import type {
   ApiSecurity,
   ApiProviderMapping,
-} from "~/features/reference-data/services/referenceDataApi";
+} from "../services/marketDataCatalogApi";
 import { useImportBatches } from "./useImportBatches";
 import { deriveDataQuality } from "./dataQuality";
 import type {
@@ -131,7 +133,7 @@ export function useMarketDataSecurityDetail(securityIdRef: Ref<string>) {
   async function resolveSecurity(id: string): Promise<ApiSecurity | null> {
     try {
       if (looksLikeUuid(id)) {
-        return await referenceDataApi.getSecurity(id);
+        return await marketDataCatalogApi.getSecurity(id);
       }
     } catch (err) {
       const status = (err as { status?: number } | null)?.status;
@@ -141,7 +143,7 @@ export function useMarketDataSecurityDetail(securityIdRef: Ref<string>) {
     }
     // Fallback: route param is an IMS symbol or display symbol — search.
     try {
-      const resp = await referenceDataApi.searchSecurities({ query: id, limit: 5 });
+      const resp = await marketDataCatalogApi.searchSecurities({ query: id, limit: 5 });
       const items = resp.items ?? [];
       const upper = id.toUpperCase();
       const exact = items.find(

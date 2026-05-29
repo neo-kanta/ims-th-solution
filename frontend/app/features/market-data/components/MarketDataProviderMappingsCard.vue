@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProviderMappingView } from "../market-data.types";
+import { useI18n } from "~/composables/useI18n";
 
 defineProps<{
   mappings: ProviderMappingView[];
@@ -11,6 +12,7 @@ const emit = defineEmits<{
   (e: "manage"): void;
   (e: "open-unmapped"): void;
 }>();
+const { t } = useI18n();
 
 function statusVariant(status?: string): string {
   switch (status) {
@@ -24,31 +26,31 @@ function statusVariant(status?: string): string {
 <template>
   <article class="card md-sec-card">
     <header class="card-header md-sec-mappings__head">
-      <span class="card-title">Provider mappings</span>
+      <span class="card-title">{{ t("marketData.labels.providerMappings") }}</span>
       <button
         type="button"
         class="md-sec-mappings__link"
         @click="emit('manage')"
-      >Manage mappings →</button>
+      >{{ t("marketData.actions.manageMappings") }}</button>
     </header>
 
     <div class="card-body">
       <div v-if="mappings.length === 0" class="md-sec-mappings__empty">
-        <p class="md-sec-mappings__empty-title">No provider mapping exists</p>
+        <p class="md-sec-mappings__empty-title">{{ t("marketData.messages.noProviderMapping") }}</p>
         <p class="md-sec-mappings__empty-text">
-          Sync actions will fail until at least one provider symbol is mapped.
+          {{ t("marketData.messages.syncActionsNeedMapping") }}
         </p>
         <div class="md-sec-mappings__empty-actions">
           <button
             type="button"
             class="btn btn-primary btn-sm"
             @click="emit('manage')"
-          >Add provider mapping</button>
+          >{{ t("marketData.actions.addProviderMapping") }}</button>
           <button
             type="button"
             class="btn btn-secondary btn-sm"
             @click="emit('open-unmapped')"
-          >Open Unmapped queue</button>
+          >{{ t("marketData.actions.openUnmappedQueue") }}</button>
         </div>
       </div>
 
@@ -56,13 +58,13 @@ function statusVariant(status?: string): string {
         <table class="data-table md-sec-mappings__table">
           <thead>
             <tr>
-              <th>Provider</th>
-              <th>Provider symbol</th>
-              <th>Exchange</th>
-              <th>CCY</th>
-              <th class="col-right">Priority</th>
-              <th>Status</th>
-              <th>Primary</th>
+              <th>{{ t("marketData.labels.provider") }}</th>
+              <th>{{ t("marketData.labels.providerSymbol") }}</th>
+              <th>{{ t("marketData.labels.exchange") }}</th>
+              <th>{{ t("marketData.labels.ccy") }}</th>
+              <th class="col-right">{{ t("marketData.labels.priority") }}</th>
+              <th>{{ t("marketData.labels.status") }}</th>
+              <th>{{ t("marketData.labels.primary") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -92,7 +94,7 @@ function statusVariant(status?: string): string {
                   <span class="md-status-dot" aria-hidden="true" />
                   Yes
                 </span>
-                <span v-else class="md-text-muted">No</span>
+                <span v-else class="md-text-muted">{{ t("marketData.labels.no") }}</span>
               </td>
             </tr>
           </tbody>

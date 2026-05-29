@@ -57,6 +57,12 @@ export const zhCommonMessages = {
     investment: "投资",
     investmentResearch: "投资研究",
     marketData: "市场数据",
+    marketDataTabs: {
+      watchlist: "数据",
+      securities: "证券",
+      unmapped: "未映射",
+      settings: "设置",
+    },
     administration: "系统管理",
     administrationSettings: "系统设置",
   },

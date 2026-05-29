@@ -23,9 +23,14 @@ type Fund struct {
 	Benchmark      string
 	RiskProfile    vo.RiskProfile
 	HasUnits       bool
-	ExternalPAMRef string
-	Status         vo.FundStatus
-	Version        int
+	// RequirePretradePreview gates the Operation-tab UX. When true the trade
+	// ticket must run a pre-trade simulation and surface per-rule verdicts
+	// before allowing the post. The backend's post handler still enforces
+	// the pre-trade rules independently — this flag only affects the UI flow.
+	RequirePretradePreview bool
+	ExternalPAMRef         string
+	Status                 vo.FundStatus
+	Version                int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

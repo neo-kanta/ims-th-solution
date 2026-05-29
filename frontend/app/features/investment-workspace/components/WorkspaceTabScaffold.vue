@@ -55,12 +55,7 @@ onMounted(async () => {
       tab_counts: { stages: 7, decisions: 23, compliance: 2 },
     }" />
 
-    <FundWorkspaceTabs
-      v-if="activeFund"
-      :fund-id="activeFund.fund_id"
-      :active="tab"
-      :counts="{ stages: 7, decisions: 23, compliance: 2 }"
-    />
+
 
     <AppCard :title="scaffoldTitle">
       <div class="ws-scaffold__body">

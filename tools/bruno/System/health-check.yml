@@ -1,0 +1,14 @@
+info:
+  name: health-check
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{server-base-url}}/health"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

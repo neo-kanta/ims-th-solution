@@ -3,6 +3,13 @@ import { onClickOutside } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { buildDashboardNavigation } from "../features/shell/navigation";
+import AppTabs from "~/shared/ui/AppTabs.vue";
+import AppSearch from "~/shared/ui/AppSearch.vue";
+import { useComplianceRuleDirectory } from "~/features/compliance/composables/useComplianceRuleDirectory";
+import { useComplianceBreachesList } from "~/features/compliance/composables/useComplianceBreaches";
+import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
+import { useMarketDataCatalog } from "~/features/market-data/composables/useMarketDataCatalog";
+
 
 const config = useRuntimeConfig();
 const router = useRouter();
@@ -12,12 +19,166 @@ const { t, locale, setLocale } = useI18n();
 const authStore = useAuthStore();
 const { theme, toggleTheme } = useTheme();
 
-const isSidebarCollapsed = ref(false);
+const pageTitle = useState<string>("page-title", () => "");
+const isGlobalLoading = useGlobalProgress();
+
+const complianceRuleDir = useComplianceRuleDirectory();
+const complianceBreaches = useComplianceBreachesList();
+const fundWS = useFundWorkspace();
+const { candidates, refreshCandidates } = useMarketDataCatalog();
+
+watch(
+  () => route.path,
+  (newPath) => {
+    pageTitle.value = "";
+    if (newPath.startsWith("/compliance")) {
+      void complianceRuleDir.ensureLoaded();
+      void complianceBreaches.fetchList({ limit: 1, status: "OPEN" });
+    } else if (newPath.startsWith("/market-data")) {
+      void refreshCandidates({ status: "REVIEW_REQUIRED", limit: 100 });
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.params.fundId,
+  (newFundId) => {
+    if (newFundId) {
+      void fundWS.loadFunds(String(newFundId));
+    }
+  },
+  { immediate: true }
+);
+
+const isComplianceRoute = computed(() => route.path.startsWith("/compliance"));
+const isInvestmentRoute = computed(() => route.path.startsWith("/investment") && route.params.fundId);
+const isMarketDataRoute = computed(() => route.path.startsWith("/market-data"));
+
+const hasHeaderTabs = computed(() => isComplianceRoute.value || isInvestmentRoute.value || isMarketDataRoute.value);
+
+const breadcrumbOwner = computed(() => authStore.user?.username || "neo-kanta");
+const breadcrumbRepo = computed(() => {
+  if (isComplianceRoute.value) return "compliance";
+  if (route.path.startsWith("/investment")) return "investment";
+  return appName.toLowerCase().replace(/\s+/g, "-");
+});
+
+function handleOwnerClick() {
+  void router.push("/");
+}
+
+function handleRepoClick() {
+  if (breadcrumbRepo.value === "compliance") {
+    void router.push("/compliance");
+  } else if (breadcrumbRepo.value === "investment") {
+    void router.push("/investment/funds");
+  } else {
+    void router.push("/");
+  }
+}
+
+const breadcrumbIcon = computed(() => {
+  if (isComplianceRoute.value) return "compliance";
+  if (route.path.startsWith("/investment")) return "portfolio";
+  return "system";
+});
+
+const complianceTabItems = computed(() => {
+  const rulesCount = complianceRuleDir.loading.value || complianceRuleDir.error.value ? null : complianceRuleDir.total.value;
+  const breachesCount = complianceBreaches.loading.value || complianceBreaches.error.value ? null : complianceBreaches.total.value;
+  return [
+    { key: "overview", label: t("compliance.dashboard.tabs.overview"), to: "/compliance", icon: "list" },
+    { key: "library", label: t("compliance.dashboard.tabs.library"), to: "/compliance/rules", icon: "list", count: rulesCount },
+    { key: "approvals", label: t("compliance.dashboard.tabs.approvals"), to: "/compliance", icon: "approval" },
+    { key: "breaches", label: t("compliance.dashboard.tabs.breaches"), to: "/compliance/post-trade", icon: "warning", count: breachesCount },
+    { key: "exceptions", label: t("compliance.dashboard.tabs.exceptions"), to: "/compliance/exceptions", icon: "approval" },
+    { key: "audit", label: t("compliance.dashboard.tabs.audit"), to: "/compliance/audit", icon: "audit" },
+    { key: "settings", label: t("compliance.dashboard.tabs.settings"), to: "/compliance/permissions", icon: "shield" },
+  ];
+});
+
+const complianceActiveTab = computed(() => {
+  if (route.path === "/compliance") return "overview";
+  if (route.path.startsWith("/compliance/rules")) return "library";
+  if (route.path.startsWith("/compliance/post-trade")) return "breaches";
+  if (route.path.startsWith("/compliance/exceptions")) return "exceptions";
+  if (route.path.startsWith("/compliance/audit")) return "audit";
+  if (route.path.startsWith("/compliance/permissions")) return "settings";
+  return "";
+});
+
+const investmentTabItems = computed(() => {
+  const fId = String(route.params.fundId || "");
+  // Tab badge counts are only shown once the backend can answer them
+  // authoritatively per fund. Until those endpoints land we leave the chips
+  // unset so we never render fabricated numbers (the previous hard-coded
+  // 7 / 23 / 2 fell back to every fund and was the source of the
+  // "fund-alpha" feeling on detail pages).
+  return [
+    { key: "holdings", label: t("holdings.workspaceTabs.holdings"), to: `/investment/funds/${fId}/holdings`, icon: "portfolio" },
+    { key: "operation", label: t("holdings.workspaceTabs.operation", "Operation"), to: `/investment/funds/${fId}/operation`, icon: "decision" },
+    { key: "stages", label: t("holdings.workspaceTabs.stages"), to: `/investment/funds/${fId}/stages`, icon: "globe" },
+    { key: "decisions", label: t("holdings.workspaceTabs.decisions"), to: `/investment/funds/${fId}/decisions`, icon: "decision" },
+    { key: "compliance", label: t("holdings.workspaceTabs.compliance"), to: `/investment/funds/${fId}/compliance`, icon: "compliance" },
+    { key: "audit", label: t("holdings.workspaceTabs.audit"), to: `/investment/funds/${fId}/audit`, icon: "audit" },
+    { key: "reviewers", label: t("holdings.workspaceTabs.reviewers"), to: `/investment/funds/${fId}/reviewers`, icon: "groups" },
+    { key: "settings", label: t("holdings.workspaceTabs.settings"), to: `/investment/funds/${fId}/settings`, icon: "shield" },
+  ];
+});
+
+const investmentActiveTab = computed(() => {
+  const parts = route.path.split("/");
+  return parts[4] || "holdings";
+});
+
+const marketDataTabItems = computed(() => {
+  const count = candidates.value?.length || null;
+  return [
+    { key: "market", label: t("marketData.tabs.market"), to: "/market-data?tab=market", icon: "briefcase" },
+    { key: "watchlist", label: t("marketData.tabs.watchlist"), to: "/market-data?tab=watchlist", icon: "list" },
+    { key: "unmapped", label: t("marketData.tabs.stage"), to: "/market-data?tab=unmapped", icon: "warning", count },
+    { key: "settings", label: t("marketData.tabs.settings"), to: "/market-data?tab=settings", icon: "shield" },
+  ];
+});
+
+const marketDataActiveTab = computed(() => {
+  return (typeof route.query.tab === "string" && ["market", "watchlist", "unmapped", "settings"].includes(route.query.tab))
+    ? route.query.tab
+    : "market";
+});
+
+const activeTabItems = computed(() => {
+  if (isComplianceRoute.value) return complianceTabItems.value;
+  if (isInvestmentRoute.value) return investmentTabItems.value;
+  if (isMarketDataRoute.value) return marketDataTabItems.value;
+  return [];
+});
+
+const activeTabValue = computed(() => {
+  if (isComplianceRoute.value) return complianceActiveTab.value;
+  if (isInvestmentRoute.value) return investmentActiveTab.value;
+  if (isMarketDataRoute.value) return marketDataActiveTab.value;
+  return "";
+});
+
+const activeTabAriaLabel = computed(() => {
+  if (isComplianceRoute.value) return "Compliance section tabs";
+  if (isInvestmentRoute.value) return "Investment workspace tabs";
+  if (isMarketDataRoute.value) return "Market Data section tabs";
+  return "Tabs";
+});
+
+// Default to collapsed (closed) so the app loads with content visible,
+// matching GitHub's overlay-sidebar UX. Restored from localStorage if set.
+const isSidebarCollapsed = ref(true);
 const isMobileSidebarOpen = ref(false);
 const isMobileViewport = ref(false);
 const isSidebarResizing = ref(false);
 const showUserMenu = ref(false);
 const showLanguageMenu = ref(false);
+const isSearchOpen = ref(false);
+const sectionOpenState = ref<Record<string, boolean>>({});
 const languageMenuRef = ref<HTMLElement | null>(null);
 const userMenuRef = ref<HTMLElement | null>(null);
 
@@ -29,11 +190,14 @@ const SIDEBAR_MAX_WIDTH = 360;
 const navigationSections = computed(() =>
   buildDashboardNavigation(t, authStore.hasPermission),
 );
-const languages = computed(() => [
-  { code: "en", name: t("language.en") },
-  { code: "th", name: t("language.th") },
-  { code: "zh", name: t("language.zh") },
-]);
+
+const languages = computed<Array<{ code: "en" | "th" | "zh"; name: string }>>(
+  () => [
+    { code: "en", name: t("language.en") },
+    { code: "th", name: t("language.th") },
+    { code: "zh", name: t("language.zh") },
+  ],
+);
 
 const userDisplayName = computed(
   () => authStore.user?.displayName || t("auth.welcome"),
@@ -73,22 +237,13 @@ const sidebarToggleLabel = computed(() => {
     : t("shell.collapseNavigation");
 });
 
-const sidebarToggleIcon = computed(() => {
+const sidebarInlineWidth = computed(() => `${desktopSidebarWidth.value}px`);
+
+const isSidebarOpen = computed(() => {
   if (isMobileViewport.value) {
-    return isMobileSidebarOpen.value ? "close" : "menu";
+    return isMobileSidebarOpen.value;
   }
-
-  return isSidebarCollapsed.value ? "panel-open" : "panel-close";
-});
-
-const sidebarInlineWidth = computed(() => {
-  if (isMobileViewport.value) {
-    return `${desktopSidebarWidth.value}px`;
-  }
-
-  return isSidebarCollapsed.value
-    ? `${SIDEBAR_COLLAPSED_WIDTH}px`
-    : `${desktopSidebarWidth.value}px`;
+  return !isSidebarCollapsed.value;
 });
 
 function syncViewport() {
@@ -105,6 +260,13 @@ function syncViewport() {
 
 function closeSidebar() {
   isMobileSidebarOpen.value = false;
+
+  if (!isMobileViewport.value) {
+    isSidebarCollapsed.value = true;
+    if (import.meta.client) {
+      localStorage.setItem("app_sidebar_collapsed", "true");
+    }
+  }
 }
 
 function startSidebarResize(event: PointerEvent) {
@@ -193,6 +355,21 @@ function isNavActive(to: string) {
     : route.path === to || route.path.startsWith(`${to}/`);
 }
 
+function isSectionOpen(sectionIcon: string): boolean {
+  if (sectionIcon in sectionOpenState.value) {
+    return sectionOpenState.value[sectionIcon] ?? true;
+  }
+  return true;
+}
+
+function toggleSection(sectionIcon: string): void {
+  const wasOpen = isSectionOpen(sectionIcon);
+  sectionOpenState.value[sectionIcon] = !wasOpen;
+  if (import.meta.client) {
+    localStorage.setItem(`app_nav_section_${sectionIcon}`, String(!wasOpen));
+  }
+}
+
 async function handleLogout() {
   showUserMenu.value = false;
   await authStore.logout();
@@ -232,8 +409,18 @@ onMounted(() => {
     );
   }
 
-  isSidebarCollapsed.value =
-    localStorage.getItem("app_sidebar_collapsed") === "true";
+  // Default is closed; only override if the user explicitly opened it before.
+  const storedCollapsed = localStorage.getItem("app_sidebar_collapsed");
+  if (storedCollapsed !== null) {
+    isSidebarCollapsed.value = storedCollapsed === "true";
+  }
+
+  for (const section of navigationSections.value) {
+    const saved = localStorage.getItem(`app_nav_section_${section.icon}`);
+    if (saved !== null) {
+      sectionOpenState.value[section.icon] = saved === "true";
+    }
+  }
 
   syncViewport();
   window.addEventListener("resize", syncViewport);
@@ -269,6 +456,7 @@ watch(
     :class="{
       'is-collapsed': isSidebarCollapsed && !isMobileViewport,
       'is-mobile-sidebar-open': isMobileSidebarOpen,
+      'is-sidebar-open': isSidebarOpen,
       'is-resizing': isSidebarResizing,
     }"
     :style="{ '--sidebar-width': sidebarInlineWidth }"
@@ -283,7 +471,7 @@ watch(
     <aside
       class="app-sidebar"
       :class="{ 'is-open': isMobileSidebarOpen }"
-      :aria-hidden="isMobileViewport ? String(!isMobileSidebarOpen) : undefined"
+      :aria-hidden="isMobileViewport ? !isMobileSidebarOpen : undefined"
     >
       <div class="sidebar-header">
         <NuxtLink class="sidebar-brand" to="/" @click="closeSidebar">
@@ -310,30 +498,60 @@ watch(
         class="sidebar-nav-container"
         :aria-label="t('shell.primaryNavigation')"
       >
-        <section
-          v-for="section in navigationSections"
-          :key="section.label"
-          class="nav-section"
-        >
-          <div class="nav-section-label">{{ section.label }}</div>
-          <div class="nav-list">
-            <NuxtLink
-              v-for="item in section.items"
-              :key="item.to"
-              :to="item.to"
-              class="nav-link"
-              :class="{ 'is-active': isNavActive(item.to) }"
-              :title="isSidebarCollapsed ? item.label : undefined"
-              :aria-label="isSidebarCollapsed ? item.label : undefined"
-              @click="closeSidebar"
+        <ClientOnly>
+          <section
+            v-for="section in navigationSections"
+            :key="section.label"
+            class="nav-section"
+          >
+            <button
+              class="nav-section-toggle"
+              :class="{ 'is-closed': !isSectionOpen(section.icon) }"
+              type="button"
+              :aria-expanded="isSectionOpen(section.icon)"
+              @click="toggleSection(section.icon)"
             >
-              <span class="nav-icon">
-                <AppIcon :name="item.icon" />
-              </span>
-              <span class="nav-text">{{ item.label }}</span>
-            </NuxtLink>
-          </div>
-        </section>
+              <span class="nav-section-toggle__label">{{ section.label }}</span>
+              <AppIcon
+                class="nav-section-toggle__chevron"
+                name="chevron-down"
+                size="xs"
+              />
+            </button>
+
+            <div
+              v-show="
+                (isSidebarCollapsed && !isMobileViewport) ||
+                isSectionOpen(section.icon)
+              "
+              class="nav-list"
+            >
+              <NuxtLink
+                v-for="item in section.items"
+                :key="item.to"
+                :to="item.to"
+                class="nav-link"
+                :class="{ 'is-active': isNavActive(item.to) }"
+                :title="
+                  isSidebarCollapsed && !isMobileViewport
+                    ? item.label
+                    : undefined
+                "
+                :aria-label="
+                  isSidebarCollapsed && !isMobileViewport
+                    ? item.label
+                    : undefined
+                "
+                @click="closeSidebar"
+              >
+                <span class="nav-icon">
+                  <AppIcon :name="item.icon" size="sm" />
+                </span>
+                <span class="nav-text">{{ item.label }}</span>
+              </NuxtLink>
+            </div>
+          </section>
+        </ClientOnly>
       </nav>
 
       <button
@@ -346,119 +564,165 @@ watch(
     </aside>
 
     <div class="app-main">
-      <header class="app-header">
-        <div class="header-leading">
-          <button
-            class="header-icon-btn"
-            type="button"
-            :aria-expanded="
-              isMobileViewport ? String(isMobileSidebarOpen) : undefined
-            "
-            :aria-label="sidebarToggleLabel"
-            @click="toggleSidebar"
-          >
-            <AppIcon :name="sidebarToggleIcon" />
-          </button>
+      <header class="app-header" :class="{ 'app-header--with-tabs': hasHeaderTabs }">
+        <div class="header-progress" :class="{ 'is-active': isGlobalLoading }"></div>
+        
+        <!-- Sidebar Toggle Button (Column 1, Row 1) -->
+        <button
+          class="header-icon-btn header-menu-toggle"
+          type="button"
+          :aria-expanded="isMobileViewport ? isMobileSidebarOpen : undefined"
+          :aria-label="sidebarToggleLabel"
+          @click="toggleSidebar"
+        >
+          <AppIcon name="menu" size="sm" />
+        </button>
 
-          <div class="header-context">
-            <div class="header-context-label">
-              {{ t("shell.workspaceLabel") }}
+        <!-- Row 1: Header Top Row (Column 2, Row 1) -->
+        <div class="app-header__top-row">
+          <!-- Breadcrumbs in GitHub style -->
+          <div class="header-breadcrumbs">
+            <span class="header-breadcrumbs__icon-wrap">
+              <AppIcon :name="breadcrumbIcon" size="sm" class="header-breadcrumbs__icon" />
+            </span>
+            <span class="header-breadcrumbs__owner" @click="handleOwnerClick">{{ breadcrumbOwner }}</span>
+            <span class="header-breadcrumbs__separator">/</span>
+            <span
+              class="header-breadcrumbs__repo"
+              :class="{ 'header-breadcrumbs__repo--link': !!pageTitle }"
+              @click="handleRepoClick"
+            >
+              {{ breadcrumbRepo }}
+            </span>
+            <template v-if="pageTitle">
+              <span class="header-breadcrumbs__separator">/</span>
+              <span class="header-breadcrumbs__current-title">{{ pageTitle }}</span>
+            </template>
+          </div>
+
+          <div class="header-controls">
+            <button
+              class="header-search"
+              type="button"
+              @click="isSearchOpen = true"
+              aria-label="Search or jump to…"
+            >
+              <AppIcon class="header-search-icon" name="search" size="sm" />
+              <span class="header-search-placeholder">
+                Type <kbd class="header-search-kbd">/</kbd> to search
+              </span>
+            </button>
+
+            <!-- Shortcuts -->
+            <div class="github-header-items">
+              <!-- Issue -->
+              <div class="github-header-item">
+                <NuxtLink to="/" class="github-header-btn" :aria-label="t('header.issue')">
+                  <AppIcon name="issue" size="sm" />
+                </NuxtLink>
+                <div class="github-tooltip">
+                  <AppIcon name="issue" size="xs" />
+                  <span>{{ t('header.issue') }}</span>
+                </div>
+              </div>
+
+              <!-- Pull Request -->
+              <div class="github-header-item">
+                <NuxtLink to="/" class="github-header-btn" :aria-label="t('header.pullRequest')">
+                  <AppIcon name="pull-request" size="sm" />
+                </NuxtLink>
+                <div class="github-tooltip">
+                  <AppIcon name="pull-request" size="xs" />
+                  <span>{{ t('header.pullRequest') }}</span>
+                </div>
+              </div>
+
+              <!-- Compliance -->
+              <div class="github-header-item">
+                <NuxtLink to="/compliance" class="github-header-btn" :aria-label="t('header.compliance')">
+                  <AppIcon name="compliance" size="sm" />
+                </NuxtLink>
+                <div class="github-tooltip">
+                  <AppIcon name="compliance" size="xs" />
+                  <span>{{ t('header.compliance') }}</span>
+                </div>
+              </div>
+
+              <!-- Audit -->
+              <div class="github-header-item">
+                <NuxtLink to="/administration/settings" class="github-header-btn" :aria-label="t('header.audit')">
+                  <AppIcon name="audit" size="sm" />
+                </NuxtLink>
+                <div class="github-tooltip">
+                  <AppIcon name="audit" size="xs" />
+                  <span>{{ t('header.audit') }}</span>
+                </div>
+              </div>
             </div>
-            <div class="header-context-title">{{ appName }}</div>
+
+            <span class="github-header-separator"></span>
+
+            <div ref="userMenuRef" class="header-menu">
+              <ClientOnly>
+                <button
+                  class="github-user-btn"
+                  type="button"
+                  aria-haspopup="menu"
+                  :aria-expanded="showUserMenu"
+                  @click="toggleUserMenu"
+                  :aria-label="userDisplayName"
+                >
+                  <span class="github-user-avatar">{{ userInitials }}</span>
+                </button>
+                <template #fallback>
+                  <button class="github-user-btn" type="button" disabled>
+                    <span class="github-user-avatar">·</span>
+                  </button>
+                </template>
+              </ClientOnly>
+
+              <div
+                v-if="showUserMenu"
+                class="header-dropdown user-menu-dropdown"
+                role="menu"
+              >
+                <div class="user-menu-info">
+                  <div class="user-menu-info-label">{{ userDisplayName }}</div>
+                  <div class="user-menu-info-value">{{ userSubtitle }}</div>
+                </div>
+
+                <NuxtLink
+                  class="header-dropdown-item"
+                  :class="{ 'is-active': isNavActive('/settings') }"
+                  to="/settings"
+                  role="menuitem"
+                  :aria-current="isNavActive('/settings') ? 'page' : undefined"
+                  @click="showUserMenu = false"
+                >
+                  <span>{{ t("navigation.personalSettings") }}</span>
+                </NuxtLink>
+
+                <button
+                  class="header-dropdown-item user-menu-logout"
+                  type="button"
+                  role="menuitem"
+                  @click="handleLogout"
+                >
+                  {{ t("auth.logout") }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="header-controls">
-          <div ref="languageMenuRef" class="header-menu">
-            <button
-              class="header-control-btn"
-              type="button"
-              aria-haspopup="menu"
-              :aria-expanded="String(showLanguageMenu)"
-              @click="toggleLanguageMenu"
-            >
-              <AppIcon name="globe" />
-              <span class="header-control-label">{{
-                locale.toUpperCase()
-              }}</span>
-              <AppIcon
-                class="header-control-chevron"
-                name="chevron-down"
-                size="xs"
-              />
-            </button>
-
-            <div v-if="showLanguageMenu" class="header-dropdown" role="menu">
-              <button
-                v-for="language in languages"
-                :key="language.code"
-                class="header-dropdown-item"
-                :class="{ 'is-active': locale === language.code }"
-                type="button"
-                role="menuitemradio"
-                :aria-checked="locale === language.code"
-                @click="setAppLocale(language.code)"
-              >
-                <span>{{ language.name }}</span>
-                <AppIcon
-                  v-if="locale === language.code"
-                  name="check"
-                  size="xs"
-                />
-              </button>
-            </div>
-          </div>
-
-          <button
-            class="header-icon-btn"
-            type="button"
-            :title="themeToggleLabel"
-            :aria-label="themeToggleLabel"
-            @click="toggleTheme"
-          >
-            <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" />
-          </button>
-
-          <div ref="userMenuRef" class="header-menu">
-            <button
-              class="user-menu-btn"
-              type="button"
-              aria-haspopup="menu"
-              :aria-expanded="String(showUserMenu)"
-              @click="toggleUserMenu"
-            >
-              <span class="user-avatar">{{ userInitials }}</span>
-              <span class="user-menu-copy">
-                <span class="user-menu-name">{{ userDisplayName }}</span>
-                <span class="user-menu-role">{{ userSubtitle }}</span>
-              </span>
-              <AppIcon
-                class="header-control-chevron"
-                name="chevron-down"
-                size="xs"
-              />
-            </button>
-
-            <div
-              v-if="showUserMenu"
-              class="header-dropdown user-menu-dropdown"
-              role="menu"
-            >
-              <div class="user-menu-info">
-                <div class="user-menu-info-label">{{ userDisplayName }}</div>
-                <div class="user-menu-info-value">{{ userSubtitle }}</div>
-              </div>
-
-              <button
-                class="header-dropdown-item user-menu-logout"
-                type="button"
-                role="menuitem"
-                @click="handleLogout"
-              >
-                {{ t("auth.logout") }}
-              </button>
-            </div>
-          </div>
+        <!-- Row 2: Tabs Row (rendered dynamically for Compliance and active Fund contexts) -->
+        <div v-if="hasHeaderTabs" class="app-header__tabs-row">
+          <AppTabs
+            v-slot:default
+            :items="activeTabItems"
+            :model-value="activeTabValue"
+            :aria-label="activeTabAriaLabel"
+          />
         </div>
       </header>
 
@@ -468,5 +732,105 @@ watch(
         </div>
       </main>
     </div>
+    <!-- Advanced Search Component -->
+    <AppSearch v-model="isSearchOpen" />
   </div>
 </template>
+
+<style scoped>
+.app-header {
+  height: auto !important;
+  min-height: var(--header-height);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: var(--header-height); /* Default: 1 row mode */
+  align-items: center;
+  padding: 0 var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-header);
+}
+
+.header-menu-toggle {
+  grid-column: 1;
+  grid-row: 1;
+  margin-right: var(--space-4);
+}
+
+.app-header__top-row {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.header-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.app-header__tabs-row {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  padding: 0;
+}
+
+.header-breadcrumbs__icon-wrap {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.header-breadcrumbs__owner {
+  color: var(--text-link);
+  cursor: pointer;
+}
+
+.header-breadcrumbs__owner:hover {
+  text-decoration: underline;
+}
+
+.header-breadcrumbs__separator {
+  color: var(--text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+.header-breadcrumbs__repo {
+  font-weight: var(--font-weight-bold);
+}
+
+.header-breadcrumbs__repo--link {
+  color: var(--text-link) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  cursor: pointer;
+}
+
+.header-breadcrumbs__repo--link:hover {
+  text-decoration: underline;
+}
+
+.header-breadcrumbs__current-title {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.app-header--with-tabs {
+  grid-template-rows: var(--header-height) auto; /* 2 rows mode */
+  padding-bottom: 0;
+}
+</style>

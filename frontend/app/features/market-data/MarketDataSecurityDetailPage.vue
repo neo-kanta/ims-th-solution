@@ -7,20 +7,22 @@ import MarketDataLatestQuoteCard from "./components/MarketDataLatestQuoteCard.vu
 import MarketDataPriceHistoryPanel from "./components/MarketDataPriceHistoryPanel.vue";
 import MarketDataSecurityQualityPanel from "./components/MarketDataSecurityQualityPanel.vue";
 import MarketDataSecuritySyncActivity from "./components/MarketDataSecuritySyncActivity.vue";
-import RDSecurityEditForm from "~/features/reference-data/components/RDSecurityEditForm.vue";
-import RDMappingsPanel from "~/features/reference-data/components/RDMappingsPanel.vue";
+import MarketDataSecurityEditForm from "./components/MarketDataSecurityEditForm.vue";
+import MarketDataMappingsEditor from "./components/MarketDataMappingsEditor.vue";
 import { useMarketDataSecurityDetail } from "./composables/useMarketDataSecurityDetail";
-import { useReferenceData } from "~/features/reference-data/composables/useReferenceData";
+import { useMarketDataCatalog } from "./composables/useMarketDataCatalog";
 import type {
   ApiSecurity,
   ApiUpdateSecurityRequest,
   ApiAddMappingRequest,
-} from "~/features/reference-data/services/referenceDataApi";
+} from "./services/marketDataCatalogApi";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{ securityId: string }>();
 
 const securityId = toRef(props, "securityId");
 const router = useRouter();
+const { t } = useI18n();
 
 const {
   detail,
@@ -38,15 +40,15 @@ const {
   toggleWatching,
 } = useMarketDataSecurityDetail(securityId);
 
-// Identity + mappings editor (was the /reference-data/securities/[id] page).
-// We use the existing reference-data composable for writes; reads still come
-// from the market-data security-detail composable above, so we just refresh
-// the detail page after a successful write to pick up the latest state.
+// Identity + mappings editor (formerly the standalone /reference-data page).
+// We use the catalog composable for writes; reads still come from the
+// market-data security-detail composable above, so we just refresh the
+// detail page after a successful write to pick up the latest state.
 const {
   updateSecurity,
   addMapping,
   deleteMapping,
-} = useReferenceData();
+} = useMarketDataCatalog();
 
 const showManage = ref(false);
 const manageRef = ref<HTMLElement | null>(null);
@@ -92,7 +94,7 @@ async function onSaveIdentity(req: ApiUpdateSecurityRequest) {
     await updateSecurity(detail.value.securityId, req);
     await load();
   } catch (err) {
-    saveError.value = err instanceof Error ? err.message : "Failed to save";
+    saveError.value = err instanceof Error ? err.message : t("marketData.messages.failedSaveSecurity");
   } finally {
     saving.value = false;
   }
@@ -158,19 +160,19 @@ onMounted(() => { void load(); });
 <template>
   <section class="md-sec-detail">
     <div v-if="loading && !detail" class="md-sec-detail__loading" role="status">
-      Loading security…
+      {{ t("marketData.messages.loadingSecurity") }}
     </div>
 
     <div v-else-if="notFound" class="md-sec-detail__notfound" role="alert">
-      <h1>Security not found</h1>
-      <p>The security <code>{{ securityId }}</code> isn’t registered in the IMS catalog.</p>
-      <button class="btn btn-primary" type="button" @click="onBack">Back to Market Data</button>
+      <h1>{{ t("marketData.headings.securityNotFound") }}</h1>
+      <p>{{ t("marketData.messages.securityMissing", { securityId }) }}</p>
+      <button class="btn btn-primary" type="button" @click="onBack">{{ t("marketData.actions.backToMarketData") }}</button>
     </div>
 
     <div v-else-if="error && !detail" class="md-sec-detail__error" role="alert">
-      <h1>Couldn’t load this security</h1>
+      <h1>{{ t("marketData.headings.securityLoadFailed") }}</h1>
       <p>{{ error }}</p>
-      <button class="btn btn-primary" type="button" @click="refresh">Retry</button>
+      <button class="btn btn-primary" type="button" @click="refresh">{{ t("marketData.actions.retry") }}</button>
     </div>
 
     <template v-else-if="detail">
@@ -190,15 +192,14 @@ onMounted(() => { void load(); });
         role="status"
       >
         <span>
-          Provider symbol is not mapped. Configure a mapping below before
-          retrying the import.
+          {{ t("marketData.messages.providerSymbolUnmapped") }}
         </span>
         <div class="md-sec-detail__banner-actions">
           <button class="btn btn-secondary btn-sm" type="button" @click="onOpenMappings">
-            Configure mappings
+            {{ t("marketData.actions.configureMappings") }}
           </button>
           <button class="btn btn-secondary btn-sm" type="button" @click="onOpenUnmappedTab">
-            View Unmapped queue
+            {{ t("marketData.actions.openUnmappedQueue") }}
           </button>
         </div>
       </div>
@@ -209,8 +210,7 @@ onMounted(() => { void load(); });
         role="status"
       >
         <span>
-          Provider rate-limited the last request. Wait a minute and try Sync
-          quote again.
+          {{ t("marketData.messages.providerRateLimited") }}
         </span>
       </div>
 
@@ -225,7 +225,7 @@ onMounted(() => { void load(); });
 
       <div v-if="error" class="alert alert-danger md-sec-detail__banner" role="status">
         {{ error }}
-        <button class="btn btn-secondary btn-sm" type="button" @click="refresh">Retry</button>
+        <button class="btn btn-secondary btn-sm" type="button" @click="refresh">{{ t("marketData.actions.retry") }}</button>
       </div>
 
       <div class="md-sec-detail__top-row">
@@ -255,13 +255,13 @@ onMounted(() => { void load(); });
         @import-history-250="importHistory250"
       />
 
-      <!-- Inline editor (formerly /reference-data/securities/[id]) -->
+      <!-- Inline identity + mappings editor -->
       <section ref="manageRef" class="md-sec-manage card">
         <header class="card-header md-sec-manage__head">
           <div>
-            <span class="card-title">Manage security</span>
+            <span class="card-title">{{ t("marketData.headings.manageSecurity") }}</span>
             <div class="card-subtitle">
-              Edit identity fields and provider symbol mappings.
+              {{ t("marketData.messages.manageSecuritySubtitle") }}
             </div>
           </div>
           <button
@@ -270,13 +270,13 @@ onMounted(() => { void load(); });
             :aria-expanded="showManage"
             @click="showManage = !showManage"
           >
-            {{ showManage ? "Hide" : "Edit" }}
+            {{ showManage ? t("marketData.actions.hide") : t("marketData.actions.edit") }}
           </button>
         </header>
         <div v-if="showManage" class="md-sec-manage__body">
           <div class="md-sec-manage__col">
-            <h3 class="md-sec-manage__section-title">Identity</h3>
-            <RDSecurityEditForm
+            <h3 class="md-sec-manage__section-title">{{ t("marketData.labels.identity") }}</h3>
+            <MarketDataSecurityEditForm
               v-if="editorSecurity"
               :security="editorSecurity"
               :saving="saving"
@@ -285,8 +285,8 @@ onMounted(() => { void load(); });
             />
           </div>
           <div class="md-sec-manage__col">
-            <h3 class="md-sec-manage__section-title">Provider mappings</h3>
-            <RDMappingsPanel
+            <h3 class="md-sec-manage__section-title">{{ t("marketData.labels.providerMappings") }}</h3>
+            <MarketDataMappingsEditor
               :mappings="editorSecurity?.provider_mappings ?? []"
               @add="onAddMapping"
               @delete="onDeleteMapping"
@@ -301,8 +301,7 @@ onMounted(() => { void load(); });
       </div>
 
       <p class="md-sec-detail__footer">
-        Security detail uses canonical IMS symbols. Provider symbols (Yahoo,
-        Alpha Vantage, …) resolve through the mappings configured above.
+        {{ t("marketData.messages.securityFooter") }}
       </p>
     </template>
   </section>

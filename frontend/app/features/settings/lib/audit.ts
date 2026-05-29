@@ -1,4 +1,17 @@
+import type { AppTranslationKey } from "~/shared/i18n/messages";
+
 export type AuditSeverity = "critical" | "high" | "medium" | "low";
+
+/**
+ * Translation-key union for the four severity labels. Narrowing the
+ * return type of getAuditSeverityKey() to this union lets callers pass
+ * the result straight to useI18n().t(...) without a cast.
+ */
+export type AuditSeverityKey =
+  | "settings.console.audit.severity.critical"
+  | "settings.console.audit.severity.high"
+  | "settings.console.audit.severity.medium"
+  | "settings.console.audit.severity.low";
 
 const CRITICAL_EVENTS = new Set([
   "REFRESH_TOKEN_BREACH",
@@ -40,7 +53,7 @@ export function getAuditSeverity(eventType: string): AuditSeverity {
   return "low";
 }
 
-export function getAuditSeverityKey(severity: AuditSeverity): string {
+export function getAuditSeverityKey(severity: AuditSeverity): AuditSeverityKey & AppTranslationKey {
   switch (severity) {
     case "critical":
       return "settings.console.audit.severity.critical";

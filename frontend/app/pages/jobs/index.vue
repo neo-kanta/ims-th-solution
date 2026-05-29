@@ -97,7 +97,7 @@ const providers = [
   { id: 'PRV-DB',   name: 'PostgreSQL Primary',      type: 'pgx/pool',      status: 'OPERATIONAL', latency: '0.4ms',lastPing: '2026-03-13 11:08:42', endpoint: 'db:5432/ims_dev',  phase: '1' },
 ]
 
-const selectedWorker = computed(() => workers.find(w => w.id === selectedJob))
+const selectedWorker = computed(() => workers.find(w => w.id === selectedJob.value))
 
 const overallHealth = computed(() => {
   const errors = workers.filter(w => w.status === 'ERROR').length

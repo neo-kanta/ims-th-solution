@@ -64,7 +64,9 @@ function formatDateLabel(dateStr: string): string {
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const mIdx = parseInt(parts[1], 10) - 1;
-      return `${months[mIdx]} ${parts[2]}`;
+      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
+      const day = parseInt(parts[2], 10).toString();
+      return t("holdings.dateFormats.dayMonth" as any, { month, day }, `${month} ${day}`);
     }
   } catch (e) {}
   return dateStr;
@@ -78,7 +80,7 @@ function formatDateLabel(dateStr: string): string {
         <h3 class="ht-nav__title">{{ t("holdings.navHistory.title", "Unit NAV history") }}</h3>
         <p v-if="hoveredPoint" class="ht-nav__subtitle">
           <span class="ht-nav__active-date">{{ formatDateLabel(hoveredPoint.business_date) }}</span>
-          <span class="ht-nav__active-val">NAV: {{ hoveredPoint.nav_per_unit.toFixed(4) }}</span>
+          <span class="ht-nav__active-val">{{ t("holdings.navHistory.navLabel", "NAV") }}: {{ hoveredPoint.nav_per_unit.toFixed(4) }}</span>
         </p>
         <p v-else class="ht-nav__subtitle">{{ subtitle }}</p>
       </div>
@@ -86,7 +88,7 @@ function formatDateLabel(dateStr: string): string {
         <button
           type="button"
           class="ht-nav__expand-button"
-          aria-label="Expand chart to fullscreen"
+          :aria-label="t('holdings.navHistory.expandAria', 'Expand chart to fullscreen')"
           @click="openFullscreen"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="ht-nav__expand-icon">

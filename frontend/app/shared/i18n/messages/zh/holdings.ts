@@ -4,6 +4,9 @@ export const zhHoldingsMessages = {
       title: "资产持仓",
       subtitle:
         "fund-alpha 的流动资产、风险敞口及配置每日快照,数据反映最新会计结账。",
+      subtitleTemplate:
+        "{fund} 的流动资产、风险敞口及配置每日快照,数据反映最新会计结账。",
+      unknownFund: "此基金",
       loading: "加载中…",
       empty: "所选日期无持仓数据。",
       errorTitle: "持仓加载失败",
@@ -17,6 +20,7 @@ export const zhHoldingsMessages = {
     },
     workspaceTabs: {
       holdings: "持仓",
+      operation: "操作",
       stages: "阶段",
       decisions: "决策",
       compliance: "合规",
@@ -104,11 +108,30 @@ export const zhHoldingsMessages = {
         total: "总敞口",
       },
     },
+    positions: {
+      cardTitle: "持仓",
+      cardSubtitle: "{positions} 个持仓 跨 {portfolios} 个组合",
+      ticker: "代码",
+      name: "名称",
+      assetClass: "资产类别",
+      quantity: "数量",
+      avgCost: "平均成本",
+      costBasis: "成本",
+      cashLabel: "现金",
+      cashBalance: "现金余额",
+      subtotal: "小计 — 成本(不含现金)",
+      empty: "此组合暂无持仓。",
+      loading: "加载持仓中…",
+      note:
+        "数量、平均成本和成本来自实时组合投影。逐行盯市与未实现损益将在按品种价格读取接口上线后显示。",
+    },
     ratios: {
       title: "特殊比率",
       subtitle: "政策上下限",
       foreignExposure: "境外敞口合计",
       equityBankTierDebt: "股票+银行级债务集中度",
+      placeholder:
+        "IRG 政策比率仪表将在政策比率接口与活动规则集对接后显示。",
       status: {
         OK: "正常",
         WARNING: "警告",
@@ -118,17 +141,40 @@ export const zhHoldingsMessages = {
     allocation: {
       title: "配置",
       byLabel: "按",
+      placeholderSubtitle: "按行业与国家细分",
+      liveSubtitle: "资产类别 / 行业 / 国家 / 币种",
+      placeholder:
+        "行业、国家与币种配置将在 investment 模块开放 holdings-allocation 接口后显示。",
+      emptyForDimension: "该维度暂无数据。",
+      loading: "加载配置中…",
+      dimensionAria: "配置维度",
       dimensions: {
         country: "国家",
         category: "类别",
         industry: "行业",
         currency: "币种",
+        assetClass: "资产类别",
+        sector: "行业",
       },
       total: "合计",
     },
     navHistory: {
       title: "单位 NAV 历史",
       subtitle: "{days} 个交易日 (Q{quarter})",
+      placeholderSubtitle: "每日 NAV 单价时间序列",
+      liveSubtitle: "每日 NAV / AUM 序列",
+      placeholder:
+        "历史单位 NAV 时间序列将在时间序列读取接口接入后显示。",
+      unitNavLabel: "单位 NAV",
+      aumLabel: "AUM",
+      loading: "加载 NAV 历史中…",
+      empty: "所选范围暂无 NAV 数据。",
+      chartAria: "NAV 历史折线图",
+      expandTitle: "展开",
+      closeAria: "关闭全屏图表",
+      fullscreenAria: "NAV 历史 — 全屏",
+      points: "数据点",
+      window: "时间窗口",
       high: "最高",
       low: "最低",
       latest: "最新",
@@ -198,5 +244,9 @@ export const zhHoldingsMessages = {
     },
     mockDisclaimer:
       "显示为模拟数据 — 等待后端集成。",
+    partialMockDisclaimer:
+      "头部、KPI 与数据新鲜度反映数据库实时状态;资产明细、配置、特别比率与 NAV 历史图仍为预览数据,等待对应后端接口上线。",
+    livePanelsNote:
+      "头部、KPI、数据新鲜度、持仓表、配置与 NAV 历史图均反映数据库实时状态;仅特别比率在 IRG 政策比率接口接入前保留为占位。",
   },
 } as const;

@@ -2,18 +2,24 @@
 import { computed, ref } from "vue";
 
 import DashboardActivityPanel from "./DashboardActivityPanel.vue";
+import DashboardAICommandBar from "./DashboardAICommandBar.vue";
 import DashboardApprovalPanel from "./DashboardApprovalPanel.vue";
 import DashboardContractsTable from "./DashboardContractsTable.vue";
 import DashboardMetricCard from "./DashboardMetricCard.vue";
 import DashboardOverviewHeader from "./DashboardOverviewHeader.vue";
+import DashboardTaskFeed from "./DashboardTaskFeed.vue";
+import DashboardWorkflowPanel from "./DashboardWorkflowPanel.vue";
 import DashboardWorkflowRail from "./DashboardWorkflowRail.vue";
 import { useDashboardData } from "../composables/useDashboardData";
+import { useDashboardTasks } from "../composables/useDashboardTasks";
 
 const { t } = useI18n();
 const { payload, loading, error, fetchDashboardData } = useDashboardData();
+const { snapshot, fetchTasks } = useDashboardTasks();
 const isRefreshing = ref(false);
 
 const hasDashboardData = computed(() => payload.value !== null);
+const workflowStates = computed(() => snapshot.value?.workflowStates ?? []);
 
 const refreshDashboard = async () => {
   if (isRefreshing.value) {
@@ -23,7 +29,7 @@ const refreshDashboard = async () => {
   isRefreshing.value = true;
 
   try {
-    await fetchDashboardData();
+    await Promise.all([fetchDashboardData(), fetchTasks()]);
   } finally {
     isRefreshing.value = false;
   }
@@ -32,11 +38,18 @@ const refreshDashboard = async () => {
 if (!payload.value) {
   await fetchDashboardData();
 }
+
+if (!snapshot.value) {
+  // Best-effort — workflow panel handles empty workflowStates gracefully.
+  await fetchTasks().catch(() => {});
+}
 </script>
 
 <template>
   <div class="dashboard-overview">
     <template v-if="hasDashboardData && payload">
+      <DashboardAICommandBar />
+
       <DashboardOverviewHeader
         :business-date="payload.workflow.businessDate"
         :day-status="payload.workflow.dayStatus"
@@ -44,7 +57,9 @@ if (!payload.value) {
         :on-refresh="refreshDashboard"
       />
 
-      <DashboardWorkflowRail :stages="payload.workflow.stages" />
+      <DashboardWorkflowRail :stages="[...payload.workflow.stages]" />
+
+      <DashboardWorkflowPanel :workflow-states="workflowStates" />
 
       <section class="dashboard-overview__metrics">
         <DashboardMetricCard
@@ -54,16 +69,18 @@ if (!payload.value) {
         />
       </section>
 
+      <DashboardTaskFeed />
+
       <section class="dashboard-overview__workspace">
         <DashboardContractsTable
-          :contracts="payload.contracts"
+          :contracts="[...payload.contracts]"
           :can-create-contract="payload.canCreateContract"
           :create-contract-url="payload.createContractUrl"
         />
 
         <div class="dashboard-overview__sidebar">
-          <DashboardActivityPanel :items="payload.activityFeed" />
-          <DashboardApprovalPanel :items="payload.pendingApprovals" />
+          <DashboardActivityPanel :items="[...payload.activityFeed]" />
+          <DashboardApprovalPanel :items="[...payload.pendingApprovals]" />
         </div>
       </section>
     </template>

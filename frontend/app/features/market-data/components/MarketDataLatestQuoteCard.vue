@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { MarketQuoteView } from "../market-data.types";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{
   quote?: MarketQuoteView;
   loading?: boolean;
 }>();
+const { t } = useI18n();
 
 function currencyPrefix(ccy?: string): string {
   if (!ccy) return "";
@@ -76,10 +78,10 @@ const isEmpty = computed(() => !props.quote);
   <article class="card md-sec-card md-sec-quote">
     <header class="card-header">
       <div>
-        <span class="card-title">Latest quote</span>
+        <span class="card-title">{{ t("marketData.labels.latestQuote") }}</span>
         <div class="card-subtitle">
           <template v-if="quote?.provider">via {{ quote.provider }}</template>
-          <template v-else>No quote loaded yet</template>
+          <template v-else>{{ t("marketData.messages.noQuoteLoaded") }}</template>
         </div>
       </div>
     </header>
@@ -91,27 +93,27 @@ const isEmpty = computed(() => !props.quote);
 
       <dl class="md-sec-quote__grid">
         <div>
-          <dt>Open</dt>
+          <dt>{{ t("marketData.labels.openPrice") }}</dt>
           <dd class="md-num">{{ quote?.open ?? "—" }}</dd>
         </div>
         <div>
-          <dt>High</dt>
+          <dt>{{ t("marketData.labels.high") }}</dt>
           <dd class="md-num">{{ quote?.high ?? "—" }}</dd>
         </div>
         <div>
-          <dt>Low</dt>
+          <dt>{{ t("marketData.labels.low") }}</dt>
           <dd class="md-num">{{ quote?.low ?? "—" }}</dd>
         </div>
         <div>
-          <dt>Prev. close</dt>
+          <dt>{{ t("marketData.labels.prevClose") }}</dt>
           <dd class="md-num">{{ quote?.previousClose ?? "—" }}</dd>
         </div>
         <div>
-          <dt>Volume</dt>
+          <dt>{{ t("marketData.labels.volume") }}</dt>
           <dd class="md-num">{{ formatVolume(quote?.volume) }}</dd>
         </div>
         <div>
-          <dt>As of</dt>
+          <dt>{{ t("marketData.labels.asOf") }}</dt>
           <dd>{{ formatTimestamp(quote?.asOf) }}</dd>
         </div>
       </dl>
@@ -120,19 +122,19 @@ const isEmpty = computed(() => !props.quote);
         v-if="isEmpty && !loading"
         class="md-sec-quote__hint"
       >
-        Press <strong>Sync quote</strong> to populate this card.
+        {{ t("marketData.messages.pressSyncQuote") }}
       </p>
       <p
         v-else-if="loading"
         class="md-sec-quote__hint"
       >
-        Loading latest quote…
+        {{ t("marketData.messages.loadingLatestQuote") }}
       </p>
       <p
         v-else-if="quote?.stale"
         class="md-sec-quote__hint md-sec-quote__hint--warn"
       >
-        This quote is marked stale: {{ quote.staleReason || "no further detail" }}
+        {{ t("marketData.messages.quoteStale", { reason: quote.staleReason || t("marketData.messages.noFurtherDetail") }) }}
       </p>
     </div>
   </article>

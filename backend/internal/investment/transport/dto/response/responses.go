@@ -23,12 +23,13 @@ type FundResponse struct {
 	ManagerUserID  *uuid.UUID `json:"manager_user_id,omitempty"`
 	Benchmark      string     `json:"benchmark,omitempty"`
 	RiskProfile    string     `json:"risk_profile,omitempty"`
-	HasUnits       bool       `json:"has_units"`
-	ExternalPAMRef string     `json:"external_pam_ref,omitempty"`
-	Status         string     `json:"status"`
-	Version        int        `json:"version"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	HasUnits               bool       `json:"has_units"`
+	RequirePretradePreview bool       `json:"require_pretrade_preview"`
+	ExternalPAMRef         string     `json:"external_pam_ref,omitempty"`
+	Status                 string     `json:"status"`
+	Version                int        `json:"version"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // PortfolioResponse mirrors entity.Portfolio for HTTP transport.
@@ -321,6 +322,55 @@ type FundNAVResponse struct {
 	HasStaleInputs bool    `json:"has_stale_inputs"`
 	IsIndicative   bool    `json:"is_indicative"`
 	PortfolioCount int     `json:"portfolio_count"`
+}
+
+// AllocationBucketResponse is one entry in a breakdown — e.g. an
+// asset-class, sector, country, or currency contribution to the fund's NAV.
+type AllocationBucketResponse struct {
+	Key         string `json:"key"`           // stable machine key
+	Label       string `json:"label"`         // human label
+	MarketValue string `json:"market_value"`  // decimal string in valuation_ccy
+	PctOfNAV    string `json:"pct_of_nav"`    // 0..100, two-decimal precision
+}
+
+// FundAllocationResponse breaks a fund's market value across four orthogonal
+// dimensions: asset class, sector, country, and currency. Served by
+// GET /investment/funds/{id}/allocation.
+type FundAllocationResponse struct {
+	FundID         string                     `json:"fund_id"`
+	AsOf           string                     `json:"as_of"`
+	ValuationCcy   string                     `json:"valuation_ccy"`
+	TotalNAV       string                     `json:"total_nav"`
+	TotalCash      string                     `json:"total_cash"`
+	PortfolioCount int                        `json:"portfolio_count"`
+	ByAssetClass   []AllocationBucketResponse `json:"by_asset_class"`
+	BySector       []AllocationBucketResponse `json:"by_sector"`
+	ByCountry      []AllocationBucketResponse `json:"by_country"`
+	ByCurrency     []AllocationBucketResponse `json:"by_currency"`
+}
+
+// NAVHistoryPointResponse is one daily observation in a fund's NAV/AUM trail.
+// NAVPerUnit is empty for non-unitised funds; AUM is always populated.
+type NAVHistoryPointResponse struct {
+	BusinessDate string `json:"business_date"`
+	NAVPerUnit   string `json:"nav_per_unit,omitempty"`
+	AUM          string `json:"aum"`
+}
+
+// FundNAVHistoryResponse carries the time series plus convenience aggregates
+// (high/low/latest/delta) so the UI doesn't redo arithmetic.
+type FundNAVHistoryResponse struct {
+	FundID   string                    `json:"fund_id"`
+	Range    string                    `json:"range"`
+	HasUnits bool                      `json:"has_units"`
+	From     string                    `json:"from"`
+	To       string                    `json:"to"`
+	Series   []NAVHistoryPointResponse `json:"series"`
+	High     string                    `json:"high"`
+	Low      string                    `json:"low"`
+	Latest   string                    `json:"latest"`
+	DeltaPct string                    `json:"delta_pct"`
+	IsEmpty  bool                      `json:"is_empty"`
 }
 
 // ResearchReportResponse mirrors entity.ResearchReport for HTTP transport.

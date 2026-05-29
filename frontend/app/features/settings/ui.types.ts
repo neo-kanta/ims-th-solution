@@ -35,6 +35,8 @@ export type SettingsSectionId =
   | "notifications"
   | "audit";
 
+export type SettingsConsoleMode = "individual" | "administration";
+
 export interface SettingsNavigationItem {
   id: SettingsSectionId;
   label: string;
@@ -43,6 +45,12 @@ export interface SettingsNavigationItem {
   status: "live" | "read-only" | "pending";
   count?: string | number;
   disabled?: boolean;
+}
+
+export interface SettingsNavigationGroup {
+  id: string;
+  label: string;
+  items: SettingsNavigationItem[];
 }
 
 export interface SettingsOverviewSignal {

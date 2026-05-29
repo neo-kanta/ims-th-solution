@@ -69,7 +69,10 @@ function formatDate(dateStr: string): string {
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const mIdx = parseInt(parts[1], 10) - 1;
-      return `${months[mIdx]} ${parts[2]}, ${parts[0]}`;
+      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
+      const day = parseInt(parts[2], 10).toString();
+      const year = parts[0];
+      return t("holdings.dateFormats.fullDate" as any, { month, day, year }, `${month} ${day}, ${year}`);
     }
   } catch (e) {}
   return dateStr;
@@ -187,12 +190,12 @@ onBeforeUnmount(() => {
 
           <!-- Date as of -->
           <div class="fc-overlay__as-of">
-            <span class="fc-overlay__as-of-label">As of:</span>
+            <span class="fc-overlay__as-of-label">{{ t("holdings.chartOverlay.asOf", "As of:") }}</span>
             <span class="fc-overlay__as-of-value">{{ displayDate }} (GMT+7)</span>
             <span 
               class="fc-overlay__status-dot" 
               :class="isStale ? 'is-stale' : 'is-fresh'" 
-              :title="isStale ? 'Stale Data' : 'Feeds OK'"
+              :title="isStale ? t('holdings.chartOverlay.staleData', 'Stale Data') : t('holdings.toolbar.freshOk', 'Feeds OK')"
             />
           </div>
         </div>
@@ -202,18 +205,18 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="fc-overlay__close-button"
-            aria-label="Close fullscreen chart"
+            :aria-label="t('holdings.chartOverlay.closeAria', 'Close fullscreen chart')"
             @click="emit('close')"
           >
             <AppIcon name="close" class="fc-overlay__close-icon" />
-            <span class="fc-overlay__close-text">Close</span>
+            <span class="fc-overlay__close-text">{{ t("holdings.chartOverlay.close", "Close") }}</span>
           </button>
         </div>
       </header>
 
       <!-- Range selectors and Toolbar -->
       <div class="fc-overlay__toolbar">
-        <div class="fc-overlay__ranges" role="tablist" aria-label="Chart time ranges">
+        <div class="fc-overlay__ranges" role="tablist" :aria-label="t('holdings.chartOverlay.rangesAria', 'Chart time ranges')">
           <button
             v-for="r in ranges"
             :key="r"
@@ -224,12 +227,12 @@ onBeforeUnmount(() => {
             :class="{ 'is-active': range === r }"
             @click="emit('changeRange', r)"
           >
-            {{ r }}
+            {{ t('holdings.navHistory.range.' + r as any, r) }}
           </button>
         </div>
         <div class="fc-overlay__toolbar-meta">
           <span v-if="loading" class="fc-overlay__loading-spinner">
-            Updating chart...
+            {{ t("holdings.chartOverlay.updating", "Updating chart...") }}
           </span>
         </div>
       </div>
@@ -238,13 +241,13 @@ onBeforeUnmount(() => {
       <main class="fc-overlay__chart-workspace">
         <div v-if="error" class="fc-overlay__error-state">
           <AppIcon name="warning" class="fc-overlay__state-icon" />
-          <p class="fc-overlay__state-title">Failed to load chart data</p>
+          <p class="fc-overlay__state-title">{{ t("holdings.chartOverlay.errorTitle", "Failed to load chart data") }}</p>
           <p class="fc-overlay__state-desc">{{ error }}</p>
         </div>
         <div v-else-if="!payload || payload.series.length === 0" class="fc-overlay__empty-state">
           <AppIcon name="info" class="fc-overlay__state-icon" />
-          <p class="fc-overlay__state-title">No chart data available</p>
-          <p class="fc-overlay__state-desc">There are no NAV records in the selected range.</p>
+          <p class="fc-overlay__state-title">{{ t("holdings.chartOverlay.emptyTitle", "No chart data available") }}</p>
+          <p class="fc-overlay__state-desc">{{ t("holdings.chartOverlay.emptyDesc", "There are no NAV records in the selected range.") }}</p>
         </div>
         <div v-else class="fc-overlay__graph-container">
           <!-- Graph is scaled to fit nicely -->
@@ -265,19 +268,19 @@ onBeforeUnmount(() => {
       <!-- Quick statistics widget -->
       <div class="fc-overlay__stats-strip">
         <div class="fc-overlay__stat-item">
-          <span class="fc-overlay__stat-label">HIGH</span>
+          <span class="fc-overlay__stat-label">{{ t("holdings.navHistory.high", "High").toUpperCase() }}</span>
           <span class="fc-overlay__stat-value">{{ payload?.high ? payload.high.toFixed(4) : '—' }}</span>
         </div>
         <div class="fc-overlay__stat-item">
-          <span class="fc-overlay__stat-label">LOW</span>
+          <span class="fc-overlay__stat-label">{{ t("holdings.navHistory.low", "Low").toUpperCase() }}</span>
           <span class="fc-overlay__stat-value">{{ payload?.low ? payload.low.toFixed(4) : '—' }}</span>
         </div>
         <div class="fc-overlay__stat-item">
-          <span class="fc-overlay__stat-label">LATEST</span>
+          <span class="fc-overlay__stat-label">{{ t("holdings.navHistory.latest", "Latest").toUpperCase() }}</span>
           <span class="fc-overlay__stat-value">{{ payload?.latest ? payload.latest.toFixed(4) : '—' }}</span>
         </div>
         <div class="fc-overlay__stat-item">
-          <span class="fc-overlay__stat-label">RANGE DELTA</span>
+          <span class="fc-overlay__stat-label">{{ t("holdings.chartOverlay.rangeDelta", "RANGE DELTA") }}</span>
           <span 
             class="fc-overlay__stat-value font-semibold"
             :class="isPositive ? 'text-emerald-600 dark:text-emerald-500' : 'text-rose-600 dark:text-rose-500'"
@@ -286,24 +289,24 @@ onBeforeUnmount(() => {
           </span>
         </div>
         <div class="fc-overlay__stat-item">
-          <span class="fc-overlay__stat-label">DATA FEED</span>
-          <span class="fc-overlay__stat-value">Accounting Closed NAV</span>
+          <span class="fc-overlay__stat-label">{{ t("holdings.chartOverlay.dataFeed", "DATA FEED") }}</span>
+          <span class="fc-overlay__stat-value">{{ t("holdings.chartOverlay.accountingNav", "Accounting Closed NAV") }}</span>
         </div>
       </div>
 
       <!-- Professional financial terminal status footer -->
       <footer class="fc-overlay__footer">
         <div class="fc-overlay__footer-left">
-          <span>BUSINESS DATE: <strong>{{ summary?.business_date || '—' }}</strong></span>
+          <span>{{ t("holdings.chartOverlay.businessDate", "BUSINESS DATE:") }} <strong>{{ summary?.business_date || '—' }}</strong></span>
           <span class="fc-overlay__footer-separator">•</span>
-          <span>LAST UPDATE: <strong>{{ footer?.last_priced_at ? formatDate(footer.last_priced_at.split('T')[0]) + ' ' + footer.last_priced_at.split('T')[1].substring(0, 5) : '—' }}</strong></span>
+          <span>{{ t("holdings.chartOverlay.lastUpdate", "LAST UPDATE:") }} <strong>{{ footer?.last_priced_at ? formatDate(footer.last_priced_at.split('T')[0]) + ' ' + footer.last_priced_at.split('T')[1].substring(0, 5) : '—' }}</strong></span>
           <span class="fc-overlay__footer-separator">•</span>
-          <span>PROVIDER: <strong>TH-IMS Accounting Engine</strong></span>
+          <span>{{ t("holdings.chartOverlay.provider", "PROVIDER:") }} <strong>{{ t("holdings.chartOverlay.providerValue", "TH-IMS Accounting Engine") }}</strong></span>
         </div>
         <div class="fc-overlay__footer-right">
-          <span>IRG RULESET: <strong>{{ footer?.irg_rule_version || '—' }}</strong></span>
+          <span>{{ t("holdings.chartOverlay.irgRuleset", "IRG RULESET:") }} <strong>{{ footer?.irg_rule_version || '—' }}</strong></span>
           <span class="fc-overlay__footer-separator">•</span>
-          <span>AUDIT HASH: <code>{{ footer?.audit_hash || '—' }}</code></span>
+          <span>{{ t("holdings.chartOverlay.auditHash", "AUDIT HASH:") }} <code>{{ footer?.audit_hash || '—' }}</code></span>
         </div>
       </footer>
     </div>

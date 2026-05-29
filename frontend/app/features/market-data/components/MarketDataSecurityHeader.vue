@@ -3,6 +3,7 @@ import type {
   MarketDataSecurityDetail,
   DetailFreshnessStatus,
 } from "../market-data.types";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{
   detail: MarketDataSecurityDetail;
@@ -16,15 +17,16 @@ const emit = defineEmits<{
   (e: "toggle-watching"): void;
   (e: "back"): void;
 }>();
+const { t } = useI18n();
 
 function freshnessLabel(s: DetailFreshnessStatus): string {
   switch (s) {
-    case "FRESH":        return "Fresh";
-    case "STALE":        return "Stale";
-    case "EXPIRED":      return "Expired";
-    case "NOT_IMPORTED": return "Not imported";
-    case "FAILED":       return "Failed";
-    case "RATE_LIMITED": return "Rate limited";
+    case "FRESH":        return t("marketData.statuses.fresh");
+    case "STALE":        return t("marketData.statuses.stale");
+    case "EXPIRED":      return t("marketData.statuses.expired");
+    case "NOT_IMPORTED": return t("marketData.statuses.notImported");
+    case "FAILED":       return t("marketData.statuses.failed");
+    case "RATE_LIMITED": return t("marketData.statuses.rateLimited");
     default:             return s;
   }
 }
@@ -42,10 +44,10 @@ function freshnessClass(s: DetailFreshnessStatus): string {
 
 const mappingLabel = computed(() => {
   switch (props.detail.dataQuality.mapping) {
-    case "MAPPED":          return "Mapped";
-    case "UNMAPPED":        return "Unmapped";
-    case "REVIEW_REQUIRED": return "Review required";
-    case "CONFLICTED":      return "Conflicted";
+    case "MAPPED":          return t("marketData.statuses.mapped");
+    case "UNMAPPED":        return t("marketData.statuses.unmapped");
+    case "REVIEW_REQUIRED": return t("marketData.statuses.reviewRequired");
+    case "CONFLICTED":      return t("marketData.statuses.conflicted");
     default:                return props.detail.dataQuality.mapping;
   }
 });
@@ -66,13 +68,13 @@ const mappingClass = computed(() => {
       <button
         type="button"
         class="md-sec-header__back"
-        aria-label="Back to Market Data"
+        :aria-label="t('marketData.actions.backToMarketData')"
         @click="emit('back')"
       >
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <path d="M10 2L4 8l6 6" />
         </svg>
-        <span>Market data</span>
+        <span>{{ t("marketData.actions.backToMarketData") }}</span>
       </button>
     </div>
 
@@ -84,7 +86,7 @@ const mappingClass = computed(() => {
           <span
             class="md-status-badge"
             :class="freshnessClass(detail.dataQuality.freshness)"
-            :aria-label="`Freshness ${freshnessLabel(detail.dataQuality.freshness)}`"
+            :aria-label="`${t('marketData.labels.freshness')} ${freshnessLabel(detail.dataQuality.freshness)}`"
           >
             <span class="md-status-dot" aria-hidden="true" />
             {{ freshnessLabel(detail.dataQuality.freshness) }}
@@ -92,14 +94,14 @@ const mappingClass = computed(() => {
           <span
             class="md-status-badge"
             :class="mappingClass"
-            :aria-label="`Mapping ${mappingLabel}`"
+            :aria-label="`${t('marketData.labels.mapping')} ${mappingLabel}`"
           >
             <span class="md-status-dot" aria-hidden="true" />
             {{ mappingLabel }}
           </span>
         </div>
         <p class="md-sec-header__name">{{ detail.name || "—" }}</p>
-        <ul class="md-sec-header__meta" aria-label="Identity metadata">
+        <ul class="md-sec-header__meta" :aria-label="t('marketData.labels.identityMetadata')">
           <li v-if="detail.imsSymbol">
             <span class="md-sec-header__meta-label">IMS</span>
             <code>{{ detail.imsSymbol }}</code>
@@ -113,7 +115,7 @@ const mappingClass = computed(() => {
             <span>{{ detail.currency }}</span>
           </li>
           <li v-if="detail.countryCode">
-            <span class="md-sec-header__meta-label">Country</span>
+            <span class="md-sec-header__meta-label">{{ t("marketData.labels.country") }}</span>
             <span>{{ detail.countryCode }}</span>
           </li>
           <li v-if="detail.isin">
@@ -130,7 +132,7 @@ const mappingClass = computed(() => {
           type="button"
           @click="emit('toggle-watching')"
         >
-          {{ detail.watching ? "Watching" : "Add to watchlist" }}
+          {{ detail.watching ? t("marketData.actions.watching") : t("marketData.actions.addToWatchlist") }}
         </button>
         <button
           class="btn btn-primary btn-sm"
@@ -138,7 +140,7 @@ const mappingClass = computed(() => {
           :disabled="isRunning"
           @click="emit('sync-quote')"
         >
-          {{ isRunning ? "Syncing…" : "Sync quote" }}
+          {{ isRunning ? t("marketData.actions.syncing") : t("marketData.actions.syncQuote") }}
         </button>
         <button
           class="btn btn-secondary btn-sm"
@@ -146,14 +148,14 @@ const mappingClass = computed(() => {
           :disabled="isRunning"
           @click="emit('import-history')"
         >
-          Import history
+          {{ t("marketData.actions.importHistory") }}
         </button>
         <button
           class="btn btn-secondary btn-sm"
           type="button"
           @click="emit('open-mappings')"
         >
-          Configure mappings
+          {{ t("marketData.actions.configureMappings") }}
         </button>
       </div>
     </div>

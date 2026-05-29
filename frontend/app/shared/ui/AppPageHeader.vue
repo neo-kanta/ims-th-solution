@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { useState, watch } from "#imports"
+
 interface Props {
   title: string
   description?: string
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const pageTitle = useState<string>("page-title", () => "")
+
+watch(
+  () => props.title,
+  (newTitle) => {
+    pageTitle.value = newTitle || ""
+  },
+  { immediate: true }
+)
 
 defineSlots<{
   eyebrow(): unknown
@@ -20,7 +32,7 @@ defineSlots<{
         <div v-if="$slots.eyebrow" class="page-header-eyebrow">
           <slot name="eyebrow" />
         </div>
-        <h1 class="page-header-title">{{ title }}</h1>
+        <!-- Title is omitted here as it is rendered in layout breadcrumbs instead -->
         <p v-if="description" class="page-header-description">{{ description }}</p>
       </div>
 

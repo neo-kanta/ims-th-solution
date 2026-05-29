@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import type { MarketDataProvider } from "../market-data.types";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{ provider: MarketDataProvider }>();
 defineEmits<{ (e: "configure", id: string): void; (e: "upload", id: string): void }>();
+const { t } = useI18n();
 
 const statusLabel = computed(() => {
   switch (props.provider.status) {
-    case "connected":   return "Connected";
-    case "rate-limited": return "Rate-limited";
-    case "idle":        return "Idle";
-    case "error":       return "Error";
+    case "connected":   return t("marketData.statuses.connected");
+    case "rate-limited": return t("marketData.statuses.rateLimited");
+    case "idle":        return t("marketData.statuses.idle");
+    case "error":       return t("marketData.statuses.error");
   }
 });
 
@@ -46,29 +48,29 @@ const usageClass = computed(() => {
 
     <div class="md-provider-card__meta">
       <div v-if="provider.symbolsCount != null">
-        <div class="md-meta-label">Symbols</div>
+        <div class="md-meta-label">{{ t("marketData.labels.symbols") }}</div>
         <div class="md-meta-value">{{ provider.symbolsCount }}</div>
       </div>
       <div v-if="provider.recordsCount != null">
-        <div class="md-meta-label">Records</div>
+        <div class="md-meta-label">{{ t("marketData.labels.records") }}</div>
         <div class="md-meta-value">{{ provider.recordsCount }}</div>
       </div>
       <div v-if="provider.lastSync">
-        <div class="md-meta-label">Last sync</div>
+        <div class="md-meta-label">{{ t("marketData.labels.lastSync") }}</div>
         <div class="md-meta-value">{{ provider.lastSync }}</div>
       </div>
       <div v-if="provider.lastUpload">
-        <div class="md-meta-label">Last upload</div>
+        <div class="md-meta-label">{{ t("marketData.labels.lastUpload") }}</div>
         <div class="md-meta-value">{{ provider.lastUpload }}</div>
       </div>
       <div v-if="provider.errors24h != null">
-        <div class="md-meta-label">Errors 24h</div>
+        <div class="md-meta-label">{{ t("marketData.labels.errors24h") }}</div>
         <div class="md-meta-value" :class="{ 'md-text-danger': provider.errors24h > 0 }">
           {{ provider.errors24h }}
         </div>
       </div>
       <div v-if="provider.supportedFiles">
-        <div class="md-meta-label">Files</div>
+        <div class="md-meta-label">{{ t("marketData.labels.files") }}</div>
         <div class="md-meta-value">{{ provider.supportedFiles }}</div>
       </div>
     </div>
@@ -79,10 +81,10 @@ const usageClass = computed(() => {
         class="btn btn-secondary btn-sm"
         @click="$emit('upload', provider.id)"
       >
-        Upload file
+        {{ t("marketData.actions.uploadFile") }}
       </button>
       <button v-else class="btn btn-secondary btn-sm" @click="$emit('configure', provider.id)">
-        Configure
+        {{ t("marketData.actions.configure") }}
       </button>
     </div>
   </div>

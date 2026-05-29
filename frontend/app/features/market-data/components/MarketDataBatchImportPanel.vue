@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useImportBatches } from "../composables/useImportBatches";
 import type { ApiCreateBatchRequest } from "../services/marketDataApi";
+import { useI18n } from "~/composables/useI18n";
 
 const emit = defineEmits<{
   (e: "completed"): void;
 }>();
+const { t } = useI18n();
 
 const {
   status,
@@ -18,7 +20,9 @@ const {
 } = useImportBatches();
 
 const symbolsText = ref("");
-const importType = ref<"QUOTE_SYNC" | "HISTORY_SYNC" | "QUOTE_AND_HISTORY_SYNC">("QUOTE_SYNC");
+const importType = ref<
+  "QUOTE_SYNC" | "HISTORY_SYNC" | "QUOTE_AND_HISTORY_SYNC"
+>("QUOTE_SYNC");
 const chunkSize = ref(25);
 const provider = ref<string>("default");
 
@@ -56,13 +60,20 @@ function onReset() {
 
 function statusVariant(s?: string): string {
   switch (s) {
-    case "COMPLETED": return "badge-success";
-    case "COMPLETED_WITH_WARNINGS": return "badge-warning";
-    case "PARTIAL_FAILED": return "badge-warning";
-    case "FAILED": return "badge-danger";
-    case "RUNNING": return "badge-neutral";
-    case "PENDING": return "badge-neutral";
-    default: return "badge-neutral";
+    case "COMPLETED":
+      return "badge-success";
+    case "COMPLETED_WITH_WARNINGS":
+      return "badge-warning";
+    case "PARTIAL_FAILED":
+      return "badge-warning";
+    case "FAILED":
+      return "badge-danger";
+    case "RUNNING":
+      return "badge-neutral";
+    case "PENDING":
+      return "badge-neutral";
+    default:
+      return "badge-neutral";
   }
 }
 </script>
@@ -71,10 +82,11 @@ function statusVariant(s?: string): string {
   <div class="card md-batch-panel">
     <div class="card-header md-batch-panel__head">
       <div>
-        <span class="card-title">Bulk import</span>
+        <span class="card-title">{{
+          t("marketData.headings.bulkImport")
+        }}</span>
         <div class="card-subtitle">
-          Run a chunk-based provider sync. Failures are isolated per chunk and
-          unmapped symbols land in the <strong>Unmapped</strong> tab for review.
+          {{ t("marketData.messages.bulkImportSubtitle") }}
         </div>
       </div>
       <button
@@ -82,13 +94,17 @@ function statusVariant(s?: string): string {
         type="button"
         class="btn btn-secondary btn-sm"
         @click="onReset"
-      >Reset</button>
+      >
+        {{ t("marketData.actions.reset") }}
+      </button>
     </div>
 
     <div class="card-body md-batch-panel__body">
       <div class="md-batch-panel__form">
         <label class="md-batch-panel__field">
-          <span class="md-batch-panel__label">Symbols</span>
+          <span class="md-batch-panel__label">{{
+            t("marketData.labels.symbols")
+          }}</span>
           <textarea
             v-model="symbolsText"
             class="form-input md-batch-panel__textarea"
@@ -96,21 +112,36 @@ function statusVariant(s?: string): string {
             placeholder="KBANK.BK, PTT.BK, AAPL, ..."
           />
           <span class="md-batch-panel__hint">
-            {{ totalSymbols }} symbol{{ totalSymbols === 1 ? "" : "s" }} detected
+            {{
+              t("marketData.messages.detectedSymbols", {
+                count: totalSymbols,
+                label: totalSymbols === 1 ? "symbol" : "symbols",
+              })
+            }}
           </span>
         </label>
 
         <div class="md-batch-panel__controls">
           <label class="md-batch-panel__field">
-            <span class="md-batch-panel__label">Type</span>
+            <span class="md-batch-panel__label">{{
+              t("marketData.labels.importType")
+            }}</span>
             <select v-model="importType" class="form-input">
-              <option value="QUOTE_SYNC">Quote only</option>
-              <option value="HISTORY_SYNC">History only</option>
-              <option value="QUOTE_AND_HISTORY_SYNC">Quote + history</option>
+              <option value="QUOTE_SYNC">
+                {{ t("marketData.actions.syncQuote") }}
+              </option>
+              <option value="HISTORY_SYNC">
+                {{ t("marketData.actions.importHistory") }}
+              </option>
+              <option value="QUOTE_AND_HISTORY_SYNC">
+                {{ t("marketData.actions.importQuoteHistory") }}
+              </option>
             </select>
           </label>
           <label class="md-batch-panel__field">
-            <span class="md-batch-panel__label">Chunk size</span>
+            <span class="md-batch-panel__label">{{
+              t("marketData.labels.chunkSize")
+            }}</span>
             <input
               v-model.number="chunkSize"
               type="number"
@@ -120,7 +151,9 @@ function statusVariant(s?: string): string {
             />
           </label>
           <label class="md-batch-panel__field">
-            <span class="md-batch-panel__label">Provider</span>
+            <span class="md-batch-panel__label">{{
+              t("marketData.labels.provider")
+            }}</span>
             <select v-model="provider" class="form-input">
               <option value="default">Default chain</option>
               <option value="alpha_vantage">Alpha Vantage</option>
@@ -136,25 +169,62 @@ function statusVariant(s?: string): string {
             :disabled="isCreating || isRunning || totalSymbols === 0"
             @click="onRun"
           >
-            {{ isRunning ? "Running…" : isCreating ? "Creating…" : "Run batch" }}
+            {{
+              isRunning
+                ? t("marketData.actions.running")
+                : isCreating
+                  ? t("marketData.actions.creating")
+                  : t("marketData.actions.runBatch")
+            }}
           </button>
-          <span v-if="errorMessage" class="md-batch-panel__error">{{ errorMessage }}</span>
+          <span v-if="errorMessage" class="md-batch-panel__error">{{
+            errorMessage
+          }}</span>
         </div>
       </div>
 
       <div v-if="status?.batch" class="md-batch-panel__summary">
         <div class="md-batch-panel__summary-head">
-          <span class="md-batch-panel__summary-id">batch {{ status.batch.batch_id?.slice(0, 8) }}…</span>
+          <span class="md-batch-panel__summary-id">{{
+            t("marketData.labels.batch", {
+              id: status.batch.batch_id?.slice(0, 8) ?? "",
+            })
+          }}</span>
           <span class="badge" :class="statusVariant(status.batch.status)">
             {{ status.batch.status }}
           </span>
         </div>
         <div class="md-batch-panel__counts">
-          <div><span class="md-batch-panel__count">{{ status.batch.total_symbols ?? 0 }}</span> symbols</div>
-          <div><span class="md-batch-panel__count">{{ status.batch.accepted_records ?? 0 }}</span> accepted</div>
-          <div><span class="md-batch-panel__count">{{ status.batch.rejected_records ?? 0 }}</span> rejected</div>
-          <div><span class="md-batch-panel__count">{{ status.batch.warning_records ?? 0 }}</span> warnings</div>
-          <div><span class="md-batch-panel__count">{{ status.batch.total_chunks ?? 0 }}</span> chunks</div>
+          <div>
+            <span class="md-batch-panel__count">{{
+              status.batch.total_symbols ?? 0
+            }}</span>
+            {{ t("marketData.labels.symbols").toLowerCase() }}
+          </div>
+          <div>
+            <span class="md-batch-panel__count">{{
+              status.batch.accepted_records ?? 0
+            }}</span>
+            {{ t("marketData.labels.accepted") }}
+          </div>
+          <div>
+            <span class="md-batch-panel__count">{{
+              status.batch.rejected_records ?? 0
+            }}</span>
+            {{ t("marketData.labels.rejected") }}
+          </div>
+          <div>
+            <span class="md-batch-panel__count">{{
+              status.batch.warning_records ?? 0
+            }}</span>
+            {{ t("marketData.labels.warnings") }}
+          </div>
+          <div>
+            <span class="md-batch-panel__count">{{
+              status.batch.total_chunks ?? 0
+            }}</span>
+            {{ t("marketData.labels.chunks") }}
+          </div>
         </div>
 
         <div v-if="status.chunks?.length" class="md-batch-panel__chunks">
@@ -164,27 +234,41 @@ function statusVariant(s?: string): string {
             class="md-batch-panel__chunk"
           >
             <div class="md-batch-panel__chunk-head">
-              <span>Chunk #{{ (c.chunk_index ?? 0) + 1 }}</span>
-              <span class="badge" :class="statusVariant(c.status)">{{ c.status }}</span>
+              <span>{{
+                t("marketData.labels.chunk", {
+                  index: (c.chunk_index ?? 0) + 1,
+                })
+              }}</span>
+              <span class="badge" :class="statusVariant(c.status)">{{
+                c.status
+              }}</span>
             </div>
             <div class="md-batch-panel__chunk-meta">
-              {{ c.accepted_records ?? 0 }} ok ·
-              {{ c.rejected_records ?? 0 }} rejected ·
-              {{ c.warning_records ?? 0 }} warn ·
-              {{ c.total_records ?? 0 }} total
-              <span v-if="c.error_message" class="md-batch-panel__chunk-error">— {{ c.error_message }}</span>
+              {{ c.accepted_records ?? 0 }} ok · {{ c.rejected_records ?? 0 }}
+              {{ t("marketData.labels.rejected") }} ·
+              {{ c.warning_records ?? 0 }} warn · {{ c.total_records ?? 0 }}
+              {{ t("marketData.labels.total") }}
+              <span v-if="c.error_message" class="md-batch-panel__chunk-error"
+                >— {{ c.error_message }}</span
+              >
             </div>
           </div>
         </div>
 
         <div v-if="errors.length" class="md-batch-panel__errors">
-          <div class="md-batch-panel__errors-head">Errors ({{ errors.length }})</div>
+          <div class="md-batch-panel__errors-head">
+            {{ t("marketData.labels.errors", { count: errors.length }) }}
+          </div>
           <ul class="md-batch-panel__errors-list">
             <li v-for="e in errors" :key="e.item_id">
               <code>{{ e.symbol }}</code>
               <span class="md-batch-panel__error-code">{{ e.status }}</span>
-              <span v-if="e.error_code" class="md-batch-panel__error-code">{{ e.error_code }}</span>
-              <span class="md-batch-panel__error-message">{{ e.error_message }}</span>
+              <span v-if="e.error_code" class="md-batch-panel__error-code">{{
+                e.error_code
+              }}</span>
+              <span class="md-batch-panel__error-message">{{
+                e.error_message
+              }}</span>
             </li>
           </ul>
         </div>

@@ -57,6 +57,12 @@ export const thCommonMessages = {
     investment: "การลงทุน",
     investmentResearch: "บทวิเคราะห์การลงทุน",
     marketData: "ข้อมูลตลาด",
+    marketDataTabs: {
+      watchlist: "ข้อมูล",
+      securities: "หลักทรัพย์",
+      unmapped: "ยังไม่จับคู่",
+      settings: "ตั้งค่า",
+    },
     administration: "การดูแลระบบ",
     administrationSettings: "การตั้งค่าการดูแลระบบ",
   },

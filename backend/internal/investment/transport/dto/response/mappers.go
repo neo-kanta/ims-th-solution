@@ -12,22 +12,23 @@ func FromFund(f *entity.Fund) FundResponse {
 		return FundResponse{}
 	}
 	return FundResponse{
-		ID:             f.ID,
-		Code:           f.Code,
-		Name:           f.Name,
-		ShortName:      f.ShortName,
-		FundCategoryID: f.FundCategoryID,
-		BaseCurrency:   f.BaseCurrency,
-		InceptionDate:  FormatDate(f.InceptionDate),
-		ManagerUserID:  f.ManagerUserID,
-		Benchmark:      f.Benchmark,
-		RiskProfile:    string(f.RiskProfile),
-		HasUnits:       f.HasUnits,
-		ExternalPAMRef: f.ExternalPAMRef,
-		Status:         string(f.Status),
-		Version:        f.Version,
-		CreatedAt:      f.CreatedAt,
-		UpdatedAt:      f.UpdatedAt,
+		ID:                     f.ID,
+		Code:                   f.Code,
+		Name:                   f.Name,
+		ShortName:              f.ShortName,
+		FundCategoryID:         f.FundCategoryID,
+		BaseCurrency:           f.BaseCurrency,
+		InceptionDate:          FormatDate(f.InceptionDate),
+		ManagerUserID:          f.ManagerUserID,
+		Benchmark:              f.Benchmark,
+		RiskProfile:            string(f.RiskProfile),
+		HasUnits:               f.HasUnits,
+		RequirePretradePreview: f.RequirePretradePreview,
+		ExternalPAMRef:         f.ExternalPAMRef,
+		Status:                 string(f.Status),
+		Version:                f.Version,
+		CreatedAt:              f.CreatedAt,
+		UpdatedAt:              f.UpdatedAt,
 	}
 }
 
@@ -299,6 +300,73 @@ func FromFundNAV(r *query.GetLatestFundNAVResult) FundNAVResponse {
 	}
 	if r.NAVPerUnit != nil {
 		out.NAVPerUnit = r.NAVPerUnit.String()
+	}
+	return out
+}
+
+// FromFundAllocation converts a fund-level allocation query result into a
+// FundAllocationResponse. Buckets keep their largest-first ordering.
+func FromFundAllocation(r *query.GetFundAllocationResult) FundAllocationResponse {
+	if r == nil {
+		return FundAllocationResponse{}
+	}
+	out := FundAllocationResponse{
+		FundID:         r.FundID.String(),
+		AsOf:           FormatDate(r.AsOf),
+		ValuationCcy:   r.ValuationCcy,
+		TotalNAV:       r.TotalNAV.String(),
+		TotalCash:      r.TotalCash.String(),
+		PortfolioCount: r.PortfolioCount,
+		ByAssetClass:   mapBuckets(r.ByAssetClass),
+		BySector:       mapBuckets(r.BySector),
+		ByCountry:      mapBuckets(r.ByCountry),
+		ByCurrency:     mapBuckets(r.ByCurrency),
+	}
+	return out
+}
+
+func mapBuckets(buckets []query.AllocationBucket) []AllocationBucketResponse {
+	out := make([]AllocationBucketResponse, 0, len(buckets))
+	for _, b := range buckets {
+		out = append(out, AllocationBucketResponse{
+			Key:         b.Key,
+			Label:       b.Label,
+			MarketValue: b.MarketValue.String(),
+			PctOfNAV:    b.PctOfNAV.String(),
+		})
+	}
+	return out
+}
+
+// FromFundNAVHistory converts a fund-level NAV history query result.
+// Series order is ascending by business_date so the frontend can draw the
+// chart left-to-right without re-sorting.
+func FromFundNAVHistory(r *query.GetFundNAVHistoryResult) FundNAVHistoryResponse {
+	if r == nil {
+		return FundNAVHistoryResponse{}
+	}
+	out := FundNAVHistoryResponse{
+		FundID:   r.FundID.String(),
+		Range:    string(r.Range),
+		HasUnits: r.HasUnits,
+		From:     FormatDate(r.From),
+		To:       FormatDate(r.To),
+		High:     r.High.String(),
+		Low:      r.Low.String(),
+		Latest:   r.Latest.String(),
+		DeltaPct: r.DeltaPct.String(),
+		IsEmpty:  r.IsEmpty,
+	}
+	out.Series = make([]NAVHistoryPointResponse, 0, len(r.Series))
+	for _, p := range r.Series {
+		row := NAVHistoryPointResponse{
+			BusinessDate: FormatDate(p.BusinessDate),
+			AUM:          p.AUM.String(),
+		}
+		if p.NAVPerUnit != nil {
+			row.NAVPerUnit = p.NAVPerUnit.String()
+		}
+		out.Series = append(out.Series, row)
 	}
 	return out
 }

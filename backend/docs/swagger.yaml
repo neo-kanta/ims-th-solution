@@ -92,6 +92,21 @@ definitions:
       username:
         type: string
     type: object
+  AllocationBucketResponse:
+    properties:
+      key:
+        description: stable machine key
+        type: string
+      label:
+        description: human label
+        type: string
+      market_value:
+        description: decimal string in valuation_ccy
+        type: string
+      pct_of_nav:
+        description: 0..100, two-decimal precision
+        type: string
+    type: object
   AssetClass:
     properties:
       code:
@@ -429,6 +444,12 @@ definitions:
       name:
         maxLength: 255
         type: string
+      require_pretrade_preview:
+        description: |-
+          RequirePretradePreview controls the trade-ticket UX on the Operation tab.
+          When true the UI must run a pre-trade simulation before allowing a post;
+          when false it posts directly (server still enforces gates).
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -763,6 +784,37 @@ definitions:
           investment transactions. Ignored for all other actions.
         type: boolean
     type: object
+  FundAllocationResponse:
+    properties:
+      as_of:
+        type: string
+      by_asset_class:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_country:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_currency:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_sector:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      fund_id:
+        type: string
+      portfolio_count:
+        type: integer
+      total_cash:
+        type: string
+      total_nav:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
   FundCategory:
     properties:
       assetClassID:
@@ -794,6 +846,33 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  FundNAVHistoryResponse:
+    properties:
+      delta_pct:
+        type: string
+      from:
+        type: string
+      fund_id:
+        type: string
+      has_units:
+        type: boolean
+      high:
+        type: string
+      is_empty:
+        type: boolean
+      latest:
+        type: string
+      low:
+        type: string
+      range:
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/NAVHistoryPointResponse'
+        type: array
+      to:
+        type: string
     type: object
   FundNAVResponse:
     properties:
@@ -850,6 +929,8 @@ definitions:
         type: string
       name:
         type: string
+      require_pretrade_preview:
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -1312,6 +1393,15 @@ definitions:
         $ref: '#/definitions/PermissionsResp'
       user:
         $ref: '#/definitions/UserResponse'
+    type: object
+  NAVHistoryPointResponse:
+    properties:
+      aum:
+        type: string
+      business_date:
+        type: string
+      nav_per_unit:
+        type: string
     type: object
   Override:
     properties:
@@ -2354,6 +2444,8 @@ definitions:
         type: string
       name:
         type: string
+      require_pretrade_preview:
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -4116,6 +4208,48 @@ paths:
       summary: Update Fund
       tags:
       - Investment - Funds
+  /investment/funds/{id}/allocation:
+    get:
+      description: Compute asset-class, sector, country and currency breakdowns for
+        a fund (read-only).
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundAllocationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund Allocation
+      tags:
+      - Investment - Valuation
   /investment/funds/{id}/aum/compute:
     post:
       consumes:
@@ -4176,6 +4310,52 @@ paths:
       security:
       - BearerAuth: []
       summary: Compute Fund AUM
+      tags:
+      - Investment - Valuation
+  /investment/funds/{id}/nav-history:
+    get:
+      description: Time series of NAV-per-unit (unitised funds) or AUM (non-unitised)
+        over a range.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M)'
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundNAVHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund NAV History
       tags:
       - Investment - Valuation
   /investment/funds/{id}/nav/latest:

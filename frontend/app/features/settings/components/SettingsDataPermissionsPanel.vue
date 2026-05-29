@@ -42,12 +42,18 @@ const groupedRows = computed(() => {
     groups.set(key, [...(groups.get(key) ?? []), grant]);
   }
 
-  return Array.from(groups.entries()).map(([key, grants]) => ({
-    key,
-    label: mode.value === "user" ? grants[0].userLabel : grants[0].contractName,
-    sublabel: mode.value === "user" ? grants[0].user : grants[0].contractId,
-    grants,
-  }));
+  return Array.from(groups.entries()).map(([key, grants]) => {
+    // Each grants array is populated by the loop above before being
+    // returned through the Map, so it always has at least one entry;
+    // `head` narrows the type for the label/sublabel lookups below.
+    const head = grants[0]!;
+    return {
+      key,
+      label: mode.value === "user" ? head.userLabel : head.contractName,
+      sublabel: mode.value === "user" ? head.user : head.contractId,
+      grants,
+    };
+  });
 });
 </script>
 

@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "permission"],
@@ -10,12 +10,10 @@ const { t } = useI18n();
 
 <template>
   <div class="page">
-    <div class="page-header">
-      <div>
-        <h1 class="page-title">{{ t("navigation.workflow") }}</h1>
-        <p class="page-subtitle">{{ t("workflow.subtitle") }}</p>
-      </div>
-    </div>
+    <AppPageHeader
+      :title="t('navigation.workflow')"
+      :description="t('workflow.subtitle')"
+    />
 
     <div class="card">
       <div class="card-body">
