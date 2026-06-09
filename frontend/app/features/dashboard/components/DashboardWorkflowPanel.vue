@@ -578,388 +578,7 @@ function actionLabel(action: string | undefined): string {
 </script>
 
 <template>
-  <AppCard
-    class="workflow-panel"
-    :title="t('dashboardWorkflow.title', 'Workflow Operations')"
-    :subtitle="
-      t(
-        'dashboardWorkflow.subtitle',
-        'Execute and review the contract business-day state machine.',
-      )
-    "
-  >
-    <template #header-actions>
-      <AppButton
-        variant="secondary"
-        size="sm"
-        :loading="loadingState"
-        :disabled="!hasContract"
-        @click="refresh"
-      >
-        <AppIcon name="refresh" size="xs" />
-        <span>{{ t("dashboardWorkflow.refresh", "Refresh") }}</span>
-      </AppButton>
-    </template>
 
-    <div v-if="!hasViewPermission" class="workflow-panel__notice is-warning">
-      <AppIcon name="warning" size="sm" />
-      <span>
-        {{
-          t(
-            "dashboardWorkflow.noViewPermission",
-            "You don't have permission to view workflow state (WORKFLOW_VIEW).",
-          )
-        }}
-      </span>
-    </div>
-
-    <div v-else class="workflow-panel__layout">
-      <!-- Contract picker -->
-      <aside class="workflow-panel__sidebar">
-        <label class="workflow-panel__label" for="workflow-contract-search">
-          {{ t("dashboardWorkflow.contractsTitle", "Contracts") }}
-        </label>
-        <input
-          id="workflow-contract-search"
-          v-model="contractSearch"
-          type="search"
-          class="workflow-panel__input"
-          :placeholder="
-            t('dashboardWorkflow.searchContracts', 'Search contract id…')
-          "
-        />
-
-        <div v-if="contractOptions.length === 0" class="workflow-panel__empty">
-          <AppEmptyState
-            :title="
-              t(
-                'dashboardWorkflow.noContractsTitle',
-                'No assigned contracts',
-              )
-            "
-            :description="
-              t(
-                'dashboardWorkflow.noContractsDescription',
-                'You have no contract workflow states in your current dashboard scope.',
-              )
-            "
-          />
-        </div>
-
-        <ul v-else class="workflow-panel__contract-list">
-          <li
-            v-for="opt in filteredContracts"
-            :key="opt.contractId"
-            class="workflow-panel__contract-item"
-            :class="{ 'is-active': opt.contractId === contractId }"
-          >
-            <button
-              type="button"
-              class="workflow-panel__contract-button"
-              @click="setContract(opt.contractId)"
-            >
-              <span class="workflow-panel__contract-id" :title="opt.contractId">
-                {{ opt.contractId }}
-              </span>
-              <AppBadge :variant="opt.contractId === contractId ? 'info' : 'neutral'" size="sm">
-                {{ opt.currentState || "NOT_STARTED" }}
-              </AppBadge>
-            </button>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- Main -->
-      <section class="workflow-panel__main">
-        <header class="workflow-panel__main-header">
-          <div class="workflow-panel__contract-meta">
-            <div class="workflow-panel__contract-label">
-              {{ t("dashboardWorkflow.selectedContract", "Selected contract") }}
-            </div>
-            <div class="workflow-panel__contract-value">
-              {{ contractId ?? t("dashboardWorkflow.noSelection", "— none —") }}
-            </div>
-          </div>
-
-          <div class="workflow-panel__date-control">
-            <label class="workflow-panel__label" for="workflow-business-date">
-              {{ t("dashboardWorkflow.businessDate", "Business date") }}
-            </label>
-            <input
-              id="workflow-business-date"
-              type="date"
-              class="workflow-panel__input"
-              :value="businessDate"
-              @change="setBusinessDate(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-        </header>
-
-        <!-- Stage cards -->
-        <div class="workflow-panel__stages">
-          <div
-            v-for="card in stageCards"
-            :key="card.key"
-            class="workflow-stage"
-            :class="`is-${card.status}`"
-          >
-            <div class="workflow-stage__header">
-              <span class="workflow-stage__title">{{ card.label }}</span>
-              <AppBadge :variant="stageBadgeVariant[card.status] as never" size="sm" dot>
-                {{ statusLabel(card.status) }}
-              </AppBadge>
-            </div>
-            <dl class="workflow-stage__body">
-              <div>
-                <dt>{{ t("dashboardWorkflow.stageTimestamp", "Time") }}</dt>
-                <dd>{{ formatTimestamp(card.timestamp) }}</dd>
-              </div>
-              <div>
-                <dt>{{ t("dashboardWorkflow.stagePersonnel", "Personnel") }}</dt>
-                <dd>{{ card.actor ?? "—" }}</dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-
-        <!-- Blocking reasons -->
-        <div
-          v-if="state?.blockingReasons?.length"
-          class="workflow-panel__notice is-warning"
-        >
-          <AppIcon name="warning" size="sm" />
-          <div>
-            <div class="workflow-panel__notice-title">
-              {{
-                t(
-                  "dashboardWorkflow.blockingTitle",
-                  "Backend reports blockers",
-                )
-              }}
-            </div>
-            <ul class="workflow-panel__notice-list">
-              <li
-                v-for="(b, idx) in state.blockingReasons"
-                :key="`${b.code}-${idx}`"
-              >
-                <strong>{{ b.code }}:</strong> {{ b.message }}
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Operation form -->
-        <form
-          class="workflow-panel__form"
-          @submit.prevent="openConfirm"
-        >
-          <div class="workflow-panel__form-row">
-            <div class="workflow-panel__field">
-              <label class="workflow-panel__label" for="workflow-action">
-                {{ t("dashboardWorkflow.operation", "Operation") }}
-              </label>
-              <select
-                id="workflow-action"
-                v-model="selectedAction"
-                class="workflow-panel__input"
-                :disabled="!hasContract || visibleActions.length === 0"
-              >
-                <option value="">
-                  {{ t("dashboardWorkflow.chooseOperation", "Choose operation…") }}
-                </option>
-                <option
-                  v-for="opt in visibleActions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ t(opt.labelKey, opt.labelFallback) }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div
-            v-if="reasonRequired"
-            class="workflow-panel__field"
-          >
-            <label class="workflow-panel__label" for="workflow-reason">
-              {{ t("dashboardWorkflow.reason", "Reason (min 20 chars)") }}
-            </label>
-            <textarea
-              id="workflow-reason"
-              v-model="reasonInput"
-              rows="2"
-              class="workflow-panel__input"
-              :placeholder="
-                t(
-                  'dashboardWorkflow.reasonPlaceholder',
-                  'Explain why this cancellation/rollback is required…',
-                )
-              "
-            />
-          </div>
-
-          <div
-            v-if="selectedAction === 'APPROVE'"
-            class="workflow-panel__field"
-          >
-            <label class="workflow-panel__checkbox">
-              <input v-model="zeroAttestationInput" type="checkbox" />
-              <span>
-                {{
-                  t(
-                    "dashboardWorkflow.zeroAttestation",
-                    "Zero-transaction day attestation",
-                  )
-                }}
-              </span>
-            </label>
-            <textarea
-              v-if="zeroAttestationInput"
-              v-model="attestationReasonInput"
-              rows="2"
-              class="workflow-panel__input"
-              :placeholder="
-                t(
-                  'dashboardWorkflow.attestationPlaceholder',
-                  'Attestation reason (min 30 chars)…',
-                )
-              "
-            />
-          </div>
-
-          <div
-            v-if="selectedAction === 'APPROVE'"
-            class="workflow-panel__field"
-          >
-            <label class="workflow-panel__label" for="workflow-notes">
-              {{ t("dashboardWorkflow.notes", "Notes (optional)") }}
-            </label>
-            <textarea
-              id="workflow-notes"
-              v-model="notesInput"
-              rows="2"
-              class="workflow-panel__input"
-            />
-          </div>
-
-          <div class="workflow-panel__form-actions">
-            <div v-if="disabledReason" class="workflow-panel__help">
-              <AppIcon name="info" size="xs" />
-              <span>{{ disabledReason }}</span>
-            </div>
-            <AppButton
-              type="submit"
-              :variant="
-                selectedActionOption?.tone === 'danger'
-                  ? 'danger'
-                  : selectedActionOption?.tone === 'warning'
-                    ? 'warning'
-                    : 'primary'
-              "
-              size="sm"
-              :disabled="!canSubmit"
-              :loading="executing"
-            >
-              <AppIcon name="check" size="xs" />
-              <span>
-                {{ t("dashboardWorkflow.executeOperation", "Execute operation") }}
-              </span>
-            </AppButton>
-          </div>
-        </form>
-
-        <!-- Result/error toasts -->
-        <div
-          v-if="error"
-          class="workflow-panel__notice is-danger"
-          role="alert"
-        >
-          <AppIcon name="warning" size="sm" />
-          <div>
-            <div class="workflow-panel__notice-title">
-              {{ t("dashboardWorkflow.errorTitle", "Operation failed") }}
-            </div>
-            <p>{{ error }}</p>
-          </div>
-        </div>
-
-        <div
-          v-if="lastResult"
-          class="workflow-panel__notice is-success"
-          role="status"
-        >
-          <AppIcon name="check" size="sm" />
-          <div>
-            <div class="workflow-panel__notice-title">
-              {{
-                t(
-                  "dashboardWorkflow.successTitle",
-                  "Workflow transition applied",
-                )
-              }}
-            </div>
-            <p>
-              {{ lastResult.fromState }} → {{ lastResult.toState }} ·
-              {{ formatTimestamp(lastResult.occurredAt ?? null) }}
-            </p>
-          </div>
-        </div>
-
-        <!-- History -->
-        <section class="workflow-panel__history" v-if="hasContract">
-          <div class="workflow-panel__history-header">
-            <h3 class="workflow-panel__history-title">
-              {{ t("dashboardWorkflow.historyTitle", "Operation history") }}
-            </h3>
-            <span v-if="loadingHistory" class="workflow-panel__history-loading">
-              {{ t("dashboardWorkflow.loading", "Loading…") }}
-            </span>
-          </div>
-
-          <ol v-if="recentHistory.length" class="workflow-panel__timeline">
-            <li
-              v-for="entry in recentHistory"
-              :key="entry.id"
-              class="workflow-panel__timeline-item"
-            >
-              <div class="workflow-panel__timeline-time">
-                {{ formatTimestamp(entry.occurredAt ?? null) }}
-              </div>
-              <div class="workflow-panel__timeline-body">
-                <div class="workflow-panel__timeline-headline">
-                  <strong>{{ actionLabel(entry.action) }}</strong>
-                  <span class="workflow-panel__timeline-arrow">
-                    {{ entry.fromState }} → {{ entry.toState }}
-                  </span>
-                </div>
-                <div class="workflow-panel__timeline-meta">
-                  {{ entry.actorUsername || entry.actorType || "—" }}
-                  <span v-if="entry.reason"> · {{ entry.reason }}</span>
-                </div>
-              </div>
-            </li>
-          </ol>
-
-          <p v-else-if="!loadingHistory" class="workflow-panel__history-empty">
-            {{ t("dashboardWorkflow.historyEmpty", "No transitions yet for this date.") }}
-          </p>
-        </section>
-      </section>
-    </div>
-
-    <AppConfirmDialog
-      :open="confirmOpen"
-      :title="confirmTitle"
-      :description="confirmDescription"
-      :confirm-label="t('dashboardWorkflow.confirmExecute', 'Confirm and execute')"
-      cancel-label="Cancel"
-      :tone="confirmTone"
-      :loading="executing"
-      @cancel="closeConfirm"
-      @confirm="handleConfirm"
-    />
-  </AppCard>
 </template>
 
 <style scoped>
@@ -1035,11 +654,11 @@ function actionLabel(action: string | undefined): string {
 }
 
 .workflow-panel__contract-button:hover {
-  background: var(--bg-card-muted, #f9fafb);
+  background: var(--bg-row-hover);
 }
 
 .workflow-panel__contract-item.is-active .workflow-panel__contract-button {
-  background: var(--bg-card-muted, #f1f5f9);
+  background: var(--bg-selected);
   border-color: var(--action-primary);
 }
 
@@ -1102,12 +721,12 @@ function actionLabel(action: string | undefined): string {
 
 .workflow-stage.is-complete {
   border-color: var(--state-success, #10b981);
-  background: rgba(16, 185, 129, 0.04);
+  background: var(--status-approved-bg);
 }
 
 .workflow-stage.is-active {
   border-color: var(--action-primary, #2563eb);
-  background: rgba(37, 99, 235, 0.04);
+  background: var(--status-executed-bg);
 }
 
 .workflow-stage__header {
@@ -1159,17 +778,17 @@ function actionLabel(action: string | undefined): string {
 
 .workflow-panel__notice.is-warning {
   border-color: var(--state-warning, #d97706);
-  background: rgba(217, 119, 6, 0.06);
+  background: var(--alert-warning-bg);
 }
 
 .workflow-panel__notice.is-danger {
   border-color: var(--state-danger, #dc2626);
-  background: rgba(220, 38, 38, 0.06);
+  background: var(--alert-danger-bg);
 }
 
 .workflow-panel__notice.is-success {
   border-color: var(--state-success, #059669);
-  background: rgba(5, 150, 105, 0.06);
+  background: var(--alert-success-bg);
 }
 
 .workflow-panel__notice-title {

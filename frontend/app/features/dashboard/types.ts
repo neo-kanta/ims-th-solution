@@ -286,3 +286,15 @@ export interface AICommandBarState {
   query: string;
   loading: boolean;
 }
+
+export type DashboardTodoFilter =
+  | "my"
+  | "approvals"
+  | "workflow"
+  | "alerts"
+  | "done";
+
+export type DashboardTodoAction =
+  | "mark-done"
+  | "snooze"
+  | "more";
