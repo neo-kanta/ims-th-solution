@@ -98,11 +98,11 @@ defineProps<{
 
 .workflow-rail__dot.is-active {
   background: var(--action-primary);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 4px var(--focus-ring);
 }
 
 .workflow-rail__dot.is-upcoming {
-  background: var(--color-neutral-200);
+  background: var(--border-strong);
 }
 
 .workflow-rail__copy {

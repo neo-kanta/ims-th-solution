@@ -1760,7 +1760,39 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List a team's contract assignments */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamContractResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         put?: never;
         /** Assign a contract/fund to an approval team */
         post: {
@@ -3537,6 +3569,284 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a chat message and stream the response
+         * @description Streams text/event-stream. Each frame's `data:` payload is a ChatStreamEvent (see response model). Frames have event names: session_started, text, done, error. Use fetch() + ReadableStream on the client — EventSource cannot carry an Authorization header.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Chat message */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendMessageRequest"];
+                };
+            };
+            responses: {
+                /** @description One example frame payload; the response is a stream of these */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ChatStreamEvent"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List chat sessions
+         * @description Lists the caller's chat sessions. Auditors (IAM_AUDIT_VIEW) may pass user_id to list another user's sessions; such access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page (default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    limit?: number;
+                    /** @description Auditor-only: list this user's sessions (requires IAM_AUDIT_VIEW) */
+                    user_id?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a chat session
+         * @description Returns one session's metadata. Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session UUID */
+                    session_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionSummaryResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List chat session messages
+         * @description Returns a session's messages with safe provenance (no raw provider payload). Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page (default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Session UUID */
+                    session_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionMessagesResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compliance/breaches": {
         parameters: {
             query?: never;
@@ -4980,6 +5290,267 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/funds/{id}/holdings/valuation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Intraday Holdings Valuation
+         * @description Compute estimated NAV / AUM and per-position unrealised P&L from live market data, alongside the official accounting NAV.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IntradayValuationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/market-data/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Fund Market Data
+         * @description Trigger a provider fetch for every instrument held by the fund. Records an audit event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MarketDataRefreshResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/market-data/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fund Market Data Status
+         * @description Report provider health and the number of stale positions for a fund.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MarketDataStatusResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/funds/{id}/nav-history": {
         parameters: {
             query?: never;
@@ -5151,6 +5722,102 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/submit-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Fund For Approval
+         * @description Move a DRAFT or REJECTED fund into onboarding approval.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -6185,6 +6852,102 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/portfolios/{id}/submit-approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Portfolio For Approval
+         * @description Move a DRAFT portfolio into onboarding approval.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -7815,6 +8578,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/research-reports/{id}/invalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invalidate Investment Research Report
+         * @description One-way transition to INVALIDATED. An invalidated report cannot be referenced by a decision, edited, submitted, cancelled, or soft-deleted. The reason (≥20 characters) is stored and audited.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Invalidation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InvalidateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/research-reports/{id}/submit": {
         parameters: {
             query?: never;
@@ -8574,6 +9429,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/market-data/search/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Data — live symbol search
+         * @description Live provider symbol lookup (Alpha Vantage SYMBOL_SEARCH) enriched with a logo URL. Not limited to already-imported securities.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Free-text query (ticker fragment or company name) */
+                    query: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveSymbolSearchResponseDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reference-data/securities": {
         parameters: {
             query?: never;
@@ -9126,6 +10041,171 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/day-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Day State By Date
+         * @description Get the caller's current workflow state for a business date.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Business date (YYYY-MM-DD) */
+                    businessDate: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkflowStateResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/day-states/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow History By Date
+         * @description Get the caller's workflow transition history for a business date.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Business date (YYYY-MM-DD) */
+                    businessDate: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HistoryResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflow/day-states/{contractId}": {
         parameters: {
             query?: never;
@@ -9611,6 +10691,92 @@ export interface components {
             new_password: string;
             old_password: string;
         };
+        ChatFigureBinding: {
+            /** @example 10.25 */
+            figure?: string;
+            /** @example tool_raw */
+            source?: string;
+            /** @example get_fund_nav */
+            tool_name?: string;
+        };
+        ChatMessageResponse: {
+            content?: string;
+            created_at?: string;
+            id?: string;
+            provenance?: Record<string, never>;
+            /** @example assistant */
+            role?: string;
+        };
+        ChatSourceRef: {
+            /** @example 2026-06-07T08:30:00Z */
+            as_of?: string;
+            /** @example ims */
+            server?: string;
+            /** @example succeeded */
+            state?: string;
+            /** @example get_fund_nav */
+            tool_name?: string;
+        };
+        ChatStreamEvent: {
+            /**
+             * @description Bindings links cited figures to the tool that produced them. Present only
+             *     on kind=sources, and only when the answer passed numeric validation.
+             */
+            bindings?: components["schemas"]["ChatFigureBinding"][];
+            /**
+             * @description Error is a safe, user-facing error message. Present only on kind=error.
+             * @example the assistant could not complete this turn
+             */
+            error?: string;
+            /**
+             * @description Kind is the SSE event name. One of: session_started, text, done, error.
+             * @example text
+             */
+            kind?: string;
+            /**
+             * @description MessageID is the user message id on session_started, or the assistant
+             *     message id on done.
+             * @example 123e4567-e89b-12d3-a456-426614174001
+             */
+            message_id?: string;
+            /**
+             * @description SessionID is the conversation id. Present on session_started, done, and error.
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            session_id?: string;
+            /**
+             * @description Sources lists the turn-level provenance (which tools ran). Present only on
+             *     kind=sources.
+             */
+            sources?: components["schemas"]["ChatSourceRef"][];
+            /**
+             * @description StopReason is the canonical termination reason. Present only on kind=done.
+             *     One of: end_turn, tool_use, max_tokens, stop_sequence, error, unknown.
+             * @example end_turn
+             */
+            stop_reason?: string;
+            /**
+             * @description Text is an incremental token. Present only on kind=text.
+             * @example Hello
+             */
+            text?: string;
+            /**
+             * @description ToolName is the MCP tool being called. Present only on kind=tool_call.
+             * @example get_portfolio_holdings
+             */
+            tool_name?: string;
+            /**
+             * @description ToolStatus is the tool-call lifecycle marker. Present only on
+             *     kind=tool_call. One of: running, ok, error, denied.
+             * @example running
+             */
+            tool_status?: string;
+            /**
+             * @description Unverified lists the figures that failed numeric validation. Present only
+             *     on kind=validation with tool_status=blocked.
+             */
+            unverified?: string[];
+        };
         CheckGroupResult: {
             breaches?: components["schemas"]["Breach"][];
             check_group_id?: string;
@@ -9843,6 +11009,12 @@ export interface components {
         };
         ExecuteTransitionRequest: {
             /**
+             * @description AccountingDate is the NAV / accounting posting date for
+             *     CLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to
+             *     BusinessDate. Must not precede BusinessDate. Ignored by other actions.
+             */
+            accountingDate?: string;
+            /**
              * @description Action identifies the transition to execute.
              *     Valid values: OPEN_DAY, APPROVE, CANCEL_DAY_START, CANCEL_APPROVAL,
              *     CLOSE_TRANSACTIONS, CANCEL_TRANSACTION_CLOSE, CLOSE_ACCOUNTING,
@@ -9988,7 +11160,16 @@ export interface components {
             remarks?: string;
             updated_at?: string;
         };
+        Health: {
+            /** @description the chat module is mounted */
+            enabled?: boolean;
+            /** @description at least one MCP server connected */
+            mcp_connected?: boolean;
+            /** @description allowlisted tools available */
+            tool_count?: number;
+        };
         HealthResponse: {
+            chat?: components["schemas"]["Health"];
             database?: string;
             redis?: string;
             status?: string;
@@ -10105,6 +11286,67 @@ export interface components {
             tick_size?: string;
             updated_at?: string;
         };
+        IntradayAllocationBucketResponse: {
+            key?: string;
+            label?: string;
+            market_value?: string;
+            pct_of_total?: string;
+        };
+        IntradayCashRowResponse: {
+            balance?: string;
+            currency?: string;
+        };
+        IntradayPositionResponse: {
+            asset_class_code?: string;
+            asset_class_label?: string;
+            average_cost?: string;
+            cost_basis?: string;
+            currency?: string;
+            instrument_id?: string;
+            is_stale?: boolean;
+            latest_price?: string;
+            market_value?: string;
+            name?: string;
+            price_at?: string;
+            provider?: string;
+            quantity?: string;
+            stale_reason?: string;
+            ticker?: string;
+            unrealised_pnl?: string;
+            unrealised_pnl_pct?: string;
+        };
+        IntradayValuationResponse: {
+            allocation?: components["schemas"]["IntradayAllocationBucketResponse"][];
+            as_of?: string;
+            business_date?: string;
+            cash?: components["schemas"]["IntradayCashRowResponse"][];
+            cash_balance?: string;
+            delta_pct_vs_last_close?: string;
+            estimated_aum?: string;
+            estimated_nav_per_unit?: string;
+            fund_code?: string;
+            fund_id?: string;
+            has_live_prices?: boolean;
+            has_official?: boolean;
+            has_units?: boolean;
+            is_stale?: boolean;
+            official_as_of?: string;
+            official_aum?: string;
+            official_nav_per_unit?: string;
+            portfolio_count?: number;
+            positions?: components["schemas"]["IntradayPositionResponse"][];
+            primary_provider?: string;
+            providers_used?: string[];
+            stale_reason?: string;
+            units_indicative?: boolean;
+            units_outstanding?: string;
+            unmapped_symbols?: string[];
+            unrealised_pnl?: string;
+            valuation_ccy?: string;
+        };
+        InvalidateResearchReportRequest: {
+            reason?: string;
+        };
         InvestmentStyle: {
             code?: string;
             createdAt?: string;
@@ -10124,6 +11366,20 @@ export interface components {
             limit?: number;
             offset?: number;
             total?: number;
+        };
+        LiveSymbolMatchDTO: {
+            already_tracked?: boolean;
+            asset_type?: string;
+            currency?: string;
+            exchange?: string;
+            logo_url?: string;
+            name?: string;
+            region?: string;
+            security_id?: string;
+            symbol?: string;
+        };
+        LiveSymbolSearchResponseDTO: {
+            items?: components["schemas"]["LiveSymbolMatchDTO"][];
         };
         LoginRequest: {
             /** @description MFA challenge token returned after password step */
@@ -10176,6 +11432,18 @@ export interface components {
         MappingsResponse: {
             items?: components["schemas"]["ProviderMappingDTO"][];
         };
+        MarketDataRefreshResponse: {
+            completed_at?: string;
+            errors?: string[];
+            failed_symbols?: number;
+            fund_id?: string;
+            requested_symbols?: number;
+            stale_symbols?: number;
+            started_at?: string;
+            success_symbols?: number;
+            unmapped_symbols?: string[];
+            used_provider?: string;
+        };
         MarketDataScreenRowDTO: {
             asset_type?: string;
             change_amount?: string;
@@ -10219,6 +11487,17 @@ export interface components {
             volume?: number;
             watching?: boolean;
             yield_to_maturity?: string;
+        };
+        MarketDataStatusResponse: {
+            fund_id?: string;
+            healthy?: boolean;
+            last_quote_at?: string;
+            note?: string;
+            primary_provider?: string;
+            stale_after_seconds?: number;
+            stale_positions?: number;
+            total_positions?: number;
+            unmapped_symbols?: string[];
         };
         MeResponse: {
             permissions?: components["schemas"]["PermissionsResp"];
@@ -10556,6 +11835,14 @@ export interface components {
             created_at?: string;
             created_by?: string;
             currency?: string;
+            /**
+             * @description Multi-level review badge derived from the approval engine. Empty when
+             *     the report has not been submitted; "PENDING_LEVEL_<N>" while the
+             *     approval is in progress; "REVIEW_COMPLETED" / "REJECTED" / "INVALIDATED"
+             *     at terminal states. Backend remains the source of truth; UI uses this
+             *     field for display only.
+             */
+            derived_review_stage?: string;
             effective_date?: string;
             esg_comment?: string;
             financial_status?: string;
@@ -10563,6 +11850,13 @@ export interface components {
             instrument_code?: string;
             instrument_name?: string;
             instrument_type?: string;
+            /**
+             * @description Invalidation metadata. Populated together when the report is in
+             *     INVALIDATED state; omitted otherwise.
+             */
+            invalidated_at?: string;
+            invalidated_by?: string;
+            invalidation_reason?: string;
             investment_analysis?: string;
             market?: string;
             owner_user_id?: string;
@@ -10689,6 +11983,47 @@ export interface components {
             security_id?: string;
             status?: string;
         };
+        SendMessageRequest: {
+            /**
+             * @description Content is the user's message. Required.
+             * @example Summarize last quarter's NAV trend for Fund A.
+             */
+            content: string;
+            /**
+             * @description Model is the specific LLM model ID. Optional.
+             * @example claude-haiku-4-5-20251001
+             */
+            model?: string;
+            /**
+             * @description Provider is the LLM provider ID. Optional.
+             * @example anthropic
+             */
+            provider?: string;
+            /**
+             * @description SessionID is the existing session UUID. Empty starts a new session.
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            session_id?: string;
+        };
+        SessionListResponse: {
+            items?: components["schemas"]["SessionSummaryResponse"][];
+            /** @example 20 */
+            limit?: number;
+            /** @example 1 */
+            page?: number;
+            /** @example 42 */
+            total?: number;
+            /** @example 3 */
+            total_pages?: number;
+        };
+        SessionMessagesResponse: {
+            items?: components["schemas"]["ChatMessageResponse"][];
+            limit?: number;
+            page?: number;
+            session_id?: string;
+            total?: number;
+            total_pages?: number;
+        };
         SessionResponse: {
             created_at?: string;
             expires_at?: string;
@@ -10696,6 +12031,16 @@ export interface components {
             ip_address?: string;
             last_activity_at?: string;
             user_agent?: string;
+        };
+        SessionSummaryResponse: {
+            created_at?: string;
+            /** @example 123e4567-e89b-12d3-a456-426614174000 */
+            id?: string;
+            /** @example claude-haiku-4-5-20251001 */
+            model?: string;
+            /** @example anthropic */
+            provider?: string;
+            updated_at?: string;
         };
         SignatureResponse: {
             id?: string;
@@ -10898,6 +12243,12 @@ export interface components {
             toState?: string;
         };
         TransitionResponse: {
+            /**
+             * @description AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format
+             *     YYYY-MM-DD; distinct from BusinessDate because operators can backdate
+             *     or delay accounting cycles.
+             */
+            accountingDate?: string;
             /** @description ApprovalID is set when the transition was an APPROVE action. */
             approvalId?: string;
             businessDate?: string;
@@ -10981,9 +12332,7 @@ export interface components {
             owner_user_id?: string;
             post_submission_note?: string;
             recommendation?: string;
-            rejection_reason?: string;
             report_date?: string;
-            report_status?: string;
             report_title?: string;
         };
         UpdateSecurityRequest: {
@@ -11052,6 +12401,11 @@ export interface components {
         WorkflowStateResponse: {
             accountingClosedAt?: string;
             /**
+             * @description AccountingDate / PrevAccountingDate surface the NAV cycle date and
+             *     the prior cycle stashed during a rollback. Format YYYY-MM-DD.
+             */
+            accountingDate?: string;
+            /**
              * @description AllowedActions is computed server-side from the current state.
              *     The UI must use this list to decide which buttons to enable.
              */
@@ -11081,6 +12435,7 @@ export interface components {
              *     a cancelled/never-started synthetic NOT_STARTED response.
              */
             persisted?: boolean;
+            prevAccountingDate?: string;
             /**
              * @description PreviousDay is populated only when Persisted=false (NOT_STARTED).
              *     It lets the UI display the previous-day status before the operator
