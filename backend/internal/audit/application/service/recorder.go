@@ -22,6 +22,7 @@ func NewRecorder(repo domain.AuditRepository) *Recorder {
 }
 
 // Record writes a standardized audit event and logs failures without interrupting callers.
+// Use for low-risk CRUD that should not be blocked by an audit-store outage.
 func (s *Recorder) Record(
 	ctx context.Context,
 	actorID *uuid.UUID,
@@ -32,6 +33,24 @@ func (s *Recorder) Record(
 	userAgent string,
 	metadata map[string]interface{},
 ) {
+	if err := s.RecordStrict(ctx, actorID, eventType, targetType, targetID, ipAddress, userAgent, metadata); err != nil {
+		slog.Error("failed to record audit event", "error", err, "event_type", eventType, "target_type", targetType, "target_id", targetID)
+	}
+}
+
+// RecordStrict persists the audit event synchronously and returns the
+// underlying repository error. Use for financial-grade actions where audit
+// loss is unacceptable.
+func (s *Recorder) RecordStrict(
+	ctx context.Context,
+	actorID *uuid.UUID,
+	eventType string,
+	targetType string,
+	targetID string,
+	ipAddress string,
+	userAgent string,
+	metadata map[string]interface{},
+) error {
 	metadata = enrichMetadata(ctx, metadata)
 
 	event := &entity.AuditEvent{
@@ -44,10 +63,7 @@ func (s *Recorder) Record(
 		UserAgent:  userAgent,
 		Metadata:   metadata,
 	}
-
-	if err := s.repo.Record(ctx, event); err != nil {
-		slog.Error("failed to record audit event", "error", err, "event_type", eventType, "target_type", targetType, "target_id", targetID)
-	}
+	return s.repo.Record(ctx, event)
 }
 
 func enrichMetadata(ctx context.Context, metadata map[string]interface{}) map[string]interface{} {
