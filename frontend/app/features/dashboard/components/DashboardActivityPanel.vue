@@ -85,7 +85,7 @@ defineProps<{
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--color-neutral-300);
+  background: var(--border-strong);
 }
 
 .activity-feed__dot.is-success {
@@ -104,8 +104,12 @@ defineProps<{
   background: #0f766e;
 }
 
+:root[data-theme="dark"] .activity-feed__dot.is-teal {
+  background: #14b8a6;
+}
+
 .activity-feed__dot.is-neutral {
-  background: var(--color-neutral-300);
+  background: var(--border-strong);
 }
 
 .activity-feed__content {

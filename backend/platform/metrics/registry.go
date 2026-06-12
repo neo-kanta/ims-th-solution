@@ -60,4 +60,5 @@ func resetAllForTest() {
 	registry = newRegistry()
 	registerInvestmentMetrics()
 	registerMarketDataMetrics()
+	registerChatMetrics()
 }

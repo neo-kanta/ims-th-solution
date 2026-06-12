@@ -1,64 +1,149 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import { useDashboardTasks } from "../composables/useDashboardTasks";
+import { computed } from "vue";
+
+import type {
+  DashboardSnapshotDTO,
+  DashboardTodoAction,
+  DashboardTodoFilter,
+  TaskDTO,
+} from "../types";
 import DashboardTaskCard from "./DashboardTaskCard.vue";
 
-const { t } = useI18n();
-const { snapshot, loading, error, fetchTasks } = useDashboardTasks();
-
-onMounted(() => {
-  void fetchTasks();
+const props = withDefaults(defineProps<{
+  snapshot: DashboardSnapshotDTO | null;
+  loading?: boolean;
+  error?: string | null;
+  activeFilter?: DashboardTodoFilter;
+}>(), {
+  loading: false,
+  error: null,
+  activeFilter: "my",
 });
 
-const hasTasks = computed(
-  () => snapshot.value !== null && snapshot.value.tasks.length > 0,
-);
+const emit = defineEmits<{
+  retry: [];
+  taskAction: [action: DashboardTodoAction, task: TaskDTO];
+}>();
+
+const { t } = useI18n();
+
+const allTasks = computed(() => props.snapshot?.tasks ?? []);
+
+const filteredTasks = computed(() => {
+  switch (props.activeFilter) {
+    case "approvals":
+      return allTasks.value.filter((task) => task.type === "RESEARCH_REVIEW");
+    case "workflow":
+      return allTasks.value.filter((task) => task.type === "WORKFLOW_PENDING");
+    case "alerts":
+      return allTasks.value.filter((task) => task.type === "COMPLIANCE_BREACH");
+    case "done":
+      return allTasks.value.filter((task) => task.status === "COMPLETED");
+    case "my":
+    default:
+      return allTasks.value.filter((task) => task.status !== "COMPLETED");
+  }
+});
 
 const highPriorityCount = computed(
-  () => snapshot.value?.summary.highPriority ?? 0,
+  () => props.snapshot?.summary.highPriority ?? 0,
 );
+
+const hasTasks = computed(() => filteredTasks.value.length > 0);
+
+const activeFilterLabel = computed(() => {
+  switch (props.activeFilter) {
+    case "approvals":
+      return "Review approvals";
+    case "workflow":
+      return "Business-day flow";
+    case "alerts":
+      return "Compliance alerts";
+    case "done":
+      return "Completed archive";
+    case "my":
+    default:
+      return "My task queue";
+  }
+});
+
+const scopeLabel = computed(() => {
+  if (props.loading && !props.snapshot) return "Loading selected layer";
+  return `${activeFilterLabel.value} - ${filteredTasks.value.length} matching items`;
+});
+
+const stateTitle = computed(() => {
+  if (props.activeFilter === "done") return "No completed tasks yet";
+  if (props.activeFilter === "approvals") return "No review tasks";
+  if (props.activeFilter === "workflow") return "No workflow tasks";
+  if (props.activeFilter === "alerts") return "No alert tasks";
+  return "No pending tasks";
+});
+
+const stateCopy = computed(() => {
+  if (props.activeFilter === "my") {
+    return t("dashboard.taskFeed.empty", "No pending tasks - all clear.");
+  }
+  return "This filter has no matching tasks from the integration task source.";
+});
 </script>
 
 <template>
-  <section class="task-feed">
+  <section class="task-feed" aria-labelledby="dashboard-todos-title">
     <div class="task-feed__header">
-      <h2 class="task-feed__title">
-        {{ t("dashboard.taskFeed.title", "My Tasks") }}
-      </h2>
+      <div>
+        <p class="task-feed__eyebrow">Feed</p>
+        <h2 id="dashboard-todos-title" class="task-feed__title">
+          Task queue
+        </h2>
+        <p class="task-feed__scope">{{ scopeLabel }}</p>
+      </div>
       <span v-if="highPriorityCount > 0" class="task-feed__urgent-chip">
         {{ highPriorityCount }}
         {{ t("dashboard.taskFeed.urgent", "urgent") }}
       </span>
     </div>
 
-    <template v-if="hasTasks && snapshot">
+    <template v-if="hasTasks">
       <div class="task-feed__list">
         <DashboardTaskCard
-          v-for="task in snapshot.tasks"
+          v-for="task in filteredTasks"
           :key="task.taskId"
           :task="task"
+          @action="(action) => emit('taskAction', action, task)"
         />
       </div>
     </template>
 
-    <div v-else-if="loading" class="task-feed__state">
-      <AppIcon class="is-spinning" name="refresh" size="sm" />
-      <span>{{ t("dashboard.taskFeed.loading", "Loading tasks…") }}</span>
+    <div v-else-if="loading" class="task-feed__skeleton" aria-live="polite">
+      <div
+        v-for="idx in 4"
+        :key="idx"
+        class="task-feed__skeleton-card"
+      >
+        <span class="task-feed__skeleton-dot" />
+        <span class="task-feed__skeleton-line is-wide" />
+        <span class="task-feed__skeleton-line" />
+      </div>
     </div>
 
     <div v-else-if="error" class="task-feed__state task-feed__state--error">
       <AppIcon name="warning" size="sm" />
-      <span>{{ error }}</span>
-      <AppButton variant="ghost" size="sm" @click="fetchTasks">
+      <div>
+        <strong>Task source unavailable</strong>
+        <span>{{ error }}</span>
+      </div>
+      <AppButton variant="ghost" size="sm" @click="emit('retry')">
         {{ t("dashboard.taskFeed.retry", "Retry") }}
       </AppButton>
     </div>
 
     <div v-else class="task-feed__state">
       <AppIcon name="check" size="sm" />
-      <span>{{
-        t("dashboard.taskFeed.empty", "No pending tasks — all clear.")
-      }}</span>
+      <div>
+        <strong>{{ stateTitle }}</strong>
+        <span>{{ stateCopy }}</span>
+      </div>
     </div>
   </section>
 </template>
@@ -73,23 +158,40 @@ const highPriorityCount = computed(
 .task-feed__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
 }
 
-.task-feed__title {
-  font-size: var(--font-size-md);
+.task-feed__eyebrow {
+  margin: 0 0 var(--space-1);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.task-feed__title {
   color: var(--text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   margin: 0;
 }
 
+.task-feed__scope {
+  margin: var(--space-1) 0 0;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
 .task-feed__urgent-chip {
+  padding: 2px var(--space-3);
+  color: var(--status-rejected-text);
+  background: var(--status-rejected-bg);
+  border: 1px solid var(--alert-danger-border);
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--state-danger);
-  background: color-mix(in srgb, var(--state-danger) 10%, transparent);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-pill);
 }
 
 .task-feed__list {
@@ -99,28 +201,95 @@ const highPriorityCount = computed(
 }
 
 .task-feed__state {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  font-size: var(--font-size-sm);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
   color: var(--text-secondary);
   background: var(--bg-card);
-  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+}
+
+.task-feed__state strong,
+.task-feed__state span {
+  display: block;
+}
+
+.task-feed__state strong {
+  margin-bottom: var(--space-1);
+  color: var(--text-primary);
 }
 
 .task-feed__state--error {
   color: var(--state-danger);
 }
 
-.is-spinning {
-  animation: task-feed-spin 0.9s linear infinite;
+.task-feed__skeleton {
+  display: grid;
+  gap: var(--space-2);
 }
 
-@keyframes task-feed-spin {
+.task-feed__skeleton-card {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 8rem;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.task-feed__skeleton-dot,
+.task-feed__skeleton-line {
+  display: block;
+  background:
+    linear-gradient(
+      90deg,
+      var(--bg-card-muted),
+      var(--bg-row-hover),
+      var(--bg-card-muted)
+    );
+  background-size: 220% 100%;
+  animation: task-feed-pulse 1.2s ease-in-out infinite;
+}
+
+.task-feed__skeleton-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+}
+
+.task-feed__skeleton-line {
+  height: 12px;
+  border-radius: var(--radius-pill);
+}
+
+.task-feed__skeleton-line.is-wide {
+  height: 16px;
+}
+
+@keyframes task-feed-pulse {
+  from {
+    background-position: 120% 0;
+  }
   to {
-    transform: rotate(360deg);
+    background-position: -120% 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .task-feed__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .task-feed__state,
+  .task-feed__skeleton-card {
+    grid-template-columns: 1fr;
   }
 }
 </style>

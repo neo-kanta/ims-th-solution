@@ -1,0 +1,61 @@
+export const enChatMessages = {
+  chat: {
+    title: "Chat",
+    subtitle:
+      "Ask about funds, portfolios, holdings, NAV and valuations. Answers are grounded in IMS system-of-record data.",
+    sliceLabel: "Read-only",
+    inputPlaceholder: "Type a message and press Enter…",
+    send: "Send",
+    sending: "Sending…",
+    youLabel: "You",
+    assistantLabel: "Assistant",
+    errorPrefix: "Error",
+    streamingHint: "Streaming…",
+    newChat: "New chat",
+    untitled: "New conversation",
+    inputHint: "Enter to send · Shift+Enter for a new line",
+    stop: "Stop",
+    history: {
+      today: "Today",
+      yesterday: "Yesterday",
+      earlier: "Earlier",
+      empty: "No conversations yet",
+      retry: "Retry",
+      open: "Open history",
+      close: "Close",
+    },
+    suggestions: {
+      funds: "List the funds I can access",
+      portfolios: "Show my portfolios",
+      nav: "What is the latest NAV for one of my funds?",
+      valuation: "Show the latest valuation for a portfolio",
+    },
+    emptyTitle: "Start a new conversation",
+    emptyHint:
+      "Ask about your funds, portfolios, holdings, NAV or valuations. Every figure is fetched from the IMS system of record via read-only tools and verified before it is shown.",
+    tool: {
+      running: "running",
+      ok: "ok",
+      error: "error",
+      denied: "denied",
+    },
+    validation: {
+      running: "Verifying figures…",
+      passed: "Figures verified",
+      blocked: "Some figures could not be verified",
+      unverifiedLabel: "Couldn't verify:",
+    },
+    sources: {
+      toggle: "Sources & provenance",
+      toolsTitle: "Tools used",
+      figuresTitle: "Figure sources",
+      asOf: "as of",
+      note: "Figures are read from the IMS system of record via read-only tools and verified before display.",
+      kind: {
+        tool_raw: "from tool data",
+        calculation: "from calculation",
+        none: "unverified",
+      },
+    },
+  },
+} as const;
