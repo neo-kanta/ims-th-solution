@@ -1,0 +1,33 @@
+info:
+  name: get-daily-state
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{base-url}}workflow/daily?businessDate={{workflow-business-date}}"
+  params:
+    - name: businessDate
+      value: "{{workflow-business-date}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const allowed = data?.allowedOperations || [];
+
+        if (allowed.length > 0) {
+          bru.setEnvVar("workflow-operation-type", allowed[0], { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

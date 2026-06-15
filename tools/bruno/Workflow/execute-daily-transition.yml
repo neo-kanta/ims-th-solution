@@ -1,0 +1,29 @@
+info:
+  name: execute-daily-transition
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{base-url}}workflow/daily/execute"
+  body:
+    type: json
+    data: |-
+      {
+        "businessDate": "{{workflow-business-date}}",
+        "operationType": "{{workflow-operation-type}}",
+        "remark": "{{workflow-reason}}",
+        "zeroTransactionAttestation": {{workflow-zero-transaction-attestation}},
+        "attestationReason": "{{workflow-attestation-reason}}",
+        "notes": "{{workflow-notes}}",
+        "accountingDate": "{{workflow-business-date}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

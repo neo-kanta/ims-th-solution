@@ -26,6 +26,16 @@ func NewPostgresWorkflowDayRepository(pool *pgxpool.Pool) *PostgresWorkflowDayRe
 
 // ─── Read (pool-based, no lock) ───────────────────────────────────────────────
 
+// GetByBusinessDate returns the global workflow day for a date, or nil if none exists.
+func (r *PostgresWorkflowDayRepository) GetByBusinessDate(
+	ctx context.Context,
+	businessDate time.Time,
+) (*entity.WorkflowDay, error) {
+	row := r.pool.QueryRow(ctx, selectDaySQL+" WHERE business_date = $1 LIMIT 1",
+		businessDate)
+	return scanWorkflowDay(row)
+}
+
 // GetByContractDate returns the record for a contract+date, or nil if none exists.
 func (r *PostgresWorkflowDayRepository) GetByContractDate(
 	ctx context.Context,
@@ -80,6 +90,19 @@ func (r *PostgresWorkflowDayRepository) ListByState(
 // ─── Write (tx-based) ─────────────────────────────────────────────────────────
 
 // GetForUpdate acquires SELECT … FOR UPDATE within a transaction.
+// GetForUpdateByBusinessDate acquires SELECT FOR UPDATE for the global day row.
+func (r *PostgresWorkflowDayRepository) GetForUpdateByBusinessDate(
+	ctx context.Context,
+	tx pgx.Tx,
+	businessDate time.Time,
+) (*entity.WorkflowDay, error) {
+	row := tx.QueryRow(ctx,
+		selectDaySQL+" WHERE business_date = $1 FOR UPDATE",
+		businessDate,
+	)
+	return scanWorkflowDay(row)
+}
+
 func (r *PostgresWorkflowDayRepository) GetForUpdate(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -112,7 +135,7 @@ func (r *PostgresWorkflowDayRepository) Insert(
 			$7, $8, $9,
 			$10, $11, $12, $13, $14
 		)
-		ON CONFLICT (contract_id, business_date) DO NOTHING`,
+		ON CONFLICT (business_date) DO NOTHING`,
 		d.ID, d.ContractID, d.BusinessDate, string(d.CurrentState),
 		d.OpenedAt, d.OpenedBy,
 		d.TransactionsLockedAt, d.PendingReclose, d.RecloseCount,
@@ -123,7 +146,7 @@ func (r *PostgresWorkflowDayRepository) Insert(
 	}
 	if tag.RowsAffected() == 0 {
 		// Concurrent OPEN_DAY won the race; read back to populate the error.
-		existing, readErr := r.GetByContractDate(ctx, d.ContractID, d.BusinessDate)
+		existing, readErr := r.GetByBusinessDate(ctx, d.BusinessDate)
 		state := "UNKNOWN"
 		if readErr == nil && existing != nil {
 			state = string(existing.CurrentState)
@@ -156,6 +179,8 @@ func (r *PostgresWorkflowDayRepository) UpdateState(
 			accounting_closed_by    = $10,
 			pending_reclose         = $11,
 			reclose_count           = $12,
+			accounting_date         = $15,
+			prev_accounting_date    = $16,
 			version                 = version + 1,
 			updated_at              = $13,
 			updated_by              = $14
@@ -168,6 +193,7 @@ func (r *PostgresWorkflowDayRepository) UpdateState(
 		d.AccountingClosedAt, d.AccountingClosedBy,
 		d.PendingReclose, d.RecloseCount,
 		d.UpdatedAt, d.UpdatedBy,
+		d.AccountingDate, d.PrevAccountingDate,
 	)
 	if err != nil {
 		return fmt.Errorf("updating workflow day state: %w", err)
@@ -217,6 +243,7 @@ const selectDaySQL = `
 		transaction_closed_at, transaction_closed_by,
 		accounting_closed_at, accounting_closed_by,
 		pending_reclose, reclose_count,
+		accounting_date, prev_accounting_date,
 		version, created_at, updated_at, created_by, updated_by
 	FROM workflow__day_states`
 
@@ -237,6 +264,7 @@ func scanWorkflowDay(s scanner) (*entity.WorkflowDay, error) {
 		&d.TransactionClosedAt, &d.TransactionClosedBy,
 		&d.AccountingClosedAt, &d.AccountingClosedBy,
 		&d.PendingReclose, &d.RecloseCount,
+		&d.AccountingDate, &d.PrevAccountingDate,
 		&d.Version, &d.CreatedAt, &d.UpdatedAt, &d.CreatedBy, &d.UpdatedBy,
 	)
 	if err != nil {

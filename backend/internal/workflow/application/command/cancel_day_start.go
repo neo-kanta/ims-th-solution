@@ -75,7 +75,7 @@ func (h *CancelDayStartHandler) Handle(ctx context.Context, req CancelDayStartRe
 
 	var result *CancelDayStartResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -108,20 +108,22 @@ func (h *CancelDayStartHandler) Handle(ctx context.Context, req CancelDayStartRe
 
 		reason := req.Reason
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     fromState,
-			ToState:       vo.StateNotStarted,
-			Action:        vo.ActionCancelDayStart,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Reason:        &reason,
-			Metadata:      map[string]any{},
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        fromState,
+			ToState:          vo.StateNotStarted,
+			Action:           vo.ActionCancelDayStart,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Reason:           &reason,
+			Metadata:         map[string]any{},
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)

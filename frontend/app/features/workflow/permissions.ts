@@ -42,28 +42,28 @@ export interface ActionOption {
 }
 
 export const ACTION_CATALOG: Record<WorkflowAction, ActionOption> = {
-  OPEN_DAY: {
-    value: "OPEN_DAY",
+  START_INVESTMENT_DAY: {
+    value: "START_INVESTMENT_DAY",
     permission: WORKFLOW_PERMISSIONS.OPEN_DAY,
     tone: "primary",
     requiresReason: false,
-    labelKey: "workflow.action.OPEN_DAY",
+    labelKey: "workflow.action.START_INVESTMENT_DAY",
     labelFallback: "Investment Day Start",
   },
-  APPROVE: {
-    value: "APPROVE",
+  MANAGER_APPROVE: {
+    value: "MANAGER_APPROVE",
     permission: WORKFLOW_PERMISSIONS.APPROVE,
     tone: "primary",
     requiresReason: false,
-    labelKey: "workflow.action.APPROVE",
+    labelKey: "workflow.action.MANAGER_APPROVE",
     labelFallback: "Manager Approval",
   },
-  CLOSE_TRANSACTIONS: {
-    value: "CLOSE_TRANSACTIONS",
+  CLOSE_TRANSACTION: {
+    value: "CLOSE_TRANSACTION",
     permission: WORKFLOW_PERMISSIONS.CLOSE_TRANSACTIONS,
     tone: "primary",
     requiresReason: false,
-    labelKey: "workflow.action.CLOSE_TRANSACTIONS",
+    labelKey: "workflow.action.CLOSE_TRANSACTION",
     labelFallback: "Transaction Closing",
   },
   CLOSE_ACCOUNTING: {
@@ -74,20 +74,20 @@ export const ACTION_CATALOG: Record<WorkflowAction, ActionOption> = {
     labelKey: "workflow.action.CLOSE_ACCOUNTING",
     labelFallback: "Accounting Closing",
   },
-  CANCEL_DAY_START: {
-    value: "CANCEL_DAY_START",
+  CANCEL_INVESTMENT_DAY: {
+    value: "CANCEL_INVESTMENT_DAY",
     permission: WORKFLOW_PERMISSIONS.CANCEL_DAY_START,
     tone: "warning",
     requiresReason: true,
-    labelKey: "workflow.action.CANCEL_DAY_START",
+    labelKey: "workflow.action.CANCEL_INVESTMENT_DAY",
     labelFallback: "Cancel Investment Day Start",
   },
-  CANCEL_APPROVAL: {
-    value: "CANCEL_APPROVAL",
+  CANCEL_MANAGER_APPROVAL: {
+    value: "CANCEL_MANAGER_APPROVAL",
     permission: WORKFLOW_PERMISSIONS.CANCEL_APPROVAL,
     tone: "warning",
     requiresReason: true,
-    labelKey: "workflow.action.CANCEL_APPROVAL",
+    labelKey: "workflow.action.CANCEL_MANAGER_APPROVAL",
     labelFallback: "Cancel Manager Approval",
   },
   CANCEL_TRANSACTION_CLOSE: {
@@ -98,12 +98,12 @@ export const ACTION_CATALOG: Record<WorkflowAction, ActionOption> = {
     labelKey: "workflow.action.CANCEL_TRANSACTION_CLOSE",
     labelFallback: "Cancel Transaction Closing",
   },
-  ROLLBACK_ACCOUNTING_CLOSE: {
-    value: "ROLLBACK_ACCOUNTING_CLOSE",
+  CANCEL_ACCOUNTING_CLOSE: {
+    value: "CANCEL_ACCOUNTING_CLOSE",
     permission: WORKFLOW_PERMISSIONS.ROLLBACK_ACCOUNTING_CLOSE,
     tone: "danger",
     requiresReason: true,
-    labelKey: "workflow.action.ROLLBACK_ACCOUNTING_CLOSE",
+    labelKey: "workflow.action.CANCEL_ACCOUNTING_CLOSE",
     labelFallback: "Rollback Accounting Closing",
   },
 };

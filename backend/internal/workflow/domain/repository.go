@@ -17,9 +17,17 @@ import (
 // (READ COMMITTED, no lock). Write methods accept a pgx.Tx so they participate
 // in transactions managed by the command layer.
 type WorkflowDayRepository interface {
+	// GetByBusinessDate returns the global workflow day for a date.
+	// Returns nil (no error) when no row exists; caller interprets nil as NOT_STARTED.
+	GetByBusinessDate(ctx context.Context, businessDate time.Time) (*entity.WorkflowDay, error)
+
 	// GetByContractDate returns the record for a contract+date.
 	// Returns nil (no error) when no row exists — caller interprets nil as NOT_STARTED.
 	GetByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) (*entity.WorkflowDay, error)
+
+	// GetForUpdateByBusinessDate acquires SELECT FOR UPDATE for the global day row.
+	// Returns nil (no error) when no row exists.
+	GetForUpdateByBusinessDate(ctx context.Context, tx pgx.Tx, businessDate time.Time) (*entity.WorkflowDay, error)
 
 	// GetForUpdate acquires SELECT … FOR UPDATE within an existing transaction.
 	// Returns nil (no error) when no row exists.
@@ -48,8 +56,19 @@ type TransitionLogRepository interface {
 	// Append inserts one immutable transition record within a tx.
 	Append(ctx context.Context, tx pgx.Tx, t *entity.WorkflowTransition) error
 
+	// ListByBusinessDate returns all transitions for a business date in chronological order.
+	ListByBusinessDate(ctx context.Context, businessDate time.Time) ([]*entity.WorkflowTransition, error)
+
 	// ListByContractDate returns all transitions for a contract+date in chronological order.
 	ListByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) ([]*entity.WorkflowTransition, error)
+
+	// ListByBusinessDatePaginated returns a page of transitions ordered by occurred_at ASC,
+	// plus the total count matching the date filter.
+	ListByBusinessDatePaginated(ctx context.Context, req TransitionLogPageRequest) (*TransitionLogPageResult, error)
+
+	// ListByContractDatePaginated returns a page of transitions ordered by occurred_at ASC,
+	// plus the total count matching the filter.
+	ListByContractDatePaginated(ctx context.Context, req TransitionLogPageRequest) (*TransitionLogPageResult, error)
 }
 
 // ApprovalRecordRepository manages approval records for the maker-checker model.
@@ -65,6 +84,37 @@ type ApprovalRecordRepository interface {
 	// active approval exists (defensive — the policy layer should have already
 	// rejected the call in that case).
 	RevokeLatestActive(ctx context.Context, tx pgx.Tx, workflowDayID uuid.UUID, revokedBy uuid.UUID, revokedAt time.Time) error
+}
+
+// WorkflowApprovalSettingRepository manages per-operationType approver configuration.
+type WorkflowApprovalSettingRepository interface {
+	// ListByOperationType returns all active settings for the given operation type.
+	// Returns an empty slice (no error) when none are configured.
+	ListByOperationType(ctx context.Context, operationType string) ([]*entity.WorkflowApprovalSetting, error)
+
+	// ListAll returns every setting (active and inactive), ordered by operation_type, updated_at.
+	ListAll(ctx context.Context) ([]*entity.WorkflowApprovalSetting, error)
+
+	// Upsert replaces all active settings for the given operationType with the supplied list.
+	// Runs inside the provided transaction: deactivates previous rows, then inserts new ones.
+	// Passing an empty slice deactivates all settings for that operationType.
+	Upsert(ctx context.Context, tx pgx.Tx, operationType string, settings []*entity.WorkflowApprovalSetting) error
+}
+
+// TransitionLogPageRequest carries pagination params for listing transitions.
+type TransitionLogPageRequest struct {
+	ContractID   uuid.UUID
+	BusinessDate time.Time
+	Page         int // 1-based
+	PageSize     int
+}
+
+// TransitionLogPageResult is the paginated response.
+type TransitionLogPageResult struct {
+	Transitions []*entity.WorkflowTransition
+	Total       int64
+	Page        int
+	PageSize    int
 }
 
 // SchedulerRepository manages workflow scheduler rules and audit rows.

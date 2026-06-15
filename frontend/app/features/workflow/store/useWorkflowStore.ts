@@ -1,7 +1,7 @@
 /**
  * Workflow Pinia store.
  *
- * Holds the currently selected contract + business date, the latest
+ * Holds the daily workflow state and active businessDate, the latest
  * `WorkflowStateResponse`, the transition history, loading flags, and the
  * last error / result. Actions wrap the typed OpenAPI client so components
  * never speak to fetch directly.
@@ -60,7 +60,6 @@ export interface WorkflowExecuteParams {
 
 interface WorkflowStoreState {
   client: ImsOpenApiClient | null;
-  contractId: string | null;
   businessDate: string;
   state: WorkflowStateResponse | null;
   history: WorkflowTransitionEntry[];
@@ -75,7 +74,6 @@ interface WorkflowStoreState {
 export const useWorkflowStore = defineStore("workflow", {
   state: (): WorkflowStoreState => ({
     client: null,
-    contractId: null,
     businessDate: todayBangkokIso(),
     state: null,
     history: [],
@@ -88,12 +86,14 @@ export const useWorkflowStore = defineStore("workflow", {
   }),
 
   getters: {
-    hasContract: (s) => Boolean(s.contractId),
     isPersisted: (s) => Boolean(s.state?.persisted),
     currentStateCode: (s) => s.state?.currentState ?? "NOT_STARTED",
-    allowedActions: (s): readonly string[] => s.state?.allowedActions ?? [],
-    blockingReasons: (s) => s.state?.blockingReasons ?? [],
-    transactionsLocked: (s) => Boolean(s.state?.transactionsLocked),
+    allowedActions: (s): readonly string[] => s.state?.allowedOperations ?? [],
+    blockingReasons: (s) => s.state?.blockedReasons ?? [],
+    transactionsLocked: (s) =>
+      s.state?.currentState === "MANAGER_APPROVED"
+      || s.state?.currentState === "TRANSACTION_CLOSED"
+      || s.state?.currentState === "ACCOUNTING_CLOSED",
     /** True after manager approval — the investment workspace should lock. */
     managerApproved: (s) =>
       s.state?.currentState === "MANAGER_APPROVED"
@@ -105,15 +105,6 @@ export const useWorkflowStore = defineStore("workflow", {
     /** Inject the typed OpenAPI client. Called from app code; tests pass a fake. */
     setClient(client: ImsOpenApiClient | null) {
       this.client = client;
-    },
-
-    setContract(contractId: string | null) {
-      if (contractId === this.contractId) return;
-      this.contractId = contractId;
-      this.state = null;
-      this.history = [];
-      this.error = null;
-      this.lastResult = null;
     },
 
     setBusinessDate(date: string) {
@@ -148,18 +139,17 @@ export const useWorkflowStore = defineStore("workflow", {
     },
 
     async fetchState() {
-      const contractId = this.contractId;
-      if (!contractId) return;
       this.loadingState = true;
       this.error = null;
       try {
         const client = this.requireClient();
         const response = await client.GET(
-          "/workflow/day-states/{contractId}",
+          "/workflow/daily",
           {
             params: {
-              path: { contractId },
-              query: { businessDate: this.businessDate },
+              query: {
+                businessDate: this.businessDate,
+              },
             },
           },
         );
@@ -177,17 +167,18 @@ export const useWorkflowStore = defineStore("workflow", {
     },
 
     async fetchHistory() {
-      const contractId = this.contractId;
-      if (!contractId) return;
       this.loadingHistory = true;
       try {
         const client = this.requireClient();
         const response = await client.GET(
-          "/workflow/day-states/{contractId}/history",
+          "/workflow/daily/transitions",
           {
             params: {
-              path: { contractId },
-              query: { businessDate: this.businessDate },
+              query: {
+                businessDate: this.businessDate,
+                page: 1,
+                pageSize: 50,
+              },
             },
           },
         );
@@ -216,26 +207,21 @@ export const useWorkflowStore = defineStore("workflow", {
      * hitting the backend.
      */
     async execute(params: WorkflowExecuteParams): Promise<boolean> {
-      const contractId = this.contractId;
-      if (!contractId) return false;
       if (this.executing) return false;
       this.executing = true;
       this.error = null;
-      const idempotencyKey = newIdempotencyKey();
-      this.lastIdempotencyKey = idempotencyKey;
       try {
         const body: WorkflowExecuteRequest = {
-          action: params.action,
           businessDate: this.businessDate,
-          idempotencyKey,
+          operationType: params.action,
         };
         if (params.reason && params.reason.trim()) {
-          body.reason = params.reason.trim();
+          body.remark = params.reason.trim();
         }
         if (params.notes && params.notes.trim()) {
           body.notes = params.notes.trim();
         }
-        if (params.action === "APPROVE") {
+        if (params.action === "MANAGER_APPROVE") {
           body.zeroTransactionAttestation = Boolean(
             params.zeroTransactionAttestation,
           );
@@ -250,9 +236,8 @@ export const useWorkflowStore = defineStore("workflow", {
 
         const client = this.requireClient();
         const response = await client.POST(
-          "/workflow/day-states/{contractId}/transitions",
+          "/workflow/daily/execute",
           {
-            params: { path: { contractId } },
             body,
           },
         );
