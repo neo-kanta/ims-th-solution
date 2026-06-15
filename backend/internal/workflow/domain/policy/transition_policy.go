@@ -68,16 +68,18 @@ func (p *TransitionPolicy) CanOpenDay(in OpenDayInput) error {
 		}
 	}
 
-	// Guard 3 — previous business day must not be in a blocking state
+	// Guard 3 — previous business day must not be in a blocking state.
+	// Both canonical (INVESTMENT_DAY_STARTED, MANAGER_APPROVED_END_OF_DAY) and
+	// Phase 1 compat (DAY_OPEN, MANAGER_APPROVED) names are covered by helpers.
 	if in.PrevDay != nil {
-		switch in.PrevDay.CurrentState {
-		case vo.StateDayOpen:
+		switch {
+		case in.PrevDay.CurrentState.IsOpenForTrading():
 			return &domain.ErrInvalidTransition{
 				Code:            "WORKFLOW_PREVIOUS_DAY_NOT_APPROVED",
 				AttemptedAction: string(vo.ActionOpenDay),
 				CurrentState:    string(vo.StateNotStarted),
 				Reason: fmt.Sprintf(
-					"previous business day %s is still in DAY_OPEN state; "+
+					"previous business day %s is still open for trading; "+
 						"manager approval must be completed before opening today",
 					in.PrevDay.BusinessDate.Format("2006-01-02"),
 				),
@@ -86,13 +88,13 @@ func (p *TransitionPolicy) CanOpenDay(in OpenDayInput) error {
 					"previousState": string(in.PrevDay.CurrentState),
 				},
 			}
-		case vo.StateManagerApproved:
+		case in.PrevDay.CurrentState.IsManagerApproved():
 			return &domain.ErrInvalidTransition{
 				Code:            "WORKFLOW_PREVIOUS_DAY_NOT_TRANSACTION_CLOSED",
 				AttemptedAction: string(vo.ActionOpenDay),
 				CurrentState:    string(vo.StateNotStarted),
 				Reason: fmt.Sprintf(
-					"previous business day %s is in MANAGER_APPROVED state; "+
+					"previous business day %s is manager-approved; "+
 						"transaction closing must be confirmed before opening today",
 					in.PrevDay.BusinessDate.Format("2006-01-02"),
 				),
@@ -153,8 +155,8 @@ func (p *TransitionPolicy) CanApprove(in ApprovalInput) error {
 		}
 	}
 
-	// Guard 1 — current state must be DAY_OPEN
-	if in.CurrentDay == nil || in.CurrentDay.CurrentState != vo.StateDayOpen {
+	// Guard 1 — current state must be open for trading (DAY_OPEN or INVESTMENT_DAY_STARTED).
+	if in.CurrentDay == nil || !in.CurrentDay.CurrentState.IsOpenForTrading() {
 		state := string(vo.StateNotStarted)
 		if in.CurrentDay != nil {
 			state = string(in.CurrentDay.CurrentState)
@@ -163,7 +165,7 @@ func (p *TransitionPolicy) CanApprove(in ApprovalInput) error {
 			Code:            "WORKFLOW_INVALID_TRANSITION",
 			AttemptedAction: string(vo.ActionApprove),
 			CurrentState:    state,
-			Reason:          "manager approval requires the day to be open (DAY_OPEN state)",
+			Reason:          "manager approval requires the investment day to be open",
 		}
 	}
 
@@ -218,7 +220,7 @@ type CancelDayStartInput struct {
 }
 
 func (p *TransitionPolicy) CanCancelDayStart(in CancelDayStartInput) error {
-	if in.CurrentDay == nil || in.CurrentDay.CurrentState != vo.StateDayOpen {
+	if in.CurrentDay == nil || !in.CurrentDay.CurrentState.IsOpenForTrading() {
 		state := string(vo.StateNotStarted)
 		if in.CurrentDay != nil {
 			state = string(in.CurrentDay.CurrentState)
@@ -227,7 +229,7 @@ func (p *TransitionPolicy) CanCancelDayStart(in CancelDayStartInput) error {
 			Code:            "WORKFLOW_INVALID_TRANSITION",
 			AttemptedAction: string(vo.ActionCancelDayStart),
 			CurrentState:    state,
-			Reason:          "cancelling day start requires the day to be open (DAY_OPEN state)",
+			Reason:          "cancelling day start requires the investment day to be open",
 		}
 	}
 	if err := requireReason(in.Reason, vo.ActionCancelDayStart, in.CurrentDay.CurrentState); err != nil {
@@ -253,7 +255,7 @@ type CancelApprovalInput struct {
 }
 
 func (p *TransitionPolicy) CanCancelApproval(in CancelApprovalInput) error {
-	if in.CurrentDay == nil || in.CurrentDay.CurrentState != vo.StateManagerApproved {
+	if in.CurrentDay == nil || !in.CurrentDay.CurrentState.IsManagerApproved() {
 		state := string(vo.StateNotStarted)
 		if in.CurrentDay != nil {
 			state = string(in.CurrentDay.CurrentState)
@@ -262,7 +264,7 @@ func (p *TransitionPolicy) CanCancelApproval(in CancelApprovalInput) error {
 			Code:            "WORKFLOW_INVALID_TRANSITION",
 			AttemptedAction: string(vo.ActionCancelApproval),
 			CurrentState:    state,
-			Reason:          "revoking approval requires the day to be in MANAGER_APPROVED state",
+			Reason:          "revoking approval requires the day to be manager-approved",
 		}
 	}
 	return requireReason(in.Reason, vo.ActionCancelApproval, in.CurrentDay.CurrentState)
@@ -277,7 +279,7 @@ type CloseTransactionsInput struct {
 }
 
 func (p *TransitionPolicy) CanCloseTransactions(in CloseTransactionsInput) error {
-	if in.CurrentDay == nil || in.CurrentDay.CurrentState != vo.StateManagerApproved {
+	if in.CurrentDay == nil || !in.CurrentDay.CurrentState.IsManagerApproved() {
 		state := string(vo.StateNotStarted)
 		if in.CurrentDay != nil {
 			state = string(in.CurrentDay.CurrentState)
@@ -286,7 +288,7 @@ func (p *TransitionPolicy) CanCloseTransactions(in CloseTransactionsInput) error
 			Code:            "WORKFLOW_INVALID_TRANSITION",
 			AttemptedAction: string(vo.ActionCloseTransactions),
 			CurrentState:    state,
-			Reason:          "closing transactions requires the day to be in MANAGER_APPROVED state",
+			Reason:          "closing transactions requires the day to be manager-approved",
 		}
 	}
 	return nil

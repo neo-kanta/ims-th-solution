@@ -33,4 +33,9 @@ type ExecuteTransitionRequest struct {
 	// duplicate request with the same key returns the original result without
 	// re-executing the transition. (Full idempotency store is Batch 2.)
 	IdempotencyKey *string `json:"idempotencyKey,omitempty"`
+
+	// AccountingDate is the NAV / accounting posting date for
+	// CLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to
+	// BusinessDate. Must not precede BusinessDate. Ignored by other actions.
+	AccountingDate *string `json:"accountingDate,omitempty"`
 }

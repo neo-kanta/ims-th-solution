@@ -24,9 +24,11 @@ type WorkflowTransition struct {
 	Action    vo.WorkflowAction
 
 	// Actor — nil ActorID means a system-automated action
-	ActorID       *uuid.UUID
-	ActorType     vo.ActorType
-	ActorUsername string // snapshot at transition time
+	ActorID          *uuid.UUID
+	ActorType        vo.ActorType
+	ActorUsername    string // snapshot at transition time
+	ActorAccountCode string // equals claims.Username (no separate account code in JWT)
+	IsAdminOverride  bool   // true when Admin group bypassed normal authorization
 
 	// Reason is mandatory for cancel/rollback actions; optional otherwise
 	Reason *string

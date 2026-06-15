@@ -111,7 +111,7 @@ func (h *ManagerApprovalHandler) Handle(
 	var result *ManagerApprovalResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
 		// Step 3 — lock the row
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -136,7 +136,7 @@ func (h *ManagerApprovalHandler) Handle(
 
 		// Step 5 — mutate the entity and persist
 		now := time.Now().UTC()
-		day.CurrentState = vo.StateManagerApproved
+		day.CurrentState = vo.StateManagerApprovedEOD
 		day.ManagerApprovedAt = &now
 		day.ManagerApprovedBy = &req.Actor.UserID
 		day.TransactionsLockedAt = &now // lock transactions atomically with approval
@@ -191,19 +191,21 @@ func (h *ManagerApprovalHandler) Handle(
 		}
 
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     vo.StateDayOpen,
-			ToState:       vo.StateManagerApproved,
-			Action:        vo.ActionApprove,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Metadata:      metadata,
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        vo.StateInvestmentDayStarted,
+			ToState:          vo.StateManagerApprovedEOD,
+			Action:           vo.ActionApprove,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Metadata:         metadata,
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)
@@ -215,8 +217,8 @@ func (h *ManagerApprovalHandler) Handle(
 			ApprovalID:        approvalID,
 			ContractID:        req.ContractID,
 			BusinessDate:      req.BusinessDate,
-			FromState:         vo.StateDayOpen,
-			ToState:           vo.StateManagerApproved,
+			FromState:         vo.StateInvestmentDayStarted,
+			ToState:           vo.StateManagerApprovedEOD,
 			OccurredAt:        now,
 			IsZeroTransaction: txSummary.Count == 0,
 		}

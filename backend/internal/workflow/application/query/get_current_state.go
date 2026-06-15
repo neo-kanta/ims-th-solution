@@ -62,7 +62,7 @@ func (h *GetCurrentStateHandler) Handle(
 	ctx context.Context,
 	req GetCurrentStateRequest,
 ) (*GetCurrentStateResult, error) {
-	day, err := h.dayRepo.GetByContractDate(ctx, req.ContractID, req.BusinessDate)
+	day, err := h.dayRepo.GetByBusinessDate(ctx, req.BusinessDate)
 	if err != nil {
 		return nil, fmt.Errorf("reading workflow day: %w", err)
 	}
@@ -75,7 +75,7 @@ func (h *GetCurrentStateHandler) Handle(
 
 	// Case A: no row exists → synthetic NOT_STARTED
 	if day == nil {
-		prevDay, err := h.dayRepo.GetByContractDate(ctx, req.ContractID, prevDate)
+		prevDay, err := h.dayRepo.GetByBusinessDate(ctx, prevDate)
 		if err != nil {
 			return nil, fmt.Errorf("reading previous workflow day: %w", err)
 		}

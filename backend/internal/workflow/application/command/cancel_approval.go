@@ -60,7 +60,7 @@ func NewCancelApprovalHandler(
 func (h *CancelApprovalHandler) Handle(ctx context.Context, req CancelApprovalRequest) (*CancelApprovalResult, error) {
 	var result *CancelApprovalResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -80,7 +80,7 @@ func (h *CancelApprovalHandler) Handle(ctx context.Context, req CancelApprovalRe
 
 		now := time.Now().UTC()
 		fromState := day.CurrentState
-		day.CurrentState = vo.StateDayOpen
+		day.CurrentState = vo.StateInvestmentDayStarted
 		day.ManagerApprovedAt = nil
 		day.ManagerApprovedBy = nil
 		day.TransactionsLockedAt = nil
@@ -97,20 +97,22 @@ func (h *CancelApprovalHandler) Handle(ctx context.Context, req CancelApprovalRe
 
 		reason := req.Reason
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     fromState,
-			ToState:       vo.StateDayOpen,
-			Action:        vo.ActionCancelApproval,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Reason:        &reason,
-			Metadata:      map[string]any{},
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        fromState,
+			ToState:          vo.StateInvestmentDayStarted,
+			Action:           vo.ActionCancelApproval,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Reason:           &reason,
+			Metadata:         map[string]any{},
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)
@@ -122,7 +124,7 @@ func (h *CancelApprovalHandler) Handle(ctx context.Context, req CancelApprovalRe
 			ContractID:    req.ContractID,
 			BusinessDate:  req.BusinessDate,
 			FromState:     fromState,
-			ToState:       vo.StateDayOpen,
+			ToState:       vo.StateInvestmentDayStarted,
 			OccurredAt:    now,
 		}
 		return nil

@@ -76,11 +76,12 @@ func EvaluatePostTradeGate(
 }
 
 type CloseTransactionsHandler struct {
-	pool         *pgxpool.Pool
-	dayRepo      domain.WorkflowDayRepository
-	logRepo      domain.TransitionLogRepository
-	policy       *policy.TransitionPolicy
-	postTradeVer contract.PostTradeVerifier
+	pool             *pgxpool.Pool
+	dayRepo          domain.WorkflowDayRepository
+	logRepo          domain.TransitionLogRepository
+	policy           *policy.TransitionPolicy
+	postTradeVer     contract.PostTradeVerifier
+	confirmationGate contract.TradeConfirmationGate
 }
 
 // NewCloseTransactionsHandler wires the handler.
@@ -104,6 +105,16 @@ func NewCloseTransactionsHandler(
 	}
 }
 
+// SetConfirmationGate wires the post-construction confirmation gate adapter.
+// Nil disables the gate (acceptable in early bring-up). When set, the close
+// handler refuses to transition while any execution is missing a resolved
+// confirmation for the business date.
+func (h *CloseTransactionsHandler) SetConfirmationGate(g contract.TradeConfirmationGate) {
+	if h != nil {
+		h.confirmationGate = g
+	}
+}
+
 // Handle runs the close-transactions transition with the IRG post-trade gate.
 //
 // Order of operations (all inside a single DB transaction):
@@ -122,7 +133,7 @@ func NewCloseTransactionsHandler(
 func (h *CloseTransactionsHandler) Handle(ctx context.Context, req CloseTransactionsRequest) (*CloseTransactionsResult, error) {
 	var result *CloseTransactionsResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -137,9 +148,29 @@ func (h *CloseTransactionsHandler) Handle(ctx context.Context, req CloseTransact
 			return err
 		}
 
+		// Trade-confirmation gate — refuse to close while any execution for
+		// the business date lacks a resolved (MATCHED/REVIEWED) confirmation.
+		// We run this BEFORE the IRG post-trade gate because operational
+		// completeness (broker confirmation in place) is a precondition for
+		// any meaningful post-trade compliance assessment.
+		if h.confirmationGate != nil && req.ContractID != uuid.Nil {
+			res, gErr := h.confirmationGate.EvaluateClose(ctx, req.ContractID, req.BusinessDate)
+			if gErr != nil {
+				return fmt.Errorf("running trade confirmation gate: %w", gErr)
+			}
+			if res.HasBlocker() {
+				return &domain.ErrPendingTradeConfirmations{
+					ContractID:      req.ContractID.String(),
+					BusinessDate:    req.BusinessDate.Format("2006-01-02"),
+					PendingCount:    res.PendingCount,
+					UnresolvedCount: res.UnresolvedCount,
+				}
+			}
+		}
+
 		// IRG post-trade gate — refuse to close while BLOCK breaches remain.
 		var checkGroupID *uuid.UUID
-		if h.postTradeVer != nil {
+		if h.postTradeVer != nil && req.ContractID != uuid.Nil {
 			verification, verr := h.postTradeVer.RunPostTradeVerification(ctx, req.ContractID, req.BusinessDate)
 			if verr != nil {
 				return fmt.Errorf("running IRG post-trade verification: %w", verr)
@@ -170,19 +201,21 @@ func (h *CloseTransactionsHandler) Handle(ctx context.Context, req CloseTransact
 			metadata["compliance_check_group_id"] = checkGroupID.String()
 		}
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     fromState,
-			ToState:       vo.StateTransactionClosed,
-			Action:        vo.ActionCloseTransactions,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Metadata:      metadata,
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        fromState,
+			ToState:          vo.StateTransactionClosed,
+			Action:           vo.ActionCloseTransactions,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Metadata:         metadata,
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)

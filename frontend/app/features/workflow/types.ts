@@ -9,39 +9,39 @@
  */
 import type { components } from "~/api/ims-api";
 
-/** Canonical backend action codes. Do not invent new ones on the frontend. */
+/** Canonical backend action codes (Phase 2 Daily API). */
 export type WorkflowAction =
-  | "OPEN_DAY"
-  | "APPROVE"
-  | "CANCEL_DAY_START"
-  | "CANCEL_APPROVAL"
-  | "CLOSE_TRANSACTIONS"
+  | "START_INVESTMENT_DAY"
+  | "CANCEL_INVESTMENT_DAY"
+  | "MANAGER_APPROVE"
+  | "CANCEL_MANAGER_APPROVAL"
+  | "CLOSE_TRANSACTION"
   | "CANCEL_TRANSACTION_CLOSE"
   | "CLOSE_ACCOUNTING"
-  | "ROLLBACK_ACCOUNTING_CLOSE";
+  | "CANCEL_ACCOUNTING_CLOSE";
 
 export const WORKFLOW_ACTIONS: readonly WorkflowAction[] = [
-  "OPEN_DAY",
-  "APPROVE",
-  "CANCEL_DAY_START",
-  "CANCEL_APPROVAL",
-  "CLOSE_TRANSACTIONS",
+  "START_INVESTMENT_DAY",
+  "CANCEL_INVESTMENT_DAY",
+  "MANAGER_APPROVE",
+  "CANCEL_MANAGER_APPROVAL",
+  "CLOSE_TRANSACTION",
   "CANCEL_TRANSACTION_CLOSE",
   "CLOSE_ACCOUNTING",
-  "ROLLBACK_ACCOUNTING_CLOSE",
+  "CANCEL_ACCOUNTING_CLOSE",
 ];
 
 /** Workflow day state. NOT_STARTED is a synthetic state for empty days. */
 export type WorkflowStateCode =
   | "NOT_STARTED"
-  | "DAY_OPEN"
+  | "INVESTMENT_DAY_STARTED"
   | "MANAGER_APPROVED"
   | "TRANSACTION_CLOSED"
   | "ACCOUNTING_CLOSED";
 
 export const WORKFLOW_STATES: readonly WorkflowStateCode[] = [
   "NOT_STARTED",
-  "DAY_OPEN",
+  "INVESTMENT_DAY_STARTED",
   "MANAGER_APPROVED",
   "TRANSACTION_CLOSED",
   "ACCOUNTING_CLOSED",
@@ -50,7 +50,7 @@ export const WORKFLOW_STATES: readonly WorkflowStateCode[] = [
 /** Linear rank used for stage progress comparisons. */
 export const STATE_RANK: Record<WorkflowStateCode, number> = {
   NOT_STARTED: 0,
-  DAY_OPEN: 1,
+  INVESTMENT_DAY_STARTED: 1,
   MANAGER_APPROVED: 2,
   TRANSACTION_CLOSED: 3,
   ACCOUNTING_CLOSED: 4,
@@ -58,13 +58,13 @@ export const STATE_RANK: Record<WorkflowStateCode, number> = {
 
 /** Stage groups shown on the tracker. */
 export type WorkflowStage =
-  | "DAY_OPEN"
+  | "INVESTMENT_DAY_STARTED"
   | "MANAGER_APPROVED"
   | "TRANSACTION_CLOSED"
   | "ACCOUNTING_CLOSED";
 
 export const WORKFLOW_STAGES: readonly WorkflowStage[] = [
-  "DAY_OPEN",
+  "INVESTMENT_DAY_STARTED",
   "MANAGER_APPROVED",
   "TRANSACTION_CLOSED",
   "ACCOUNTING_CLOSED",
@@ -80,29 +80,28 @@ export type WorkflowDialogTone = "primary" | "warning" | "danger";
 
 /** Re-exports from generated OpenAPI for ergonomic consumption. */
 export type WorkflowStateResponse =
-  components["schemas"]["WorkflowStateResponse"];
+  components["schemas"]["DailyWorkflowResponse"];
 export type WorkflowHistoryResponse =
-  components["schemas"]["HistoryResponse"];
+  components["schemas"]["DailyTransitionsResponse"];
 export type WorkflowTransitionEntry =
-  components["schemas"]["TransitionEntry"];
+  components["schemas"]["DailyTimelineEntry"];
 export type WorkflowExecuteRequest =
-  components["schemas"]["ExecuteTransitionRequest"];
+  components["schemas"]["DailyExecuteRequest"];
 export type WorkflowExecuteResponse =
-  components["schemas"]["TransitionResponse"];
-export type WorkflowBlockingReason = components["schemas"]["BlockingReason"];
-export type WorkflowPreviousDayStatus =
-  components["schemas"]["PreviousDayStatus"];
+  components["schemas"]["DailyWorkflowResponse"];
+export type WorkflowBlockingReason = components["schemas"]["DailyBlockingReason"];
+export type WorkflowModuleReadiness = components["schemas"]["DailyWorkflowResponse"]["moduleReadiness"];
 
 export function isWorkflowAction(value: unknown): value is WorkflowAction {
   return (
-    typeof value === "string"
-    && (WORKFLOW_ACTIONS as readonly string[]).includes(value)
+    typeof value === "string" &&
+    (WORKFLOW_ACTIONS as readonly string[]).includes(value)
   );
 }
 
 export function isWorkflowState(value: unknown): value is WorkflowStateCode {
   return (
-    typeof value === "string"
-    && (WORKFLOW_STATES as readonly string[]).includes(value)
+    typeof value === "string" &&
+    (WORKFLOW_STATES as readonly string[]).includes(value)
   );
 }

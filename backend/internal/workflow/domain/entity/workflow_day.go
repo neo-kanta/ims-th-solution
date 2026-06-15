@@ -37,6 +37,13 @@ type WorkflowDay struct {
 	AccountingClosedAt  *time.Time
 	AccountingClosedBy  *uuid.UUID
 
+	// Accounting / NAV date — populated by CLOSE_ACCOUNTING. Distinct from
+	// BusinessDate because operators can backdate or delay accounting cycles.
+	// PrevAccountingDate snapshots the prior value during a rollback so the
+	// audit trail covers reversed NAV cycles.
+	AccountingDate     *time.Time
+	PrevAccountingDate *time.Time
+
 	// Optimistic locking — incremented on every UPDATE
 	Version int
 

@@ -1,0 +1,30 @@
+info:
+  name: update-approval-settings
+  type: http
+  seq: 9
+
+http:
+  method: PUT
+  url: "{{base-url}}workflow/settings"
+  body:
+    type: json
+    data: |-
+      {
+        "operationType": "{{workflow-operation-type}}",
+        "approvers": [
+          {
+            "accountCode": "{{user_id}}",
+            "role": "FundManager",
+            "username": "Sample Approver"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
