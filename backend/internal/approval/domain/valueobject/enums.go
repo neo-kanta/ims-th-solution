@@ -15,6 +15,7 @@ const (
 	ProcessLeaveRequest             ProcessType = "LEAVE_REQUEST"
 	ProcessLeaveCancellation        ProcessType = "LEAVE_CANCELLATION"
 	ProcessDelegationRequest        ProcessType = "DELEGATION_REQUEST"
+	ProcessPortfolioOnboarding      ProcessType = "PORTFOLIO_ONBOARDING"
 )
 
 // ValidProcessType reports whether the value is a recognised process type.
@@ -22,7 +23,8 @@ func ValidProcessType(v ProcessType) bool {
 	switch v {
 	case ProcessInvestmentAnalysisReport, ProcessInvestmentDecision,
 		ProcessInvestmentCancellation, ProcessWorkflowOperation,
-		ProcessLeaveRequest, ProcessLeaveCancellation, ProcessDelegationRequest:
+		ProcessLeaveRequest, ProcessLeaveCancellation, ProcessDelegationRequest,
+		ProcessPortfolioOnboarding:
 		return true
 	}
 	return false
@@ -32,9 +34,9 @@ func ValidProcessType(v ProcessType) bool {
 type ContractType string
 
 const (
-	ContractTypeFund         ContractType = "FUND"
+	ContractTypeFund          ContractType = "FUND"
 	ContractTypeDiscretionary ContractType = "DISCRETIONARY"
-	ContractTypeCompany      ContractType = "COMPANY"
+	ContractTypeCompany       ContractType = "COMPANY"
 )
 
 // ValidContractType reports whether the value is a recognised contract type.
@@ -50,18 +52,21 @@ func ValidContractType(v ContractType) bool {
 type SubjectType string
 
 const (
-	SubjectResearchReport    SubjectType = "RESEARCH_REPORT"
+	SubjectResearchReport     SubjectType = "RESEARCH_REPORT"
 	SubjectInvestmentDecision SubjectType = "INVESTMENT_DECISION"
-	SubjectWorkflowOperation SubjectType = "WORKFLOW_OPERATION"
-	SubjectLeaveRequest      SubjectType = "LEAVE_REQUEST"
-	SubjectDelegationRequest SubjectType = "DELEGATION_REQUEST"
+	SubjectWorkflowOperation  SubjectType = "WORKFLOW_OPERATION"
+	SubjectLeaveRequest       SubjectType = "LEAVE_REQUEST"
+	SubjectDelegationRequest  SubjectType = "DELEGATION_REQUEST"
+	SubjectPortfolio          SubjectType = "PORTFOLIO"
+	SubjectFund               SubjectType = "FUND"
 )
 
 // ValidSubjectType reports whether the value is a recognised subject type.
 func ValidSubjectType(v SubjectType) bool {
 	switch v {
 	case SubjectResearchReport, SubjectInvestmentDecision, SubjectWorkflowOperation,
-		SubjectLeaveRequest, SubjectDelegationRequest:
+		SubjectLeaveRequest, SubjectDelegationRequest,
+		SubjectPortfolio, SubjectFund:
 		return true
 	}
 	return false
@@ -104,13 +109,14 @@ const (
 	RequestStatusRejected        RequestStatus = "REJECTED"
 	RequestStatusCancelled       RequestStatus = "CANCELLED"
 	RequestStatusWithdrawn       RequestStatus = "WITHDRAWN"
+	RequestStatusRevoked         RequestStatus = "REVOKED"
 )
 
 // IsTerminal reports whether the request can no longer transition.
 func (s RequestStatus) IsTerminal() bool {
 	switch s {
 	case RequestStatusApproved, RequestStatusRejected,
-		RequestStatusCancelled, RequestStatusWithdrawn:
+		RequestStatusCancelled, RequestStatusWithdrawn, RequestStatusRevoked:
 		return true
 	}
 	return false
@@ -142,6 +148,7 @@ const (
 	EventRejected         EventType = "REJECTED"
 	EventCancelled        EventType = "CANCELLED"
 	EventWithdrawn        EventType = "WITHDRAWN"
+	EventRevoked          EventType = "REVOKED"
 	EventDelegated        EventType = "DELEGATED"
 	EventStageCompleted   EventType = "STAGE_COMPLETED"
 	EventRequestCompleted EventType = "REQUEST_COMPLETED"

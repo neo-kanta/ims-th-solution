@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain"
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
 )
 
 // AuditLoggerAdapter bridges the shared audit Recorder to approval's AuditPort.

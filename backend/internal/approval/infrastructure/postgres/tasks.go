@@ -210,6 +210,15 @@ func (r *PostgresRepository) Inbox(ctx context.Context, f domain.InboxFilter) ([
 	return out, total, rows.Err()
 }
 
+// FindPendingTaskForActor returns the PENDING task assigned to actorID on a
+// specific request, or nil when no such task exists. Used by batch-approve
+// endpoints that supply a request ID rather than a task ID.
+func (r *PostgresRepository) FindPendingTaskForActor(ctx context.Context, requestID uuid.UUID, actorID uuid.UUID) (*entity.ApprovalTask, error) {
+	return scanTask(r.pool.QueryRow(ctx,
+		taskSelect+` WHERE t.approval_request_id = $1 AND t.assigned_user_id = $2 AND t.status = 'PENDING'`,
+		requestID, actorID))
+}
+
 func (r *PostgresRepository) queryTasks(ctx context.Context, sql string, args ...any) ([]*entity.ApprovalTask, error) {
 	rows, err := r.pool.Query(ctx, sql, args...)
 	if err != nil {

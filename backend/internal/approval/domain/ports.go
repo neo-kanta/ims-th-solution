@@ -74,6 +74,21 @@ type SubjectSync interface {
 	OnRejected(ctx context.Context, subjectType vo.SubjectType, subjectID uuid.UUID, requestID uuid.UUID, reason string) error
 }
 
+// SubjectValidator is called inside an approve/reject transaction to verify
+// the underlying business object is still in a state that permits approval.
+// Register one per subject type via RegisterSubjectValidator; the approval
+// engine calls it before recording the action so a concurrent cancellation or
+// invalidation is detected before the approval is committed.
+type SubjectValidator interface {
+	ValidateSubjectApprovable(ctx context.Context, subjectID uuid.UUID) error
+}
+
+// NopSubjectValidator always reports the subject as approvable.
+type NopSubjectValidator struct{}
+
+// ValidateSubjectApprovable is a no-op.
+func (NopSubjectValidator) ValidateSubjectApprovable(context.Context, uuid.UUID) error { return nil }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Safe no-op default implementations
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,3 +127,48 @@ type NopAudit struct{}
 
 // Record is a no-op.
 func (NopAudit) Record(context.Context, *uuid.UUID, string, string, string, map[string]any) {}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Subject access port
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ApprovalAction identifies the write operation an actor intends to perform on
+// an approval request. Passed to CanActOnApprovalSubject so the business module
+// can apply role- or action-specific rules (e.g. only a fund manager may revoke).
+type ApprovalAction string
+
+const (
+	ApprovalActionApprove  ApprovalAction = "APPROVE"
+	ApprovalActionReject   ApprovalAction = "REJECT"
+	ApprovalActionRevoke   ApprovalAction = "REVOKE"
+	ApprovalActionWithdraw ApprovalAction = "WITHDRAW"
+	ApprovalActionCancel   ApprovalAction = "CANCEL"
+)
+
+// ApprovalSubjectAccessPort is implemented per subject type by the owning
+// business module. The approval engine calls it to authorise every read and
+// write without inspecting business-specific keys (contract_id, fund_id,
+// portfolio_id). Register one per subject type via
+// RuntimeService.RegisterSubjectAccessPort.
+//
+// All methods return nil for allow, non-nil for deny. When no port is
+// registered for a subject type the engine fails closed (ErrForbidden).
+type ApprovalSubjectAccessPort interface {
+	CanViewApprovalSubject(ctx context.Context, actorID uuid.UUID, subjectType vo.SubjectType, subjectID uuid.UUID) error
+	CanSubmitApprovalSubject(ctx context.Context, actorID uuid.UUID, subjectType vo.SubjectType, subjectID uuid.UUID) error
+	CanActOnApprovalSubject(ctx context.Context, actorID uuid.UUID, subjectType vo.SubjectType, subjectID uuid.UUID, action ApprovalAction) error
+}
+
+// NopSubjectAccessPort permits all access. Use in tests where subject-level
+// authorisation is not under test so the rest of the service behaves normally.
+type NopSubjectAccessPort struct{}
+
+func (NopSubjectAccessPort) CanViewApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return nil
+}
+func (NopSubjectAccessPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return nil
+}
+func (NopSubjectAccessPort) CanActOnApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID, ApprovalAction) error {
+	return nil
+}

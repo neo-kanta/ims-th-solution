@@ -388,6 +388,16 @@ func (f *fakeRepo) SkipOtherPendingInStage(_ context.Context, _ pgx.Tx, requestI
 	}
 	return nil
 }
+func (f *fakeRepo) FindPendingTaskForActor(_ context.Context, requestID uuid.UUID, actorID uuid.UUID) (*entity.ApprovalTask, error) {
+	for _, t := range f.tasks {
+		if t.ApprovalRequestID == requestID && t.Status == vo.TaskStatusPending &&
+			t.AssignedUserID != nil && *t.AssignedUserID == actorID {
+			return copyTask(t), nil
+		}
+	}
+	return nil, nil
+}
+
 func (f *fakeRepo) Inbox(_ context.Context, fl domain.InboxFilter) ([]*domain.InboxItem, int, error) {
 	status := fl.Status
 	if status == "" {
@@ -444,7 +454,10 @@ func (f *fakeRepo) ListSignatures(_ context.Context, requestID uuid.UUID) ([]*en
 // ── test helpers ──
 
 // newTestRuntime builds a runtime service backed by the fake repo with a no-op
-// tx runner (passes a nil pgx.Tx straight to the fake).
+// tx runner. A NopSubjectAccessPort is registered for every known subject type
+// so existing tests that are not exercising subject authorisation work unchanged.
+// To test a denying or missing port, call RegisterSubjectAccessPort afterwards
+// or use newBareTestRuntime.
 func newTestRuntime(repo *fakeRepo, opts ...func(*RuntimeDeps)) *ApprovalRuntimeService {
 	d := RuntimeDeps{Repo: repo}
 	for _, o := range opts {
@@ -452,7 +465,58 @@ func newTestRuntime(repo *fakeRepo, opts ...func(*RuntimeDeps)) *ApprovalRuntime
 	}
 	svc := NewApprovalRuntimeService(d)
 	svc.runTxFn = func(ctx context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
+	nop := domain.NopSubjectAccessPort{}
+	for _, st := range []vo.SubjectType{
+		vo.SubjectResearchReport, vo.SubjectInvestmentDecision,
+		vo.SubjectPortfolio, vo.SubjectWorkflowOperation,
+		vo.SubjectLeaveRequest, vo.SubjectDelegationRequest, vo.SubjectFund,
+	} {
+		svc.RegisterSubjectAccessPort(st, nop)
+	}
 	return svc
+}
+
+// newBareTestRuntime creates a service with no subject access ports registered.
+// All subject-scoped calls will fail closed (ErrForbidden). Use this to test the
+// "missing port → fail closed" invariant.
+func newBareTestRuntime(repo *fakeRepo) *ApprovalRuntimeService {
+	svc := NewApprovalRuntimeService(RuntimeDeps{Repo: repo})
+	svc.runTxFn = func(ctx context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
+	return svc
+}
+
+// denyingSubjectPort rejects every subject access check. Used to verify that
+// the approval engine correctly enforces ErrForbidden when the owning module
+// denies access.
+type denyingSubjectPort struct{}
+
+func (denyingSubjectPort) CanViewApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return domain.Forbidden("access denied by test port")
+}
+func (denyingSubjectPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return domain.Forbidden("access denied by test port")
+}
+func (denyingSubjectPort) CanActOnApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID, domain.ApprovalAction) error {
+	return domain.Forbidden("access denied by test port")
+}
+
+// selectiveSubjectPort allows CanView only for subjects in the allowed set;
+// CanSubmit and CanAct always allow (they are not exercised by list/inbox tests).
+type selectiveSubjectPort struct {
+	allowed map[uuid.UUID]bool // subjectIDs the viewer may see
+}
+
+func (s selectiveSubjectPort) CanViewApprovalSubject(_ context.Context, _ uuid.UUID, _ vo.SubjectType, subjectID uuid.UUID) error {
+	if s.allowed[subjectID] {
+		return nil
+	}
+	return domain.Forbidden("access denied by selective test port")
+}
+func (s selectiveSubjectPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return nil
+}
+func (s selectiveSubjectPort) CanActOnApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID, domain.ApprovalAction) error {
+	return nil
 }
 
 // staticDelegate resolves a fixed delegate for a fixed principal.
@@ -466,4 +530,28 @@ func (s staticDelegate) ResolveDelegate(_ context.Context, original uuid.UUID, _
 		return &domain.Delegate{DelegateUserID: s.delegate}, nil
 	}
 	return nil, nil
+}
+
+// fakePermissions implements domain.PermissionPort for unit tests.
+type fakePermissions struct {
+	allowData bool
+}
+
+func (f fakePermissions) HasFunctionPermission(_ context.Context, _, _ string) (bool, error) {
+	return true, nil
+}
+func (f fakePermissions) HasDataPermission(_ context.Context, _, _ string) (bool, error) {
+	return f.allowData, nil
+}
+
+// selectivePermissions grants data access only to contracts listed in allowed.
+type selectivePermissions struct {
+	allowed map[string]bool
+}
+
+func (s selectivePermissions) HasFunctionPermission(_ context.Context, _, _ string) (bool, error) {
+	return true, nil
+}
+func (s selectivePermissions) HasDataPermission(_ context.Context, _, scopeID string) (bool, error) {
+	return s.allowed[scopeID], nil
 }

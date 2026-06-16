@@ -7,6 +7,7 @@ import (
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/transport/dto/response"
@@ -74,12 +75,20 @@ func (h *RuntimeHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httputil.ErrorResponse
 // @Router /approvals/requests [get]
 func (h *RuntimeHandler) ListRequests(w http.ResponseWriter, r *http.Request) {
+	actor, _ := actorID(r)
 	page, limit := pagination(r)
 	f := domain.RequestListFilter{
 		Status:      vo.RequestStatus(r.URL.Query().Get("status")),
 		ProcessType: vo.ProcessType(r.URL.Query().Get("process_type")),
+		ViewerID:    actor,
 		Page:        page,
 		Limit:       limit,
+	}
+	if cid := r.URL.Query().Get("contract_id"); cid != "" {
+		id, err := uuid.Parse(cid)
+		if err == nil {
+			f.ContractID = &id
+		}
 	}
 	items, total, err := h.svc.ListRequests(r.Context(), f)
 	if err != nil {
@@ -134,12 +143,17 @@ func (h *RuntimeHandler) GetRequest(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httputil.ErrorResponse
 // @Router /approvals/requests/{requestId}/timeline [get]
 func (h *RuntimeHandler) GetTimeline(w http.ResponseWriter, r *http.Request) {
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
 	id, err := parseUUIDParam(r, "requestId")
 	if err != nil {
 		httputil.BadRequest(w, "invalid request id")
 		return
 	}
-	events, err := h.svc.GetApprovalTimeline(r.Context(), id)
+	events, err := h.svc.GetApprovalTimeline(r.Context(), id, actor)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -160,23 +174,46 @@ func (h *RuntimeHandler) GetTimeline(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httputil.ErrorResponse
 // @Router /approvals/subjects/{subjectType}/{subjectId}/status [get]
 func (h *RuntimeHandler) GetSubjectStatus(w http.ResponseWriter, r *http.Request) {
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
 	subjectType := vo.SubjectType(pathParam(r, "subjectType"))
 	subjectID, err := uuid.Parse(pathParam(r, "subjectId"))
 	if err != nil {
 		httputil.BadRequest(w, "invalid subject id")
 		return
 	}
-	req, err := h.svc.GetSubjectApprovalStatus(r.Context(), subjectType, subjectID)
+	req, err := h.svc.GetSubjectApprovalStatus(r.Context(), subjectType, subjectID, actor)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	resp := response.SubjectStatusResponse{HasRequest: req != nil}
+	resp := response.SubjectStatusResponse{HasRequest: req != nil, AllowedActions: []string{}}
 	if req != nil {
 		rr := response.FromRequest(req)
 		resp.Request = &rr
+		resp.AllowedActions = subjectAllowedActions(req, actor)
 	}
 	httputil.OK(w, resp)
+}
+
+// subjectAllowedActions returns viewer-specific top-level actions for a subject's
+// latest request. Task-level actions (approve/reject) belong in request detail.
+func subjectAllowedActions(req *entity.ApprovalRequest, viewerID uuid.UUID) []string {
+	var actions []string
+	if req.Status.IsTerminal() {
+		if req.Status == vo.RequestStatusApproved {
+			actions = append(actions, "revoke")
+		}
+		return actions
+	}
+	if req.SubmitterID == viewerID {
+		actions = append(actions, "withdraw")
+	}
+	actions = append(actions, "cancel")
+	return actions
 }
 
 // Submit handles POST /approvals/submit.
@@ -337,6 +374,45 @@ func (h *RuntimeHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req, err := h.svc.WithdrawRequest(r.Context(), id, actor)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	httputil.OK(w, response.FromRequest(req))
+}
+
+// Revoke handles POST /approvals/requests/{requestId}/revoke.
+// @Summary Revoke an approved request
+// @Description Revokes a previously approved request, returning the subject to an un-approved state. Requires a reason.
+// @Tags Approval - Runtime
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param requestId path string true "Approval request UUID"
+// @Param payload body request.ActionRequest true "Revocation reason"
+// @Success 200 {object} response.RequestResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Router /approvals/requests/{requestId}/revoke [post]
+func (h *RuntimeHandler) Revoke(w http.ResponseWriter, r *http.Request) {
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+	id, err := parseUUIDParam(r, "requestId")
+	if err != nil {
+		httputil.BadRequest(w, "invalid request id")
+		return
+	}
+	var body request.ActionRequest
+	if err := decodeJSON(r, &body); err != nil {
+		httputil.BadRequest(w, "invalid request body")
+		return
+	}
+	req, err := h.svc.RevokeRequest(r.Context(), id, actor, body.Reason)
 	if err != nil {
 		writeError(w, err)
 		return

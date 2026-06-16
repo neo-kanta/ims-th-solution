@@ -32,6 +32,7 @@ func RegisterRoutes(
 		r.With(middleware.RequirePermission(pc, perm.CodeReject)).Post("/tasks/{taskId}/reject", runtime.Reject)
 		r.With(middleware.RequirePermission(pc, perm.CodeWithdraw)).Post("/requests/{requestId}/withdraw", runtime.Withdraw)
 		r.With(middleware.RequirePermission(pc, perm.CodeCancel)).Post("/requests/{requestId}/cancel", runtime.Cancel)
+		r.With(middleware.RequirePermission(pc, perm.CodeRevoke)).Post("/requests/{requestId}/revoke", runtime.Revoke)
 	})
 
 	// ── Configuration: /approval-config ─────────────────────────────────────
@@ -51,6 +52,7 @@ func RegisterRoutes(
 		r.With(middleware.RequirePermission(pc, perm.CodeConfigView)).Get("/teams", config.ListTeams)
 		r.With(middleware.RequirePermission(pc, perm.CodeTeamManage)).Post("/teams", config.CreateTeam)
 		r.With(middleware.RequirePermission(pc, perm.CodeTeamManage)).Put("/teams/{id}", config.UpdateTeam)
+		r.With(middleware.RequirePermission(pc, perm.CodeConfigView)).Get("/teams/{id}/contracts", config.ListTeamContracts)
 		r.With(middleware.RequirePermission(pc, perm.CodeTeamManage)).Post("/teams/{id}/contracts", config.AssignTeamContract)
 		r.With(middleware.RequirePermission(pc, perm.CodeConfigView)).Get("/teams/{id}/members", config.ListTeamMembers)
 		r.With(middleware.RequirePermission(pc, perm.CodeTeamManage)).Post("/teams/{id}/members", config.AddTeamMember)

@@ -16,9 +16,9 @@ import (
 
 // ApprovalConfigService manages approval groups, teams and process configs.
 type ApprovalConfigService struct {
-	pool  *pgxpool.Pool
-	repo  domain.Repository
-	now   func() time.Time
+	pool *pgxpool.Pool
+	repo domain.Repository
+	now  func() time.Time
 }
 
 // NewApprovalConfigService wires the configuration service.

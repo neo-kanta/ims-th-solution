@@ -428,6 +428,29 @@ func (h *ConfigHandler) UpdateTeam(w http.ResponseWriter, r *http.Request) {
 	httputil.OK(w, response.FromTeam(t))
 }
 
+// ListTeamContracts handles GET /approval-config/teams/{id}/contracts.
+// @Summary List a team's contract assignments
+// @Tags Approval - Config
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Team UUID"
+// @Success 200 {array} response.TeamContractResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Router /approval-config/teams/{id}/contracts [get]
+func (h *ConfigHandler) ListTeamContracts(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid team id")
+		return
+	}
+	contracts, err := h.svc.ListTeamContracts(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	httputil.OK(w, response.FromTeamContracts(contracts))
+}
+
 // AssignTeamContract handles POST /approval-config/teams/{id}/contracts.
 // @Summary Assign a contract/fund to an approval team
 // @Tags Approval - Config

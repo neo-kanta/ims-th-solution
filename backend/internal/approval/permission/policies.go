@@ -25,6 +25,7 @@ const (
 	CodeReject      = "APPROVAL_REJECT"
 	CodeWithdraw    = "APPROVAL_WITHDRAW"
 	CodeCancel      = "APPROVAL_CANCEL"
+	CodeRevoke      = "APPROVAL_REVOKE"
 	CodeAuditView   = "APPROVAL_AUDIT_VIEW"
 
 	// Configuration.
@@ -53,6 +54,7 @@ func (Provider) Permissions() []contract.PermissionDefinition {
 		{Code: CodeReject, Name: "Approval Reject", Description: "Reject an assigned approval task."},
 		{Code: CodeWithdraw, Name: "Approval Withdraw", Description: "Withdraw an approval request you submitted."},
 		{Code: CodeCancel, Name: "Approval Cancel", Description: "Cancel an in-flight approval request (privileged)."},
+		{Code: CodeRevoke, Name: "Approval Revoke", Description: "Revoke a previously approved request, reopening the subject for correction."},
 		{Code: CodeAuditView, Name: "Approval Audit View", Description: "View the immutable approval audit timeline."},
 
 		{Code: CodeConfigView, Name: "Approval Config View", Description: "Read approval configuration (groups, teams, processes)."},

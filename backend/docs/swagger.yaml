@@ -19,6 +19,13 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  ActionRequest:
+    properties:
+      comment:
+        type: string
+      reason:
+        type: string
+    type: object
   AddProviderMappingRequest:
     properties:
       confidence_score:
@@ -107,6 +114,18 @@ definitions:
         description: 0..100, two-decimal precision
         type: string
     type: object
+  ApproverInput:
+    properties:
+      accountCode:
+        description: AccountCode is the approver's account code. Required.
+        type: string
+      role:
+        description: Role is a descriptive label (e.g. "FundManager"). Optional.
+        type: string
+      username:
+        description: Username is a snapshot of the approver's display name. Optional.
+        type: string
+    type: object
   AssetClass:
     properties:
       code:
@@ -193,6 +212,52 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  BatchApprovalRequest:
+    properties:
+      comment:
+        type: string
+      decision_nos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - decision_nos
+    type: object
+  BatchApprovalResponse:
+    properties:
+      failed:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/BatchApprovalResultResponse'
+        type: array
+      succeeded:
+        type: integer
+    type: object
+  BatchApprovalResultResponse:
+    properties:
+      decision_no:
+        type: string
+      error:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  BatchRejectionRequest:
+    properties:
+      decision_nos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - decision_nos
+    - reason
     type: object
   BlockingReason:
     properties:
@@ -289,6 +354,111 @@ definitions:
     required:
     - new_password
     - old_password
+    type: object
+  ChatFigureBinding:
+    properties:
+      figure:
+        example: "10.25"
+        type: string
+      source:
+        example: tool_raw
+        type: string
+      tool_name:
+        example: get_fund_nav
+        type: string
+    type: object
+  ChatMessageResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      provenance:
+        type: object
+      role:
+        example: assistant
+        type: string
+    type: object
+  ChatSourceRef:
+    properties:
+      as_of:
+        example: "2026-06-07T08:30:00Z"
+        type: string
+      server:
+        example: ims
+        type: string
+      state:
+        example: succeeded
+        type: string
+      tool_name:
+        example: get_fund_nav
+        type: string
+    type: object
+  ChatStreamEvent:
+    properties:
+      bindings:
+        description: |-
+          Bindings links cited figures to the tool that produced them. Present only
+          on kind=sources, and only when the answer passed numeric validation.
+        items:
+          $ref: '#/definitions/ChatFigureBinding'
+        type: array
+      error:
+        description: Error is a safe, user-facing error message. Present only on kind=error.
+        example: the assistant could not complete this turn
+        type: string
+      kind:
+        description: 'Kind is the SSE event name. One of: session_started, text, done,
+          error.'
+        example: text
+        type: string
+      message_id:
+        description: |-
+          MessageID is the user message id on session_started, or the assistant
+          message id on done.
+        example: 123e4567-e89b-12d3-a456-426614174001
+        type: string
+      session_id:
+        description: SessionID is the conversation id. Present on session_started,
+          done, and error.
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      sources:
+        description: |-
+          Sources lists the turn-level provenance (which tools ran). Present only on
+          kind=sources.
+        items:
+          $ref: '#/definitions/ChatSourceRef'
+        type: array
+      stop_reason:
+        description: |-
+          StopReason is the canonical termination reason. Present only on kind=done.
+          One of: end_turn, tool_use, max_tokens, stop_sequence, error, unknown.
+        example: end_turn
+        type: string
+      text:
+        description: Text is an incremental token. Present only on kind=text.
+        example: Hello
+        type: string
+      tool_name:
+        description: ToolName is the MCP tool being called. Present only on kind=tool_call.
+        example: get_portfolio_holdings
+        type: string
+      tool_status:
+        description: |-
+          ToolStatus is the tool-call lifecycle marker. Present only on
+          kind=tool_call. One of: running, ok, error, denied.
+        example: running
+        type: string
+      unverified:
+        description: |-
+          Unverified lists the figures that failed numeric validation. Present only
+          on kind=validation with tool_status=blocked.
+        items:
+          type: string
+        type: array
     type: object
   CheckGroupResult:
     properties:
@@ -706,6 +876,198 @@ definitions:
     - password
     - username
     type: object
+  DailyApproverEntry:
+    properties:
+      accountCode:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  DailyAuditSummary:
+    properties:
+      lastTransitionAt:
+        type: string
+      lastTransitionBy:
+        type: string
+      totalTransitions:
+        type: integer
+    type: object
+  DailyBlockingReason:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  DailyExecuteRequest:
+    properties:
+      accountingDate:
+        description: |-
+          AccountingDate applies to CLOSE_ACCOUNTING. Format YYYY-MM-DD.
+          When omitted, defaults to BusinessDate.
+        type: string
+      attestationReason:
+        description: AttestationReason is required when ZeroTransactionAttestation
+          is true (min 30 chars).
+        type: string
+      businessDate:
+        description: BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar).
+        type: string
+      notes:
+        description: Notes is an optional free-text remark for MANAGER_APPROVE.
+        type: string
+      operationType:
+        description: |-
+          OperationType is the canonical API operation name.
+          Valid values: START_INVESTMENT_DAY, CANCEL_INVESTMENT_DAY,
+            MANAGER_APPROVE, CANCEL_MANAGER_APPROVAL,
+            CLOSE_TRANSACTION, CANCEL_TRANSACTION_CLOSE,
+            CLOSE_ACCOUNTING, CANCEL_ACCOUNTING_CLOSE
+        type: string
+      reason:
+        description: Reason is mandatory for cancel/rollback operations (min 20 chars).
+        type: string
+      remark:
+        description: |-
+          Remark is optional free text from the operator. For cancel/rollback
+          operations it is accepted as an alias for reason.
+        type: string
+      zeroTransactionAttestation:
+        description: |-
+          ZeroTransactionAttestation must be true when approving a day with no
+          investment transactions. Applies to MANAGER_APPROVE only.
+        type: boolean
+    type: object
+  DailyModuleStatus:
+    properties:
+      ready:
+        type: boolean
+      reason:
+        type: string
+    type: object
+  DailyOperationSetting:
+    properties:
+      approvalMode:
+        type: string
+      approvers:
+        items:
+          $ref: '#/definitions/DailyApproverEntry'
+        type: array
+    type: object
+  DailySettingsUpdateRequest:
+    properties:
+      approvers:
+        description: |-
+          Approvers replaces the entire active approver list for this operation type.
+          Pass an empty array to remove all approvers.
+        items:
+          $ref: '#/definitions/ApproverInput'
+        type: array
+      operationType:
+        description: OperationType is the operation type to configure approvers for.
+        type: string
+    type: object
+  DailyTimelineEntry:
+    properties:
+      executedAt:
+        type: string
+      executedByAccountCode:
+        type: string
+      executedByUsername:
+        type: string
+      fromState:
+        type: string
+      isAdminOverride:
+        type: boolean
+      operationType:
+        description: canonical API name
+        type: string
+      reason:
+        type: string
+      toState:
+        type: string
+      transitionId:
+        type: string
+    type: object
+  DailyTransitionsResponse:
+    properties:
+      businessDate:
+        type: string
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+      transitions:
+        items:
+          $ref: '#/definitions/DailyTimelineEntry'
+        type: array
+    type: object
+  DailyWorkflowResponse:
+    description: Aggregated workflow state for one contract on one business date.
+    properties:
+      allowedOperations:
+        description: AllowedOperations lists operation types the caller may attempt
+          (API names).
+        items:
+          type: string
+        type: array
+      approvers:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/DailyApproverEntry'
+          type: array
+        description: Approvers maps operationType → configured approver list.
+        type: object
+      auditSummary:
+        $ref: '#/definitions/DailyAuditSummary'
+      blockedOperations:
+        items:
+          type: string
+        type: array
+      blockedReasons:
+        items:
+          $ref: '#/definitions/DailyBlockingReason'
+        type: array
+      businessDate:
+        description: YYYY-MM-DD
+        type: string
+      currentState:
+        description: |-
+          CurrentState is one of: NOT_STARTED, INVESTMENT_DAY_STARTED,
+          MANAGER_APPROVED, TRANSACTION_CLOSED, ACCOUNTING_CLOSED
+        type: string
+      isToday:
+        type: boolean
+      moduleReadiness:
+        additionalProperties:
+          $ref: '#/definitions/DailyModuleStatus'
+        type: object
+      persisted:
+        type: boolean
+      settings:
+        additionalProperties:
+          $ref: '#/definitions/DailyOperationSetting'
+        description: Settings maps operationType → approval configuration.
+        type: object
+      settingsSummary:
+        additionalProperties:
+          $ref: '#/definitions/DailyOperationSetting'
+        type: object
+      stateLabel:
+        type: string
+      timeline:
+        items:
+          $ref: '#/definitions/DailyTimelineEntry'
+        type: array
+      transitionRules:
+        items:
+          $ref: '#/definitions/TransitionRule'
+        type: array
+    type: object
   DashboardSnapshotDTO:
     properties:
       lastRefreshed:
@@ -720,6 +1082,134 @@ definitions:
         items:
           $ref: '#/definitions/WorkflowStateDTO'
         type: array
+    type: object
+  DecisionLineResponse:
+    properties:
+      amount:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      line_number:
+        type: integer
+      notes:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      side:
+        type: string
+      target_weight:
+        type: string
+    type: object
+  DecisionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/DecisionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  DecisionResponse:
+    properties:
+      amendment_no:
+        type: integer
+      amount:
+        type: string
+      approval_request_id:
+        type: string
+      approval_stage:
+        description: Approval enrichment — populated by the approval-items endpoint.
+        type: integer
+      approval_status:
+        type: string
+      approval_total_stages:
+        type: integer
+      business_date:
+        type: string
+      cancellation_reason:
+        type: string
+      cancelled_at:
+        type: string
+      compliance_check_group_id:
+        type: string
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      current_approvers:
+        items:
+          type: string
+        type: array
+      decision_number:
+        type: string
+      decision_type:
+        type: string
+      exchange:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      lines:
+        description: Lines are included when the decision has basket/rebalance/switch
+          lines.
+        items:
+          $ref: '#/definitions/DecisionLineResponse'
+        type: array
+      portfolio_id:
+        type: string
+      previous_approvers:
+        items:
+          type: string
+        type: array
+      process_type:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      ready_for_execution_at:
+        type: string
+      research_report_id:
+        type: string
+      research_report_no:
+        type: string
+      side:
+        type: string
+      status:
+        type: string
+      strategy_code:
+        type: string
+      submitted_at:
+        type: string
+      submitter_user_id:
+        type: string
+      updated_at:
+        type: string
     type: object
   DeleteFundRequest:
     properties:
@@ -745,8 +1235,36 @@ definitions:
       error:
         type: string
     type: object
+  EventResponse:
+    properties:
+      actor_name:
+        type: string
+      actor_user_id:
+        type: string
+      comment:
+        type: string
+      created_at:
+        type: string
+      delegated_from_user_id:
+        type: string
+      event_type:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      stage_number:
+        type: integer
+    type: object
   ExecuteTransitionRequest:
     properties:
+      accountingDate:
+        description: |-
+          AccountingDate is the NAV / accounting posting date for
+          CLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to
+          BusinessDate. Must not precede BusinessDate. Ignored by other actions.
+        type: string
       action:
         description: |-
           Action identifies the transition to execute.
@@ -942,8 +1460,86 @@ definitions:
       version:
         type: integer
     type: object
+  GroupMemberRequest:
+    properties:
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      status:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupMemberResponse:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupRequest:
+    properties:
+      group_code:
+        type: string
+      group_name:
+        type: string
+      is_active:
+        type: boolean
+      remarks:
+        type: string
+    type: object
+  GroupResponse:
+    properties:
+      created_at:
+        type: string
+      group_code:
+        type: string
+      group_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      remarks:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  Health:
+    properties:
+      enabled:
+        description: the chat module is mounted
+        type: boolean
+      mcp_connected:
+        description: at least one MCP server connected
+        type: boolean
+      tool_count:
+        description: allowlisted tools available
+        type: integer
+    type: object
   HealthResponse:
     properties:
+      chat:
+        $ref: '#/definitions/Health'
       database:
         type: string
       redis:
@@ -1099,6 +1695,26 @@ definitions:
       symbol:
         type: string
     type: object
+  InboxItemResponse:
+    properties:
+      request:
+        $ref: '#/definitions/RequestResponse'
+      task:
+        $ref: '#/definitions/TaskResponse'
+    type: object
+  InboxListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/InboxItemResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
   InstrumentListResponse:
     properties:
       items:
@@ -1150,6 +1766,133 @@ definitions:
       tick_size:
         type: string
       updated_at:
+        type: string
+    type: object
+  IntradayAllocationBucketResponse:
+    properties:
+      key:
+        type: string
+      label:
+        type: string
+      market_value:
+        type: string
+      pct_of_total:
+        type: string
+    type: object
+  IntradayCashRowResponse:
+    properties:
+      balance:
+        type: string
+      currency:
+        type: string
+    type: object
+  IntradayPositionResponse:
+    properties:
+      asset_class_code:
+        type: string
+      asset_class_label:
+        type: string
+      average_cost:
+        type: string
+      cost_basis:
+        type: string
+      currency:
+        type: string
+      instrument_id:
+        type: string
+      is_stale:
+        type: boolean
+      latest_price:
+        type: string
+      market_value:
+        type: string
+      name:
+        type: string
+      price_at:
+        type: string
+      provider:
+        type: string
+      quantity:
+        type: string
+      stale_reason:
+        type: string
+      ticker:
+        type: string
+      unrealised_pnl:
+        type: string
+      unrealised_pnl_pct:
+        type: string
+    type: object
+  IntradayValuationResponse:
+    properties:
+      allocation:
+        items:
+          $ref: '#/definitions/IntradayAllocationBucketResponse'
+        type: array
+      as_of:
+        type: string
+      business_date:
+        type: string
+      cash:
+        items:
+          $ref: '#/definitions/IntradayCashRowResponse'
+        type: array
+      cash_balance:
+        type: string
+      delta_pct_vs_last_close:
+        type: string
+      estimated_aum:
+        type: string
+      estimated_nav_per_unit:
+        type: string
+      fund_code:
+        type: string
+      fund_id:
+        type: string
+      has_live_prices:
+        type: boolean
+      has_official:
+        type: boolean
+      has_units:
+        type: boolean
+      is_stale:
+        type: boolean
+      official_as_of:
+        type: string
+      official_aum:
+        type: string
+      official_nav_per_unit:
+        type: string
+      portfolio_count:
+        type: integer
+      positions:
+        items:
+          $ref: '#/definitions/IntradayPositionResponse'
+        type: array
+      primary_provider:
+        type: string
+      providers_used:
+        items:
+          type: string
+        type: array
+      stale_reason:
+        type: string
+      units_indicative:
+        type: boolean
+      units_outstanding:
+        type: string
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+      unrealised_pnl:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
+  InvalidateResearchReportRequest:
+    properties:
+      reason:
         type: string
     type: object
   InvestmentStyle:
@@ -1297,6 +2040,33 @@ definitions:
           $ref: '#/definitions/ProviderMappingDTO'
         type: array
     type: object
+  MarketDataRefreshResponse:
+    properties:
+      completed_at:
+        type: string
+      errors:
+        items:
+          type: string
+        type: array
+      failed_symbols:
+        type: integer
+      fund_id:
+        type: string
+      requested_symbols:
+        type: integer
+      stale_symbols:
+        type: integer
+      started_at:
+        type: string
+      success_symbols:
+        type: integer
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+      used_provider:
+        type: string
+    type: object
   MarketDataScreenRowDTO:
     properties:
       asset_type:
@@ -1387,6 +2157,29 @@ definitions:
       yield_to_maturity:
         type: string
     type: object
+  MarketDataStatusResponse:
+    properties:
+      fund_id:
+        type: string
+      healthy:
+        type: boolean
+      last_quote_at:
+        type: string
+      note:
+        type: string
+      primary_provider:
+        type: string
+      stale_after_seconds:
+        type: integer
+      stale_positions:
+        type: integer
+      total_positions:
+        type: integer
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+    type: object
   MeResponse:
     properties:
       permissions:
@@ -1401,6 +2194,17 @@ definitions:
       business_date:
         type: string
       nav_per_unit:
+        type: string
+    type: object
+  OperationSettingEntry:
+    properties:
+      approvalMode:
+        type: string
+      approvers:
+        items:
+          $ref: '#/definitions/DailyApproverEntry'
+        type: array
+      operationType:
         type: string
     type: object
   Override:
@@ -1726,6 +2530,62 @@ definitions:
       provider_ref:
         type: string
     type: object
+  ProcessConfigRequest:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      effective_date:
+        type: string
+      group_approval_enabled:
+        type: boolean
+      is_active:
+        type: boolean
+      process_code:
+        type: string
+      process_name:
+        type: string
+      process_type:
+        type: string
+      require_team_approval:
+        type: boolean
+      stages:
+        items:
+          $ref: '#/definitions/StageRequest'
+        type: array
+    type: object
+  ProcessConfigResponse:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      created_at:
+        type: string
+      effective_date:
+        type: string
+      group_approval_enabled:
+        type: boolean
+      id:
+        type: string
+      is_active:
+        type: boolean
+      process_code:
+        type: string
+      process_name:
+        type: string
+      process_type:
+        type: string
+      require_team_approval:
+        type: boolean
+      stages:
+        items:
+          $ref: '#/definitions/StageResponse'
+        type: array
+      updated_at:
+        type: string
+    type: object
   ProviderBadgeDTO:
     properties:
       label:
@@ -1889,6 +2749,92 @@ definitions:
       reason:
         type: string
     type: object
+  ReorderRequest:
+    properties:
+      member_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  RequestDetailResponse:
+    properties:
+      allowed_actions:
+        items:
+          type: string
+        type: array
+      request:
+        $ref: '#/definitions/RequestResponse'
+      signatures:
+        items:
+          $ref: '#/definitions/SignatureResponse'
+        type: array
+      tasks:
+        items:
+          $ref: '#/definitions/TaskResponse'
+        type: array
+      timeline:
+        items:
+          $ref: '#/definitions/EventResponse'
+        type: array
+      viewer_task:
+        $ref: '#/definitions/TaskResponse'
+    type: object
+  RequestListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/RequestResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  RequestResponse:
+    properties:
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      current_stage_number:
+        type: integer
+      final_decision_at:
+        type: string
+      final_decision_by:
+        type: string
+      id:
+        type: string
+      portfolio_id:
+        type: string
+      process_config_id:
+        type: string
+      process_type:
+        type: string
+      rejection_reason:
+        type: string
+      request_number:
+        type: string
+      status:
+        type: string
+      subject_id:
+        type: string
+      subject_reference:
+        type: string
+      subject_title:
+        type: string
+      subject_type:
+        type: string
+      submitted_at:
+        type: string
+      submitter_id:
+        type: string
+      submitter_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
   ResearchReportListResponse:
     properties:
       items:
@@ -1918,6 +2864,14 @@ definitions:
         type: string
       currency:
         type: string
+      derived_review_stage:
+        description: |-
+          Multi-level review badge derived from the approval engine. Empty when
+          the report has not been submitted; "PENDING_LEVEL_<N>" while the
+          approval is in progress; "REVIEW_COMPLETED" / "REJECTED" / "INVALIDATED"
+          at terminal states. Backend remains the source of truth; UI uses this
+          field for display only.
+        type: string
       effective_date:
         type: string
       esg_comment:
@@ -1931,6 +2885,15 @@ definitions:
       instrument_name:
         type: string
       instrument_type:
+        type: string
+      invalidated_at:
+        description: |-
+          Invalidation metadata. Populated together when the report is in
+          INVALIDATED state; omitted otherwise.
+        type: string
+      invalidated_by:
+        type: string
+      invalidation_reason:
         type: string
       investment_analysis:
         type: string
@@ -2181,6 +3144,65 @@ definitions:
       status:
         type: string
     type: object
+  SendMessageRequest:
+    properties:
+      content:
+        description: Content is the user's message. Required.
+        example: Summarize last quarter's NAV trend for Fund A.
+        maxLength: 16384
+        minLength: 1
+        type: string
+      model:
+        description: Model is the specific LLM model ID. Optional.
+        example: claude-haiku-4-5-20251001
+        type: string
+      provider:
+        description: Provider is the LLM provider ID. Optional.
+        example: anthropic
+        type: string
+      session_id:
+        description: SessionID is the existing session UUID. Empty starts a new session.
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - content
+    type: object
+  SessionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/SessionSummaryResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 42
+        type: integer
+      total_pages:
+        example: 3
+        type: integer
+    type: object
+  SessionMessagesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ChatMessageResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      session_id:
+        type: string
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   SessionResponse:
     properties:
       created_at:
@@ -2194,6 +3216,111 @@ definitions:
       last_activity_at:
         type: string
       user_agent:
+        type: string
+    type: object
+  SessionSummaryResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      model:
+        example: claude-haiku-4-5-20251001
+        type: string
+      provider:
+        example: anthropic
+        type: string
+      updated_at:
+        type: string
+    type: object
+  SignatureResponse:
+    properties:
+      id:
+        type: string
+      is_proxy_signature:
+        type: boolean
+      proxy_for_user_id:
+        type: string
+      signature_label:
+        type: string
+      signed_at:
+        type: string
+      signer_display_name:
+        type: string
+      signer_title:
+        type: string
+      signer_user_id:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  StageRequest:
+    properties:
+      approval_group_id:
+        type: string
+      approver_mode:
+        type: string
+      approver_user_id:
+        type: string
+      is_final_stage:
+        type: boolean
+      required_approval_count:
+        type: integer
+      stage_name:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  StageResponse:
+    properties:
+      approval_group_id:
+        type: string
+      approver_mode:
+        type: string
+      approver_user_id:
+        type: string
+      id:
+        type: string
+      is_final_stage:
+        type: boolean
+      reject_policy:
+        type: string
+      required_approval_count:
+        type: integer
+      stage_name:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  SubjectStatusResponse:
+    properties:
+      allowed_actions:
+        items:
+          type: string
+        type: array
+      has_request:
+        type: boolean
+      request:
+        $ref: '#/definitions/RequestResponse'
+    type: object
+  SubmitRequest:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      portfolio_id:
+        type: string
+      process_type:
+        type: string
+      subject_id:
+        type: string
+      subject_reference:
+        type: string
+      subject_title:
+        type: string
+      subject_type:
         type: string
     type: object
   SuccessResponse:
@@ -2254,6 +3381,39 @@ definitions:
           $ref: '#/definitions/TaskDTO'
         type: array
     type: object
+  TaskResponse:
+    properties:
+      acted_at:
+        type: string
+      acted_by:
+        type: string
+      action_comment:
+        type: string
+      approval_request_id:
+        type: string
+      assigned_group_id:
+        type: string
+      assigned_team_id:
+        type: string
+      assigned_user_id:
+        type: string
+      assigned_user_name:
+        type: string
+      created_at:
+        type: string
+      delegated_from_user_id:
+        type: string
+      due_at:
+        type: string
+      id:
+        type: string
+      is_delegated_action:
+        type: boolean
+      stage_number:
+        type: integer
+      status:
+        type: string
+    type: object
   TaskSummaryDTO:
     properties:
       byModule:
@@ -2268,6 +3428,94 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  TeamContractRequest:
+    properties:
+      contract_id:
+        type: string
+      effective_date:
+        type: string
+    type: object
+  TeamContractResponse:
+    properties:
+      contract_id:
+        type: string
+      effective_date:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      team_id:
+        type: string
+    type: object
+  TeamMemberRequest:
+    properties:
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  TeamMemberResponse:
+    properties:
+      display_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      team_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  TeamRequest:
+    properties:
+      has_co_manager:
+        type: boolean
+      is_active:
+        type: boolean
+      max_allowed_stamps:
+        type: integer
+      min_required_stamps:
+        type: integer
+      remarks:
+        type: string
+      team_code:
+        type: string
+      team_name:
+        type: string
+    type: object
+  TeamResponse:
+    properties:
+      created_at:
+        type: string
+      has_co_manager:
+        type: boolean
+      id:
+        type: string
+      is_active:
+        type: boolean
+      max_allowed_stamps:
+        type: integer
+      min_required_stamps:
+        type: integer
+      remarks:
+        type: string
+      team_code:
+        type: string
+      team_name:
+        type: string
+      updated_at:
+        type: string
     type: object
   TransactionListResponse:
     properties:
@@ -2373,6 +3621,12 @@ definitions:
     type: object
   TransitionResponse:
     properties:
+      accountingDate:
+        description: |-
+          AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format
+          YYYY-MM-DD; distinct from BusinessDate because operators can backdate
+          or delay accounting cycles.
+        type: string
       approvalId:
         description: ApprovalID is set when the transition was an APPROVE action.
         type: string
@@ -2395,6 +3649,24 @@ definitions:
         type: string
       workflowDayId:
         type: string
+    type: object
+  TransitionRule:
+    properties:
+      fromState:
+        type: string
+      operationType:
+        type: string
+      requiresReason:
+        type: boolean
+      toState:
+        type: string
+    type: object
+  TransitionRulesResponse:
+    properties:
+      rules:
+        items:
+          $ref: '#/definitions/TransitionRule'
+        type: array
     type: object
   UnmappedCandidateDTO:
     properties:
@@ -2535,11 +3807,7 @@ definitions:
         type: string
       recommendation:
         type: string
-      rejection_reason:
-        type: string
       report_date:
-        type: string
-      report_status:
         type: string
       report_title:
         type: string
@@ -2659,6 +3927,13 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  WorkflowSettingsResponse:
+    properties:
+      settings:
+        items:
+          $ref: '#/definitions/OperationSettingEntry'
+        type: array
+    type: object
   WorkflowStateDTO:
     properties:
       businessDate:
@@ -2673,6 +3948,11 @@ definitions:
   WorkflowStateResponse:
     properties:
       accountingClosedAt:
+        type: string
+      accountingDate:
+        description: |-
+          AccountingDate / PrevAccountingDate surface the NAV cycle date and
+          the prior cycle stashed during a rollback. Format YYYY-MM-DD.
         type: string
       allowedActions:
         description: |-
@@ -2715,6 +3995,8 @@ definitions:
           Clients can use this to distinguish a genuinely-started day from
           a cancelled/never-started synthetic NOT_STARTED response.
         type: boolean
+      prevAccountingDate:
+        type: string
       previousDay:
         allOf:
         - $ref: '#/definitions/PreviousDayStatus'
@@ -3170,6 +4452,1232 @@ paths:
       summary: Unlock User
       tags:
       - Admin
+  /approval-config/groups:
+    get:
+      parameters:
+      - description: Only active groups
+        in: query
+        name: active_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval groups
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/GroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval group
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval group
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members:
+    get:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMemberResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval group members
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}/approve:
+    post:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}/revoke:
+    post:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/reorder:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ordered member ids
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ReorderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMemberResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reorder approval group members
+      tags:
+      - Approval - Config
+  /approval-config/processes:
+    get:
+      parameters:
+      - description: Process type filter
+        in: query
+        name: process_type
+        type: string
+      - description: Only active configs
+        in: query
+        name: active_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ProcessConfigResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval process configs
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Process config payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ProcessConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}:
+    get:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an approval process config
+      tags:
+      - Approval - Config
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Process config payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ProcessConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}/activate:
+    post:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}/deactivate:
+    post:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/teams:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval teams
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Team payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/contracts:
+    get:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamContractResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List a team's contract assignments
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Contract assignment
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamContractRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamContractResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign a contract/fund to an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/members:
+    get:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamMemberResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval team members
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add an approval team member
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/members/{memberId}:
+    delete:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove an approval team member
+      tags:
+      - Approval - Config
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TeamMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval team member
+      tags:
+      - Approval - Config
+  /approvals/inbox:
+    get:
+      description: Returns the authenticated user's pending approval tasks joined
+        with their requests.
+      parameters:
+      - description: Task status filter (default PENDING)
+        in: query
+        name: status
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/InboxListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my approval inbox
+      tags:
+      - Approval - Runtime
+  /approvals/requests:
+    get:
+      description: Lists approval requests with optional filters.
+      parameters:
+      - description: Request status
+        in: query
+        name: status
+        type: string
+      - description: Process type
+        in: query
+        name: process_type
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval requests
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}:
+    get:
+      description: Returns a request with its tasks, immutable timeline and signature
+        records.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get approval request detail
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/cancel:
+    post:
+      description: Cancels an in-flight approval request (privileged).
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel an approval request
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revokes a previously approved request, returning the subject to
+        an un-approved state. Requires a reason.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      - description: Revocation reason
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke an approved request
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/timeline:
+    get:
+      description: Returns the immutable, ordered approval timeline for a request.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/EventResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get approval timeline
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/withdraw:
+    post:
+      description: The submitter withdraws their own active approval request.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Withdraw an approval request
+      tags:
+      - Approval - Runtime
+  /approvals/subjects/{subjectType}/{subjectId}/status:
+    get:
+      description: Returns the latest approval request for a business object (subject),
+        if any.
+      parameters:
+      - description: Subject type
+        in: path
+        name: subjectType
+        required: true
+        type: string
+      - description: Subject UUID
+        in: path
+        name: subjectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SubjectStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get subject approval status
+      tags:
+      - Approval - Runtime
+  /approvals/submit:
+    post:
+      consumes:
+      - application/json
+      description: Creates an approval request and the first stage tasks for a business
+        object.
+      parameters:
+      - description: Submit payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/SubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a subject for approval
+      tags:
+      - Approval - Runtime
+  /approvals/tasks/{taskId}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Records an approval on an assigned task and advances the request.
+      parameters:
+      - description: Approval task UUID
+        in: path
+        name: taskId
+        required: true
+        type: string
+      - description: Optional comment
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an approval task
+      tags:
+      - Approval - Runtime
+  /approvals/tasks/{taskId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Records a rejection (reason required); one rejection stops the
+        request.
+      parameters:
+      - description: Approval task UUID
+        in: path
+        name: taskId
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject an approval task
+      tags:
+      - Approval - Runtime
   /auth/change-password:
     post:
       consumes:
@@ -3535,6 +6043,158 @@ paths:
       summary: Revoke a Session
       tags:
       - Sessions
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: 'Streams text/event-stream. Each frame''s `data:` payload is a
+        ChatStreamEvent (see response model). Frames have event names: session_started,
+        text, done, error. Use fetch() + ReadableStream on the client — EventSource
+        cannot carry an Authorization header.'
+      parameters:
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SendMessageRequest'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: One example frame payload; the response is a stream of these
+          schema:
+            $ref: '#/definitions/ChatStreamEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a chat message and stream the response
+      tags:
+      - Chat
+  /chat/sessions:
+    get:
+      description: Lists the caller's chat sessions. Auditors (IAM_AUDIT_VIEW) may
+        pass user_id to list another user's sessions; such access is strictly audited.
+      parameters:
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: 'Auditor-only: list this user''s sessions (requires IAM_AUDIT_VIEW)'
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List chat sessions
+      tags:
+      - Chat
+  /chat/sessions/{session_id}:
+    get:
+      description: Returns one session's metadata. Owner or auditor (IAM_AUDIT_VIEW).
+        Auditor access is strictly audited.
+      parameters:
+      - description: Session UUID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionSummaryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a chat session
+      tags:
+      - Chat
+  /chat/sessions/{session_id}/messages:
+    get:
+      description: Returns a session's messages with safe provenance (no raw provider
+        payload). Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+      parameters:
+      - description: Session UUID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionMessagesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List chat session messages
+      tags:
+      - Chat
   /compliance/breaches:
     get:
       description: List compliance breaches with optional portfolio, contract, rule,
@@ -3977,6 +6637,206 @@ paths:
       summary: Personal task summary
       tags:
       - Integration
+  /investment/decisions/{id}/details:
+    get:
+      description: Returns a decision header with all child decision lines (for basket/rebalance/switch
+        decisions) and approval stage info.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Decision With Lines
+      tags:
+      - Investment - Decisions
+  /investment/decisions/approval-items:
+    get:
+      description: Returns decisions pending approval (default status=PENDING_APPROVAL),
+        enriched with current and previous approver names and stage numbers.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Filter by fund UUID
+        in: query
+        name: fund_id
+        type: string
+      - description: Inclusive lower bound YYYY-MM-DD
+        in: query
+        name: business_date_from
+        type: string
+      - description: Inclusive upper bound YYYY-MM-DD
+        in: query
+        name: business_date_to
+        type: string
+      - description: Filter by exact decision number
+        in: query
+        name: decision_no
+        type: string
+      - description: INVESTMENT_DECISION | ORDER_CANCEL | ORDER_AMEND
+        in: query
+        name: process_type
+        type: string
+      - description: MUTUAL_FUND | ETF | STOCK | BOND | CASH
+        in: query
+        name: product_type
+        type: string
+      - description: Filter by research report number
+        in: query
+        name: research_no
+        type: string
+      - description: Decision lifecycle status (default PENDING_APPROVAL)
+        in: query
+        name: status
+        type: string
+      - description: Substring search on decision_no / instrument_code / research_report_no
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Decision Approval Items
+      tags:
+      - Investment - Decisions
+  /investment/decisions/batch-approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves multiple investment decision headers in a single call.
+        Each decision must be PENDING_APPROVAL and have a pending approval task assigned
+        to the authenticated user. Returns per-decision results — partial failures
+        are reported without aborting the rest.
+      parameters:
+      - description: Decision numbers and optional comment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/BatchApprovalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BatchApprovalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch Approve Investment Decisions
+      tags:
+      - Investment - Decisions
+  /investment/decisions/batch-reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects multiple investment decision headers in a single call.
+        A rejection reason is required and applied to all selected decisions. Returns
+        per-decision results.
+      parameters:
+      - description: Decision numbers and required reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/BatchRejectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BatchApprovalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch Reject Investment Decisions
+      tags:
+      - Investment - Decisions
   /investment/funds:
     get:
       description: List funds visible to the authenticated user.
@@ -4312,6 +7172,132 @@ paths:
       summary: Compute Fund AUM
       tags:
       - Investment - Valuation
+  /investment/funds/{id}/holdings/valuation:
+    get:
+      description: Compute estimated NAV / AUM and per-position unrealised P&L from
+        live market data, alongside the official accounting NAV.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/IntradayValuationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Intraday Holdings Valuation
+      tags:
+      - Investment - Intraday
+  /investment/funds/{id}/market-data/refresh:
+    post:
+      description: Trigger a provider fetch for every instrument held by the fund.
+        Records an audit event.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MarketDataRefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh Fund Market Data
+      tags:
+      - Investment - Intraday
+  /investment/funds/{id}/market-data/status:
+    get:
+      description: Report provider health and the number of stale positions for a
+        fund.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MarketDataStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund Market Data Status
+      tags:
+      - Investment - Intraday
   /investment/funds/{id}/nav-history:
     get:
       description: Time series of NAV-per-unit (unitised funds) or AUM (non-unitised)
@@ -5832,6 +8818,57 @@ paths:
       summary: Cancel Submission Of Investment Research Report
       tags:
       - Investment - Research
+  /investment/research-reports/{id}/invalidate:
+    post:
+      consumes:
+      - application/json
+      description: One-way transition to INVALIDATED. An invalidated report cannot
+        be referenced by a decision, edited, submitted, cancelled, or soft-deleted.
+        The reason (≥20 characters) is stored and audited.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invalidation reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/InvalidateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invalidate Investment Research Report
+      tags:
+      - Investment - Research
   /investment/research-reports/{id}/submit:
     post:
       description: Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval
@@ -6540,6 +9577,125 @@ paths:
       summary: Reject an unmapped candidate
       tags:
       - ReferenceData
+  /workflow/daily:
+    get:
+      description: Returns aggregated global workflow state for a business date.
+      parameters:
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyWorkflowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Daily Workflow State
+      tags:
+      - Workflow
+  /workflow/daily/execute:
+    post:
+      consumes:
+      - application/json
+      description: Execute a workflow transition using business-readable identifiers
+        and canonical operation types.
+      parameters:
+      - description: Execute payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/DailyExecuteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyWorkflowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Execute Daily Workflow Transition
+      tags:
+      - Workflow
+  /workflow/daily/transitions:
+    get:
+      description: Returns paginated global workflow transition history.
+      parameters:
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      - description: Page number (1-based, default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyTransitionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Daily Transition History
+      tags:
+      - Workflow
   /workflow/day-states/{contractId}:
     get:
       description: Get the current workflow state for a contract and business date.
@@ -6706,6 +9862,90 @@ paths:
       security:
       - BearerAuth: []
       summary: Run Workflow Scheduler Once
+      tags:
+      - Workflow
+  /workflow/settings:
+    get:
+      description: Returns the configured approvers for each workflow operation type.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkflowSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Approval Settings
+      tags:
+      - Workflow
+    put:
+      consumes:
+      - application/json
+      description: 'Replace the configured approvers for a workflow operation type.
+        Admin only. Note: approver account codes are stored without IAM validation
+        (no cross-module IAM lookup interface exists).'
+      parameters:
+      - description: Settings payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/DailySettingsUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkflowSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Workflow Approval Settings
+      tags:
+      - Workflow
+  /workflow/transition-rules:
+    get:
+      description: Returns the full state machine topology as a list of valid from→operation→to
+        transitions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TransitionRulesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Transition Rules
       tags:
       - Workflow
 schemes:

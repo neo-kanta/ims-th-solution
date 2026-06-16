@@ -170,11 +170,12 @@ type SignatureResponse struct {
 
 // RequestDetailResponse bundles a request with tasks, timeline and signatures.
 type RequestDetailResponse struct {
-	Request    RequestResponse     `json:"request"`
-	Tasks      []TaskResponse      `json:"tasks"`
-	Timeline   []EventResponse     `json:"timeline"`
-	Signatures []SignatureResponse `json:"signatures"`
-	ViewerTask *TaskResponse       `json:"viewer_task,omitempty"`
+	Request        RequestResponse    `json:"request"`
+	Tasks          []TaskResponse     `json:"tasks"`
+	Timeline       []EventResponse    `json:"timeline"`
+	Signatures     []SignatureResponse `json:"signatures"`
+	ViewerTask     *TaskResponse      `json:"viewer_task,omitempty"`
+	AllowedActions []string           `json:"allowed_actions"`
 }
 
 // InboxItemResponse is a single approver work item joined with its request.
@@ -201,8 +202,9 @@ type RequestListResponse struct {
 
 // SubjectStatusResponse reports the latest approval status for a subject.
 type SubjectStatusResponse struct {
-	HasRequest bool             `json:"has_request"`
-	Request    *RequestResponse `json:"request,omitempty"`
+	HasRequest     bool             `json:"has_request"`
+	Request        *RequestResponse `json:"request,omitempty"`
+	AllowedActions []string         `json:"allowed_actions"`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,10 +457,14 @@ func FromSignatures(ss []*entity.ApprovalSignatureRecord) []SignatureResponse {
 // FromRequestDetail maps a runtime RequestDetail.
 func FromRequestDetail(d *service.RequestDetail) RequestDetailResponse {
 	resp := RequestDetailResponse{
-		Request:    FromRequest(d.Request),
-		Tasks:      FromTasks(d.Tasks),
-		Timeline:   FromEvents(d.Events),
-		Signatures: FromSignatures(d.Signatures),
+		Request:        FromRequest(d.Request),
+		Tasks:          FromTasks(d.Tasks),
+		Timeline:       FromEvents(d.Events),
+		Signatures:     FromSignatures(d.Signatures),
+		AllowedActions: d.AllowedActions,
+	}
+	if resp.AllowedActions == nil {
+		resp.AllowedActions = []string{}
 	}
 	if d.ViewerTask != nil {
 		vt := FromTask(d.ViewerTask)

@@ -29,9 +29,9 @@ type stagePlan struct {
 // maker exclusion and skipping on-leave approvers. Delegation is resolved at
 // action time (see runtime approve), not here.
 type resolver struct {
-	repo   domain.Repository
-	leave  domain.LeaveChecker
-	nowFn  func() time.Time
+	repo  domain.Repository
+	leave domain.LeaveChecker
+	nowFn func() time.Time
 }
 
 func newResolver(repo domain.Repository, leave domain.LeaveChecker, nowFn func() time.Time) *resolver {

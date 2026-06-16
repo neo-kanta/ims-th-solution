@@ -33,8 +33,12 @@ type RequestListFilter struct {
 	ProcessType vo.ProcessType
 	SubmitterID *uuid.UUID
 	ContractID  *uuid.UUID
-	Page        int
-	Limit       int
+	// ViewerID is the authenticated user making the list request. When non-nil
+	// and ContractID is also set, the service enforces data permission for the
+	// viewer on that contract before returning results.
+	ViewerID uuid.UUID
+	Page     int
+	Limit    int
 }
 
 // InboxFilter filters the per-approver inbox.
@@ -132,6 +136,9 @@ type TaskRepository interface {
 	CancelPendingByRequest(ctx context.Context, tx pgx.Tx, requestID uuid.UUID) error
 	SkipOtherPendingInStage(ctx context.Context, tx pgx.Tx, requestID uuid.UUID, stage int, exceptTaskID uuid.UUID) error
 	Inbox(ctx context.Context, f InboxFilter) ([]*InboxItem, int, error)
+	// FindPendingTaskForActor returns the single PENDING task assigned to
+	// actorID on the given request, or nil if none exists.
+	FindPendingTaskForActor(ctx context.Context, requestID uuid.UUID, actorID uuid.UUID) (*entity.ApprovalTask, error)
 }
 
 // EventRepository persists the immutable approval timeline.

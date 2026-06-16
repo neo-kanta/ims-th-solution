@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -20,18 +21,20 @@ import (
 // run inside a DB transaction with a row lock on the request to make
 // maker-checker enforcement and stage advancement atomic.
 type ApprovalRuntimeService struct {
-	pool       *pgxpool.Pool
-	repo       domain.Repository
-	resolver   *resolver
-	perms      domain.PermissionPort
-	audit      domain.AuditPort
-	notifier   domain.Notifier
-	delegate   domain.DelegateResolver
-	directory  domain.UserDirectory
-	now        func() time.Time
-	runTxFn    func(context.Context, func(pgx.Tx) error) error
+	pool      *pgxpool.Pool
+	repo      domain.Repository
+	resolver  *resolver
+	perms     domain.PermissionPort
+	audit     domain.AuditPort
+	notifier  domain.Notifier
+	delegate  domain.DelegateResolver
+	directory domain.UserDirectory
+	now       func() time.Time
+	runTxFn   func(context.Context, func(pgx.Tx) error) error
 
-	subjectSyncs map[vo.SubjectType]domain.SubjectSync
+	subjectSyncs       map[vo.SubjectType]domain.SubjectSync
+	subjectValidators  map[vo.SubjectType]domain.SubjectValidator
+	subjectAccessPorts map[vo.SubjectType]domain.ApprovalSubjectAccessPort
 }
 
 // RuntimeDeps bundles the runtime service dependencies.
@@ -61,16 +64,18 @@ func NewApprovalRuntimeService(d RuntimeDeps) *ApprovalRuntimeService {
 		d.Leave = domain.NopLeaveChecker{}
 	}
 	svc := &ApprovalRuntimeService{
-		pool:         d.Pool,
-		repo:         d.Repo,
-		resolver:     newResolver(d.Repo, d.Leave, nowUTC),
-		perms:        d.Perms,
-		audit:        d.Audit,
-		notifier:     d.Notifier,
-		delegate:     d.Delegate,
-		directory:    d.Directory,
-		now:          nowUTC,
-		subjectSyncs: map[vo.SubjectType]domain.SubjectSync{},
+		pool:               d.Pool,
+		repo:               d.Repo,
+		resolver:           newResolver(d.Repo, d.Leave, nowUTC),
+		perms:              d.Perms,
+		audit:              d.Audit,
+		notifier:           d.Notifier,
+		delegate:           d.Delegate,
+		directory:          d.Directory,
+		now:                nowUTC,
+		subjectSyncs:       map[vo.SubjectType]domain.SubjectSync{},
+		subjectValidators:  map[vo.SubjectType]domain.SubjectValidator{},
+		subjectAccessPorts: map[vo.SubjectType]domain.ApprovalSubjectAccessPort{},
 	}
 	svc.runTxFn = func(ctx context.Context, fn func(pgx.Tx) error) error {
 		return withTransaction(ctx, svc.pool, fn)
@@ -84,6 +89,44 @@ func (s *ApprovalRuntimeService) RegisterSubjectSync(st vo.SubjectType, sync dom
 	if sync != nil {
 		s.subjectSyncs[st] = sync
 	}
+}
+
+// RegisterSubjectValidator registers a business-object state guard for a
+// subject type. The guard is called inside the approve/reject transaction;
+// returning a non-nil error aborts the action with a 409 Conflict.
+func (s *ApprovalRuntimeService) RegisterSubjectValidator(st vo.SubjectType, v domain.SubjectValidator) {
+	if v != nil {
+		s.subjectValidators[st] = v
+	}
+}
+
+// RegisterSubjectAccessPort registers the per-subject-type authorisation gate.
+// All read and write operations call this port before disclosing any request
+// data. When no port is registered for a subject type the engine fails closed
+// (returns ErrForbidden). Call at wire-up after both modules are constructed.
+func (s *ApprovalRuntimeService) RegisterSubjectAccessPort(st vo.SubjectType, port domain.ApprovalSubjectAccessPort) {
+	if port != nil {
+		s.subjectAccessPorts[st] = port
+	}
+}
+
+// CancelApprovalBySubject cancels the active approval request for a subject,
+// if one exists. Returns nil when no active request is found (safe no-op).
+// Used by business modules to terminate an in-flight approval when the subject
+// itself is cancelled or withdrawn.
+func (s *ApprovalRuntimeService) CancelApprovalBySubject(ctx context.Context, subjectType vo.SubjectType, subjectID uuid.UUID, actorID uuid.UUID) error {
+	if !vo.ValidSubjectType(subjectType) {
+		return domain.Validation("invalid subject_type: " + string(subjectType))
+	}
+	req, err := s.repo.GetActiveBySubject(ctx, subjectType, subjectID)
+	if err != nil {
+		return err
+	}
+	if req == nil {
+		return nil // no active request — nothing to cancel
+	}
+	_, err = s.CancelRequest(ctx, req.ID, actorID)
+	return err
 }
 
 func (s *ApprovalRuntimeService) runTx(ctx context.Context, fn func(pgx.Tx) error) error {
@@ -121,6 +164,11 @@ func (s *ApprovalRuntimeService) SubmitApproval(ctx context.Context, in SubmitIn
 	}
 	if in.SubmitterID == uuid.Nil {
 		return nil, domain.Validation("submitter_id is required")
+	}
+
+	// Authorise the submitter via the subject access port.
+	if err := s.checkSubjectSubmit(ctx, in.SubmitterID, in.SubjectType, in.SubjectID); err != nil {
+		return nil, err
 	}
 
 	// Reject duplicate active requests for the same subject.
@@ -230,9 +278,16 @@ func (s *ApprovalRuntimeService) ApproveTask(ctx context.Context, taskID, actorI
 		}
 		req = r
 
-		actedFor, delegated, err := s.authorizeAction(ctx, task, r, actorID)
+		actedFor, delegated, err := s.authorizeAction(ctx, task, r, actorID, domain.ApprovalActionApprove)
 		if err != nil {
 			return err
+		}
+
+		// Guard against the subject being cancelled/invalidated between submit and approve.
+		if v, ok := s.subjectValidators[r.SubjectType]; ok {
+			if verr := v.ValidateSubjectApprovable(ctx, r.SubjectID); verr != nil {
+				return domain.NewError(domain.ErrConflict, "subject is no longer approvable: "+verr.Error())
+			}
 		}
 
 		now := s.now()
@@ -344,9 +399,16 @@ func (s *ApprovalRuntimeService) RejectTask(ctx context.Context, taskID, actorID
 			return err
 		}
 		req = r
-		actedFor, delegated, err := s.authorizeAction(ctx, task, r, actorID)
+		actedFor, delegated, err := s.authorizeAction(ctx, task, r, actorID, domain.ApprovalActionReject)
 		if err != nil {
 			return err
+		}
+
+		// Guard against the subject being cancelled/invalidated between submit and reject.
+		if v, ok := s.subjectValidators[r.SubjectType]; ok {
+			if verr := v.ValidateSubjectApprovable(ctx, r.SubjectID); verr != nil {
+				return domain.NewError(domain.ErrConflict, "subject is no longer approvable: "+verr.Error())
+			}
 		}
 
 		now := s.now()
@@ -404,6 +466,71 @@ func (s *ApprovalRuntimeService) CancelRequest(ctx context.Context, requestID, a
 	return s.terminate(ctx, requestID, actorID, vo.RequestStatusCancelled, vo.EventCancelled, false)
 }
 
+// RevokeRequest revokes a previously approved request, returning the subject to
+// an un-approved state. The approval history is preserved. The subject sync
+// callback is invoked with Approved=false so the business module can reopen
+// the document for correction.
+func (s *ApprovalRuntimeService) RevokeRequest(ctx context.Context, requestID, actorID uuid.UUID, reason string) (*entity.ApprovalRequest, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, domain.Validation("a revocation reason is required")
+	}
+	var req *entity.ApprovalRequest
+	err := s.runTx(ctx, func(tx pgx.Tx) error {
+		r, err := s.repo.GetRequestForUpdate(ctx, tx, requestID)
+		if err != nil {
+			return err
+		}
+		if r == nil {
+			return domain.NotFound("approval request not found")
+		}
+		if err := s.checkSubjectAct(ctx, actorID, r.SubjectType, r.SubjectID, domain.ApprovalActionRevoke); err != nil {
+			return err
+		}
+		if r.Status != vo.RequestStatusApproved {
+			return domain.NewError(domain.ErrConflict, "only an APPROVED request can be revoked")
+		}
+		now := s.now()
+		r.Status = vo.RequestStatusRevoked
+		r.FinalDecisionBy = &actorID
+		r.FinalDecisionAt = &now
+		r.RejectionReason = reason
+		if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
+			return err
+		}
+		req = r
+		return s.appendEvent(ctx, tx, r.ID, vo.EventRevoked, nil, &actorID, nil, reason, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	s.audit.Record(ctx, &actorID, "APPROVAL_REVOKED", "APPROVAL_REQUEST", requestID.String(), map[string]any{
+		"request_number": req.RequestNumber,
+		"reason":         reason,
+	})
+	// Notify the business module that the subject is no longer approved.
+	if sync, ok := s.subjectSyncs[req.SubjectType]; ok {
+		if serr := sync.OnRejected(ctx, req.SubjectType, req.SubjectID, req.ID, reason); serr != nil {
+			slog.Error("approval sync callback failed after revoke",
+				"request_id", req.ID.String(),
+				"subject_type", string(req.SubjectType),
+				"subject_id", req.SubjectID.String(),
+				"error", serr,
+			)
+			s.audit.Record(ctx, nil, "APPROVAL_REVOKE_SYNC_FAILED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
+				"subject_type":        string(req.SubjectType),
+				"subject_id":          req.SubjectID.String(),
+				"approval_request_id": req.ID.String(),
+				"outcome":             "REVOKED",
+				"reason":              reason,
+				"error":               serr.Error(),
+				"retryable":           true,
+			})
+		}
+	}
+	return s.repo.GetRequest(ctx, requestID)
+}
+
 func (s *ApprovalRuntimeService) terminate(ctx context.Context, requestID, actorID uuid.UUID, status vo.RequestStatus, event vo.EventType, submitterOnly bool) (*entity.ApprovalRequest, error) {
 	err := s.runTx(ctx, func(tx pgx.Tx) error {
 		r, err := s.repo.GetRequestForUpdate(ctx, tx, requestID)
@@ -412,6 +539,13 @@ func (s *ApprovalRuntimeService) terminate(ctx context.Context, requestID, actor
 		}
 		if r == nil {
 			return domain.NotFound("approval request not found")
+		}
+		terminateAction := domain.ApprovalActionCancel
+		if submitterOnly {
+			terminateAction = domain.ApprovalActionWithdraw
+		}
+		if err := s.checkSubjectAct(ctx, actorID, r.SubjectType, r.SubjectID, terminateAction); err != nil {
+			return err
 		}
 		if r.Status.IsTerminal() {
 			return domain.NewError(domain.ErrConflict, "request is already finalised")
@@ -488,15 +622,15 @@ func (s *ApprovalRuntimeService) loadActionContext(ctx context.Context, tx pgx.T
 	return task, r, stage, nil
 }
 
-// authorizeAction enforces maker-checker and assignment/delegation rules.
+// authorizeAction enforces maker-checker, subject access, and assignment/delegation rules.
 // Returns (actedForUserID, isDelegated, error).
-func (s *ApprovalRuntimeService) authorizeAction(ctx context.Context, task *entity.ApprovalTask, r *entity.ApprovalRequest, actorID uuid.UUID) (uuid.UUID, bool, error) {
+func (s *ApprovalRuntimeService) authorizeAction(ctx context.Context, task *entity.ApprovalTask, r *entity.ApprovalRequest, actorID uuid.UUID, action domain.ApprovalAction) (uuid.UUID, bool, error) {
 	// Maker-checker: the submitter can never approve/reject their own request.
 	if actorID == r.SubmitterID {
 		return uuid.Nil, false, domain.NewError(domain.ErrSelfApproval, domain.ErrSelfApproval.Error())
 	}
-	// Contract data-scope enforcement (object-level), only when scoped.
-	if err := s.ensureDataPermission(ctx, actorID, r.ContractID); err != nil {
+	// Subject access port enforces object-level authorisation generically.
+	if err := s.checkSubjectAct(ctx, actorID, r.SubjectType, r.SubjectID, action); err != nil {
 		return uuid.Nil, false, err
 	}
 
@@ -521,18 +655,41 @@ func (s *ApprovalRuntimeService) authorizeAction(ctx context.Context, task *enti
 	return uuid.Nil, false, domain.NewError(domain.ErrNotAssigned, domain.ErrNotAssigned.Error())
 }
 
-func (s *ApprovalRuntimeService) ensureDataPermission(ctx context.Context, actorID uuid.UUID, contractID *uuid.UUID) error {
-	if contractID == nil || s.perms == nil {
-		return nil
+// checkSubjectView authorises a read for the given actor on a subject.
+// Zero actorID is always rejected. Missing port → ErrForbidden (fail closed).
+func (s *ApprovalRuntimeService) checkSubjectView(ctx context.Context, actorID uuid.UUID, st vo.SubjectType, subjectID uuid.UUID) error {
+	if actorID == uuid.Nil {
+		return domain.Validation("actor_id is required")
 	}
-	ok, err := s.perms.HasDataPermission(ctx, actorID.String(), contractID.String())
-	if err != nil {
-		return err
-	}
+	port, ok := s.subjectAccessPorts[st]
 	if !ok {
-		return domain.Forbidden("you do not have data permission for this contract/fund")
+		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
 	}
-	return nil
+	return port.CanViewApprovalSubject(ctx, actorID, st, subjectID)
+}
+
+// checkSubjectSubmit authorises a submit for the given actor on a subject.
+func (s *ApprovalRuntimeService) checkSubjectSubmit(ctx context.Context, actorID uuid.UUID, st vo.SubjectType, subjectID uuid.UUID) error {
+	if actorID == uuid.Nil {
+		return domain.Validation("actor_id is required")
+	}
+	port, ok := s.subjectAccessPorts[st]
+	if !ok {
+		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
+	}
+	return port.CanSubmitApprovalSubject(ctx, actorID, st, subjectID)
+}
+
+// checkSubjectAct authorises a write action (approve/reject/revoke/cancel/withdraw).
+func (s *ApprovalRuntimeService) checkSubjectAct(ctx context.Context, actorID uuid.UUID, st vo.SubjectType, subjectID uuid.UUID, action domain.ApprovalAction) error {
+	if actorID == uuid.Nil {
+		return domain.Validation("actor_id is required")
+	}
+	port, ok := s.subjectAccessPorts[st]
+	if !ok {
+		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
+	}
+	return port.CanActOnApprovalSubject(ctx, actorID, st, subjectID, action)
 }
 
 // createStageTasks resolves and persists the tasks for a stage and appends a
@@ -623,8 +780,9 @@ func (s *ApprovalRuntimeService) appendEvent(ctx context.Context, tx pgx.Tx, req
 }
 
 // runPostAction runs best-effort, post-commit side effects (notifications +
-// business-object sync). Failures are swallowed (logged by callees) so they
-// never roll back a committed approval.
+// business-object sync). The approval is already committed; errors from the
+// sync callback cannot roll it back. They are logged and recorded in the audit
+// trail so operators can detect and replay failed syncs.
 func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uuid.UUID, outcome actionOutcome) {
 	req, err := s.repo.GetRequest(ctx, requestID)
 	if err != nil || req == nil {
@@ -634,12 +792,42 @@ func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uu
 	case outcome.completed:
 		s.notifier.NotifyApprovalCompleted(ctx, req)
 		if sync, ok := s.subjectSyncs[req.SubjectType]; ok {
-			_ = sync.OnApproved(ctx, req.SubjectType, req.SubjectID, req.ID)
+			if serr := sync.OnApproved(ctx, req.SubjectType, req.SubjectID, req.ID); serr != nil {
+				slog.Error("approval sync callback failed after approve",
+					"request_id", req.ID.String(),
+					"subject_type", string(req.SubjectType),
+					"subject_id", req.SubjectID.String(),
+					"error", serr,
+				)
+				s.audit.Record(ctx, nil, "APPROVAL_SYNC_FAILED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
+					"subject_type":        string(req.SubjectType),
+					"subject_id":          req.SubjectID.String(),
+					"approval_request_id": req.ID.String(),
+					"outcome":             "APPROVED",
+					"error":               serr.Error(),
+					"retryable":           true,
+				})
+			}
 		}
 	case outcome.rejected:
 		s.notifier.NotifyApprovalRejected(ctx, req)
 		if sync, ok := s.subjectSyncs[req.SubjectType]; ok {
-			_ = sync.OnRejected(ctx, req.SubjectType, req.SubjectID, req.ID, req.RejectionReason)
+			if serr := sync.OnRejected(ctx, req.SubjectType, req.SubjectID, req.ID, req.RejectionReason); serr != nil {
+				slog.Error("approval sync callback failed after reject",
+					"request_id", req.ID.String(),
+					"subject_type", string(req.SubjectType),
+					"subject_id", req.SubjectID.String(),
+					"error", serr,
+				)
+				s.audit.Record(ctx, nil, "APPROVAL_SYNC_FAILED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
+					"subject_type":        string(req.SubjectType),
+					"subject_id":          req.SubjectID.String(),
+					"approval_request_id": req.ID.String(),
+					"outcome":             "REJECTED",
+					"error":               serr.Error(),
+					"retryable":           true,
+				})
+			}
 		}
 	default:
 		for _, t := range outcome.advancedTasks {
@@ -654,21 +842,51 @@ func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uu
 
 // RequestDetail bundles a request with its tasks, timeline and signatures.
 type RequestDetail struct {
-	Request    *entity.ApprovalRequest
-	Tasks      []*entity.ApprovalTask
-	Events     []*entity.ApprovalEvent
-	Signatures []*entity.ApprovalSignatureRecord
-	ViewerTask *entity.ApprovalTask // the viewer's actionable pending task, if any
+	Request        *entity.ApprovalRequest
+	Tasks          []*entity.ApprovalTask
+	Events         []*entity.ApprovalEvent
+	Signatures     []*entity.ApprovalSignatureRecord
+	ViewerTask     *entity.ApprovalTask // the viewer's actionable pending task, if any
+	AllowedActions []string             // business actions the current viewer may take
 }
 
-// GetMyInbox returns the actor's pending (or filtered) approval work items.
+// GetMyInbox returns the actor's pending (or filtered) approval work items,
+// filtered to only those subjects the actor can access via the subject access port.
 func (s *ApprovalRuntimeService) GetMyInbox(ctx context.Context, f domain.InboxFilter) ([]*domain.InboxItem, int, error) {
-	return s.repo.Inbox(ctx, f)
+	if f.UserID == uuid.Nil {
+		return nil, 0, domain.Validation("user_id is required")
+	}
+	items, _, err := s.repo.Inbox(ctx, f)
+	if err != nil {
+		return nil, 0, err
+	}
+	var permitted []*domain.InboxItem
+	for _, item := range items {
+		if s.checkSubjectView(ctx, f.UserID, item.Request.SubjectType, item.Request.SubjectID) == nil {
+			permitted = append(permitted, item)
+		}
+	}
+	return permitted, len(permitted), nil
 }
 
-// ListRequests lists requests with filters.
+// ListRequests lists requests with filters. When ViewerID is set, results are
+// post-filtered per subject so the viewer cannot see subjects they cannot access.
+// When ViewerID is uuid.Nil the full unfiltered list is returned (system/admin use).
 func (s *ApprovalRuntimeService) ListRequests(ctx context.Context, f domain.RequestListFilter) ([]*entity.ApprovalRequest, int, error) {
-	return s.repo.ListRequests(ctx, f)
+	all, _, err := s.repo.ListRequests(ctx, f)
+	if err != nil {
+		return nil, 0, err
+	}
+	if f.ViewerID == uuid.Nil {
+		return all, len(all), nil
+	}
+	var permitted []*entity.ApprovalRequest
+	for _, r := range all {
+		if s.checkSubjectView(ctx, f.ViewerID, r.SubjectType, r.SubjectID) == nil {
+			permitted = append(permitted, r)
+		}
+	}
+	return permitted, len(permitted), nil
 }
 
 // GetApprovalRequest returns the full request detail for a viewer.
@@ -679,6 +897,9 @@ func (s *ApprovalRuntimeService) GetApprovalRequest(ctx context.Context, request
 	}
 	if req == nil {
 		return nil, domain.NotFound("approval request not found")
+	}
+	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
+		return nil, err
 	}
 	tasks, err := s.repo.ListTasksByRequest(ctx, requestID)
 	if err != nil {
@@ -694,17 +915,51 @@ func (s *ApprovalRuntimeService) GetApprovalRequest(ctx context.Context, request
 	}
 	detail := &RequestDetail{Request: req, Tasks: tasks, Events: events, Signatures: sigs}
 	for _, t := range tasks {
-		if t.Status == vo.TaskStatusPending && t.StageNumber == req.CurrentStageNumber &&
-			t.AssignedUserID != nil && *t.AssignedUserID == viewerID {
+		if t.Status != vo.TaskStatusPending || t.StageNumber != req.CurrentStageNumber || t.AssignedUserID == nil {
+			continue
+		}
+		if *t.AssignedUserID == viewerID {
 			detail.ViewerTask = t
 			break
 		}
+		// Also set ViewerTask if the viewer is a valid delegate for the task's assignee,
+		// mirroring the delegation check in authorizeAction so buttons appear for delegates.
+		if viewerID != req.SubmitterID {
+			del, _ := s.delegate.ResolveDelegate(ctx, *t.AssignedUserID, req.ContractID, s.now())
+			if del != nil && del.DelegateUserID == viewerID {
+				detail.ViewerTask = t
+				break
+			}
+		}
 	}
+	detail.AllowedActions = computeAllowedActions(req, detail.ViewerTask, viewerID)
 	return detail, nil
 }
 
+// computeAllowedActions returns the business actions the given viewer can take
+// on a request. Function-permission enforcement remains at the route middleware;
+// this set is about per-request business eligibility (maker-checker, ownership,
+// status machine). Frontend renders buttons based on this list.
+func computeAllowedActions(req *entity.ApprovalRequest, viewerTask *entity.ApprovalTask, viewerID uuid.UUID) []string {
+	var actions []string
+	if req.Status == vo.RequestStatusPendingApproval && viewerTask != nil {
+		actions = append(actions, "approve", "reject")
+	}
+	if !req.Status.IsTerminal() && req.SubmitterID == viewerID {
+		actions = append(actions, "withdraw")
+	}
+	if !req.Status.IsTerminal() {
+		actions = append(actions, "cancel")
+	}
+	if req.Status == vo.RequestStatusApproved {
+		actions = append(actions, "revoke")
+	}
+	return actions
+}
+
 // GetApprovalTimeline returns the immutable ordered events of a request.
-func (s *ApprovalRuntimeService) GetApprovalTimeline(ctx context.Context, requestID uuid.UUID) ([]*entity.ApprovalEvent, error) {
+// viewerID must be non-zero; the viewer must have subject view access.
+func (s *ApprovalRuntimeService) GetApprovalTimeline(ctx context.Context, requestID, viewerID uuid.UUID) ([]*entity.ApprovalEvent, error) {
 	req, err := s.repo.GetRequest(ctx, requestID)
 	if err != nil {
 		return nil, err
@@ -712,15 +967,59 @@ func (s *ApprovalRuntimeService) GetApprovalTimeline(ctx context.Context, reques
 	if req == nil {
 		return nil, domain.NotFound("approval request not found")
 	}
+	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListEvents(ctx, requestID)
 }
 
 // GetSubjectApprovalStatus returns the latest request for a subject, or nil.
-func (s *ApprovalRuntimeService) GetSubjectApprovalStatus(ctx context.Context, st vo.SubjectType, subjectID uuid.UUID) (*entity.ApprovalRequest, error) {
+// Pass uuid.Nil as viewerID to skip the access check — for internal cross-module
+// enrichment calls (e.g. GetApprovalStage badge population). All user-facing
+// calls must supply a real viewerID so the port is enforced.
+func (s *ApprovalRuntimeService) GetSubjectApprovalStatus(ctx context.Context, st vo.SubjectType, subjectID, viewerID uuid.UUID) (*entity.ApprovalRequest, error) {
 	if !vo.ValidSubjectType(st) {
 		return nil, domain.Validation("invalid subject_type")
 	}
-	return s.repo.GetLatestBySubject(ctx, st, subjectID)
+	req, err := s.repo.GetLatestBySubject(ctx, st, subjectID)
+	if err != nil {
+		return nil, err
+	}
+	if req != nil && viewerID != uuid.Nil {
+		if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
+			return nil, err
+		}
+	}
+	return req, nil
+}
+
+// ApproveByRequest resolves the actor's pending task on the given approval
+// request and approves it. Used by investment batch-approve endpoints that
+// supply request IDs rather than task IDs.
+func (s *ApprovalRuntimeService) ApproveByRequest(ctx context.Context, requestID, actorID uuid.UUID, comment string) error {
+	task, err := s.repo.FindPendingTaskForActor(ctx, requestID, actorID)
+	if err != nil {
+		return err
+	}
+	if task == nil {
+		return domain.Forbidden("no pending approval task assigned to you for this request")
+	}
+	_, err = s.ApproveTask(ctx, task.ID, actorID, comment)
+	return err
+}
+
+// RejectByRequest resolves the actor's pending task on the given approval
+// request and rejects it. Used by investment batch-reject endpoints.
+func (s *ApprovalRuntimeService) RejectByRequest(ctx context.Context, requestID, actorID uuid.UUID, reason string) error {
+	task, err := s.repo.FindPendingTaskForActor(ctx, requestID, actorID)
+	if err != nil {
+		return err
+	}
+	if task == nil {
+		return domain.Forbidden("no pending approval task assigned to you for this request")
+	}
+	_, err = s.RejectTask(ctx, task.ID, actorID, reason)
+	return err
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
