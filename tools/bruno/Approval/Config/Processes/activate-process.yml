@@ -1,0 +1,21 @@
+info:
+  name: activate-process
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/processes/:processId/activate"
+  params:
+    - name: processId
+      value: "{{approval-process-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

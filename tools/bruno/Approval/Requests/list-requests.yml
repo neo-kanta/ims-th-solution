@@ -1,0 +1,42 @@
+info:
+  name: list-requests
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{approval-base-url}}/requests?status={{approval-status}}&process_type={{approval-process-type}}&page={{approval-page}}&limit={{approval-limit}}"
+  params:
+    - name: status
+      value: "{{approval-status}}"
+      type: query
+    - name: process_type
+      value: "{{approval-process-type}}"
+      type: query
+    - name: page
+      value: "{{approval-page}}"
+      type: query
+    - name: limit
+      value: "{{approval-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("approval-request-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

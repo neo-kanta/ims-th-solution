@@ -1,0 +1,30 @@
+info:
+  name: update-group
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{approval-config-base-url}}/groups/:groupId"
+  params:
+    - name: groupId
+      value: "{{approval-group-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "group_code": "BRUNO-GRP-001",
+        "group_name": "Bruno Approval Group Updated",
+        "is_active": true,
+        "remarks": "Updated from Bruno approval config coverage sync."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

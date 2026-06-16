@@ -1,0 +1,43 @@
+info:
+  name: create-import-batch
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{market-data-base-url}}/import-batches"
+  body:
+    type: json
+    data: |-
+      {
+        "import_type": "{{market-data-import-type}}",
+        "provider": "{{market-data-provider}}",
+        "symbols": [
+          "{{market-data-symbol}}"
+        ],
+        "chunk_size": {{market-data-chunk-size}},
+        "history_limit": {{market-data-history-limit}},
+        "include_history": true,
+        "include_quote": true,
+        "idempotency_key": "bruno-import-batch-001"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("market-data-import-batch-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

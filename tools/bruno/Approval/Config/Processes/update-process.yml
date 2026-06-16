@@ -1,0 +1,46 @@
+info:
+  name: update-process
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{approval-config-base-url}}/processes/:processId"
+  params:
+    - name: processId
+      value: "{{approval-process-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "process_code": "BRUNO-APPROVAL-001",
+        "process_name": "Bruno Approval Process Updated",
+        "process_type": "{{approval-process-type}}",
+        "contract_id": "{{workflow-contract-id}}",
+        "contract_type": "WORKFLOW_DAY",
+        "effective_date": "{{workflow-business-date}}",
+        "group_approval_enabled": true,
+        "require_team_approval": true,
+        "is_active": true,
+        "stages": [
+          {
+            "stage_number": 1,
+            "stage_name": "Manager Review",
+            "approval_group_id": "{{approval-group-id}}",
+            "approver_mode": "GROUP",
+            "approver_user_id": "{{user_id}}",
+            "required_approval_count": 1,
+            "is_final_stage": true
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

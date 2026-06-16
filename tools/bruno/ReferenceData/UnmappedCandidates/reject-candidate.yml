@@ -1,0 +1,27 @@
+info:
+  name: reject-candidate
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{reference-data-base-url}}/unmapped-candidates/:candidateId/reject"
+  params:
+    - name: candidateId
+      value: "{{reference-data-candidate-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Rejected from Bruno sample workflow."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

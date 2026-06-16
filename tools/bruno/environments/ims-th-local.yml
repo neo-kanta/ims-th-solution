@@ -303,7 +303,7 @@ variables:
   - name: workflow-seed-note
     value: "Seeded workflow contracts: DAY_OPEN=...001, MANAGER_APPROVED=...002, TRANSACTION_CLOSED=...003, ACCOUNTING_CLOSED=...004"
   - name: workflow-business-date
-    value: 2026-04-24
+    value: 2026-06-16
   - name: workflow-action
     value: APPROVE
   - name: workflow-reason
@@ -316,3 +316,75 @@ variables:
     value: Triggered from Bruno.
   - name: workflow-idempotency-key
     value: ""
+  - name: workflow-contract-code
+    value: IMS-DEMO-001
+  - name: workflow-operation-type
+    value: START_INVESTMENT_DAY
+  - name: approval-config-base-url
+    value: http://localhost:8080/api/v1/approval-config
+  - name: approval-base-url
+    value: http://localhost:8080/api/v1/approvals
+  - name: approval-group-id
+    value: ""
+  - name: approval-group-member-id
+    value: ""
+  - name: approval-process-id
+    value: ""
+  - name: approval-team-id
+    value: ""
+  - name: approval-team-member-id
+    value: ""
+  - name: approval-request-id
+    value: ""
+  - name: approval-task-id
+    value: ""
+  - name: approval-page
+    value: "1"
+  - name: approval-limit
+    value: "20"
+  - name: approval-status
+    value: PENDING
+  - name: approval-active-only
+    value: "true"
+  - name: approval-process-type
+    value: PORTFOLIO_ONBOARDING
+  - name: chat-base-url
+    value: http://localhost:8080/api/v1/chat
+  - name: chat-session-id
+    value: ""
+  - name: chat-page
+    value: "1"
+  - name: chat-limit
+    value: "20"
+  - name: chat-model
+    value: claude-haiku-4-5-20251001
+  - name: chat-provider
+    value: anthropic
+  - name: chat-message
+    value: Summarize the latest sample portfolio state in one sentence.
+  - name: reference-data-base-url
+    value: http://localhost:8080/api/v1/reference-data
+  - name: reference-data-security-id
+    value: ""
+  - name: reference-data-mapping-id
+    value: ""
+  - name: reference-data-candidate-id
+    value: ""
+  - name: reference-data-query
+    value: BRUNO
+  - name: reference-data-asset-type
+    value: EQUITY
+  - name: reference-data-provider
+    value: bloomberg
+  - name: reference-data-status
+    value: ACTIVE
+  - name: reference-data-limit
+    value: "20"
+  - name: market-data-import-batch-id
+    value: ""
+  - name: market-data-import-type
+    value: watchlist
+  - name: market-data-chunk-size
+    value: "25"
+  - name: market-data-screen-query
+    value: technology

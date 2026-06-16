@@ -1,0 +1,34 @@
+info:
+  name: update-group-member
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: "{{approval-config-base-url}}/groups/:groupId/members/:memberId"
+  params:
+    - name: groupId
+      value: "{{approval-group-id}}"
+      type: path
+    - name: memberId
+      value: "{{approval-group-member-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "user_id": "{{user_id}}",
+        "member_type": "USER",
+        "priority_order": 1,
+        "status": "APPROVED",
+        "is_active": true
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

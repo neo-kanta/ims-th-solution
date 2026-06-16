@@ -1,0 +1,37 @@
+info:
+  name: create-group
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/groups"
+  body:
+    type: json
+    data: |-
+      {
+        "group_code": "BRUNO-GRP-001",
+        "group_name": "Bruno Approval Group",
+        "is_active": true,
+        "remarks": "Created from Bruno approval config coverage sync."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-group-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

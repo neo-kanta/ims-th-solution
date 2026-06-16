@@ -1,0 +1,27 @@
+info:
+  name: map-candidate
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{reference-data-base-url}}/unmapped-candidates/:candidateId/map"
+  params:
+    - name: candidateId
+      value: "{{reference-data-candidate-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "security_id": "{{reference-data-security-id}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

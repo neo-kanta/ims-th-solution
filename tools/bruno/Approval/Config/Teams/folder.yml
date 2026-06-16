@@ -1,0 +1,6 @@
+info:
+  name: Teams
+  type: folder
+
+request:
+  auth: inherit

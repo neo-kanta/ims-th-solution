@@ -1,0 +1,28 @@
+info:
+  name: create-team-contract
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/teams/:teamId/contracts"
+  params:
+    - name: teamId
+      value: "{{approval-team-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "contract_id": "{{workflow-contract-id}}",
+        "effective_date": "{{workflow-business-date}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

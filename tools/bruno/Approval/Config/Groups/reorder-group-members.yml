@@ -1,0 +1,29 @@
+info:
+  name: reorder-group-members
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/groups/:groupId/members/reorder"
+  params:
+    - name: groupId
+      value: "{{approval-group-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "member_ids": [
+          "{{approval-group-member-id}}"
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

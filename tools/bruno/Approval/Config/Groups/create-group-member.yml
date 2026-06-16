@@ -1,0 +1,42 @@
+info:
+  name: create-group-member
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/groups/:groupId/members"
+  params:
+    - name: groupId
+      value: "{{approval-group-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "user_id": "{{user_id}}",
+        "member_type": "USER",
+        "priority_order": 1,
+        "status": "PENDING",
+        "is_active": true
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-group-member-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

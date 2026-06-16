@@ -1,0 +1,21 @@
+info:
+  name: withdraw-request
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/requests/:requestId/withdraw"
+  params:
+    - name: requestId
+      value: "{{approval-request-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

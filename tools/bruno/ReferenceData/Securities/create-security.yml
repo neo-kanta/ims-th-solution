@@ -1,0 +1,46 @@
+info:
+  name: create-security
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{reference-data-base-url}}/securities"
+  body:
+    type: json
+    data: |-
+      {
+        "asset_type": "{{reference-data-asset-type}}",
+        "auto_build_ims_symbol": false,
+        "country_code": "TH",
+        "currency": "THB",
+        "cusip": "BRUNO1234",
+        "display_symbol": "BRUNO-RD",
+        "exchange_mic": "XBKK",
+        "figi": "BBG000BRUNO1",
+        "ims_symbol": "BRUNO-RD",
+        "isin": "TH000BRUNO01",
+        "name": "Bruno Reference Security",
+        "primary_identifier": "BRUNO-RD",
+        "status": "{{reference-data-status}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("reference-data-security-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

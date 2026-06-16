@@ -1,0 +1,21 @@
+info:
+  name: list-import-batch-errors
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "{{market-data-base-url}}/import-batches/:batchId/errors"
+  params:
+    - name: batchId
+      value: "{{market-data-import-batch-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

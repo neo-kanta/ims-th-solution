@@ -1,0 +1,37 @@
+info:
+  name: update-security
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{reference-data-base-url}}/securities/:securityId"
+  params:
+    - name: securityId
+      value: "{{reference-data-security-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "asset_type": "{{reference-data-asset-type}}",
+        "country_code": "TH",
+        "currency": "THB",
+        "cusip": "BRUNO1234",
+        "display_symbol": "BRUNO-RD-UPD",
+        "exchange_mic": "XBKK",
+        "figi": "BBG000BRUNO1",
+        "isin": "TH000BRUNO01",
+        "name": "Bruno Reference Security Updated",
+        "primary_identifier": "BRUNO-RD-UPD",
+        "status": "ACTIVE"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
