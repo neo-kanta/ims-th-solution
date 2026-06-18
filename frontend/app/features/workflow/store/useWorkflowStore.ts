@@ -58,8 +58,9 @@ export interface WorkflowExecuteParams {
   attestationReason?: string;
 }
 
+const clients = new WeakMap<any, ImsOpenApiClient | null>();
+
 interface WorkflowStoreState {
-  client: ImsOpenApiClient | null;
   businessDate: string;
   state: WorkflowStateResponse | null;
   history: WorkflowTransitionEntry[];
@@ -73,7 +74,6 @@ interface WorkflowStoreState {
 
 export const useWorkflowStore = defineStore("workflow", {
   state: (): WorkflowStoreState => ({
-    client: null,
     businessDate: todayBangkokIso(),
     state: null,
     history: [],
@@ -86,6 +86,9 @@ export const useWorkflowStore = defineStore("workflow", {
   }),
 
   getters: {
+    client(): ImsOpenApiClient | null {
+      return clients.get(this) ?? null;
+    },
     isPersisted: (s) => Boolean(s.state?.persisted),
     currentStateCode: (s) => s.state?.currentState ?? "NOT_STARTED",
     allowedActions: (s): readonly string[] => s.state?.allowedOperations ?? [],
@@ -104,7 +107,7 @@ export const useWorkflowStore = defineStore("workflow", {
   actions: {
     /** Inject the typed OpenAPI client. Called from app code; tests pass a fake. */
     setClient(client: ImsOpenApiClient | null) {
-      this.client = client;
+      clients.set(this, client);
     },
 
     setBusinessDate(date: string) {

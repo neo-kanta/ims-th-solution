@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PermissionRequestListScreen from "~/features/permissions/components/PermissionRequestListScreen.vue";
+
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "permission"],

@@ -13,6 +13,7 @@ import ApprovalTeamForm from "~/features/approval/components/ApprovalTeamForm.vu
 import ApprovalTeamMemberTable from "~/features/approval/components/ApprovalTeamMemberTable.vue";
 import { useApprovalTeams } from "~/features/approval/composables/useApprovalConfig";
 import { approvalApi, approvalErrorMessage } from "~/features/approval/services/approvalApi";
+import { useComplianceUserDirectory } from "~/features/compliance/composables/useComplianceUserDirectory";
 import type {
   ApprovalTeam,
   ApprovalTeamContract,
@@ -29,6 +30,7 @@ definePageMeta({
 
 const { t } = useI18n();
 const { teams, loading, error, forbidden, fetchTeams } = useApprovalTeams();
+const userDirectory = useComplianceUserDirectory();
 
 const showForm = ref(false);
 const editing = ref<ApprovalTeam | null>(null);
@@ -123,7 +125,9 @@ function removeMember(memberId: string) {
   void runDetail(() => approvalApi.removeTeamMember(selected.value!.id!, memberId), "Failed to remove member.");
 }
 
-onMounted(reloadTeams);
+onMounted(async () => {
+  await Promise.all([reloadTeams(), userDirectory.ensureLoaded()]);
+});
 </script>
 
 <template>
@@ -191,7 +195,7 @@ onMounted(reloadTeams);
           </div>
 
           <h4 class="teams-page__subhead">Members</h4>
-          <ApprovalTeamMemberTable :members="members" :busy="detailBusy" @add="addMember" @remove="removeMember" />
+          <ApprovalTeamMemberTable :members="members" :users="userDirectory.items.value" :busy="detailBusy" @add="addMember" @remove="removeMember" />
           <p v-if="detailError" class="teams-page__error">{{ detailError }}</p>
         </template>
       </AppCard>

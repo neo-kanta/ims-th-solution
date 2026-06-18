@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PermissionRequestDetailScreen from "~/features/permissions/components/PermissionRequestDetailScreen.vue";
+
 const route = useRoute();
 
 definePageMeta({

@@ -57,7 +57,7 @@ const displayDate = computed(() => {
   const rawDate = hoveredPoint.value
     ? hoveredPoint.value.business_date
     : (props.payload?.series && props.payload.series.length > 0
-        ? props.payload.series[props.payload.series.length - 1].business_date
+        ? (props.payload.series[props.payload.series.length - 1]?.business_date || "")
         : props.summary?.business_date || "—");
   return formatDate(rawDate);
 });
@@ -68,10 +68,11 @@ function formatDate(dateStr: string): string {
     const parts = dateStr.split("-");
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
-      const day = parseInt(parts[2], 10).toString();
-      const year = parts[0];
+      const mIdx = parseInt(parts[1] || "", 10) - 1;
+      const monthStr = months[mIdx] || "";
+      const month = t(`holdings.months.${monthStr}` as any, monthStr);
+      const day = parseInt(parts[2] || "", 10).toString();
+      const year = parts[0] || "";
       return t("holdings.dateFormats.fullDate" as any, { month, day, year }, `${month} ${day}, ${year}`);
     }
   } catch (e) {}
@@ -109,6 +110,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   const first = items[0];
   const last = items[items.length - 1];
+  if (!first || !last) return;
   const active = document.activeElement as HTMLElement | null;
 
   if (event.shiftKey && (active === first || !containerRef.value?.contains(active))) {
@@ -299,7 +301,7 @@ onBeforeUnmount(() => {
         <div class="fc-overlay__footer-left">
           <span>{{ t("holdings.chartOverlay.businessDate", "BUSINESS DATE:") }} <strong>{{ summary?.business_date || '—' }}</strong></span>
           <span class="fc-overlay__footer-separator">•</span>
-          <span>{{ t("holdings.chartOverlay.lastUpdate", "LAST UPDATE:") }} <strong>{{ footer?.last_priced_at ? formatDate(footer.last_priced_at.split('T')[0]) + ' ' + footer.last_priced_at.split('T')[1].substring(0, 5) : '—' }}</strong></span>
+          <span>{{ t("holdings.chartOverlay.lastUpdate", "LAST UPDATE:") }} <strong>{{ footer?.last_priced_at ? formatDate(footer.last_priced_at.split('T')[0] || '') + ' ' + (footer.last_priced_at.split('T')[1]?.substring(0, 5) || '') : '—' }}</strong></span>
           <span class="fc-overlay__footer-separator">•</span>
           <span>{{ t("holdings.chartOverlay.provider", "PROVIDER:") }} <strong>{{ t("holdings.chartOverlay.providerValue", "TH-IMS Accounting Engine") }}</strong></span>
         </div>

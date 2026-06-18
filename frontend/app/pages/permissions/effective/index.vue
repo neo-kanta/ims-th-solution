@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import EffectivePermissionViewerScreen from "~/features/permissions/components/EffectivePermissionViewerScreen.vue";
+
 definePageMeta({
   layout: "dashboard",
   middleware: ["auth", "permission"],

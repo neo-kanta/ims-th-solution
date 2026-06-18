@@ -64,8 +64,6 @@ import { useSettingsUserMetrics } from "../composables/useSettingsUserMetrics";
 import { isRiskAuditEvent } from "../lib/audit";
 import {
   SETTINGS_API_CAPABILITIES,
-  SETTINGS_DEMO_DATA_GRANTS,
-  SETTINGS_DEMO_GROUPS,
   SETTINGS_FUNCTION_PERMISSION_ROWS,
   SETTINGS_NOTIFICATION_PREFERENCES,
   SETTINGS_PERMISSION_ACTIONS,
@@ -879,9 +877,7 @@ const derivedGroups = computed<SettingsGroupRole[]>(() => {
     }
   }
 
-  return groups.size > 0
-    ? Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name))
-    : SETTINGS_DEMO_GROUPS;
+  return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
 });
 const directoryCompleteForGroups = computed(
   () =>
@@ -900,6 +896,8 @@ const functionPermissionRows = computed<FunctionPermissionRow[]>(() => {
     permissions: { ...row.permissions },
   }));
 });
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const dataPermissionGrants = computed<DataPermissionGrant[]>(() => {
   const currentUser = authStore.user;
   const sessionGrants = authStore.permissions.contracts.map((contractId) => ({
@@ -908,13 +906,15 @@ const dataPermissionGrants = computed<DataPermissionGrant[]>(() => {
     userLabel:
       currentUser?.displayName ?? t("settings.console.common.currentSession"),
     contractId,
-    contractName: contractId,
+    contractName: UUID_PATTERN.test(contractId)
+      ? t("settings.console.dataPermissions.fundAccess", "Fund access")
+      : contractId,
     scope: "Read only" as const,
     source: "session" as const,
     updatedAt: t("settings.console.common.currentSession"),
   }));
 
-  return [...sessionGrants, ...SETTINGS_DEMO_DATA_GRANTS];
+  return sessionGrants;
 });
 
 const confirmDialog = computed(() => {

@@ -10,12 +10,19 @@ import AppCheckbox from "~/shared/ui/AppCheckbox.vue";
 import { APPROVER_MODES } from "../types";
 import type { ApprovalGroup, StageInput } from "../types";
 
-const props = defineProps<{ groups: ApprovalGroup[] }>();
+const props = defineProps<{
+  groups: ApprovalGroup[];
+  users?: Array<{ id: string; display_name?: string; username?: string }>;
+}>();
 
 const stages = defineModel<StageInput[]>({ default: () => [] });
 
 const groupOptions = computed(() =>
   props.groups.map((g) => ({ value: g.id ?? "", label: g.group_name || g.group_code || "" })),
+);
+
+const userOptions = computed(() =>
+  (props.users ?? []).map((u) => ({ value: u.id, label: u.display_name || u.username || u.id })),
 );
 
 function addStage() {
@@ -72,7 +79,8 @@ function needsCount(mode?: string): boolean {
           <AppSelect v-model="stage.approval_group_id" :options="groupOptions" placeholder="Select a group…" />
         </AppFormField>
         <AppFormField v-if="needsUser(stage.approver_mode)" label="Approver">
-          <AppInput :model-value="''" disabled placeholder="User selector source not available" />
+          <AppSelect v-if="users && users.length" v-model="stage.approver_user_id" :options="userOptions" placeholder="Select an approver…" />
+          <AppInput v-else v-model="stage.approver_user_id" placeholder="Enter user UUID…" />
         </AppFormField>
         <AppFormField v-if="needsCount(stage.approver_mode)" label="Required approvals">
           <AppInput v-model="stage.required_approval_count" type="number" />

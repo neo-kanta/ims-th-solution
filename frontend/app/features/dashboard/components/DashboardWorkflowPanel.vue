@@ -18,7 +18,7 @@
  *   - Confirmation dialog (stronger wording for cancel/rollback)
  *   - Recent operation history (audit timeline)
  */
-import { computed, ref, watch, type DeepReadonly } from "vue";
+import { computed, ref, watch, onMounted, type DeepReadonly } from "vue";
 
 import AppBadge from "~/shared/ui/AppBadge.vue";
 import AppButton from "~/shared/ui/AppButton.vue";
@@ -36,6 +36,7 @@ import {
   type WorkflowStateResponse,
 } from "../composables/useDashboardWorkflow";
 import type { WorkflowStateDTO } from "../types";
+import type { WorkflowAction } from "~/features/workflow/types";
 
 const props = defineProps<{
   workflowStates: WorkflowStateDTO[];
@@ -45,7 +46,6 @@ const { t } = useI18n();
 const authStore = useAuthStore();
 
 const {
-  contractId,
   businessDate,
   state,
   history,
@@ -54,8 +54,6 @@ const {
   executing,
   error,
   lastResult,
-  hasContract,
-  setContract,
   setBusinessDate,
   refresh,
   execute,
@@ -115,7 +113,7 @@ const STAGES: StageDefinition[] = [
 ];
 
 interface ActionOption {
-  value: NonNullable<WorkflowExecuteRequest["action"]>;
+  value: WorkflowAction;
   labelKey: AppTranslationKey;
   labelFallback: string;
   permission: string;
@@ -127,7 +125,7 @@ interface ActionOption {
 
 const ACTIONS: ActionOption[] = [
   {
-    value: "OPEN_DAY",
+    value: "START_INVESTMENT_DAY",
     labelKey: "dashboardWorkflow.actionOpenDay",
     labelFallback: "Investment Day Start",
     permission: "WORKFLOW_OPEN_DAY",
@@ -135,7 +133,7 @@ const ACTIONS: ActionOption[] = [
     requiresReason: false,
   },
   {
-    value: "APPROVE",
+    value: "MANAGER_APPROVE",
     labelKey: "dashboardWorkflow.actionApprove",
     labelFallback: "Manager Approval",
     permission: "WORKFLOW_APPROVE",
@@ -143,7 +141,7 @@ const ACTIONS: ActionOption[] = [
     requiresReason: false,
   },
   {
-    value: "CLOSE_TRANSACTIONS",
+    value: "CLOSE_TRANSACTION",
     labelKey: "dashboardWorkflow.actionCloseTransactions",
     labelFallback: "Transaction Closing",
     permission: "WORKFLOW_CLOSE_TRANSACTIONS",
@@ -159,7 +157,7 @@ const ACTIONS: ActionOption[] = [
     requiresReason: false,
   },
   {
-    value: "CANCEL_DAY_START",
+    value: "CANCEL_INVESTMENT_DAY",
     labelKey: "dashboardWorkflow.actionCancelDayStart",
     labelFallback: "Cancel Investment Day Start",
     permission: "WORKFLOW_CANCEL_DAY_START",
@@ -167,7 +165,7 @@ const ACTIONS: ActionOption[] = [
     requiresReason: true,
   },
   {
-    value: "CANCEL_APPROVAL",
+    value: "CANCEL_MANAGER_APPROVAL",
     labelKey: "dashboardWorkflow.actionCancelApproval",
     labelFallback: "Cancel Manager Approval",
     permission: "WORKFLOW_CANCEL_APPROVAL",
@@ -183,7 +181,7 @@ const ACTIONS: ActionOption[] = [
     requiresReason: true,
   },
   {
-    value: "ROLLBACK_ACCOUNTING_CLOSE",
+    value: "CANCEL_ACCOUNTING_CLOSE",
     labelKey: "dashboardWorkflow.actionRollbackAccountingClose",
     labelFallback: "Rollback Accounting Closing",
     permission: "WORKFLOW_ROLLBACK_ACCOUNTING_CLOSE",
@@ -204,49 +202,12 @@ const hasViewPermission = computed(() =>
 // Contract picker — derived from the integration snapshot.
 // ─────────────────────────────────────────────────────────────────────────
 
-const contractSearch = ref("");
-
-const contractOptions = computed(() => {
-  const seen = new Map<string, WorkflowStateDTO>();
-  for (const row of props.workflowStates) {
-    if (row.contractId && !seen.has(row.contractId)) {
-      seen.set(row.contractId, row);
-    }
-  }
-  return Array.from(seen.values());
+onMounted(() => {
+  void refresh();
 });
-
-const filteredContracts = computed(() => {
-  const needle = contractSearch.value.trim().toLowerCase();
-  if (!needle) return contractOptions.value;
-  return contractOptions.value.filter((c) =>
-    c.contractId.toLowerCase().includes(needle),
-  );
-});
-
-watch(
-  contractOptions,
-  (options) => {
-    if (!contractId.value && options.length > 0) {
-      const first = options[0];
-      if (first?.contractId) {
-        setContract(first.contractId);
-        void refresh();
-      }
-    }
-  },
-  { immediate: true },
-);
-
-watch(
-  () => contractId.value,
-  (id) => {
-    if (id) void refresh();
-  },
-);
 
 watch(businessDate, () => {
-  if (contractId.value) void refresh();
+  void refresh();
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -274,35 +235,22 @@ function stageStatusOf(
 
 type StateLike = DeepReadonly<WorkflowStateResponse> | null;
 
+function findTimelineEntry(stage: StageKey, timeline?: readonly any[] | null) {
+  if (!timeline) return null;
+  const targetState = stage === "DAY_OPEN" ? "INVESTMENT_DAY_STARTED" : stage;
+  return timeline.find((t) => t.toState === targetState) ?? null;
+}
+
 function stageTimestamp(stage: StageKey, s: StateLike): string | null {
   if (!s) return null;
-  switch (stage) {
-    case "DAY_OPEN":
-      return s.openedAt ?? null;
-    case "MANAGER_APPROVED":
-      return s.managerApprovedAt ?? null;
-    case "TRANSACTION_CLOSED":
-      return s.transactionClosedAt ?? null;
-    case "ACCOUNTING_CLOSED":
-      return s.accountingClosedAt ?? null;
-    default:
-      return null;
-  }
+  const entry = findTimelineEntry(stage, s.timeline);
+  return entry?.executedAt ?? null;
 }
 
 function stageActor(stage: StageKey, s: StateLike): string | null {
   if (!s) return null;
-  switch (stage) {
-    case "DAY_OPEN":
-      return s.openedBy ?? null;
-    case "MANAGER_APPROVED":
-      return s.managerApprovedBy ?? null;
-    default:
-      // Backend doesn't surface a separate actor for closing transitions yet —
-      // they live in the history. Stage card stays empty; the timeline below
-      // shows who closed/locked the day.
-      return null;
-  }
+  const entry = findTimelineEntry(stage, s.timeline);
+  return entry?.executedByUsername || entry?.executedByAccountCode || null;
 }
 
 const stageCards = computed<StageCardModel[]>(() => {
@@ -359,14 +307,14 @@ function formatTimestamp(value: string | null): string {
 // ─────────────────────────────────────────────────────────────────────────
 
 const allowedActionSet = computed(
-  () => new Set<string>(state.value?.allowedActions ?? []),
+  () => new Set<string>(state.value?.allowedOperations ?? []),
 );
 
 const visibleActions = computed(() => ACTIONS.filter(
   (a) => allowedActionSet.value.has(a.value),
 ));
 
-const selectedAction = ref<NonNullable<WorkflowExecuteRequest["action"]> | "">("");
+const selectedAction = ref<WorkflowAction | "">("");
 const reasonInput = ref("");
 const notesInput = ref("");
 const zeroAttestationInput = ref(false);
@@ -405,13 +353,12 @@ const reasonValid = computed(() => {
 });
 
 const attestationValid = computed(() => {
-  if (selectedAction.value !== "APPROVE") return true;
+  if (selectedAction.value !== "MANAGER_APPROVE") return true;
   if (!zeroAttestationInput.value) return true;
   return attestationReasonInput.value.trim().length >= 30;
 });
 
 const canSubmit = computed(() => {
-  if (!hasContract.value) return false;
   if (!selectedAction.value) return false;
   if (!hasActionPermission.value) return false;
   if (!reasonValid.value) return false;
@@ -421,16 +368,10 @@ const canSubmit = computed(() => {
 });
 
 const disabledReason = computed(() => {
-  if (!hasContract.value) {
-    return t(
-      "dashboardWorkflow.disabledNoContract",
-      "Select a contract to start.",
-    );
-  }
   if (visibleActions.value.length === 0) {
-    const blockers = state.value?.blockingReasons ?? [];
+    const blockers = state.value?.blockedReasons ?? [];
     if (blockers.length > 0) {
-      return blockers.map((b) => b.message).join(" · ");
+      return blockers.map((b: any) => b.message).join(" · ");
     }
     return t(
       "dashboardWorkflow.disabledNoActions",
@@ -532,18 +473,14 @@ const confirmDescription = computed(() => {
 
 async function handleConfirm() {
   if (!selectedAction.value) return;
-  const payload: WorkflowExecuteRequest = {
-    action: selectedAction.value,
-    businessDate: businessDate.value,
+  const payload = {
+    operationType: selectedAction.value,
+    businessDate: businessDate.value || "",
+    reason: reasonInput.value.trim() || undefined,
+    notes: notesInput.value.trim() || undefined,
+    zeroTransactionAttestation: selectedAction.value === "MANAGER_APPROVE" ? zeroAttestationInput.value : undefined,
+    attestationReason: (selectedAction.value === "MANAGER_APPROVE" && zeroAttestationInput.value) ? attestationReasonInput.value.trim() : undefined,
   };
-  if (reasonInput.value.trim()) payload.reason = reasonInput.value.trim();
-  if (notesInput.value.trim()) payload.notes = notesInput.value.trim();
-  if (selectedAction.value === "APPROVE") {
-    payload.zeroTransactionAttestation = zeroAttestationInput.value;
-    if (zeroAttestationInput.value) {
-      payload.attestationReason = attestationReasonInput.value.trim();
-    }
-  }
 
   const ok = await execute(payload);
   if (ok) {
@@ -562,8 +499,8 @@ async function handleConfirm() {
 const recentHistory = computed(() => {
   const items = [...history.value];
   items.sort((a, b) => {
-    const ta = a.occurredAt ? Date.parse(a.occurredAt) : 0;
-    const tb = b.occurredAt ? Date.parse(b.occurredAt) : 0;
+    const ta = a.executedAt ? Date.parse(a.executedAt) : 0;
+    const tb = b.executedAt ? Date.parse(b.executedAt) : 0;
     return tb - ta;
   });
   return items.slice(0, 10);
@@ -578,13 +515,332 @@ function actionLabel(action: string | undefined): string {
 </script>
 
 <template>
+  <AppCard
+    class="workflow-panel"
+    :title="t('dashboardWorkflow.title', 'Workflow Operations')"
+    :subtitle="
+      t(
+        'dashboardWorkflow.subtitle',
+        'Execute and review the contract business-day state machine.',
+      )
+    "
+  >
+    <template #header-actions>
+      <AppButton
+        variant="secondary"
+        size="sm"
+        :loading="loadingState"
+        @click="refresh"
+      >
+        <AppIcon name="sync" size="sm" />
+        <span>{{ t("dashboardWorkflow.refresh", "Refresh") }}</span>
+      </AppButton>
+    </template>
 
+    <div v-if="!hasViewPermission" class="workflow-panel__notice is-warning">
+      <AppIcon name="warning" size="sm" />
+      <span>
+        {{
+          t(
+            'dashboardWorkflow.noViewPermission',
+            "You don't have permission to view workflow state (WORKFLOW_VIEW)."
+          )
+        }}
+      </span>
+    </div>
+
+    <div v-else class="workflow-panel__layout">
+      <!-- Main -->
+      <section class="workflow-panel__main">
+        <header class="workflow-panel__main-header">
+          <div class="workflow-panel__date-control">
+            <label class="workflow-panel__label" for="workflow-business-date">
+              {{ t("dashboardWorkflow.businessDate", "Business date") }}
+            </label>
+            <input
+              id="workflow-business-date"
+              type="date"
+              class="workflow-panel__input"
+              :value="businessDate"
+              @change="setBusinessDate(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+        </header>
+
+        <!-- Stage cards -->
+        <div class="workflow-panel__stages">
+          <div
+            v-for="card in stageCards"
+            :key="card.key"
+            class="workflow-stage"
+            :class="`is-${card.status}`"
+          >
+            <div class="workflow-stage__header">
+              <span class="workflow-stage__title">{{ card.label }}</span>
+              <AppBadge :variant="stageBadgeVariant[card.status] as any" size="sm" dot>
+                {{ statusLabel(card.status) }}
+              </AppBadge>
+            </div>
+            <dl class="workflow-stage__body">
+              <div>
+                <dt>{{ t("dashboardWorkflow.stageTimestamp", "Time") }}</dt>
+                <dd>{{ formatTimestamp(card.timestamp) }}</dd>
+              </div>
+              <div>
+                <dt>{{ t("dashboardWorkflow.stagePersonnel", "Personnel") }}</dt>
+                <dd>{{ card.actor ?? "—" }}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- Blocking reasons -->
+        <div
+          v-if="state?.blockedReasons?.length"
+          class="workflow-panel__notice is-warning"
+        >
+          <AppIcon name="warning" size="sm" />
+          <div>
+            <div class="workflow-panel__notice-title">
+              {{
+                t(
+                  "dashboardWorkflow.blockingTitle",
+                  "Backend reports blockers"
+                )
+              }}
+            </div>
+            <ul class="workflow-panel__notice-list">
+              <li
+                v-for="(b, idx) in state.blockedReasons"
+                :key="`${b.code}-${idx}`"
+              >
+                <strong>{{ b.code }}:</strong> {{ b.message }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Operation form -->
+        <form
+          class="workflow-panel__form"
+          @submit.prevent="openConfirm"
+        >
+          <div class="workflow-panel__form-row">
+            <div class="workflow-panel__field">
+              <label class="workflow-panel__label" for="workflow-action">
+                {{ t("dashboardWorkflow.operation", "Operation") }}
+              </label>
+              <select
+                id="workflow-action"
+                v-model="selectedAction"
+                class="workflow-panel__input"
+                :disabled="visibleActions.length === 0"
+              >
+                <option value="">
+                  {{ t("dashboardWorkflow.chooseOperation", "Choose operation…") }}
+                </option>
+                <option
+                  v-for="opt in visibleActions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ t(opt.labelKey, opt.labelFallback) }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div
+            v-if="reasonRequired"
+            class="workflow-panel__field"
+          >
+            <label class="workflow-panel__label" for="workflow-reason">
+              {{ t("dashboardWorkflow.reason", "Reason (min 20 chars)") }}
+            </label>
+            <textarea
+              id="workflow-reason"
+              v-model="reasonInput"
+              rows="2"
+              class="workflow-panel__input"
+              :placeholder="
+                t(
+                  'dashboardWorkflow.reasonPlaceholder',
+                  'Explain why this cancellation/rollback is required…'
+                )
+              "
+            />
+          </div>
+
+          <div
+            v-if="selectedAction === 'MANAGER_APPROVE'"
+            class="workflow-panel__field"
+          >
+            <label class="workflow-panel__checkbox">
+              <input v-model="zeroAttestationInput" type="checkbox" />
+              <span>
+                {{
+                  t(
+                    "dashboardWorkflow.zeroAttestation",
+                    "Zero-transaction day attestation"
+                  )
+                }}
+              </span>
+            </label>
+            <textarea
+              v-if="zeroAttestationInput"
+              v-model="attestationReasonInput"
+              rows="2"
+              class="workflow-panel__input"
+              :placeholder="
+                t(
+                  'dashboardWorkflow.attestationPlaceholder',
+                  'Attestation reason (min 30 chars)…'
+                )
+              "
+            />
+          </div>
+
+          <div
+            v-if="selectedAction === 'MANAGER_APPROVE'"
+            class="workflow-panel__field"
+          >
+            <label class="workflow-panel__label" for="workflow-notes">
+              {{ t("dashboardWorkflow.notes", "Notes (optional)") }}
+            </label>
+            <textarea
+              id="workflow-notes"
+              v-model="notesInput"
+              rows="2"
+              class="workflow-panel__input"
+            />
+          </div>
+
+          <div class="workflow-panel__form-actions">
+            <div v-if="disabledReason" class="workflow-panel__help">
+              <AppIcon name="info" size="xs" />
+              <span>{{ disabledReason }}</span>
+            </div>
+            <AppButton
+              type="submit"
+              :variant="
+                selectedActionOption?.tone === 'danger'
+                  ? 'danger'
+                  : selectedActionOption?.tone === 'warning'
+                    ? 'warning'
+                    : 'primary'
+              "
+              size="sm"
+              :disabled="!canSubmit"
+              :loading="executing"
+            >
+              <AppIcon name="check" size="xs" />
+              <span>
+                {{ t("dashboardWorkflow.executeOperation", "Execute operation") }}
+              </span>
+            </AppButton>
+          </div>
+        </form>
+
+        <!-- Result/error toasts -->
+        <div
+          v-if="error"
+          class="workflow-panel__notice is-danger"
+          role="alert"
+        >
+          <AppIcon name="warning" size="sm" />
+          <div>
+            <div class="workflow-panel__notice-title">
+              {{ t("dashboardWorkflow.errorTitle", "Operation failed") }}
+            </div>
+            <p>{{ error }}</p>
+          </div>
+        </div>
+
+        <div
+          v-if="lastResult"
+          class="workflow-panel__notice is-success"
+          role="status"
+        >
+          <AppIcon name="check" size="sm" />
+          <div>
+            <div class="workflow-panel__notice-title">
+              {{
+                t(
+                  "dashboardWorkflow.successTitle",
+                  "Workflow transition applied"
+                )
+              }}
+            </div>
+            <p>
+              {{ lastResult.fromState }} → {{ lastResult.toState }} ·
+              {{ formatTimestamp(lastResult.executedAt ?? null) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- History -->
+        <section class="workflow-panel__history">
+          <div class="workflow-panel__history-header">
+            <h3 class="workflow-panel__history-title">
+              {{ t("dashboardWorkflow.historyTitle", "Operation history") }}
+            </h3>
+            <span v-if="loadingHistory" class="workflow-panel__history-loading">
+              {{ t("dashboardWorkflow.loading", "Loading…") }}
+            </span>
+          </div>
+
+          <ol v-if="recentHistory.length" class="workflow-panel__timeline">
+            <li
+              v-for="entry in recentHistory"
+              :key="entry.transitionId"
+              class="workflow-panel__timeline-item"
+            >
+              <div class="workflow-panel__timeline-time">
+                {{ formatTimestamp(entry.executedAt ?? null) }}
+              </div>
+              <div class="workflow-panel__timeline-body">
+                <div class="workflow-panel__timeline-headline">
+                  <strong>{{ actionLabel(entry.operationType) }}</strong>
+                  <span class="workflow-panel__timeline-arrow">
+                    {{ entry.fromState }} → {{ entry.toState }}
+                  </span>
+                  <AppBadge v-if="entry.isAdminOverride" variant="warning" size="sm">
+                    Admin Override
+                  </AppBadge>
+                </div>
+                <div class="workflow-panel__timeline-meta">
+                  {{ entry.executedByUsername || entry.executedByAccountCode || "—" }}
+                  <span v-if="entry.reason"> · {{ entry.reason }}</span>
+                </div>
+              </div>
+            </li>
+          </ol>
+
+          <p v-else-if="!loadingHistory" class="workflow-panel__history-empty">
+            {{ t("dashboardWorkflow.historyEmpty", "No transitions yet for this date.") }}
+          </p>
+        </section>
+      </section>
+    </div>
+
+    <AppConfirmDialog
+      :open="confirmOpen"
+      :title="confirmTitle"
+      :description="confirmDescription"
+      :confirm-label="t('dashboardWorkflow.confirmExecute', 'Confirm and execute')"
+      cancel-label="Cancel"
+      :tone="confirmTone"
+      :loading="executing"
+      @cancel="closeConfirm"
+      @confirm="handleConfirm"
+    />
+  </AppCard>
 </template>
 
 <style scoped>
 .workflow-panel__layout {
   display: grid;
-  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: var(--space-5);
 }
 

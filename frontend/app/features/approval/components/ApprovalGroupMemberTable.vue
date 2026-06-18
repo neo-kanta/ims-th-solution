@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { reactive, computed } from "vue";
 
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppInput from "~/shared/ui/AppInput.vue";
@@ -12,8 +12,13 @@ import type { ApprovalGroupMember, GroupMemberInput } from "../types";
 
 const props = defineProps<{
   members: ApprovalGroupMember[];
+  users?: Array<{ id: string; display_name?: string; username?: string }>;
   busy?: boolean;
 }>();
+
+const userOptions = computed(() =>
+  (props.users ?? []).map((u) => ({ value: u.id, label: u.display_name || u.username || u.id })),
+);
 
 const emit = defineEmits<{
   add: [payload: GroupMemberInput];
@@ -142,7 +147,8 @@ function statusKeyword(status?: string): string {
       <h4 class="member-table__add-title">Add Group Member</h4>
       <div class="member-table__add-grid">
         <AppFormField label="User">
-          <AppInput v-model="draft.user_id" placeholder="User selector source not available" disabled />
+          <AppSelect v-if="users && users.length" v-model="draft.user_id" :options="userOptions" placeholder="Select a user…" />
+          <AppInput v-else v-model="draft.user_id" placeholder="Enter user UUID…" />
         </AppFormField>
         <AppFormField label="Member Type">
           <AppSelect v-model="draft.member_type" :options="[...GROUP_MEMBER_TYPES]" />

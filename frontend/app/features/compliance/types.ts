@@ -197,10 +197,9 @@ export interface ComplianceOverride {
   createdAt: string;
 }
 
-/** Mirrors handler.OverrideRequest. `approved_by` is optional. */
+/** Mirrors handler.OverrideRequest. Actor is derived from JWT on the backend — never sent in body. */
 export interface ComplianceOverrideRequest {
   reason: string;
-  approved_by?: string;
 }
 
 /**

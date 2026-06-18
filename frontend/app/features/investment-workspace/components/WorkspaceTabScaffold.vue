@@ -4,15 +4,14 @@ import { computed, onMounted, ref } from "vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 import { useI18n } from "~/composables/useI18n";
 import FundWorkspaceHeader from "./FundWorkspaceHeader.vue";
-import FundWorkspaceTabs from "./FundWorkspaceTabs.vue";
 import { useFundWorkspace } from "../composables/useFundWorkspace";
 import type { WorkspaceTab } from "../types";
 
 /**
- * Shared shell for the 6 non-Holdings workspace tabs. Renders the same
- * fund header + tab bar so the user can navigate, then a single empty
- * "coming next" card. Replace this with the real implementation per tab
- * in future milestones.
+ * Shared shell for the non-Holdings workspace tabs. Renders the same fund
+ * header so the user can orient themselves, then a single empty
+ * "not configured" card. Numbers (watch/star/tab counts) come from the live
+ * fund record only — we never invent counts to make the page feel populated.
  */
 
 const props = defineProps<{
@@ -21,15 +20,20 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { funds, activeFund, loadFunds } = useFundWorkspace();
+const { activeFund, loadFunds } = useFundWorkspace();
 
 const tabLabel = computed(() =>
   t(`holdings.workspaceTabs.${props.tab}` as any, props.tab),
 );
 
-const scaffoldTitle = computed(() =>
-  t("holdings.scaffold.title", { tab: tabLabel.value }, `${tabLabel.value} for fund-alpha`),
-);
+const scaffoldTitle = computed(() => {
+  const fundName = activeFund.value?.short_name || activeFund.value?.code || "";
+  return t(
+    "holdings.scaffold.title",
+    { tab: tabLabel.value },
+    fundName ? `${tabLabel.value} for ${fundName}` : tabLabel.value,
+  );
+});
 
 const headerMissing = ref<string | null>(null);
 
@@ -44,23 +48,38 @@ onMounted(async () => {
 
 <template>
   <section class="ws-scaffold">
-    <FundWorkspaceHeader v-if="activeFund" :header="{
-      code: activeFund.code,
-      short_name: activeFund.short_name,
-      contract_code: activeFund.contract_code,
-      privacy: activeFund.privacy,
-      watch_count: 14,
-      star_count: 38,
-      subscribed: false,
-      tab_counts: { stages: 7, decisions: 23, compliance: 2 },
-    }" />
-
-
+    <FundWorkspaceHeader
+      v-if="activeFund"
+      :header="{
+        code: activeFund.code,
+        short_name: activeFund.short_name,
+        contract_code: activeFund.contract_code,
+        privacy: activeFund.privacy,
+        watch_count: 0,
+        star_count: 0,
+        subscribed: false,
+        tab_counts: {},
+      }"
+    />
 
     <AppCard :title="scaffoldTitle">
       <div class="ws-scaffold__body">
-        <p class="ws-scaffold__copy">{{ t("holdings.scaffold.description", "This workspace tab is scaffolded.") }}</p>
-        <span class="ws-scaffold__chip">{{ t("holdings.mockDisclaimer", "Showing mock data — backend integration pending.") }}</span>
+        <p class="ws-scaffold__copy">
+          {{
+            t(
+              "holdings.scaffold.description",
+              "This workspace tab is not yet wired to a backend endpoint.",
+            )
+          }}
+        </p>
+        <span class="ws-scaffold__chip">
+          {{
+            t(
+              "holdings.scaffold.notConfigured" as any,
+              "Not configured — backend integration pending.",
+            )
+          }}
+        </span>
       </div>
     </AppCard>
   </section>

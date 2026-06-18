@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useI18n } from "~/composables/useI18n";
+import { permissionWorkflowApi } from "~/features/permissions/services/permissionWorkflowApi";
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppIcon from "~/shared/ui/AppIcon.vue";
 import type { components } from "~/api/ims-api";
+import type { PermissionUserSummary } from "~/features/permissions/types";
 
 const props = defineProps<{
   approvers: components["schemas"]["DailyApproverEntry"][];
@@ -16,33 +18,99 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// Input states
-const accountCodeInput = ref("");
+// Search state
+const searchInput = ref("");
+const searchResults = ref<PermissionUserSummary[]>([]);
+const searchLoading = ref(false);
+const showDropdown = ref(false);
+const selectedUser = ref<PermissionUserSummary | null>(null);
+
+// Role input
 const roleInput = ref("");
 const addError = ref<string | null>(null);
 
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function onSearchInput() {
+  selectedUser.value = null;
+  const q = searchInput.value.trim();
+  if (!q || q.length < 2) {
+    searchResults.value = [];
+    showDropdown.value = false;
+    return;
+  }
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => doSearch(q), 300);
+}
+
+async function doSearch(q: string) {
+  searchLoading.value = true;
+  try {
+    const res = await permissionWorkflowApi.listUsers({ search: q, limit: 8 });
+    searchResults.value = res.items;
+    showDropdown.value = res.items.length > 0;
+  } catch {
+    searchResults.value = [];
+    showDropdown.value = false;
+  } finally {
+    searchLoading.value = false;
+  }
+}
+
+function selectUser(user: PermissionUserSummary) {
+  selectedUser.value = user;
+  searchInput.value = user.display_name || user.username;
+  searchResults.value = [];
+  showDropdown.value = false;
+  addError.value = null;
+}
+
+function clearSelected() {
+  selectedUser.value = null;
+  searchInput.value = "";
+  searchResults.value = [];
+  showDropdown.value = false;
+}
+
+function handleBlur() {
+  setTimeout(() => { showDropdown.value = false; }, 200);
+}
+
 function handleAdd() {
   addError.value = null;
-  const code = accountCodeInput.value.trim();
-  if (!code) {
+
+  let accountCode: string;
+  let displayName: string;
+
+  if (selectedUser.value) {
+    // accountCode must equal the JWT claims.Username so the backend matches it
+    accountCode = selectedUser.value.username;
+    displayName = selectedUser.value.display_name || selectedUser.value.username;
+  } else {
+    accountCode = searchInput.value.trim();
+    displayName = accountCode;
+  }
+
+  if (!accountCode) {
     addError.value = "Account code is required";
     return;
   }
 
-  // Prevent duplicates
-  if (props.approvers.some((app) => app.accountCode?.toLowerCase() === code.toLowerCase())) {
+  if (props.approvers.some((app) => app.accountCode?.toLowerCase() === accountCode.toLowerCase())) {
     addError.value = "Approver already added";
     return;
   }
 
   emit("add", {
-    accountCode: code,
+    accountCode,
     role: roleInput.value.trim() || undefined,
-    username: code, // Fallback username to accountCode for display
+    username: displayName,
   });
 
-  accountCodeInput.value = "";
+  searchInput.value = "";
+  selectedUser.value = null;
   roleInput.value = "";
+  searchResults.value = [];
 }
 </script>
 
@@ -88,15 +156,50 @@ function handleAdd() {
     <!-- Add New Approver Panel -->
     <div class="workflow-approver-add-form">
       <div class="add-form-fields">
-        <!-- Account Code manual input -->
-        <div class="add-form-field">
-          <input
-            v-model="accountCodeInput"
-            type="text"
-            class="add-form-field__input"
-            :placeholder="t('workflow.settings.accountCodePlaceholder', 'Account code (e.g. jsmith)')"
-            @keydown.enter.prevent="handleAdd"
-          />
+        <!-- User search with dropdown -->
+        <div class="add-form-field add-form-field--search">
+          <div class="search-wrapper">
+            <input
+              v-model="searchInput"
+              type="text"
+              class="add-form-field__input"
+              :class="{ 'is-selected': selectedUser }"
+              :placeholder="t('workflow.settings.accountCodePlaceholder', 'Search user (e.g. ben) or type account code')"
+              :disabled="!!selectedUser"
+              @input="onSearchInput"
+              @blur="handleBlur"
+              @keydown.enter.prevent="handleAdd"
+            />
+            <button
+              v-if="selectedUser"
+              type="button"
+              class="search-clear-btn"
+              aria-label="Clear selected user"
+              @click="clearSelected"
+            >
+              <AppIcon name="close" size="xs" />
+            </button>
+            <span v-if="searchLoading" class="search-spinner" />
+          </div>
+
+          <!-- Dropdown suggestions -->
+          <div v-if="showDropdown && searchResults.length > 0" class="search-dropdown">
+            <button
+              v-for="user in searchResults"
+              :key="user.id"
+              type="button"
+              class="search-dropdown__item"
+              @mousedown.prevent="selectUser(user)"
+            >
+              <span class="search-dropdown__name">{{ user.display_name || user.username }}</span>
+              <span class="search-dropdown__code">{{ user.username }}</span>
+            </button>
+          </div>
+
+          <!-- Selected user info -->
+          <p v-if="selectedUser" class="search-selected-hint">
+            Account code: <strong>{{ selectedUser.username }}</strong>
+          </p>
         </div>
 
         <!-- Role optional input -->
@@ -248,6 +351,18 @@ function handleAdd() {
   min-width: 150px;
 }
 
+.add-form-field--search {
+  position: relative;
+  min-width: 200px;
+  flex-grow: 2;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .add-form-field__input {
   width: 100%;
   border: 1px solid var(--border-default);
@@ -259,9 +374,96 @@ function handleAdd() {
   height: 32px;
 }
 
+.add-form-field__input.is-selected {
+  border-color: var(--color-primary-400);
+  background: var(--color-primary-50);
+  padding-right: var(--space-8);
+}
+
 .add-form-field__input:focus {
   outline: none;
   border-color: var(--color-primary-500);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: var(--space-2);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear-btn:hover {
+  background: var(--border-subtle);
+}
+
+.search-spinner {
+  position: absolute;
+  right: var(--space-2);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--color-primary-500);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.search-dropdown__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: var(--space-2);
+}
+
+.search-dropdown__item:hover {
+  background: var(--bg-row-hover);
+}
+
+.search-dropdown__name {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.search-dropdown__code {
+  font-size: 11px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--text-tertiary);
+}
+
+.search-selected-hint {
+  margin: var(--space-1) 0 0 0;
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .add-form-button {

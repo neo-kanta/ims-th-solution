@@ -12,7 +12,6 @@ import type {
 import type {
   PersonalActivityEvent,
   PersonalAppearancePreferences,
-  PersonalLeaveRequest,
   PersonalNotificationPreference,
   PersonalSettingsSectionId,
   PersonalWorkPreferences,
@@ -22,7 +21,7 @@ import { mfaApi } from "../services/mfaApi";
 import { personalSettingsApi } from "../services/personalSettingsApi";
 import PersonalActivityPanel from "./PersonalActivityPanel.vue";
 import PersonalAppearancePanel from "./PersonalAppearancePanel.vue";
-import PersonalLeaveDelegationPanel from "./PersonalLeaveDelegationPanel.vue";
+// PersonalLeaveDelegationPanel is intentionally not imported — Phase 2.
 import PersonalNotificationsPanel from "./PersonalNotificationsPanel.vue";
 import PersonalWorkPreferencesPanel from "./PersonalWorkPreferencesPanel.vue";
 import SettingsConfirmDialog from "./SettingsConfirmDialog.vue";
@@ -111,12 +110,9 @@ const navGroups: PersonalNavGroup[] = [
         description: "Manage 2FA and sessions",
         icon: "monitor",
       },
-      {
-        id: "delegation-leave",
-        label: "Delegation & leave",
-        description: "Manage out of office requests",
-        icon: "clock",
-      },
+      // Leave & Delegation is Phase 2 and intentionally NOT exposed in the
+      // demo. Re-add this nav item only once the backend leave/delegation
+      // API + approval-engine leave/delegate adapters are implemented.
     ],
   },
   {
@@ -186,13 +182,11 @@ const personalMfaStatus = ref<PersonalMfaStatus | null>(null);
 const personalSessions = ref<PersonalAccountSession[]>([]);
 const notificationPreferences = ref<PersonalNotificationPreference[]>([]);
 const workPreferences = ref<PersonalWorkPreferences | null>(null);
-const leaveRequests = ref<PersonalLeaveRequest[]>([]);
 const activityEvents = ref<PersonalActivityEvent[]>([]);
 
 const personalLoading = ref(false);
 const personalPasswordLoading = ref(false);
 const revokingOwnSessionId = ref<string | null>(null);
-const leaveLoading = ref(false);
 const activityLoading = ref(false);
 const confirmSession = ref<PersonalAccountSession | null>(null);
 const confirmLoading = ref(false);
@@ -202,7 +196,6 @@ const personalMfaError = ref<string | null>(null);
 const personalSessionsError = ref<string | null>(null);
 const personalPasswordError = ref<string | null>(null);
 const preferenceError = ref<string | null>(null);
-const leaveError = ref<string | null>(null);
 const activityError = ref<string | null>(null);
 
 const personalPasswordSuccessNonce = ref(0);
@@ -458,19 +451,6 @@ async function saveWorkPreferences(preferences: PersonalWorkPreferences) {
   }
 }
 
-async function loadLeaveRequests() {
-  leaveLoading.value = true;
-  leaveError.value = null;
-
-  try {
-    leaveRequests.value = await personalSettingsApi.listLeaveRequests();
-  } catch (error) {
-    leaveError.value = getErrorMessage(error, "Unable to load leave requests.");
-  } finally {
-    leaveLoading.value = false;
-  }
-}
-
 async function loadActivity() {
   activityLoading.value = true;
   activityError.value = null;
@@ -492,7 +472,6 @@ onMounted(async () => {
     loadPersonalAccount(),
     loadPreferences(),
     loadAppearancePreferences(),
-    loadLeaveRequests(),
     loadActivity(),
   ]);
 });
@@ -618,12 +597,8 @@ onMounted(async () => {
           @save-appearance="updateAppearance"
         />
 
-        <PersonalLeaveDelegationPanel
-          v-if="activeSection === 'delegation-leave'"
-          :requests="leaveRequests"
-          :loading="leaveLoading"
-          :error="leaveError"
-        />
+        <!-- Leave & Delegation is Phase 2 / out-of-scope for this demo.
+             Section + nav item are removed; no panel is rendered. -->
 
         <PersonalActivityPanel
           v-if="activeSection === 'activity-log'"

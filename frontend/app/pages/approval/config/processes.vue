@@ -12,6 +12,7 @@ import ApprovalProcessConfigForm from "~/features/approval/components/ApprovalPr
 import { useApprovalProcesses, useApprovalGroups } from "~/features/approval/composables/useApprovalConfig";
 import { approvalApi, approvalErrorMessage } from "~/features/approval/services/approvalApi";
 import { prettify } from "~/features/approval/lib/approvalStatus";
+import { useComplianceUserDirectory } from "~/features/compliance/composables/useComplianceUserDirectory";
 import type { ProcessConfigInput } from "~/features/approval/types";
 
 definePageMeta({
@@ -23,6 +24,7 @@ definePageMeta({
 const { t } = useI18n();
 const { processes, loading, error, forbidden, fetchProcesses } = useApprovalProcesses();
 const { groups, fetchGroups } = useApprovalGroups();
+const userDirectory = useComplianceUserDirectory();
 
 const showForm = ref(false);
 const submitting = ref(false);
@@ -66,7 +68,7 @@ async function toggleActive(id: string, active: boolean) {
 }
 
 onMounted(async () => {
-  await Promise.all([reload(), fetchGroups()]);
+  await Promise.all([reload(), fetchGroups(), userDirectory.ensureLoaded()]);
 });
 </script>
 
@@ -89,7 +91,7 @@ onMounted(async () => {
 
     <template v-else>
       <AppCard v-if="showForm" title="New approval process">
-        <ApprovalProcessConfigForm :groups="groups" :submitting="submitting" @submit="saveProcess" @cancel="showForm = false" />
+        <ApprovalProcessConfigForm :groups="groups" :users="userDirectory.items.value" :submitting="submitting" @submit="saveProcess" @cancel="showForm = false" />
         <p v-if="formError" class="proc-page__error">{{ formError }}</p>
       </AppCard>
 

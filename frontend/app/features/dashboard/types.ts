@@ -298,3 +298,26 @@ export type DashboardTodoAction =
   | "mark-done"
   | "snooze"
   | "more";
+
+export type WorkflowStage =
+  | "DAY_OPEN"
+  | "MANAGER_APPROVED"
+  | "TRANSACTION_CLOSED"
+  | "ACCOUNTING_CLOSED";
+
+export const WORKFLOW_STAGES: readonly WorkflowStage[] = [
+  "DAY_OPEN",
+  "MANAGER_APPROVED",
+  "TRANSACTION_CLOSED",
+  "ACCOUNTING_CLOSED",
+];
+
+export const STATE_RANK: Record<string, number> = {
+  NOT_STARTED: 0,
+  DAY_OPEN: 1,
+  INVESTMENT_DAY_STARTED: 1,
+  MANAGER_APPROVED: 2,
+  MANAGER_APPROVED_END_OF_DAY: 2,
+  TRANSACTION_CLOSED: 3,
+  ACCOUNTING_CLOSED: 4,
+};

@@ -1,9 +1,10 @@
 /**
  * Type definitions for the Single Fund Investment Workspace / Holdings page.
  *
- * Shapes intentionally mirror what the future REST API will return so that
- * swapping the mock service for the real client is a one-line import change.
- * See features/investment-workspace/services/holdingsMockApi.ts.
+ * The page reads every value through the generated OpenAPI client
+ * (`myFundsApi`, `useFundDetail`, etc.). These types describe only the
+ * local presentation shapes (header chips, KPI tiles, sub-tabs) that the
+ * UI components still consume after mapping the backend payloads.
  */
 
 export type WorkspaceTab =

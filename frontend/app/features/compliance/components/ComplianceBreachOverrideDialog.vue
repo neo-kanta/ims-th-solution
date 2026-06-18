@@ -4,7 +4,6 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "~/composables/useI18n";
 import AppButton from "~/shared/ui/AppButton.vue";
 
-import { isUuid } from "../lib/formatters";
 import { ruleLabel } from "../lib/ruleTypeCatalog";
 import type { ComplianceBreach } from "../types";
 import ComplianceSeverityBadge from "./ComplianceSeverityBadge.vue";
@@ -20,14 +19,13 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   cancel: [];
-  submit: [payload: { reason: string; approved_by?: string }];
+  submit: [payload: { reason: string }];
 }>();
 
 const { t } = useI18n();
 
 const form = reactive({
   reason: "",
-  approved_by: "",
 });
 
 const touched = ref(false);
@@ -37,7 +35,6 @@ watch(
   (next) => {
     if (next) {
       form.reason = "";
-      form.approved_by = "";
       touched.value = false;
     }
   },
@@ -51,25 +48,14 @@ const reasonError = computed(() => {
   return null;
 });
 
-const approverError = computed(() => {
-  if (!form.approved_by.trim()) return null; // optional
-  return isUuid(form.approved_by.trim())
-    ? null
-    : t("compliance.preTrade.form.invalidUuid");
-});
-
 const canSubmit = computed(
-  () => !reasonError.value && !approverError.value && !props.submitting,
+  () => !reasonError.value && !props.submitting,
 );
 
 function submit() {
   touched.value = true;
   if (!canSubmit.value) return;
-  const payload: { reason: string; approved_by?: string } = {
-    reason: form.reason.trim(),
-  };
-  if (form.approved_by.trim()) payload.approved_by = form.approved_by.trim();
-  emit("submit", payload);
+  emit("submit", { reason: form.reason.trim() });
 }
 </script>
 
@@ -123,30 +109,6 @@ function submit() {
               class="override-modal__error"
             >
               {{ reasonError }}
-            </span>
-          </label>
-
-          <label class="override-modal__field">
-            <span class="override-modal__label">
-              {{ t("compliance.postTrade.override.approvedBy") }}
-            </span>
-            <input
-              v-model="form.approved_by"
-              type="text"
-              class="override-modal__input"
-              autocomplete="off"
-              aria-describedby="override-approver-help override-approver-error"
-              @blur="touched = true"
-            />
-            <span id="override-approver-help" class="override-modal__hint">
-              {{ t("compliance.postTrade.override.approvedByHelp") }}
-            </span>
-            <span
-              v-if="touched && approverError"
-              id="override-approver-error"
-              class="override-modal__error"
-            >
-              {{ approverError }}
             </span>
           </label>
 
@@ -263,8 +225,7 @@ function submit() {
   font-weight: var(--font-weight-medium);
 }
 
-.override-modal__textarea,
-.override-modal__input {
+.override-modal__textarea {
   width: 100%;
   padding: var(--space-3);
   border: 1px solid var(--border-default);
@@ -275,13 +236,7 @@ function submit() {
   font-size: var(--font-size-sm);
 }
 
-.override-modal__input {
-  height: var(--size-control-md);
-  padding: 0 var(--space-3);
-}
-
-.override-modal__textarea:focus,
-.override-modal__input:focus {
+.override-modal__textarea:focus {
   outline: none;
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus);

@@ -63,9 +63,10 @@ function formatDateLabel(dateStr: string): string {
     const parts = dateStr.split("-");
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
-      const day = parseInt(parts[2], 10).toString();
+      const mIdx = parseInt(parts[1] || "", 10) - 1;
+      const monthStr = months[mIdx] || "";
+      const month = t(`holdings.months.${monthStr}` as any, monthStr);
+      const day = parseInt(parts[2] || "", 10).toString();
       return t("holdings.dateFormats.dayMonth" as any, { month, day }, `${month} ${day}`);
     }
   } catch (e) {}
@@ -150,8 +151,8 @@ function formatDateLabel(dateStr: string): string {
       :open="isFullscreenOpen"
       :payload="payload"
       :range="range"
-      :summary="summary"
-      :footer="footer"
+      :summary="summary ?? null"
+      :footer="footer ?? null"
       :loading="loading"
       :error="error"
       @close="closeFullscreen"

@@ -28,6 +28,13 @@ export function buildDashboardNavigation(
       icon: "dashboard",
       items: [
         { label: t("navigation.dashboard"), to: "/", icon: "dashboard" },
+        {
+          label: t("navigation.workflow", "Workflow"),
+          to: "/workflow",
+          icon: "list",
+          requiredPermissions: ["WORKFLOW_VIEW"],
+        },
+        { label: t("navigation.chat", "Chat"), to: "/chat", icon: "chat" },
       ],
     },
     {
@@ -39,12 +46,6 @@ export function buildDashboardNavigation(
           to: "/investment/funds",
           icon: "analysis",
           requiredPermissions: ["INVESTMENT_FUND_VIEW"],
-        },
-        {
-          label: "Portfolio operations",
-          to: "/portfolio",
-          icon: "analysis",
-          requiredPermissions: ["INVESTMENT_PORTFOLIO_VIEW"],
         },
         {
           label: t("navigation.investmentResearch"),
@@ -104,6 +105,36 @@ export function buildDashboardNavigation(
           to: "/compliance/permissions",
           icon: "shield",
           requiredPermissions: ["IRG_VIEW_RULES"],
+        },
+      ],
+    },
+    {
+      label: t("approval.nav.section", "Approval"),
+      icon: "approval",
+      items: [
+        {
+          label: t("approval.nav.inbox", "Approval inbox"),
+          to: "/approval",
+          icon: "approval",
+          requiredPermissions: ["APPROVAL_VIEW_INBOX"],
+        },
+        {
+          label: t("approval.nav.processes", "Approval processes"),
+          to: "/approval/config/processes",
+          icon: "list",
+          requiredPermissions: ["APPROVAL_CONFIG_VIEW"],
+        },
+        {
+          label: t("approval.nav.groups", "Approval groups"),
+          to: "/approval/config/groups",
+          icon: "groups",
+          requiredPermissions: ["APPROVAL_CONFIG_VIEW"],
+        },
+        {
+          label: t("approval.nav.teams", "Approval teams"),
+          to: "/approval/config/teams",
+          icon: "groups",
+          requiredPermissions: ["APPROVAL_CONFIG_VIEW"],
         },
       ],
     },

@@ -11,7 +11,11 @@ import ApprovalStageBuilder from "./ApprovalStageBuilder.vue";
 import { CONTRACT_TYPES, PROCESS_TYPES } from "../types";
 import type { ApprovalGroup, ProcessConfigInput, StageInput } from "../types";
 
-const props = defineProps<{ groups: ApprovalGroup[]; submitting?: boolean }>();
+const props = defineProps<{
+  groups: ApprovalGroup[];
+  users?: Array<{ id: string; display_name?: string; username?: string }>;
+  submitting?: boolean;
+}>();
 const emit = defineEmits<{ submit: [payload: ProcessConfigInput]; cancel: [] }>();
 
 const form = reactive<Omit<ProcessConfigInput, "stages">>({
@@ -87,7 +91,7 @@ function save() {
         <AppSelect v-model="form.contract_type" :options="[...CONTRACT_TYPES]" />
       </AppFormField>
       <AppFormField label="Applicable Scope" hint="Leave blank for a global / company-wide process.">
-        <AppInput :model-value="''" disabled placeholder="Scope selector source not available" />
+        <AppInput v-model="form.contract_id" placeholder="Enter contract or fund UUID (optional)" />
       </AppFormField>
       <AppFormField label="Effective date" hint="YYYY-MM-DD; blank = today.">
         <AppInput v-model="form.effective_date" placeholder="2026-01-01" />
@@ -101,7 +105,7 @@ function save() {
     </div>
 
     <h3 class="proc-form__section">Approval stages</h3>
-    <ApprovalStageBuilder v-model="stages" :groups="groups" />
+    <ApprovalStageBuilder v-model="stages" :groups="groups" :users="users" />
 
     <p v-if="localError" class="proc-form__error" role="alert">{{ localError }}</p>
 

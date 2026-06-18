@@ -12,6 +12,7 @@ import ApprovalGroupForm from "~/features/approval/components/ApprovalGroupForm.
 import ApprovalGroupMemberTable from "~/features/approval/components/ApprovalGroupMemberTable.vue";
 import { useApprovalGroups } from "~/features/approval/composables/useApprovalConfig";
 import { approvalApi, approvalErrorMessage } from "~/features/approval/services/approvalApi";
+import { useComplianceUserDirectory } from "~/features/compliance/composables/useComplianceUserDirectory";
 import type { ApprovalGroup, ApprovalGroupMember, GroupInput, GroupMemberInput } from "~/features/approval/types";
 
 definePageMeta({
@@ -22,6 +23,7 @@ definePageMeta({
 
 const { t } = useI18n();
 const { groups, loading, error, forbidden, fetchGroups } = useApprovalGroups();
+const userDirectory = useComplianceUserDirectory();
 
 const showForm = ref(false);
 const editing = ref<ApprovalGroup | null>(null);
@@ -117,7 +119,9 @@ async function runMember(fn: () => Promise<unknown>, fallback: string) {
   }
 }
 
-onMounted(reloadGroups);
+onMounted(async () => {
+  await Promise.all([reloadGroups(), userDirectory.ensureLoaded()]);
+});
 </script>
 
 <template>
@@ -188,6 +192,7 @@ onMounted(reloadGroups);
             <template v-else>
               <ApprovalGroupMemberTable
                 :members="members"
+                :users="userDirectory.items.value"
                 :busy="memberBusy"
                 @add="addMember"
                 @approve="approveMember"

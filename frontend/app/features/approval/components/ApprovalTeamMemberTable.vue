@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { reactive, computed } from "vue";
 
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppInput from "~/shared/ui/AppInput.vue";
@@ -8,7 +8,15 @@ import AppSelect from "~/shared/ui/AppSelect.vue";
 import { TEAM_MEMBER_TYPES } from "../types";
 import type { ApprovalTeamMember, TeamMemberInput } from "../types";
 
-defineProps<{ members: ApprovalTeamMember[]; busy?: boolean }>();
+const props = defineProps<{
+  members: ApprovalTeamMember[];
+  users?: Array<{ id: string; display_name?: string; username?: string }>;
+  busy?: boolean;
+}>();
+
+const userOptions = computed(() =>
+  (props.users ?? []).map((u) => ({ value: u.id, label: u.display_name || u.username || u.id })),
+);
 
 const emit = defineEmits<{
   add: [payload: TeamMemberInput];
@@ -64,7 +72,8 @@ function addMember() {
     </table>
 
     <div class="tm-table__add">
-      <AppInput v-model="draft.user_id" placeholder="User selector source not available" disabled />
+      <AppSelect v-if="users && users.length" v-model="draft.user_id" :options="userOptions" placeholder="Select a user…" />
+      <AppInput v-else v-model="draft.user_id" placeholder="Enter user UUID…" />
       <AppSelect v-model="draft.member_type" :options="[...TEAM_MEMBER_TYPES]" />
       <AppInput v-model="draft.priority_order" type="number" placeholder="Priority" />
       <AppButton variant="primary" :disabled="busy || !draft.user_id" @click="addMember">Add member</AppButton>

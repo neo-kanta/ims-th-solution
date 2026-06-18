@@ -137,4 +137,18 @@ export const permissionWorkflowApi = {
   getEffectivePermissions(userId: string) {
     return apiData<EffectivePermissions>(`/permissions/effective/users/${userId}`);
   },
+
+  listFunctionDefinitions() {
+    return apiData<any[]>("/permissions/function-definitions");
+  },
+
+  requestRoleAssignment(userId: string, payload: { role_code: string; role_id?: string; reason: string }) {
+    return apiData<{ request: PermissionChangeRequest; item: PermissionChangeItem }>(
+      `/permissions/users/${userId}/role-assignment-request`,
+      {
+        method: "POST",
+        body: payload,
+      }
+    );
+  },
 };

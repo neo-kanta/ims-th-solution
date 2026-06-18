@@ -57,7 +57,7 @@ function handleSubmit() {
         :placeholder="
           t(
             'dashboard.aiBar.placeholder',
-            'Ask about portfolios, tasks, alerts, workflow status...'
+            'Ask about portfolios, tasks, alerts, workflow status...',
           )
         "
         rows="3"
@@ -185,11 +185,6 @@ function handleSubmit() {
   transition:
     border-color var(--transition-base),
     box-shadow var(--transition-base);
-}
-
-.ai-panel__box:hover,
-.ai-panel__box:focus-within {
-  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
 .ai-panel__textarea {

@@ -15,9 +15,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
 const remaining = computed(() => MAX - draft.value.length);
 const nearLimit = computed(() => remaining.value <= 500);
-const canSend = computed(
-  () => draft.value.trim().length > 0 && !props.disabled,
-);
+const canSend = computed(() => draft.value.trim().length > 0 && !props.disabled);
 
 function autoGrow() {
   const el = textareaRef.value;
@@ -91,11 +89,7 @@ defineExpose({
 
     <div class="composer__footer">
       <span class="composer__hint">{{ t("chat.inputHint") }}</span>
-      <span
-        v-if="nearLimit"
-        class="composer__count"
-        :class="{ 'composer__count--over': remaining < 0 }"
-      >
+      <span v-if="nearLimit" class="composer__count" :class="{ 'composer__count--over': remaining < 0 }">
         {{ remaining }}
       </span>
     </div>
@@ -116,13 +110,11 @@ defineExpose({
   border: 1px solid var(--border-input, #cbd5e1);
   border-radius: 14px;
   background: var(--bg-input, #ffffff);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.composer__field:hover,
 .composer__field:focus-within {
-  border-color: var(--border-strong, #8c959f);
+  border-color: var(--border-focus, #2563eb);
+  box-shadow: 0 0 0 3px var(--ring-focus, rgba(37, 99, 235, 0.18));
 }
 .composer__textarea {
   flex: 1;
@@ -150,9 +142,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition:
-    background 0.15s ease,
-    opacity 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 .composer__btn--send {
   background: var(--bg-accent, #2563eb);

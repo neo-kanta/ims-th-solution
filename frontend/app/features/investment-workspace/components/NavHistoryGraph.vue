@@ -73,6 +73,7 @@ const fillPath = computed(() => {
   if (pts.length < 2) return "";
   const first = pts[0];
   const last = pts[pts.length - 1];
+  if (!first || !last) return "";
   const bottomY = props.viewH - props.padBottom;
   return `M ${first.x.toFixed(2)} ${bottomY.toFixed(2)} ${path.value} L ${last.x.toFixed(2)} ${bottomY.toFixed(2)} Z`;
 });
@@ -112,9 +113,10 @@ function formatDateLabel(dateStr: string): string {
     const parts = dateStr.split("-");
     if (parts.length === 3) {
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      const month = t(`holdings.months.${months[mIdx]}` as any, months[mIdx]);
-      const day = parseInt(parts[2], 10).toString();
+      const mIdx = parseInt(parts[1] || "", 10) - 1;
+      const monthStr = months[mIdx] || "";
+      const month = t(`holdings.months.${monthStr}` as any, monthStr);
+      const day = parseInt(parts[2] || "", 10).toString();
       return t("holdings.dateFormats.dayMonth" as any, { month, day }, `${month} ${day}`);
     }
   } catch (e) {}

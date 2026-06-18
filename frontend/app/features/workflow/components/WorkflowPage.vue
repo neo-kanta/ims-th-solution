@@ -35,21 +35,14 @@ onMounted(async () => {
 
 <template>
   <div class="workflow-page-container">
-    <!-- Header with actions / filters -->
     <div class="workflow-header-panel">
-      <div class="workflow-header-panel__title-section">
-        <h1 class="workflow-header-panel__title">
-          {{ t("navigation.workflow", "Workflow") }}
-        </h1>
-        <p class="workflow-header-panel__subtitle">
-          {{ t("workflow.subtitle", "Manage daily workflow operations and day-start procedures.") }}
-        </p>
-      </div>
-
       <div class="workflow-header-panel__controls">
         <!-- Business Date Selector -->
         <div class="workflow-control-group">
-          <label for="business-date-selector" class="workflow-control-group__label">
+          <label
+            for="business-date-selector"
+            class="workflow-control-group__label"
+          >
             {{ t("holdings.page.businessDate" as any, "Business Date") }}
           </label>
           <input
@@ -80,7 +73,9 @@ onMounted(async () => {
     <div class="workflow-tab-content">
       <div v-if="loading && !dailyState" class="workflow-loading-placeholder">
         <div class="workflow-loading-placeholder__spinner"></div>
-        <p class="workflow-loading-placeholder__text">Loading daily state details...</p>
+        <p class="workflow-loading-placeholder__text">
+          Loading daily state details...
+        </p>
       </div>
 
       <template v-else>
@@ -101,9 +96,7 @@ onMounted(async () => {
           :business-date="businessDate"
         />
 
-        <WorkflowSettingsTab
-          v-else-if="activeTab === 'settings'"
-        />
+        <WorkflowSettingsTab v-else-if="activeTab === 'settings'" />
       </template>
     </div>
   </div>
@@ -176,7 +169,9 @@ onMounted(async () => {
   height: 38px;
   min-width: 160px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .workflow-control-group__select:focus,

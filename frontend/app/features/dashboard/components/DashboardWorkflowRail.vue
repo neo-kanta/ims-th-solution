@@ -1,19 +1,101 @@
 <script setup lang="ts">
-import type { DashboardOverviewWorkflowStage } from "../types";
+/**
+ * WorkflowDayRail — horizontal day-cycle rail driven by real backend state.
+ *
+ * Renders the 4 actionable workflow stages (Day Start → Manager Approval →
+ * Transaction Closing → Accounting Closing) as a scroller. Stage status is
+ * derived from the backend `currentState` (NOT_STARTED … ACCOUNTING_CLOSED)
+ * via STATE_RANK — identical topology to WorkflowStageTracker, but laid out
+ * as the compact rail used on the dashboard.
+ *
+ * The CSS mirrors DashboardWorkflowRail's `.workflow-rail__*` classes so the
+ * two surfaces look identical; only the data source differs (this one is
+ * backed by GET /workflow/day-states/{contractId}).
+ */
+import { computed } from "vue";
 
-defineProps<{
-  stages: DashboardOverviewWorkflowStage[];
+import { useI18n } from "~/composables/useI18n";
+
+import { STATE_RANK, WORKFLOW_STAGES } from "../types";
+import type { WorkflowStage } from "../types";
+
+const props = defineProps<{
+  /** Backend day state code; NOT_STARTED when no row persisted yet. */
+  currentState: string;
+  /** Per-stage ISO timestamps (UTC). Optional — empty renders no time label. */
+  timestamps?: Partial<Record<WorkflowStage, string | null>>;
+  /** Optional caption rendered above the rail (e.g. business date). */
+  caption?: string;
 }>();
+
+const { t } = useI18n();
+
+const stageLabels = computed<Record<WorkflowStage, string>>(() => ({
+  DAY_OPEN: t("workflow.action.OPEN_DAY", "Day Start"),
+  MANAGER_APPROVED: t("workflow.action.APPROVE", "Manager Approval"),
+  TRANSACTION_CLOSED: t("workflow.action.CLOSE_TRANSACTIONS", "Transaction Closing"),
+  ACCOUNTING_CLOSED: t("workflow.action.CLOSE_ACCOUNTING", "Accounting Closing"),
+}));
+
+function rank(state: string): number {
+  return STATE_RANK[state as keyof typeof STATE_RANK] ?? 0;
+}
+
+function formatTime(value: string | null | undefined): string {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Bangkok",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
+}
+
+interface RailStage {
+  id: WorkflowStage;
+  sequence: number;
+  label: string;
+  status: "complete" | "active" | "upcoming";
+  timeLabel: string;
+}
+
+const stages = computed<RailStage[]>(() => {
+  const currentRank = rank(props.currentState || "NOT_STARTED");
+  return WORKFLOW_STAGES.map((stage, index) => {
+    const stageRank = rank(stage);
+    let status: RailStage["status"];
+    if (currentRank >= stageRank) {
+      status = "complete";
+    } else if (currentRank + 1 === stageRank) {
+      status = "active";
+    } else {
+      status = "upcoming";
+    }
+    return {
+      id: stage,
+      sequence: index + 1,
+      label: stageLabels.value[stage],
+      status,
+      timeLabel: formatTime(props.timestamps?.[stage]),
+    };
+  });
+});
 </script>
 
 <template>
-  <section class="workflow-rail" aria-label="Dashboard workflow">
+  <section class="workflow-rail" aria-label="Workflow day cycle">
+    <p v-if="caption" class="workflow-rail__caption">{{ caption }}</p>
     <div class="workflow-rail__scroll">
       <ol class="workflow-rail__list">
         <li
           v-for="(stage, index) in stages"
           :key="stage.id"
           class="workflow-rail__item"
+          :data-status="stage.status"
         >
           <span
             v-if="index < stages.length - 1"
@@ -31,7 +113,7 @@ defineProps<{
             <div class="workflow-rail__label">
               {{ stage.sequence }}. {{ stage.label }}
             </div>
-            <div class="workflow-rail__time">{{ stage.timeLabel }}</div>
+            <div class="workflow-rail__time">{{ stage.timeLabel || "—" }}</div>
           </div>
         </li>
       </ol>
@@ -47,6 +129,13 @@ defineProps<{
   box-shadow: var(--shadow-sm);
 }
 
+.workflow-rail__caption {
+  margin: 0;
+  padding: var(--space-3) var(--space-6) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
 .workflow-rail__scroll {
   overflow-x: auto;
   padding: var(--space-5) var(--space-6);
@@ -54,9 +143,9 @@ defineProps<{
 
 .workflow-rail__list {
   display: grid;
-  grid-template-columns: repeat(7, minmax(7rem, 1fr));
+  grid-template-columns: repeat(4, minmax(8rem, 1fr));
   gap: var(--space-4);
-  min-width: 52rem;
+  min-width: 36rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -130,7 +219,7 @@ defineProps<{
   }
 
   .workflow-rail__list {
-    min-width: 46rem;
+    min-width: 30rem;
     gap: var(--space-3);
   }
 }
