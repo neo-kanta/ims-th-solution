@@ -1,3 +1,5 @@
+import { thApprovalMessages } from "./approval";
+import { thChatMessages } from "./chat";
 import { thCommonMessages } from "./common";
 import { thComplianceMessages } from "./compliance";
 import { thDashboardMessages } from "./dashboard";
@@ -11,6 +13,8 @@ import { thPlaceholderMessages } from "./placeholders";
 import { thSettingsMessages } from "./settings";
 
 export const thMessages = {
+  ...thApprovalMessages,
+  ...thChatMessages,
   ...thCommonMessages,
   ...thDashboardMessages,
   ...thSettingsMessages,

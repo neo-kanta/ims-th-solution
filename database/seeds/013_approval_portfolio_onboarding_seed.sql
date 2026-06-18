@@ -51,4 +51,12 @@ VALUES
      1, true, 'STOP')
 ON CONFLICT (process_config_id, stage_number) DO NOTHING;
 
+-- PORTFOLIO approval is deferred (Option A). The process config above is kept
+-- for schema reference but is explicitly marked inactive so it is never reached
+-- by a live approval flow. Re-enable once the PORTFOLIO subject access port and
+-- validator are implemented (see docs/handoff/approval-subject-access-port.md).
+UPDATE approval__process_configs
+   SET is_active = false
+ WHERE process_code = 'PROC_PORTFOLIO_ONBOARDING_DEFAULT';
+
 COMMIT;

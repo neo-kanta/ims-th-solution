@@ -1,3 +1,5 @@
+import { enApprovalMessages } from "./approval";
+import { enChatMessages } from "./chat";
 import { enCommonMessages } from "./common";
 import { enComplianceMessages } from "./compliance";
 import { enDashboardMessages } from "./dashboard";
@@ -11,6 +13,8 @@ import { enPlaceholderMessages } from "./placeholders";
 import { enSettingsMessages } from "./settings";
 
 export const enMessages = {
+  ...enApprovalMessages,
+  ...enChatMessages,
   ...enCommonMessages,
   ...enDashboardMessages,
   ...enSettingsMessages,

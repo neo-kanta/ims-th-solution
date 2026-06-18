@@ -97,8 +97,14 @@ func NewModule(
 
 // RegisterRoutes mounts the approval routes onto an authenticated router.
 func (m *Module) RegisterRoutes(r chi.Router) {
-	if m == nil || m.runtimeHandler == nil || m.perm == nil {
+	if m == nil || m.runtimeHandler == nil {
 		return
+	}
+	if m.perm == nil {
+		// perm MUST be non-nil in production. A nil permission port means no
+		// approval route would enforce access control — a security invariant
+		// violation. Panic at startup rather than silently skip route registration.
+		panic("approval.Module.RegisterRoutes: permission port is nil; production wiring must provide a non-nil PermissionPort")
 	}
 	// domain.PermissionPort's method set is a superset of
 	// middleware.PermissionChecker, so it can gate routes directly.
@@ -188,6 +194,9 @@ func (m *Module) GetApprovalStage(ctx context.Context, subjectType string, subje
 			if t.StageNumber == req.CurrentStageNumber && string(t.Status) == "PENDING" {
 				info.CurrentApprovers = append(info.CurrentApprovers, ai)
 			} else if t.StageNumber == req.CurrentStageNumber-1 && string(t.Status) == "APPROVED" {
+				// PreviousApprovers shows only the immediately prior stage by design —
+				// the UI badge shows "who approved last" rather than the full history.
+				// The full audit trail is available through the events endpoint.
 				info.PreviousApprovers = append(info.PreviousApprovers, ai)
 			}
 		}

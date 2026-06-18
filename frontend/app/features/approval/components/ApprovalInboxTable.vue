@@ -52,35 +52,35 @@ function fmtDate(value?: string | null): string {
     empty-text="No pending approvals in your inbox."
   >
     <template #[`cell(request_number)`]="{ item }">
-      <span class="approval-inbox__mono">{{ (item as ApprovalInboxItem).request.request_number }}</span>
+      <span class="approval-inbox__mono">{{ (item as ApprovalInboxItem).request?.request_number }}</span>
     </template>
     <template #[`cell(process_type)`]="{ item }">
-      {{ prettify((item as ApprovalInboxItem).request.process_type ?? "") }}
+      {{ prettify((item as ApprovalInboxItem).request?.process_type ?? "") }}
     </template>
     <template #[`cell(subject)`]="{ item }">
       <div class="approval-inbox__subject">
         <span class="approval-inbox__subject-title">
-          {{ (item as ApprovalInboxItem).request.subject_title || (item as ApprovalInboxItem).request.subject_reference || "—" }}
+          {{ (item as ApprovalInboxItem).request?.subject_title || (item as ApprovalInboxItem).request?.subject_reference || "—" }}
         </span>
         <span class="approval-inbox__subject-type">
-          {{ prettify((item as ApprovalInboxItem).request.subject_type ?? "") }}
+          {{ prettify((item as ApprovalInboxItem).request?.subject_type ?? "") }}
         </span>
       </div>
     </template>
     <template #[`cell(submitter)`]="{ item }">
       <div class="approval-inbox__subject">
-        <span>{{ (item as ApprovalInboxItem).request.submitter_name || "—" }}</span>
-        <span class="approval-inbox__subject-type">{{ fmtDate((item as ApprovalInboxItem).request.submitted_at) }}</span>
+        <span>{{ (item as ApprovalInboxItem).request?.submitter_name || "—" }}</span>
+        <span class="approval-inbox__subject-type">{{ fmtDate((item as ApprovalInboxItem).request?.submitted_at) }}</span>
       </div>
     </template>
     <template #[`cell(stage)`]="{ item }">
-      {{ (item as ApprovalInboxItem).task.stage_number }}
+      {{ (item as ApprovalInboxItem).task?.stage_number }}
     </template>
     <template #[`cell(status)`]="{ item }">
-      <ApprovalStatusBadge :status="(item as ApprovalInboxItem).request.status ?? ''" />
+      <ApprovalStatusBadge :status="(item as ApprovalInboxItem).request?.status ?? ''" />
     </template>
     <template #[`cell(actions)`]="{ item }">
-      <AppButton size="sm" variant="primary" @click="emit('open', (item as ApprovalInboxItem).request.id ?? '')">
+      <AppButton size="sm" variant="primary" @click="emit('open', (item as ApprovalInboxItem).request?.id ?? '')">
         Review
       </AppButton>
     </template>

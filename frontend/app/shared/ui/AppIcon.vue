@@ -117,6 +117,11 @@ const titleId = computed(() => (
       <path d="M4 17h16" />
     </template>
 
+    <template v-else-if="name === 'search'">
+      <circle cx="10.75" cy="10.75" r="6.25" />
+      <path d="m16 16 4.25 4.25" />
+    </template>
+
     <template v-else-if="name === 'panel-open'">
       <rect x="3.5" y="4" width="17" height="16" rx="2" />
       <path d="M9 4v16" />
@@ -287,6 +292,24 @@ const titleId = computed(() => (
       <rect x="3.5" y="7.5" width="17" height="11.5" rx="2" />
       <path d="M8.5 7.5v-1A2.5 2.5 0 0 1 11 4h2a2.5 2.5 0 0 1 2.5 2.5v1" />
       <path d="M3.5 12h17" />
+    </template>
+
+    <template v-else-if="name === 'chat'">
+      <path d="M4.5 5.5h15a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5V16H4.5A1.5 1.5 0 0 1 3 14.5V7a1.5 1.5 0 0 1 1.5-1.5Z" />
+      <path d="M8 10.5h8" />
+      <path d="M8 13h5" />
+    </template>
+
+    <template v-else-if="name === 'send'">
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </template>
+
+    <template v-else-if="name === 'book'">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+      <path d="M8 6h8" />
+      <path d="M8 10h8" />
+      <path d="M8 14h6" />
     </template>
 
     <template v-else>

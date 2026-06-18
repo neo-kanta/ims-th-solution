@@ -51,6 +51,7 @@ export const zhCommonMessages = {
   },
   navigation: {
     dashboard: "仪表板",
+    chat: "聊天",
     workflow: "工作流",
     settings: "设置",
     personalSettings: "个人设置",
@@ -88,6 +89,71 @@ export const zhCommonMessages = {
   },
   workflow: {
     subtitle: "管理日常工作流操作和营业日启动流程。",
+    indexNotConfiguredTitle: "工作流操作以基金为单位进行管理",
+    indexNotConfiguredCopy:
+      "请从「我的基金」打开基金,查看其当前工作流状态并执行状态转移(Day Start、Manager Approval、Transaction Closing、Accounting Closing)。后端的每个状态转移都绑定到该基金的合约,不存在全局工作流操作面板。",
+    tabs: {
+      overview: "概览",
+      audit: "审批记录",
+      settings: "审批配置",
+    },
+    state: {
+      NOT_STARTED: "未启动",
+      INVESTMENT_DAY_STARTED: "日间交易已启动",
+      MANAGER_APPROVED: "经理已审批",
+      TRANSACTION_CLOSED: "交易已关闭",
+      ACCOUNTING_CLOSED: "会计账目已结账",
+    },
+    stage: {
+      INVESTMENT_DAY_STARTED: "启动营业日",
+      MANAGER_APPROVED: "经理审批",
+      TRANSACTION_CLOSED: "交易关闭",
+      ACCOUNTING_CLOSED: "会计结账",
+    },
+    status: {
+      complete: "已完成",
+      active: "进行中",
+      upcoming: "未开始",
+      blocked: "已阻断",
+    },
+    fields: {
+      timestamp: "时间",
+      personnel: "操作人",
+      notes: "备注说明",
+    },
+    action: {
+      START_INVESTMENT_DAY: "启动营业日",
+      CANCEL_INVESTMENT_DAY: "撤销营业日启动",
+      MANAGER_APPROVE: "经理审批",
+      CANCEL_MANAGER_APPROVAL: "撤销经理审批",
+      CLOSE_TRANSACTION: "关闭交易",
+      CANCEL_TRANSACTION_CLOSE: "撤销交易关闭",
+      CLOSE_ACCOUNTING: "会计结账",
+      CANCEL_ACCOUNTING_CLOSE: "撤销会计结账",
+    },
+    modules: {
+      approval: "审批模块",
+      investment: "投资模块",
+      compliance: "合规模块",
+      permission: "权限模块",
+      approvalWarning: "审批模块未完全激活。工作流使用内置工作流的管理员组作为默认审批人。",
+    },
+    overview: {
+      actions: "可执行操作",
+      blocked: "暂不可用操作",
+      timeline: "工作流日志摘要",
+    },
+    settings: {
+      defaultAdminFallback: "未配置审批人。默认使用管理员组进行备份审批。",
+      accountCodePlaceholder: "账号代码 (例如 jsmith)",
+      rolePlaceholder: "角色标签 (选填)",
+      saveWarningText: "您确定要保存审批配置吗? 修改后的未保存更改将被写入服务器。",
+      saveSuccessText: "审批配置保存成功。",
+      modifiedCount: "您有未保存的修改。",
+    },
+    blocked: {
+      reasonText: "当前状态下不被允许",
+    },
   },
   forbidden: {
     title: "拒绝访问",

@@ -13,6 +13,9 @@ export const thDashboardMessages = {
     retry: "ลองอีกครั้ง",
     noDataTitle: "ไม่มีข้อมูลแดชบอร์ด",
     noDataCopy: "แดชบอร์ดยังไม่มีข้อมูลเซสชันสำหรับแสดงผล",
+    notConfiguredTitle: "ตัวชี้วัดภาพรวมยังไม่ได้ตั้งค่า",
+    notConfiguredCopy:
+      "AUM ทั่วทั้งบริษัท กำไรขาดทุน รายการอนุมัติ และฟีดกิจกรรมยังไม่ถูกเชื่อมต่อกับ API แบ็กเอนด์ โปรดใช้แผงเวิร์กโฟลว์และฟีดงานด้านบนเพื่อดูสถานะจริง และเปิดกองทุนจาก My Funds เพื่อดู NAV/Holdings/Compliance รายกองทุน",
     workflowDayStart: "เริ่มวัน",
     workflowAnalysis: "วิเคราะห์",
     workflowDecision: "ตัดสินใจ",

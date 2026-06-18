@@ -10976,6 +10976,9 @@ const docTemplate = `{
         "EventResponse": {
             "type": "object",
             "properties": {
+                "actor": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
                 "actor_name": {
                     "type": "string"
                 },
@@ -10987,6 +10990,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "delegated_from": {
+                    "$ref": "#/definitions/UserDescriptor"
                 },
                 "delegated_from_user_id": {
                     "type": "string"
@@ -13345,6 +13351,9 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "subject": {
+                    "$ref": "#/definitions/SubjectDescriptor"
+                },
                 "subject_id": {
                     "type": "string"
                 },
@@ -13359,6 +13368,9 @@ const docTemplate = `{
                 },
                 "submitted_at": {
                     "type": "string"
+                },
+                "submitter": {
+                    "$ref": "#/definitions/UserDescriptor"
                 },
                 "submitter_id": {
                     "type": "string"
@@ -13963,6 +13975,9 @@ const docTemplate = `{
                 "is_proxy_signature": {
                     "type": "boolean"
                 },
+                "proxy_for": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
                 "proxy_for_user_id": {
                     "type": "string"
                 },
@@ -13971,6 +13986,9 @@ const docTemplate = `{
                 },
                 "signed_at": {
                     "type": "string"
+                },
+                "signer": {
+                    "$ref": "#/definitions/UserDescriptor"
                 },
                 "signer_display_name": {
                     "type": "string"
@@ -14041,6 +14059,20 @@ const docTemplate = `{
                 },
                 "stage_number": {
                     "type": "integer"
+                }
+            }
+        },
+        "SubjectDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_label": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -14190,6 +14222,9 @@ const docTemplate = `{
                 "action_comment": {
                     "type": "string"
                 },
+                "actor": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
                 "approval_request_id": {
                     "type": "string"
                 },
@@ -14199,6 +14234,9 @@ const docTemplate = `{
                 "assigned_team_id": {
                     "type": "string"
                 },
+                "assigned_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
                 "assigned_user_id": {
                     "type": "string"
                 },
@@ -14207,6 +14245,9 @@ const docTemplate = `{
                 },
                 "created_at": {
                     "type": "string"
+                },
+                "delegated_from": {
+                    "$ref": "#/definitions/UserDescriptor"
                 },
                 "delegated_from_user_id": {
                     "type": "string"
@@ -14859,6 +14900,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

@@ -49,7 +49,7 @@ watch(
 
 function save() {
   localError.value = null;
-  if (!form.process_code.trim() || !form.process_name.trim()) {
+  if (!form.process_code?.trim() || !form.process_name?.trim()) {
     localError.value = "Process code and name are required.";
     return;
   }
@@ -86,8 +86,8 @@ function save() {
       <AppFormField label="Contract type">
         <AppSelect v-model="form.contract_type" :options="[...CONTRACT_TYPES]" />
       </AppFormField>
-      <AppFormField label="Applicable contract UUID (optional)" hint="Leave blank for a global / company-wide process.">
-        <AppInput v-model="form.contract_id" placeholder="Fund / contract UUID" />
+      <AppFormField label="Applicable Scope" hint="Leave blank for a global / company-wide process.">
+        <AppInput :model-value="''" disabled placeholder="Scope selector source not available" />
       </AppFormField>
       <AppFormField label="Effective date" hint="YYYY-MM-DD; blank = today.">
         <AppInput v-model="form.effective_date" placeholder="2026-01-01" />

@@ -163,6 +163,9 @@ export const enComplianceMessages = {
       title: "Pre-trade compliance simulator",
       description:
         "Submit a proposed order; the backend runs every applicable rule and returns a verdict before any trade is created. A BLOCK verdict here prevents the workflow from advancing.",
+      readonlyTitle: "Pre-trade execution requires WORKFLOW_EXECUTE permission.",
+      readonlyCopy:
+        "You can view active rules and existing results, but running a new simulation is disabled for your role. Request WORKFLOW_EXECUTE from your administrator to enable it.",
       form: {
         sectionOrder: "Proposed order",
         sectionContext: "Portfolio context",
@@ -553,6 +556,11 @@ export const enComplianceMessages = {
       submitForApproval: "Submit for approval",
       ownerLabel: "Owner",
       breakdownLabel: "Order breakdown",
+      notConfiguredTitle: "Decision workflow not configured",
+      notConfiguredCopy:
+        "There is no backend endpoint for the investment-decision lifecycle yet. Submit, review and approve actions cannot be performed from this page.",
+      notConfiguredAlternative:
+        "To run a pre-trade compliance simulation against a real portfolio, use the Pre-trade Simulator. To post a real trade once the workflow allows it, use the fund's Holdings page.",
     },
 
     // Badges

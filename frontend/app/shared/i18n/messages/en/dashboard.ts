@@ -13,6 +13,9 @@ export const enDashboardMessages = {
     retry: "Retry",
     noDataTitle: "No dashboard data",
     noDataCopy: "The dashboard has no session data to display yet.",
+    notConfiguredTitle: "Cockpit metrics not configured",
+    notConfiguredCopy:
+      "Firm-wide AUM, P&L, pending approvals and activity feed are not yet wired to a backend endpoint. Use the workflow panel and task feed above for live state, and open a fund from My Funds for per-fund NAV, holdings, and compliance details.",
     workflowDayStart: "Day Start",
     workflowAnalysis: "Analysis",
     workflowDecision: "Decision",

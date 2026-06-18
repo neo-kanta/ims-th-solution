@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppButton from "~/shared/ui/AppButton.vue";
@@ -23,20 +23,20 @@ const emit = defineEmits<{
   approve: [comment: string];
   reject: [reason: string];
   withdraw: [];
+  revoke: [reason: string];
 }>();
 
 const request = computed(() => props.detail.request);
 const viewerTask = computed(() => props.detail.viewer_task ?? null);
-const canAct = computed(() => Boolean(viewerTask.value));
+const allowedActions = computed<string[]>(() => props.detail.allowed_actions ?? []);
+const canAct = computed(() => allowedActions.value.includes("approve") || allowedActions.value.includes("reject"));
+const canWithdraw = computed(() => allowedActions.value.includes("withdraw"));
+const canRevoke = computed(() => allowedActions.value.includes("revoke"));
 const stamps = computed(() => toStamps(props.detail.signatures ?? []));
 const isDelegatedView = computed(() => Boolean(viewerTask.value?.is_delegated_action));
 
-const canWithdraw = computed(() => {
-  const r = request.value;
-  if (!r) return false;
-  const active = r.status === "PENDING_APPROVAL" || r.status === "SUBMITTED";
-  return active && !!props.currentUserId && r.submitter_id === props.currentUserId;
-});
+const revokeReason = ref("");
+const showRevokeForm = ref(false);
 
 function fmtDate(value?: string | null): string {
   if (!value) return "—";
@@ -57,7 +57,7 @@ function fmtDate(value?: string | null): string {
 </script>
 
 <template>
-  <div class="request-detail">
+  <div v-if="request" class="request-detail">
     <!-- Header -->
     <AppCard>
       <div class="request-detail__header">
@@ -91,9 +91,9 @@ function fmtDate(value?: string | null): string {
           <dt>Reference</dt>
           <dd>{{ request.subject_reference || '—' }}</dd>
         </div>
-        <div v-if="request.contract_id">
-          <dt>Contract / fund</dt>
-          <dd class="request-detail__mono">{{ request.contract_id }}</dd>
+        <div v-if="request.subject?.display_label || request.subject_title">
+          <dt>Subject</dt>
+          <dd>{{ request.subject?.display_label || request.subject_title }}</dd>
         </div>
         <div v-if="request.final_decision_at">
           <dt>Final decision</dt>
@@ -120,10 +120,50 @@ function fmtDate(value?: string | null): string {
         @approve="emit('approve', $event)"
         @reject="emit('reject', $event)"
       />
-      <div v-if="canWithdraw" class="request-detail__withdraw">
-        <AppButton variant="ghost" size="sm" :disabled="submitting" @click="emit('withdraw')">
+      <div v-if="canWithdraw || canRevoke" class="request-detail__secondary-actions">
+        <AppButton
+          v-if="canWithdraw"
+          variant="ghost"
+          size="sm"
+          :disabled="submitting"
+          @click="emit('withdraw')"
+        >
           Withdraw request
         </AppButton>
+        <template v-if="canRevoke">
+          <AppButton
+            v-if="!showRevokeForm"
+            variant="ghost"
+            size="sm"
+            :disabled="submitting"
+            class="btn-danger-ghost"
+            @click="showRevokeForm = true"
+          >
+            Revoke approval
+          </AppButton>
+          <div v-else class="request-detail__revoke-form">
+            <label class="request-detail__revoke-label">Reason for revocation</label>
+            <textarea
+              v-model="revokeReason"
+              class="request-detail__revoke-textarea"
+              rows="2"
+              placeholder="Enter reason (required)"
+            />
+            <div class="request-detail__revoke-actions">
+              <AppButton
+                variant="danger"
+                size="sm"
+                :disabled="submitting || !revokeReason.trim()"
+                @click="emit('revoke', revokeReason); showRevokeForm = false"
+              >
+                Confirm revoke
+              </AppButton>
+              <AppButton variant="ghost" size="sm" @click="showRevokeForm = false; revokeReason = ''">
+                Cancel
+              </AppButton>
+            </div>
+          </div>
+        </template>
       </div>
     </AppCard>
 
@@ -218,7 +258,41 @@ function fmtDate(value?: string | null): string {
   color: var(--text-tertiary, #6e7781);
   font-size: var(--font-size-sm, 0.875rem);
 }
-.request-detail__withdraw {
+.request-detail__secondary-actions {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: flex-start;
+  flex-wrap: wrap;
   margin-top: var(--space-3, 12px);
+}
+.request-detail__revoke-form {
+  display: grid;
+  gap: var(--space-2, 8px);
+  width: 100%;
+  max-width: 480px;
+}
+.request-detail__revoke-label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+}
+.request-detail__revoke-textarea {
+  width: 100%;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border: 1px solid var(--border-muted, #d0d7de);
+  border-radius: var(--radius-sm, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  resize: vertical;
+}
+.request-detail__revoke-actions {
+  display: flex;
+  gap: var(--space-2, 8px);
+}
+
+.btn-danger-ghost {
+  color: var(--color-danger, #cf222e) !important;
+}
+
+.btn-danger-ghost:hover {
+  background-color: var(--color-danger-subtle, #ffebe9) !important;
 }
 </style>

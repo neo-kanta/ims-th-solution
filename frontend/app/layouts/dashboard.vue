@@ -3,12 +3,9 @@ import { onClickOutside } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { buildDashboardNavigation } from "../features/shell/navigation";
+import { useDashboardHeaderTabs } from "~/features/shell/composables/useDashboardHeaderTabs";
 import AppTabs from "~/shared/ui/AppTabs.vue";
 import AppSearch from "~/shared/ui/AppSearch.vue";
-import { useComplianceRuleDirectory } from "~/features/compliance/composables/useComplianceRuleDirectory";
-import { useComplianceBreachesList } from "~/features/compliance/composables/useComplianceBreaches";
-import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
-import { useMarketDataCatalog } from "~/features/market-data/composables/useMarketDataCatalog";
 
 
 const config = useRuntimeConfig();
@@ -22,40 +19,11 @@ const { theme, toggleTheme } = useTheme();
 const pageTitle = useState<string>("page-title", () => "");
 const isGlobalLoading = useGlobalProgress();
 
-const complianceRuleDir = useComplianceRuleDirectory();
-const complianceBreaches = useComplianceBreachesList();
-const fundWS = useFundWorkspace();
-const { candidates, refreshCandidates } = useMarketDataCatalog();
+const { hasHeaderTabs, activeTabItems, activeTabValue, activeTabAriaLabel } = useDashboardHeaderTabs();
 
-watch(
-  () => route.path,
-  (newPath) => {
-    pageTitle.value = "";
-    if (newPath.startsWith("/compliance")) {
-      void complianceRuleDir.ensureLoaded();
-      void complianceBreaches.fetchList({ limit: 1, status: "OPEN" });
-    } else if (newPath.startsWith("/market-data")) {
-      void refreshCandidates({ status: "REVIEW_REQUIRED", limit: 100 });
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  () => route.params.fundId,
-  (newFundId) => {
-    if (newFundId) {
-      void fundWS.loadFunds(String(newFundId));
-    }
-  },
-  { immediate: true }
-);
+watch(() => route.path, () => { pageTitle.value = ""; });
 
 const isComplianceRoute = computed(() => route.path.startsWith("/compliance"));
-const isInvestmentRoute = computed(() => route.path.startsWith("/investment") && route.params.fundId);
-const isMarketDataRoute = computed(() => route.path.startsWith("/market-data"));
-
-const hasHeaderTabs = computed(() => isComplianceRoute.value || isInvestmentRoute.value || isMarketDataRoute.value);
 
 const breadcrumbOwner = computed(() => authStore.user?.username || "neo-kanta");
 const breadcrumbRepo = computed(() => {
@@ -84,90 +52,6 @@ const breadcrumbIcon = computed(() => {
   return "system";
 });
 
-const complianceTabItems = computed(() => {
-  const rulesCount = complianceRuleDir.loading.value || complianceRuleDir.error.value ? null : complianceRuleDir.total.value;
-  const breachesCount = complianceBreaches.loading.value || complianceBreaches.error.value ? null : complianceBreaches.total.value;
-  return [
-    { key: "overview", label: t("compliance.dashboard.tabs.overview"), to: "/compliance", icon: "list" },
-    { key: "library", label: t("compliance.dashboard.tabs.library"), to: "/compliance/rules", icon: "list", count: rulesCount },
-    { key: "approvals", label: t("compliance.dashboard.tabs.approvals"), to: "/compliance", icon: "approval" },
-    { key: "breaches", label: t("compliance.dashboard.tabs.breaches"), to: "/compliance/post-trade", icon: "warning", count: breachesCount },
-    { key: "exceptions", label: t("compliance.dashboard.tabs.exceptions"), to: "/compliance/exceptions", icon: "approval" },
-    { key: "audit", label: t("compliance.dashboard.tabs.audit"), to: "/compliance/audit", icon: "audit" },
-    { key: "settings", label: t("compliance.dashboard.tabs.settings"), to: "/compliance/permissions", icon: "shield" },
-  ];
-});
-
-const complianceActiveTab = computed(() => {
-  if (route.path === "/compliance") return "overview";
-  if (route.path.startsWith("/compliance/rules")) return "library";
-  if (route.path.startsWith("/compliance/post-trade")) return "breaches";
-  if (route.path.startsWith("/compliance/exceptions")) return "exceptions";
-  if (route.path.startsWith("/compliance/audit")) return "audit";
-  if (route.path.startsWith("/compliance/permissions")) return "settings";
-  return "";
-});
-
-const investmentTabItems = computed(() => {
-  const fId = String(route.params.fundId || "");
-  // Tab badge counts are only shown once the backend can answer them
-  // authoritatively per fund. Until those endpoints land we leave the chips
-  // unset so we never render fabricated numbers (the previous hard-coded
-  // 7 / 23 / 2 fell back to every fund and was the source of the
-  // "fund-alpha" feeling on detail pages).
-  return [
-    { key: "holdings", label: t("holdings.workspaceTabs.holdings"), to: `/investment/funds/${fId}/holdings`, icon: "portfolio" },
-    { key: "operation", label: t("holdings.workspaceTabs.operation", "Operation"), to: `/investment/funds/${fId}/operation`, icon: "decision" },
-    { key: "stages", label: t("holdings.workspaceTabs.stages"), to: `/investment/funds/${fId}/stages`, icon: "globe" },
-    { key: "decisions", label: t("holdings.workspaceTabs.decisions"), to: `/investment/funds/${fId}/decisions`, icon: "decision" },
-    { key: "compliance", label: t("holdings.workspaceTabs.compliance"), to: `/investment/funds/${fId}/compliance`, icon: "compliance" },
-    { key: "audit", label: t("holdings.workspaceTabs.audit"), to: `/investment/funds/${fId}/audit`, icon: "audit" },
-    { key: "reviewers", label: t("holdings.workspaceTabs.reviewers"), to: `/investment/funds/${fId}/reviewers`, icon: "groups" },
-    { key: "settings", label: t("holdings.workspaceTabs.settings"), to: `/investment/funds/${fId}/settings`, icon: "shield" },
-  ];
-});
-
-const investmentActiveTab = computed(() => {
-  const parts = route.path.split("/");
-  return parts[4] || "holdings";
-});
-
-const marketDataTabItems = computed(() => {
-  const count = candidates.value?.length || null;
-  return [
-    { key: "market", label: t("marketData.tabs.market"), to: "/market-data?tab=market", icon: "briefcase" },
-    { key: "watchlist", label: t("marketData.tabs.watchlist"), to: "/market-data?tab=watchlist", icon: "list" },
-    { key: "unmapped", label: t("marketData.tabs.stage"), to: "/market-data?tab=unmapped", icon: "warning", count },
-    { key: "settings", label: t("marketData.tabs.settings"), to: "/market-data?tab=settings", icon: "shield" },
-  ];
-});
-
-const marketDataActiveTab = computed(() => {
-  return (typeof route.query.tab === "string" && ["market", "watchlist", "unmapped", "settings"].includes(route.query.tab))
-    ? route.query.tab
-    : "market";
-});
-
-const activeTabItems = computed(() => {
-  if (isComplianceRoute.value) return complianceTabItems.value;
-  if (isInvestmentRoute.value) return investmentTabItems.value;
-  if (isMarketDataRoute.value) return marketDataTabItems.value;
-  return [];
-});
-
-const activeTabValue = computed(() => {
-  if (isComplianceRoute.value) return complianceActiveTab.value;
-  if (isInvestmentRoute.value) return investmentActiveTab.value;
-  if (isMarketDataRoute.value) return marketDataActiveTab.value;
-  return "";
-});
-
-const activeTabAriaLabel = computed(() => {
-  if (isComplianceRoute.value) return "Compliance section tabs";
-  if (isInvestmentRoute.value) return "Investment workspace tabs";
-  if (isMarketDataRoute.value) return "Market Data section tabs";
-  return "Tabs";
-});
 
 // Default to collapsed (closed) so the app loads with content visible,
 // matching GitHub's overlay-sidebar UX. Restored from localStorage if set.
@@ -190,6 +74,13 @@ const SIDEBAR_MAX_WIDTH = 360;
 const navigationSections = computed(() =>
   buildDashboardNavigation(t, authStore.hasPermission),
 );
+
+const currentNavTitle = computed(() => {
+  const navItem = navigationSections.value
+    .flatMap((s) => s.items)
+    .find((item) => item.to === route.path);
+  return navItem ? navItem.label : "";
+});
 
 const languages = computed<Array<{ code: "en" | "th" | "zh"; name: string }>>(
   () => [
@@ -589,14 +480,14 @@ watch(
             <span class="header-breadcrumbs__separator">/</span>
             <span
               class="header-breadcrumbs__repo"
-              :class="{ 'header-breadcrumbs__repo--link': !!pageTitle }"
+              :class="{ 'header-breadcrumbs__repo--link': !!(pageTitle || currentNavTitle) }"
               @click="handleRepoClick"
             >
               {{ breadcrumbRepo }}
             </span>
-            <template v-if="pageTitle">
+            <template v-if="pageTitle || currentNavTitle">
               <span class="header-breadcrumbs__separator">/</span>
-              <span class="header-breadcrumbs__current-title">{{ pageTitle }}</span>
+              <span class="header-breadcrumbs__current-title">{{ pageTitle || currentNavTitle }}</span>
             </template>
           </div>
 
@@ -773,6 +664,7 @@ watch(
   font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   min-width: 0;
+  text-transform: lowercase;
 }
 
 .header-controls {

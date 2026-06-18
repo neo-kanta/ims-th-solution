@@ -162,6 +162,9 @@ export const thComplianceMessages = {
       title: "ระบบจำลองก่อนทำรายการ (Pre-Trade)",
       description:
         "ส่งคำสั่งซื้อขายที่ต้องการตรวจสอบ เพื่อให้ระบบหลังบ้านตรวจสอบกฎเกณฑ์ทั้งหมดที่เกี่ยวข้องก่อนจะบันทึกคำสั่งจริง หากผลการตรวจสอบระบุเป็น BLOCK คำสั่งนี้จะไม่สามารถดำเนินการต่อในระบบได้",
+      readonlyTitle: "การรัน Pre-trade ต้องมีสิทธิ์ WORKFLOW_EXECUTE",
+      readonlyCopy:
+        "คุณสามารถดูกฎที่ใช้งานอยู่และผลการตรวจสอบเดิมได้ แต่ไม่สามารถส่งคำสั่งใหม่ได้ด้วยสิทธิ์ปัจจุบัน โปรดติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์ WORKFLOW_EXECUTE",
       form: {
         sectionOrder: "คำสั่งซื้อขายที่เสนอ",
         sectionContext: "ข้อมูลพอร์ตการลงทุน",
@@ -552,6 +555,11 @@ export const thComplianceMessages = {
       submitForApproval: "นำส่งเสนออนุมัติรายการลงทุน",
       ownerLabel: "ผู้ทำรายการหลัก",
       breakdownLabel: "สรุปสัดส่วนสินทรัพย์รายการ",
+      notConfiguredTitle: "ยังไม่ได้ตั้งค่าเวิร์กโฟลว์การตัดสินใจ",
+      notConfiguredCopy:
+        "ยังไม่มี API แบ็กเอนด์สำหรับ Lifecycle การตัดสินใจลงทุน จึงไม่สามารถส่ง/ตรวจสอบ/อนุมัติจากหน้านี้ได้",
+      notConfiguredAlternative:
+        "หากต้องการทดสอบ Pre-trade Compliance กับพอร์ตจริง โปรดใช้ Pre-trade Simulator หากต้องการบันทึกรายการซื้อขายจริงเมื่อ workflow อนุญาต โปรดใช้หน้า Holdings ของกองทุนนั้น",
     },
 
     // Badges

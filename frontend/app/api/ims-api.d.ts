@@ -2331,6 +2331,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approvals/requests/{requestId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an approved request
+         * @description Revokes a previously approved request, returning the subject to an un-approved state. Requires a reason.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Revocation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ActionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approvals/requests/{requestId}/timeline": {
         parameters: {
             query?: never;
@@ -4658,6 +4741,335 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/decisions/approval-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Investment Decision Approval Items
+         * @description Returns decisions pending approval (default status=PENDING_APPROVAL), enriched with current and previous approver names and stage numbers.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Filter by portfolio UUID */
+                    portfolio_id?: string;
+                    /** @description Filter by fund UUID */
+                    fund_id?: string;
+                    /** @description Inclusive lower bound YYYY-MM-DD */
+                    business_date_from?: string;
+                    /** @description Inclusive upper bound YYYY-MM-DD */
+                    business_date_to?: string;
+                    /** @description Filter by exact decision number */
+                    decision_no?: string;
+                    /** @description INVESTMENT_DECISION | ORDER_CANCEL | ORDER_AMEND */
+                    process_type?: string;
+                    /** @description MUTUAL_FUND | ETF | STOCK | BOND | CASH */
+                    product_type?: string;
+                    /** @description Filter by research report number */
+                    research_no?: string;
+                    /** @description Decision lifecycle status (default PENDING_APPROVAL) */
+                    status?: string;
+                    /** @description Substring search on decision_no / instrument_code / research_report_no */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/batch-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Approve Investment Decisions
+         * @description Approves multiple investment decision headers in a single call. Each decision must be PENDING_APPROVAL and have a pending approval task assigned to the authenticated user. Returns per-decision results — partial failures are reported without aborting the rest.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Decision numbers and optional comment */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BatchApprovalRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BatchApprovalResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/batch-reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Reject Investment Decisions
+         * @description Rejects multiple investment decision headers in a single call. A rejection reason is required and applied to all selected decisions. Returns per-decision results.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Decision numbers and required reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BatchRejectionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BatchApprovalResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/{id}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Investment Decision With Lines
+         * @description Returns a decision header with all child decision lines (for basket/rebalance/switch decisions) and approval stage info.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Decision UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/funds": {
         parameters: {
             query?: never;
@@ -5728,102 +6140,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/investment/funds/{id}/submit-approval": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Fund For Approval
-         * @description Move a DRAFT or REJECTED fund into onboarding approval.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Fund UUID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["FundResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Unprocessable Entity */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/investment/instruments": {
         parameters: {
             query?: never;
@@ -6852,102 +7168,6 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/investment/portfolios/{id}/submit-approval": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit Portfolio For Approval
-         * @description Move a DRAFT portfolio into onboarding approval.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Portfolio UUID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["PortfolioResponse"];
-                    };
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Unprocessable Entity */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Internal Server Error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
         delete?: never;
         options?: never;
         head?: never;
@@ -9429,66 +9649,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/market-data/search/live": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Market Data — live symbol search
-         * @description Live provider symbol lookup (Alpha Vantage SYMBOL_SEARCH) enriched with a logo URL. Not limited to already-imported securities.
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Free-text query (ticker fragment or company name) */
-                    query: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LiveSymbolSearchResponseDTO"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Bad Gateway */
-                502: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/reference-data/securities": {
         parameters: {
             query?: never;
@@ -10041,7 +10201,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/workflow/day-states": {
+    "/workflow/daily": {
         parameters: {
             query?: never;
             header?: never;
@@ -10049,8 +10209,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Workflow Day State By Date
-         * @description Get the caller's current workflow state for a business date.
+         * Get Daily Workflow State
+         * @description Returns aggregated global workflow state for a business date.
          */
         get: {
             parameters: {
@@ -10070,7 +10230,80 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["WorkflowStateResponse"];
+                        "application/json": components["schemas"]["DailyWorkflowResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/daily/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Daily Workflow Transition
+         * @description Execute a workflow transition using business-readable identifiers and canonical operation types.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Execute payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DailyExecuteRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DailyWorkflowResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -10100,8 +10333,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Not Found */
-                404: {
+                /** @description Unprocessable Entity */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -10120,15 +10353,13 @@ export interface paths {
                 };
             };
         };
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/workflow/day-states/history": {
+    "/workflow/daily/transitions": {
         parameters: {
             query?: never;
             header?: never;
@@ -10136,14 +10367,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Workflow History By Date
-         * @description Get the caller's workflow transition history for a business date.
+         * Get Daily Transition History
+         * @description Returns paginated global workflow transition history.
          */
         get: {
             parameters: {
                 query: {
                     /** @description Business date (YYYY-MM-DD) */
                     businessDate: string;
+                    /** @description Page number (1-based, default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -10157,7 +10392,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["HistoryResponse"];
+                        "application/json": components["schemas"]["DailyTransitionsResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -10171,15 +10406,6 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -10537,6 +10763,175 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Approval Settings
+         * @description Returns the configured approvers for each workflow operation type.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkflowSettingsResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update Workflow Approval Settings
+         * @description Replace the configured approvers for a workflow operation type. Admin only. Note: approver account codes are stored without IAM validation (no cross-module IAM lookup interface exists).
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Settings payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DailySettingsUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkflowSettingsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/transition-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Transition Rules
+         * @description Returns the full state machine topology as a list of valid from→operation→to transitions.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TransitionRulesResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -10600,6 +10995,14 @@ export interface components {
             /** @description 0..100, two-decimal precision */
             pct_of_nav?: string;
         };
+        ApproverInput: {
+            /** @description AccountCode is the approver's account code. Required. */
+            accountCode?: string;
+            /** @description Role is a descriptive label (e.g. "FundManager"). Optional. */
+            role?: string;
+            /** @description Username is a snapshot of the approver's display name. Optional. */
+            username?: string;
+        };
         AssetClass: {
             code?: string;
             createdAt?: string;
@@ -10641,6 +11044,24 @@ export interface components {
             limit?: number;
             offset?: number;
             total?: number;
+        };
+        BatchApprovalRequest: {
+            comment?: string;
+            decision_nos: string[];
+        };
+        BatchApprovalResponse: {
+            failed?: number;
+            results?: components["schemas"]["BatchApprovalResultResponse"][];
+            succeeded?: number;
+        };
+        BatchApprovalResultResponse: {
+            decision_no?: string;
+            error?: string;
+            ok?: boolean;
+        };
+        BatchRejectionRequest: {
+            decision_nos: string[];
+            reason: string;
         };
         BlockingReason: {
             code?: string;
@@ -10977,11 +11398,190 @@ export interface components {
             password: string;
             username: string;
         };
+        DailyApproverEntry: {
+            accountCode?: string;
+            role?: string;
+            username?: string;
+        };
+        DailyAuditSummary: {
+            lastTransitionAt?: string;
+            lastTransitionBy?: string;
+            totalTransitions?: number;
+        };
+        DailyBlockingReason: {
+            code?: string;
+            message?: string;
+        };
+        DailyExecuteRequest: {
+            /**
+             * @description AccountingDate applies to CLOSE_ACCOUNTING. Format YYYY-MM-DD.
+             *     When omitted, defaults to BusinessDate.
+             */
+            accountingDate?: string;
+            /** @description AttestationReason is required when ZeroTransactionAttestation is true (min 30 chars). */
+            attestationReason?: string;
+            /** @description BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar). */
+            businessDate?: string;
+            /** @description Notes is an optional free-text remark for MANAGER_APPROVE. */
+            notes?: string;
+            /**
+             * @description OperationType is the canonical API operation name.
+             *     Valid values: START_INVESTMENT_DAY, CANCEL_INVESTMENT_DAY,
+             *       MANAGER_APPROVE, CANCEL_MANAGER_APPROVAL,
+             *       CLOSE_TRANSACTION, CANCEL_TRANSACTION_CLOSE,
+             *       CLOSE_ACCOUNTING, CANCEL_ACCOUNTING_CLOSE
+             */
+            operationType?: string;
+            /** @description Reason is mandatory for cancel/rollback operations (min 20 chars). */
+            reason?: string;
+            /**
+             * @description Remark is optional free text from the operator. For cancel/rollback
+             *     operations it is accepted as an alias for reason.
+             */
+            remark?: string;
+            /**
+             * @description ZeroTransactionAttestation must be true when approving a day with no
+             *     investment transactions. Applies to MANAGER_APPROVE only.
+             */
+            zeroTransactionAttestation?: boolean;
+        };
+        DailyModuleStatus: {
+            ready?: boolean;
+            reason?: string;
+        };
+        DailyOperationSetting: {
+            approvalMode?: string;
+            approvers?: components["schemas"]["DailyApproverEntry"][];
+        };
+        DailySettingsUpdateRequest: {
+            /**
+             * @description Approvers replaces the entire active approver list for this operation type.
+             *     Pass an empty array to remove all approvers.
+             */
+            approvers?: components["schemas"]["ApproverInput"][];
+            /** @description OperationType is the operation type to configure approvers for. */
+            operationType?: string;
+        };
+        DailyTimelineEntry: {
+            executedAt?: string;
+            executedByAccountCode?: string;
+            executedByUsername?: string;
+            fromState?: string;
+            isAdminOverride?: boolean;
+            /** @description canonical API name */
+            operationType?: string;
+            reason?: string;
+            toState?: string;
+            transitionId?: string;
+        };
+        DailyTransitionsResponse: {
+            businessDate?: string;
+            page?: number;
+            pageSize?: number;
+            total?: number;
+            transitions?: components["schemas"]["DailyTimelineEntry"][];
+        };
+        /** @description Aggregated workflow state for one contract on one business date. */
+        DailyWorkflowResponse: {
+            /** @description AllowedOperations lists operation types the caller may attempt (API names). */
+            allowedOperations?: string[];
+            /** @description Approvers maps operationType → configured approver list. */
+            approvers?: {
+                [key: string]: components["schemas"]["DailyApproverEntry"][];
+            };
+            auditSummary?: components["schemas"]["DailyAuditSummary"];
+            blockedOperations?: string[];
+            blockedReasons?: components["schemas"]["DailyBlockingReason"][];
+            /** @description YYYY-MM-DD */
+            businessDate?: string;
+            /**
+             * @description CurrentState is one of: NOT_STARTED, INVESTMENT_DAY_STARTED,
+             *     MANAGER_APPROVED, TRANSACTION_CLOSED, ACCOUNTING_CLOSED
+             */
+            currentState?: string;
+            isToday?: boolean;
+            moduleReadiness?: {
+                [key: string]: components["schemas"]["DailyModuleStatus"];
+            };
+            persisted?: boolean;
+            /** @description Settings maps operationType → approval configuration. */
+            settings?: {
+                [key: string]: components["schemas"]["DailyOperationSetting"];
+            };
+            settingsSummary?: {
+                [key: string]: components["schemas"]["DailyOperationSetting"];
+            };
+            stateLabel?: string;
+            timeline?: components["schemas"]["DailyTimelineEntry"][];
+            transitionRules?: components["schemas"]["TransitionRule"][];
+        };
         DashboardSnapshotDTO: {
             lastRefreshed?: string;
             summary?: components["schemas"]["TaskSummaryDTO"];
             tasks?: components["schemas"]["TaskDTO"][];
             workflowStates?: components["schemas"]["WorkflowStateDTO"][];
+        };
+        DecisionLineResponse: {
+            amount?: string;
+            currency?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_id?: string;
+            limit_price?: string;
+            line_number?: number;
+            notes?: string;
+            product_type?: string;
+            quantity?: string;
+            side?: string;
+            target_weight?: string;
+        };
+        DecisionListResponse: {
+            items?: components["schemas"]["DecisionResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        DecisionResponse: {
+            amendment_no?: number;
+            amount?: string;
+            approval_request_id?: string;
+            /** @description Approval enrichment — populated by the approval-items endpoint. */
+            approval_stage?: number;
+            approval_status?: string;
+            approval_total_stages?: number;
+            business_date?: string;
+            cancellation_reason?: string;
+            cancelled_at?: string;
+            compliance_check_group_id?: string;
+            contract_id?: string;
+            created_at?: string;
+            currency?: string;
+            current_approvers?: string[];
+            decision_number?: string;
+            decision_type?: string;
+            exchange?: string;
+            fund_id?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_id?: string;
+            limit_price?: string;
+            /** @description Lines are included when the decision has basket/rebalance/switch lines. */
+            lines?: components["schemas"]["DecisionLineResponse"][];
+            portfolio_id?: string;
+            previous_approvers?: string[];
+            process_type?: string;
+            product_type?: string;
+            quantity?: string;
+            rationale?: string;
+            ready_for_execution_at?: string;
+            research_report_id?: string;
+            research_report_no?: string;
+            side?: string;
+            status?: string;
+            strategy_code?: string;
+            submitted_at?: string;
+            submitter_user_id?: string;
+            updated_at?: string;
         };
         DeleteFundRequest: {
             expected_version: number;
@@ -10995,10 +11595,12 @@ export interface components {
             error?: string;
         };
         EventResponse: {
+            actor?: components["schemas"]["UserDescriptor"];
             actor_name?: string;
             actor_user_id?: string;
             comment?: string;
             created_at?: string;
+            delegated_from?: components["schemas"]["UserDescriptor"];
             delegated_from_user_id?: string;
             event_type?: string;
             id?: string;
@@ -11367,20 +11969,6 @@ export interface components {
             offset?: number;
             total?: number;
         };
-        LiveSymbolMatchDTO: {
-            already_tracked?: boolean;
-            asset_type?: string;
-            currency?: string;
-            exchange?: string;
-            logo_url?: string;
-            name?: string;
-            region?: string;
-            security_id?: string;
-            symbol?: string;
-        };
-        LiveSymbolSearchResponseDTO: {
-            items?: components["schemas"]["LiveSymbolMatchDTO"][];
-        };
         LoginRequest: {
             /** @description MFA challenge token returned after password step */
             mfa_token?: string;
@@ -11507,6 +12095,11 @@ export interface components {
             aum?: string;
             business_date?: string;
             nav_per_unit?: string;
+        };
+        OperationSettingEntry: {
+            approvalMode?: string;
+            approvers?: components["schemas"]["DailyApproverEntry"][];
+            operationType?: string;
         };
         Override: {
             /** @description second-level approval if required */
@@ -11787,6 +12380,7 @@ export interface components {
             member_ids?: string[];
         };
         RequestDetailResponse: {
+            allowed_actions?: string[];
             request?: components["schemas"]["RequestResponse"];
             signatures?: components["schemas"]["SignatureResponse"][];
             tasks?: components["schemas"]["TaskResponse"][];
@@ -11812,11 +12406,13 @@ export interface components {
             rejection_reason?: string;
             request_number?: string;
             status?: string;
+            subject?: components["schemas"]["SubjectDescriptor"];
             subject_id?: string;
             subject_reference?: string;
             subject_title?: string;
             subject_type?: string;
             submitted_at?: string;
+            submitter?: components["schemas"]["UserDescriptor"];
             submitter_id?: string;
             submitter_name?: string;
             updated_at?: string;
@@ -12045,9 +12641,11 @@ export interface components {
         SignatureResponse: {
             id?: string;
             is_proxy_signature?: boolean;
+            proxy_for?: components["schemas"]["UserDescriptor"];
             proxy_for_user_id?: string;
             signature_label?: string;
             signed_at?: string;
+            signer?: components["schemas"]["UserDescriptor"];
             signer_display_name?: string;
             signer_title?: string;
             signer_user_id?: string;
@@ -12073,7 +12671,13 @@ export interface components {
             stage_name?: string;
             stage_number?: number;
         };
+        SubjectDescriptor: {
+            display_label?: string;
+            id?: string;
+            type?: string;
+        };
         SubjectStatusResponse: {
+            allowed_actions?: string[];
             has_request?: boolean;
             request?: components["schemas"]["RequestResponse"];
         };
@@ -12120,12 +12724,15 @@ export interface components {
             acted_at?: string;
             acted_by?: string;
             action_comment?: string;
+            actor?: components["schemas"]["UserDescriptor"];
             approval_request_id?: string;
             assigned_group_id?: string;
             assigned_team_id?: string;
+            assigned_user?: components["schemas"]["UserDescriptor"];
             assigned_user_id?: string;
             assigned_user_name?: string;
             created_at?: string;
+            delegated_from?: components["schemas"]["UserDescriptor"];
             delegated_from_user_id?: string;
             due_at?: string;
             id?: string;
@@ -12262,6 +12869,15 @@ export interface components {
             transitionId?: string;
             workflowDayId?: string;
         };
+        TransitionRule: {
+            fromState?: string;
+            operationType?: string;
+            requiresReason?: boolean;
+            toState?: string;
+        };
+        TransitionRulesResponse: {
+            rules?: components["schemas"]["TransitionRule"][];
+        };
         UnmappedCandidateDTO: {
             batch_id?: string;
             candidate_id?: string;
@@ -12348,6 +12964,11 @@ export interface components {
             primary_identifier?: string;
             status?: string;
         };
+        UserDescriptor: {
+            display_name?: string;
+            id?: string;
+            username?: string;
+        };
         UserResponse: {
             display_name?: string;
             email?: string;
@@ -12391,6 +13012,9 @@ export interface components {
             source?: string;
             unrealised_pnl?: string;
             valuation_ccy?: string;
+        };
+        WorkflowSettingsResponse: {
+            settings?: components["schemas"]["OperationSettingEntry"][];
         };
         WorkflowStateDTO: {
             businessDate?: string;

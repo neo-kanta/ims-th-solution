@@ -31,5 +31,7 @@ export function useApprovalActions() {
       run(() => approvalApi.withdraw(requestId), "Failed to withdraw request."),
     cancel: (requestId: string) =>
       run(() => approvalApi.cancel(requestId), "Failed to cancel request."),
+    revoke: (requestId: string, reason: string) =>
+      run(() => approvalApi.revoke(requestId, { reason }), "Failed to revoke request."),
   };
 }

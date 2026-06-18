@@ -162,6 +162,9 @@ export const zhComplianceMessages = {
       title: "前置交易合規模擬器 (Pre-Trade)",
       description:
         "提交擬議之委託單；後端將在建立實際交易前執行所有適用的規則並回傳結果。若結果為 BLOCK，該委託將被禁止繼續執行。",
+      readonlyTitle: "執行 Pre-trade 需要 WORKFLOW_EXECUTE 權限。",
+      readonlyCopy:
+        "您可以查看現行規則與既有結果,但目前角色無法執行新的模擬。請向管理員申請 WORKFLOW_EXECUTE 權限後再操作。",
       form: {
         sectionOrder: "擬議委託單",
         sectionContext: "投資組合內容",
@@ -552,6 +555,11 @@ export const zhComplianceMessages = {
       submitForApproval: "提交此投資決策進行審批",
       ownerLabel: "決策執行人員",
       breakdownLabel: "投資比重摘要",
+      notConfiguredTitle: "決策工作流尚未配置",
+      notConfiguredCopy:
+        "後端暫無投資決策生命周期的 API,因此本頁無法執行提交、覆核或審批操作。",
+      notConfiguredAlternative:
+        "若需對真實投組執行交易前合規模擬,請使用「Pre-trade Simulator」;若 workflow 已允許,可於該基金的 Holdings 頁面下單。",
     },
 
     // Badges

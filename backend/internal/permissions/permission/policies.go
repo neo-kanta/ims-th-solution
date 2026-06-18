@@ -13,10 +13,11 @@ const (
 	CodeManage = "PERMISSIONS_MANAGE"
 )
 
-// Fine-grained permission-management codes stored in the new
-// permission_function_definitions catalog. These are intentionally not emitted
-// by Provider.Permissions because the legacy catalog table currently enforces
-// uppercase codes for existing modules.
+// Fine-grained permission-management codes stored in permission_function_definitions
+// (the new catalog table). These codes use lowercase dot-notation and are seeded
+// by database/seeds/008_permission_management_seed.sql, not by Provider.Permissions,
+// because the legacy permissions_function_definitions table enforces an UPPER(code)
+// constraint that rejects dot-notation codes.
 const (
 	CodeUsersView          = "permission.users.view"
 	CodeGroupsView         = "permission.groups.view"
@@ -37,8 +38,8 @@ const (
 	CodeAuditExport          = "permission.audit.export"
 	CodeNotificationView     = "permission.notification.view"
 	CodeNotificationEdit     = "permission.notification.edit"
-	CodeLabelsManage         = "permission.change_request.create"
-	CodeApprovalSettingsView = "permission.change_request.review"
+	CodeLabelsManage         = "permission.labels.manage"
+	CodeApprovalSettingsView = "permission.approval_settings.view"
 )
 
 // Provider implements contract.PermissionCatalog for the permissions module.

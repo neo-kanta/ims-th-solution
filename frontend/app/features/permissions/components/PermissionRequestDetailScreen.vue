@@ -35,6 +35,7 @@ const isCreator = computed(() => request.value?.created_by === currentUserId.val
 const canSubmit = computed(() => request.value?.status === "DRAFT" || request.value?.status === "CHANGES_REQUESTED");
 const canReview = computed(() => request.value?.status === "READY_FOR_REVIEW" && !isCreator.value && Boolean(pendingStep.value));
 const canMerge = computed(() => request.value?.status === "APPROVED" && !hasBlockingCheck.value);
+const rejectReasonValid = computed(() => reviewComment.value.trim().length > 0);
 
 async function loadRequest() {
   loading.value = true;
@@ -141,7 +142,7 @@ onMounted(loadRequest);
           <button class="btn btn-warning btn-sm" :disabled="!canReview || loading" @click="requestChanges">
             Request Changes
           </button>
-          <button class="btn btn-danger btn-sm" :disabled="!canReview || loading" @click="reject">
+          <button class="btn btn-danger btn-sm" :disabled="!canReview || loading || !rejectReasonValid" @click="reject">
             Reject
           </button>
           <button class="btn btn-primary btn-sm" :disabled="!canMerge || loading" @click="merge">
@@ -169,8 +170,8 @@ onMounted(loadRequest);
 
       <section v-if="activeTab === 'conversation'" class="permission-detail__panel">
         <div class="permission-detail__summary">
-          <span>Creator: {{ request.created_by_name || request.created_by }}</span>
-          <span>Target: {{ request.target_entity_type || "-" }} {{ request.target_entity_id }}</span>
+          <span>Creator: {{ request.created_by_name || "Unknown User" }}</span>
+          <span>Target: {{ request.target_entity_type || "-" }}</span>
           <span>Updated: {{ new Date(request.updated_at).toLocaleString() }}</span>
         </div>
         <form class="permission-detail__comment-form" @submit.prevent="addComment">
@@ -195,7 +196,7 @@ onMounted(loadRequest);
         <div v-for="item in request.items" :key="item.id" class="permission-diff">
           <header>
             <strong>{{ item.action_type }}</strong>
-            <span>{{ item.target_table }} {{ item.target_id }}</span>
+            <span>{{ item.target_table }}</span>
           </header>
           <div class="permission-diff__grid">
             <pre>{{ pretty(item.before_json) }}</pre>

@@ -51,6 +51,7 @@ export const enCommonMessages = {
   },
   navigation: {
     dashboard: "Dashboard",
+    chat: "Chat",
     workflow: "Workflow",
     settings: "Settings",
     personalSettings: "Personal settings",
@@ -88,6 +89,71 @@ export const enCommonMessages = {
   },
   workflow: {
     subtitle: "Manage daily workflow operations and day-start procedures.",
+    indexNotConfiguredTitle: "Workflow operations are managed per fund",
+    indexNotConfiguredCopy:
+      "Open a fund from My Funds to see its current workflow state and run transitions (Day Start, Manager Approval, Transaction Closing, Accounting Closing). The backend gates every transition on the fund's contract — there is no global workflow operation surface.",
+    tabs: {
+      overview: "Overview",
+      audit: "Audit Trail",
+      settings: "Approval Settings",
+    },
+    state: {
+      NOT_STARTED: "Not Started",
+      INVESTMENT_DAY_STARTED: "Day Started",
+      MANAGER_APPROVED: "Manager Approved",
+      TRANSACTION_CLOSED: "Transaction Closed",
+      ACCOUNTING_CLOSED: "Accounting Closed",
+    },
+    stage: {
+      INVESTMENT_DAY_STARTED: "Day Start",
+      MANAGER_APPROVED: "Manager Approval",
+      TRANSACTION_CLOSED: "Transaction Closing",
+      ACCOUNTING_CLOSED: "Accounting Closing",
+    },
+    status: {
+      complete: "Complete",
+      active: "Active",
+      upcoming: "Upcoming",
+      blocked: "Blocked",
+    },
+    fields: {
+      timestamp: "Time",
+      personnel: "Actor",
+      notes: "Notes",
+    },
+    action: {
+      START_INVESTMENT_DAY: "Start Investment Day",
+      CANCEL_INVESTMENT_DAY: "Cancel Investment Day",
+      MANAGER_APPROVE: "Manager Approve",
+      CANCEL_MANAGER_APPROVAL: "Cancel Manager Approval",
+      CLOSE_TRANSACTION: "Close Transactions",
+      CANCEL_TRANSACTION_CLOSE: "Cancel Transaction Close",
+      CLOSE_ACCOUNTING: "Close Accounting",
+      CANCEL_ACCOUNTING_CLOSE: "Cancel Accounting Close",
+    },
+    modules: {
+      approval: "Approval module",
+      investment: "Investment module",
+      compliance: "Compliance module",
+      permission: "Permission module",
+      approvalWarning: "Approval module is not fully active. Workflow is using internal workflow approval settings.",
+    },
+    overview: {
+      actions: "Allowed Operations",
+      blocked: "Unavailable Transitions",
+      timeline: "Timeline Summary",
+    },
+    settings: {
+      defaultAdminFallback: "No approvers configured. Default Admin group will act as fallback.",
+      accountCodePlaceholder: "Account code (e.g. jsmith)",
+      rolePlaceholder: "Role/Label (Optional)",
+      saveWarningText: "Are you sure you want to save approval settings? Unsaved changes for modified operations will be written to the server.",
+      saveSuccessText: "Approval settings saved successfully.",
+      modifiedCount: "You have unsaved changes.",
+    },
+    blocked: {
+      reasonText: "Not permitted in current state",
+    },
   },
   forbidden: {
     title: "Access denied",

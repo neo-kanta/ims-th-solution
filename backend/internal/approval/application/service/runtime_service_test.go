@@ -414,11 +414,13 @@ func TestAllowedActions_ComputedByStatus(t *testing.T) {
 		t.Fatalf("submitter without task must not see approve/reject, got %v", actions)
 	}
 
-	// APPROVED status grants revoke to all viewers; terminal state removes withdraw/cancel.
+	// APPROVED status: revoke is NOT surfaced in allowed_actions — it requires a
+	// function-permission check that computeAllowedActions cannot perform. The route
+	// middleware enforces the gate. Terminal state removes withdraw/cancel for all viewers.
 	req.Status = vo.RequestStatusApproved
 	actions = computeAllowedActions(req, nil, assignee)
-	if !contains(actions, "revoke") {
-		t.Fatalf("APPROVED request must expose revoke action, got %v", actions)
+	if contains(actions, "revoke") {
+		t.Fatalf("revoke must not appear in allowed_actions (route-level gate only), got %v", actions)
 	}
 	if contains(actions, "withdraw") || contains(actions, "cancel") {
 		t.Fatalf("terminal APPROVED must not expose withdraw/cancel, got %v", actions)
@@ -713,6 +715,8 @@ func TestRunPostAction_CallbackFailure_AuditRecorded(t *testing.T) {
 
 // TestGetApprovalRequest_SubjectAccessDenied verifies that GetApprovalRequest
 // checks the subject access port before disclosing the request detail.
+// The endpoint returns ErrNotFound (not ErrForbidden) so request existence
+// is not revealed to a caller who cannot access the subject.
 func TestGetApprovalRequest_SubjectAccessDenied(t *testing.T) {
 	repo := newFakeRepo()
 	subjectID := uuid.New()
@@ -728,8 +732,8 @@ func TestGetApprovalRequest_SubjectAccessDenied(t *testing.T) {
 	svc.RegisterSubjectAccessPort(vo.SubjectResearchReport, denyingSubjectPort{})
 
 	_, err := svc.GetApprovalRequest(ctx(), reqID, uuid.New())
-	if !errors.Is(err, domain.ErrForbidden) {
-		t.Fatalf("err = %v, want ErrForbidden", err)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound (existence must not be revealed)", err)
 	}
 }
 
@@ -758,7 +762,9 @@ func TestListRequests_AccessPortFiltersInaccessibleSubjects(t *testing.T) {
 }
 
 // TestGetSubjectApprovalStatus_AccessDenied verifies that GetSubjectApprovalStatus
-// checks the subject access port when viewerID is non-zero.
+// checks the subject access port when viewerID is non-zero. When access is
+// denied the call returns (nil, nil) — callers observe "no request" rather than
+// a forbidden error so subject existence is not revealed.
 func TestGetSubjectApprovalStatus_AccessDenied(t *testing.T) {
 	repo := newFakeRepo()
 	subjectID := uuid.New()
@@ -774,9 +780,12 @@ func TestGetSubjectApprovalStatus_AccessDenied(t *testing.T) {
 	svc := newTestRuntime(repo)
 	svc.RegisterSubjectAccessPort(vo.SubjectResearchReport, denyingSubjectPort{})
 
-	_, err := svc.GetSubjectApprovalStatus(ctx(), vo.SubjectResearchReport, subjectID, uuid.New())
-	if !errors.Is(err, domain.ErrForbidden) {
-		t.Fatalf("err = %v, want ErrForbidden", err)
+	req, err := svc.GetSubjectApprovalStatus(ctx(), vo.SubjectResearchReport, subjectID, uuid.New())
+	if err != nil {
+		t.Fatalf("unexpected error (existence must not be revealed): %v", err)
+	}
+	if req != nil {
+		t.Fatalf("expected nil result when access denied, got request %v", req.ID)
 	}
 }
 
@@ -930,7 +939,8 @@ func TestGetMyInbox_SubjectPortFiltersInaccessible(t *testing.T) {
 }
 
 // TestGetApprovalTimeline_SubjectAccessDenied verifies that GetApprovalTimeline
-// enforces subject access before returning events.
+// enforces subject access before returning events. The endpoint must return
+// ErrNotFound (not ErrForbidden) so it does not reveal request existence.
 func TestGetApprovalTimeline_SubjectAccessDenied(t *testing.T) {
 	repo := newFakeRepo()
 	reqID := uuid.New()
@@ -944,8 +954,8 @@ func TestGetApprovalTimeline_SubjectAccessDenied(t *testing.T) {
 	svc.RegisterSubjectAccessPort(vo.SubjectResearchReport, denyingSubjectPort{})
 
 	_, err := svc.GetApprovalTimeline(ctx(), reqID, uuid.New())
-	if !errors.Is(err, domain.ErrForbidden) {
-		t.Fatalf("err = %v, want ErrForbidden", err)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound (existence must not be revealed)", err)
 	}
 }
 
@@ -996,8 +1006,10 @@ func TestCancelApprovalBySubject_InvalidSubjectType_ReturnsValidationError(t *te
 // ── Subject access port: missing port, zero actor, generic subject ────────────
 
 // TestSubjectAccessPort_MissingPort_FailsClosed verifies that when no port is
-// registered for a subject type, the engine rejects reads with ErrForbidden
-// rather than silently disclosing the request (fail-closed design).
+// registered for a subject type, the engine returns ErrNotFound (fail-closed).
+// ErrNotFound is used instead of ErrForbidden to prevent existence oracle attacks:
+// an attacker must not be able to distinguish "request does not exist" from
+// "request exists but you cannot see it".
 func TestSubjectAccessPort_MissingPort_FailsClosed(t *testing.T) {
 	repo := newFakeRepo()
 	reqID := uuid.New()
@@ -1010,8 +1022,8 @@ func TestSubjectAccessPort_MissingPort_FailsClosed(t *testing.T) {
 	svc := newBareTestRuntime(repo) // no ports registered
 
 	_, err := svc.GetApprovalRequest(ctx(), reqID, uuid.New())
-	if !errors.Is(err, domain.ErrForbidden) {
-		t.Fatalf("missing port must return ErrForbidden, got %v", err)
+	if !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("missing port must return ErrNotFound (fail closed), got %v", err)
 	}
 }
 
@@ -1151,5 +1163,89 @@ func TestRunPostAction_CallbackFailure_AuditHasRequiredFields(t *testing.T) {
 	if v, ok := syncFailed.metadata["retryable"]; !ok || v != true {
 		t.Errorf("APPROVAL_SYNC_FAILED metadata 'retryable' = %v, want true", v)
 	}
+}
+
+// ── P0-5 regression: writeSignature must never persist a raw UUID ─────────────
+// When the directory cannot resolve the signer's display name the fallback must
+// be "Unknown User", not signer.String().
+
+func seedSingleUserConfig(repo *fakeRepo, approver uuid.UUID) {
+	seedConfig(repo, vo.ProcessInvestmentAnalysisReport, entity.ApprovalProcessStage{
+		StageNumber:    1,
+		ApproverMode:   vo.ApproverModeSingleUser,
+		ApproverUserID: &approver,
+		IsFinalStage:   true,
+	})
+}
+
+func approveFirstTask(t *testing.T, repo *fakeRepo, svc *ApprovalRuntimeService, approver uuid.UUID) {
+	t.Helper()
+	req, err := svc.SubmitApproval(ctx(), SubmitInput{
+		ProcessType: vo.ProcessInvestmentAnalysisReport,
+		SubjectType: vo.SubjectResearchReport,
+		SubjectID:   uuid.New(),
+		SubmitterID: uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	tsk := pendingTaskFor(repo, req.ID, approver)
+	if tsk == nil {
+		t.Fatalf("no pending task for approver")
+	}
+	if _, err = svc.ApproveTask(ctx(), tsk.ID, approver, ""); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+}
+
+func TestWriteSignature_NilDirectory_SignerDisplayNameIsUnknownUser(t *testing.T) {
+	repo := newFakeRepo()
+	approver := uuid.New()
+	seedSingleUserConfig(repo, approver)
+	// No Directory in deps → s.directory is nil; display must default to "Unknown User".
+	svc := newTestRuntime(repo)
+
+	approveFirstTask(t, repo, svc, approver)
+
+	if len(repo.signatures) == 0 {
+		t.Fatalf("no signature records created")
+	}
+	sig := repo.signatures[0]
+	if sig.SignerDisplayName == approver.String() {
+		t.Errorf("SignerDisplayName = raw UUID %q; must be 'Unknown User' when directory is nil", sig.SignerDisplayName)
+	}
+	if sig.SignerDisplayName != "Unknown User" {
+		t.Errorf("SignerDisplayName = %q; want 'Unknown User'", sig.SignerDisplayName)
+	}
+}
+
+func TestWriteSignature_ErrorDirectory_SignerDisplayNameIsUnknownUser(t *testing.T) {
+	repo := newFakeRepo()
+	approver := uuid.New()
+	seedSingleUserConfig(repo, approver)
+	// Directory always returns an error → lookup fails → must fall back to "Unknown User".
+	svc := newTestRuntime(repo, func(d *RuntimeDeps) {
+		d.Directory = alwaysErrorDirectory{}
+	})
+
+	approveFirstTask(t, repo, svc, approver)
+
+	if len(repo.signatures) == 0 {
+		t.Fatalf("no signature records created")
+	}
+	sig := repo.signatures[0]
+	if sig.SignerDisplayName == approver.String() {
+		t.Errorf("SignerDisplayName = raw UUID %q; must be 'Unknown User' when directory returns error", sig.SignerDisplayName)
+	}
+	if sig.SignerDisplayName != "Unknown User" {
+		t.Errorf("SignerDisplayName = %q; want 'Unknown User'", sig.SignerDisplayName)
+	}
+}
+
+// alwaysErrorDirectory is a domain.UserDirectory that always returns an error.
+type alwaysErrorDirectory struct{}
+
+func (alwaysErrorDirectory) GetUser(_ context.Context, _ uuid.UUID) (*domain.UserInfo, error) {
+	return nil, errors.New("directory unavailable")
 }
 

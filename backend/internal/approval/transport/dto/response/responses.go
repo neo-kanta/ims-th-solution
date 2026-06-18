@@ -10,6 +10,23 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/entity"
 )
 
+// UserDescriptor is a human-readable user identity shape.
+// The id field is included for action routing but must never be rendered as a label.
+// If the user cannot be resolved, username and display_name must be "Unknown User".
+type UserDescriptor struct {
+	ID          string `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+}
+
+// SubjectDescriptor identifies the business subject in human-readable terms.
+// The id field is included for action routing but must never be rendered as a label.
+type SubjectDescriptor struct {
+	Type         string `json:"type"`
+	ID           string `json:"id"`
+	DisplayLabel string `json:"display_label"`
+}
+
 // GroupResponse is an approval group.
 type GroupResponse struct {
 	ID        string    `json:"id"`
@@ -100,27 +117,30 @@ type ProcessConfigResponse struct {
 }
 
 // RequestResponse is an approval request header.
+// ContractID and PortfolioID are routing correlation IDs; never render them as visible text.
 type RequestResponse struct {
-	ID                 string     `json:"id"`
-	RequestNumber      string     `json:"request_number"`
-	ProcessType        string     `json:"process_type"`
-	ProcessConfigID    string     `json:"process_config_id,omitempty"`
-	SubjectType        string     `json:"subject_type"`
-	SubjectID          string     `json:"subject_id"`
-	SubjectTitle       string     `json:"subject_title"`
-	SubjectReference   string     `json:"subject_reference"`
-	ContractID         string     `json:"contract_id,omitempty"`
-	PortfolioID        string     `json:"portfolio_id,omitempty"`
-	SubmitterID        string     `json:"submitter_id"`
-	SubmitterName      string     `json:"submitter_name"`
-	SubmittedAt        *time.Time `json:"submitted_at,omitempty"`
-	CurrentStageNumber int        `json:"current_stage_number"`
-	Status             string     `json:"status"`
-	FinalDecisionBy    string     `json:"final_decision_by,omitempty"`
-	FinalDecisionAt    *time.Time `json:"final_decision_at,omitempty"`
-	RejectionReason    string     `json:"rejection_reason,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	ID                 string            `json:"id"`
+	RequestNumber      string            `json:"request_number"`
+	ProcessType        string            `json:"process_type"`
+	ProcessConfigID    string            `json:"process_config_id,omitempty"`
+	SubjectType        string            `json:"subject_type"`
+	SubjectID          string            `json:"subject_id"`
+	SubjectTitle       string            `json:"subject_title"`
+	SubjectReference   string            `json:"subject_reference"`
+	Subject            SubjectDescriptor `json:"subject"`
+	ContractID         string            `json:"contract_id,omitempty"`
+	PortfolioID        string            `json:"portfolio_id,omitempty"`
+	SubmitterID        string            `json:"submitter_id"`
+	SubmitterName      string            `json:"submitter_name"`
+	Submitter          UserDescriptor    `json:"submitter"`
+	SubmittedAt        *time.Time        `json:"submitted_at,omitempty"`
+	CurrentStageNumber int               `json:"current_stage_number"`
+	Status             string            `json:"status"`
+	FinalDecisionBy    string            `json:"final_decision_by,omitempty"`
+	FinalDecisionAt    *time.Time        `json:"final_decision_at,omitempty"`
+	RejectionReason    string            `json:"rejection_reason,omitempty"`
+	CreatedAt          time.Time         `json:"created_at"`
+	UpdatedAt          time.Time         `json:"updated_at"`
 }
 
 // TaskResponse is an approval task.
@@ -130,11 +150,14 @@ type TaskResponse struct {
 	StageNumber         int        `json:"stage_number"`
 	AssignedUserID      string     `json:"assigned_user_id,omitempty"`
 	AssignedUserName    string     `json:"assigned_user_name,omitempty"`
+	AssignedUser        *UserDescriptor `json:"assigned_user,omitempty"`
 	AssignedGroupID     string     `json:"assigned_group_id,omitempty"`
 	AssignedTeamID      string     `json:"assigned_team_id,omitempty"`
 	DelegatedFromUserID string     `json:"delegated_from_user_id,omitempty"`
+	DelegatedFrom       *UserDescriptor `json:"delegated_from,omitempty"`
 	Status              string     `json:"status"`
 	ActedBy             string     `json:"acted_by,omitempty"`
+	Actor               *UserDescriptor `json:"actor,omitempty"`
 	ActedAt             *time.Time `json:"acted_at,omitempty"`
 	ActionComment       string     `json:"action_comment,omitempty"`
 	IsDelegatedAction   bool       `json:"is_delegated_action"`
@@ -144,28 +167,32 @@ type TaskResponse struct {
 
 // EventResponse is an immutable approval timeline event.
 type EventResponse struct {
-	ID                  string         `json:"id"`
-	EventType           string         `json:"event_type"`
-	StageNumber         *int           `json:"stage_number,omitempty"`
-	ActorUserID         string         `json:"actor_user_id,omitempty"`
-	ActorName           string         `json:"actor_name,omitempty"`
-	DelegatedFromUserID string         `json:"delegated_from_user_id,omitempty"`
-	Comment             string         `json:"comment,omitempty"`
-	Metadata            map[string]any `json:"metadata,omitempty"`
-	CreatedAt           time.Time      `json:"created_at"`
+	ID                  string          `json:"id"`
+	EventType           string          `json:"event_type"`
+	StageNumber         *int            `json:"stage_number,omitempty"`
+	ActorUserID         string          `json:"actor_user_id,omitempty"`
+	ActorName           string          `json:"actor_name,omitempty"`
+	Actor               UserDescriptor  `json:"actor"`
+	DelegatedFromUserID string          `json:"delegated_from_user_id,omitempty"`
+	DelegatedFrom       *UserDescriptor `json:"delegated_from,omitempty"`
+	Comment             string          `json:"comment,omitempty"`
+	Metadata            map[string]any  `json:"metadata,omitempty"`
+	CreatedAt           time.Time       `json:"created_at"`
 }
 
 // SignatureResponse is an approval signature/stamp record.
 type SignatureResponse struct {
-	ID                string    `json:"id"`
-	StageNumber       int       `json:"stage_number"`
-	SignerUserID      string    `json:"signer_user_id"`
-	SignerDisplayName string    `json:"signer_display_name"`
-	SignerTitle       string    `json:"signer_title,omitempty"`
-	SignedAt          time.Time `json:"signed_at"`
-	IsProxySignature  bool      `json:"is_proxy_signature"`
-	ProxyForUserID    string    `json:"proxy_for_user_id,omitempty"`
-	SignatureLabel    string    `json:"signature_label"`
+	ID                string          `json:"id"`
+	StageNumber       int             `json:"stage_number"`
+	SignerUserID      string          `json:"signer_user_id"`
+	SignerDisplayName string          `json:"signer_display_name"`
+	Signer            UserDescriptor  `json:"signer"`
+	SignerTitle       string          `json:"signer_title,omitempty"`
+	SignedAt          time.Time       `json:"signed_at"`
+	IsProxySignature  bool            `json:"is_proxy_signature"`
+	ProxyForUserID    string          `json:"proxy_for_user_id,omitempty"`
+	ProxyFor          *UserDescriptor `json:"proxy_for,omitempty"`
+	SignatureLabel    string          `json:"signature_label"`
 }
 
 // RequestDetailResponse bundles a request with tasks, timeline and signatures.
@@ -337,15 +364,44 @@ func FromProcessConfigs(cs []*entity.ApprovalProcessConfig) []ProcessConfigRespo
 	return out
 }
 
+// userDescriptor builds a UserDescriptor from a UUID string and display name.
+// Falls back to "Unknown User" for display when name is blank.
+func userDescriptor(id, name string) UserDescriptor {
+	if name == "" {
+		name = "Unknown User"
+	}
+	return UserDescriptor{ID: id, Username: name, DisplayName: name}
+}
+
+// unknownUserDescriptor builds a UserDescriptor for a UUID with no resolved name.
+func unknownUserDescriptor(id string) UserDescriptor {
+	return UserDescriptor{ID: id, Username: "Unknown User", DisplayName: "Unknown User"}
+}
+
 // FromRequest maps a request header.
 func FromRequest(r *entity.ApprovalRequest) RequestResponse {
+	subjectLabel := r.SubjectTitle
+	if subjectLabel == "" {
+		subjectLabel = r.SubjectReference
+	}
+	submitterName := r.SubmitterName
+	if submitterName == "" {
+		submitterName = "Unknown User"
+	}
 	resp := RequestResponse{
 		ID: r.ID.String(), RequestNumber: r.RequestNumber, ProcessType: string(r.ProcessType),
 		SubjectType: string(r.SubjectType), SubjectID: r.SubjectID.String(), SubjectTitle: r.SubjectTitle,
-		SubjectReference: r.SubjectReference, SubmitterID: r.SubmitterID.String(), SubmitterName: r.SubmitterName,
-		SubmittedAt: r.SubmittedAt, CurrentStageNumber: r.CurrentStageNumber, Status: string(r.Status),
-		FinalDecisionAt: r.FinalDecisionAt, RejectionReason: r.RejectionReason,
-		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+		SubjectReference: r.SubjectReference,
+		Subject: SubjectDescriptor{
+			Type:         string(r.SubjectType),
+			ID:           r.SubjectID.String(),
+			DisplayLabel: subjectLabel,
+		},
+		SubmitterID: r.SubmitterID.String(), SubmitterName: r.SubmitterName,
+		Submitter:          UserDescriptor{ID: r.SubmitterID.String(), Username: submitterName, DisplayName: submitterName},
+		SubmittedAt:        r.SubmittedAt, CurrentStageNumber: r.CurrentStageNumber, Status: string(r.Status),
+		FinalDecisionAt:    r.FinalDecisionAt, RejectionReason: r.RejectionReason,
+		CreatedAt:          r.CreatedAt, UpdatedAt: r.UpdatedAt,
 	}
 	if r.ProcessConfigID != nil {
 		resp.ProcessConfigID = r.ProcessConfigID.String()
@@ -380,6 +436,8 @@ func FromTask(t *entity.ApprovalTask) TaskResponse {
 	}
 	if t.AssignedUserID != nil {
 		resp.AssignedUserID = t.AssignedUserID.String()
+		d := userDescriptor(t.AssignedUserID.String(), t.AssignedUserName)
+		resp.AssignedUser = &d
 	}
 	if t.AssignedGroupID != nil {
 		resp.AssignedGroupID = t.AssignedGroupID.String()
@@ -389,9 +447,13 @@ func FromTask(t *entity.ApprovalTask) TaskResponse {
 	}
 	if t.DelegatedFromUserID != nil {
 		resp.DelegatedFromUserID = t.DelegatedFromUserID.String()
+		d := unknownUserDescriptor(t.DelegatedFromUserID.String())
+		resp.DelegatedFrom = &d
 	}
 	if t.ActedBy != nil {
 		resp.ActedBy = t.ActedBy.String()
+		d := unknownUserDescriptor(t.ActedBy.String())
+		resp.Actor = &d
 	}
 	return resp
 }
@@ -407,15 +469,22 @@ func FromTasks(ts []*entity.ApprovalTask) []TaskResponse {
 
 // FromEvent maps a timeline event.
 func FromEvent(e *entity.ApprovalEvent) EventResponse {
+	actorID := ""
+	if e.ActorUserID != nil {
+		actorID = e.ActorUserID.String()
+	}
 	resp := EventResponse{
 		ID: e.ID.String(), EventType: string(e.EventType), StageNumber: e.StageNumber,
 		ActorName: e.ActorName, Comment: e.Comment, Metadata: e.Metadata, CreatedAt: e.CreatedAt,
+		Actor: userDescriptor(actorID, e.ActorName),
 	}
 	if e.ActorUserID != nil {
-		resp.ActorUserID = e.ActorUserID.String()
+		resp.ActorUserID = actorID
 	}
 	if e.DelegatedFromUserID != nil {
 		resp.DelegatedFromUserID = e.DelegatedFromUserID.String()
+		d := unknownUserDescriptor(e.DelegatedFromUserID.String())
+		resp.DelegatedFrom = &d
 	}
 	return resp
 }
@@ -433,7 +502,9 @@ func FromEvents(es []*entity.ApprovalEvent) []EventResponse {
 func FromSignature(s *entity.ApprovalSignatureRecord) SignatureResponse {
 	resp := SignatureResponse{
 		ID: s.ID.String(), StageNumber: s.StageNumber, SignerUserID: s.SignerUserID.String(),
-		SignerDisplayName: s.SignerDisplayName, SignedAt: s.SignedAt, IsProxySignature: s.IsProxySignature,
+		SignerDisplayName: s.SignerDisplayName,
+		Signer:            userDescriptor(s.SignerUserID.String(), s.SignerDisplayName),
+		SignedAt:          s.SignedAt, IsProxySignature: s.IsProxySignature,
 		SignatureLabel: string(s.SignatureLabel),
 	}
 	if s.SignerTitle != nil {
@@ -441,6 +512,8 @@ func FromSignature(s *entity.ApprovalSignatureRecord) SignatureResponse {
 	}
 	if s.ProxyForUserID != nil {
 		resp.ProxyForUserID = s.ProxyForUserID.String()
+		d := unknownUserDescriptor(s.ProxyForUserID.String())
+		resp.ProxyFor = &d
 	}
 	return resp
 }

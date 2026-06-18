@@ -108,8 +108,8 @@ interface SuggestionGroup {
 
 const groupedSuggestions = computed<SuggestionGroup[]>(() => {
   const list = filteredSuggestions.value;
-  const groups: Record<string, SuggestionItem[]> = {
-    Features: [],
+  const groups = {
+    Features: [] as SuggestionItem[],
   };
 
   list.forEach((item) => {

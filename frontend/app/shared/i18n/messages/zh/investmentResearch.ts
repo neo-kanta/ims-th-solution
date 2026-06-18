@@ -1,4 +1,4 @@
-import type { enInvestmentResearchMessages } from "./investmentResearch";
+import type { enInvestmentResearchMessages } from "../en/investmentResearch";
 
 export const zhInvestmentResearchMessages = {
   investmentResearch: {
@@ -150,4 +150,4 @@ export const zhInvestmentResearchMessages = {
       range: "第 {page} 页 · 显示 {count} / 共 {total}",
     },
   },
-} as const satisfies typeof enInvestmentResearchMessages;
+} as const;

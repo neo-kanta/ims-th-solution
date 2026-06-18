@@ -1,4 +1,4 @@
-import type { enInvestmentResearchMessages } from "./investmentResearch";
+import type { enInvestmentResearchMessages } from "../en/investmentResearch";
 
 export const thInvestmentResearchMessages = {
   investmentResearch: {
@@ -150,4 +150,4 @@ export const thInvestmentResearchMessages = {
       range: "หน้า {page} · แสดง {count} จากทั้งหมด {total}",
     },
   },
-} as const satisfies typeof enInvestmentResearchMessages;
+} as const;

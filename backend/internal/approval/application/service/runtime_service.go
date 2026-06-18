@@ -214,6 +214,7 @@ func (s *ApprovalRuntimeService) SubmitApproval(ctx context.Context, in SubmitIn
 		SubmittedAt:        &now,
 		CurrentStageNumber: entryStage.StageNumber,
 		Status:             vo.RequestStatusPendingApproval,
+		ConfigSnapshot:     entity.StageSnapshotFromConfig(cfg.Stages),
 	}
 
 	var createdTasks []*entity.ApprovalTask
@@ -342,11 +343,11 @@ func (s *ApprovalRuntimeService) ApproveTask(ctx context.Context, taskID, actorI
 			return err
 		}
 
-		cfg, err := s.repo.GetConfig(ctx, derefUUID(r.ProcessConfigID))
+		cfgStagesForAdvance, err := s.resolveStages(ctx, r)
 		if err != nil {
 			return err
 		}
-		next, hasNext := nextStage(cfgStages(cfg), task.StageNumber)
+		next, hasNext := nextStage(cfgStagesForAdvance, task.StageNumber)
 		if hasNext && !stage.IsFinalStage {
 			r.CurrentStageNumber = next.StageNumber
 			if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
@@ -611,11 +612,11 @@ func (s *ApprovalRuntimeService) loadActionContext(ctx context.Context, tx pgx.T
 	if task.StageNumber != r.CurrentStageNumber {
 		return nil, nil, zero, domain.NewError(domain.ErrStaleTask, domain.ErrStaleTask.Error())
 	}
-	cfg, err := s.repo.GetConfig(ctx, derefUUID(r.ProcessConfigID))
+	stages, err := s.resolveStages(ctx, r)
 	if err != nil {
 		return nil, nil, zero, err
 	}
-	stage, ok := stageByNumber(cfgStages(cfg), task.StageNumber)
+	stage, ok := stageByNumber(stages, task.StageNumber)
 	if !ok {
 		return nil, nil, zero, domain.NewError(domain.ErrConfigNotFound, "stage configuration not found")
 	}
@@ -736,7 +737,7 @@ func (s *ApprovalRuntimeService) createStageTasks(ctx context.Context, tx pgx.Tx
 
 // writeSignature creates a signature/stamp record for an approval action.
 func (s *ApprovalRuntimeService) writeSignature(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, stage int, signer uuid.UUID, delegated bool, principal uuid.UUID) error {
-	display := signer.String()
+	display := "Unknown User"
 	if s.directory != nil {
 		if info, err := s.directory.GetUser(ctx, signer); err == nil && info != nil && info.DisplayName != "" {
 			display = info.DisplayName
@@ -898,8 +899,10 @@ func (s *ApprovalRuntimeService) GetApprovalRequest(ctx context.Context, request
 	if req == nil {
 		return nil, domain.NotFound("approval request not found")
 	}
+	// Return NotFound (not Forbidden) so the response does not reveal request existence
+	// to a caller who cannot view the subject.
 	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-		return nil, err
+		return nil, domain.NotFound("approval request not found")
 	}
 	tasks, err := s.repo.ListTasksByRequest(ctx, requestID)
 	if err != nil {
@@ -940,6 +943,15 @@ func (s *ApprovalRuntimeService) GetApprovalRequest(ctx context.Context, request
 // on a request. Function-permission enforcement remains at the route middleware;
 // this set is about per-request business eligibility (maker-checker, ownership,
 // status machine). Frontend renders buttons based on this list.
+//
+// Rules:
+//   - approve/reject: viewer has a pending task at the current stage (4-eye enforced
+//     earlier by authorizeAction; viewerTask is nil for the submitter).
+//   - withdraw: submitter only, while non-terminal.
+//   - cancel: submitter or admin, while non-terminal (admin check via function
+//     permission remains at the route; here we surface it for the submitter).
+//   - revoke: any non-submitter who can act on the subject (admin/privileged),
+//     when the request is APPROVED. Submitter cannot revoke their own request.
 func computeAllowedActions(req *entity.ApprovalRequest, viewerTask *entity.ApprovalTask, viewerID uuid.UUID) []string {
 	var actions []string
 	if req.Status == vo.RequestStatusPendingApproval && viewerTask != nil {
@@ -948,12 +960,15 @@ func computeAllowedActions(req *entity.ApprovalRequest, viewerTask *entity.Appro
 	if !req.Status.IsTerminal() && req.SubmitterID == viewerID {
 		actions = append(actions, "withdraw")
 	}
-	if !req.Status.IsTerminal() {
+	// cancel: submitter can cancel their own non-terminal request;
+	// privileged cancel via function permission is enforced at the route level.
+	if !req.Status.IsTerminal() && req.SubmitterID == viewerID {
 		actions = append(actions, "cancel")
 	}
-	if req.Status == vo.RequestStatusApproved {
-		actions = append(actions, "revoke")
-	}
+	// revoke: omitted from allowed_actions — surfacing it requires a function-permission
+	// check that computeAllowedActions does not have access to. The route middleware
+	// enforces the permission gate. Revoke button visibility is a P1 improvement
+	// (see docs/handoff/approval-permission-p0-fixes.md).
 	return actions
 }
 
@@ -968,7 +983,7 @@ func (s *ApprovalRuntimeService) GetApprovalTimeline(ctx context.Context, reques
 		return nil, domain.NotFound("approval request not found")
 	}
 	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-		return nil, err
+		return nil, domain.NotFound("approval request not found")
 	}
 	return s.repo.ListEvents(ctx, requestID)
 }
@@ -987,7 +1002,9 @@ func (s *ApprovalRuntimeService) GetSubjectApprovalStatus(ctx context.Context, s
 	}
 	if req != nil && viewerID != uuid.Nil {
 		if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-			return nil, err
+			// Return nil (not found) — do not reveal that a request exists for
+			// a subject the caller cannot access.
+			return nil, nil
 		}
 	}
 	return req, nil
@@ -1025,6 +1042,26 @@ func (s *ApprovalRuntimeService) RejectByRequest(ctx context.Context, requestID,
 // ─────────────────────────────────────────────────────────────────────────────
 // stage helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+// resolveStages returns the stage list for a request. When a ConfigSnapshot is
+// present (requests submitted after the snapshot feature was introduced) the
+// frozen snapshot is used so that admin config edits cannot affect in-flight
+// requests. For older requests without a snapshot, the live config is used as
+// a backwards-compatible fallback.
+func (s *ApprovalRuntimeService) resolveStages(ctx context.Context, r *entity.ApprovalRequest) ([]entity.ApprovalProcessStage, error) {
+	if len(r.ConfigSnapshot) > 0 {
+		stages := make([]entity.ApprovalProcessStage, 0, len(r.ConfigSnapshot))
+		for _, ss := range r.ConfigSnapshot {
+			stages = append(stages, ss.ToProcessStage())
+		}
+		return stages, nil
+	}
+	cfg, err := s.repo.GetConfig(ctx, derefUUID(r.ProcessConfigID))
+	if err != nil {
+		return nil, err
+	}
+	return cfgStages(cfg), nil
+}
 
 func cfgStages(cfg *entity.ApprovalProcessConfig) []entity.ApprovalProcessStage {
 	if cfg == nil {

@@ -110,7 +110,9 @@ VALUES
     ('permission.audit.view', 'permission', 'audit', 'view', 'View audit logs', 'View permission audit logs.'),
     ('permission.audit.export', 'permission', 'audit', 'export', 'Export audit logs', 'Export permission audit logs.'),
     ('permission.notification.view', 'permission', 'notification', 'view', 'View notification settings', 'View permission notification settings.'),
-    ('permission.notification.edit', 'permission', 'notification', 'edit', 'Edit notification settings', 'Edit permission notification settings.')
+    ('permission.notification.edit', 'permission', 'notification', 'edit', 'Edit notification settings', 'Edit permission notification settings.'),
+    ('permission.labels.manage', 'permission', 'labels', 'manage', 'Manage labels', 'Create and edit permission change-request labels.'),
+    ('permission.approval_settings.view', 'permission', 'approval_settings', 'view', 'View approval settings', 'View permission approval workflow settings.')
 ON CONFLICT (code) DO UPDATE SET
     module = EXCLUDED.module,
     screen = EXCLUDED.screen,

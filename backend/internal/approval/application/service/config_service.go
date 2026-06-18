@@ -500,19 +500,26 @@ func validateStages(stages []StageInput) ([]entity.ApprovalProcessStage, error) 
 			RejectPolicy:          "STOP",
 		})
 	}
-	// Mark the highest stage number as final if none flagged.
-	hasFinal := false
-	maxIdx := 0
-	for i, st := range out {
+
+	finalCount := 0
+	maxStageNumber := 0
+	finalStageNumber := 0
+	for _, st := range out {
 		if st.IsFinalStage {
-			hasFinal = true
+			finalCount++
+			finalStageNumber = st.StageNumber
 		}
-		if st.StageNumber > out[maxIdx].StageNumber {
-			maxIdx = i
+		if st.StageNumber > maxStageNumber {
+			maxStageNumber = st.StageNumber
 		}
 	}
-	if !hasFinal {
-		out[maxIdx].IsFinalStage = true
+	switch {
+	case finalCount == 0:
+		return nil, domain.Validation("exactly one stage must be marked as is_final_stage")
+	case finalCount > 1:
+		return nil, domain.Validation("exactly one stage may be marked as is_final_stage")
+	case finalStageNumber != maxStageNumber:
+		return nil, domain.Validation("is_final_stage must be set on the stage with the highest stage_number")
 	}
 	return out, nil
 }

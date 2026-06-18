@@ -53,7 +53,6 @@ function addMember() {
           <td>
             <div class="tm-table__user">
               <span>{{ m.display_name || "—" }}</span>
-              <span class="tm-table__uid">{{ m.user_id }}</span>
             </div>
           </td>
           <td>{{ m.member_type }}</td>
@@ -65,7 +64,7 @@ function addMember() {
     </table>
 
     <div class="tm-table__add">
-      <AppInput v-model="draft.user_id" placeholder="User UUID" />
+      <AppInput v-model="draft.user_id" placeholder="User selector source not available" disabled />
       <AppSelect v-model="draft.member_type" :options="[...TEAM_MEMBER_TYPES]" />
       <AppInput v-model="draft.priority_order" type="number" placeholder="Priority" />
       <AppButton variant="primary" :disabled="busy || !draft.user_id" @click="addMember">Add member</AppButton>

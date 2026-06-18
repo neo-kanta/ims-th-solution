@@ -12,6 +12,9 @@ export const zhDashboardMessages = {
     retry: "重试",
     noDataTitle: "没有仪表板数据",
     noDataCopy: "仪表板目前没有可显示的会话数据。",
+    notConfiguredTitle: "驾驶舱指标尚未配置",
+    notConfiguredCopy:
+      "全公司 AUM、损益、待审批和活动信息流尚未接入后端 API。请使用上方工作流面板和任务信息流查看实时状态,并从“我的基金”打开基金以查看每个基金的 NAV、持仓和合规详情。",
     workflowDayStart: "日初",
     workflowAnalysis: "分析",
     workflowDecision: "决策",

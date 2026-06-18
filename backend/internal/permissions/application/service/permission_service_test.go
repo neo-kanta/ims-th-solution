@@ -126,3 +126,93 @@ func TestBlockingChecks(t *testing.T) {
 		t.Fatalf("failed blocker check should block")
 	}
 }
+
+// TestReject_EmptyComment verifies that Reject() returns an error before
+// touching the database when no rejection reason is provided.
+func TestReject_EmptyComment_ReturnsError(t *testing.T) {
+	t.Parallel()
+
+	// pool == nil is safe here because the empty-comment guard returns before
+	// database.WithTransaction is ever called.
+	svc := &Service{}
+	_, err := svc.Reject(context.Background(), DecisionInput{
+		RequestID: uuid.New(),
+		ActorID:   uuid.New(),
+		Comment:   "",
+	})
+	if err == nil {
+		t.Fatal("expected error when rejection reason is empty, got nil")
+	}
+	pe, ok := err.(*domain.PermissionError)
+	if !ok {
+		t.Fatalf("expected *domain.PermissionError, got %T: %v", err, err)
+	}
+	if pe.Code != domain.CodeInvalidRequest {
+		t.Fatalf("expected CodeInvalidRequest, got %q", pe.Code)
+	}
+}
+
+// TestReject_WhitespaceComment is the same guard: whitespace-only is treated as empty.
+func TestReject_WhitespaceComment_ReturnsError(t *testing.T) {
+	t.Parallel()
+	svc := &Service{}
+	_, err := svc.Reject(context.Background(), DecisionInput{
+		RequestID: uuid.New(),
+		ActorID:   uuid.New(),
+		Comment:   "   ",
+	})
+	if err == nil {
+		t.Fatal("expected error for whitespace-only comment, got nil")
+	}
+}
+
+// TestIsTerminalPermissionStatus verifies that all five terminal statuses are
+// recognised and that non-terminal statuses are not.
+func TestIsTerminalPermissionStatus(t *testing.T) {
+	t.Parallel()
+
+	terminal := []string{
+		domain.RequestStatusApproved,
+		domain.RequestStatusRejected,
+		domain.RequestStatusMerged,
+		domain.RequestStatusCancelled,
+		domain.RequestStatusClosed,
+	}
+	for _, s := range terminal {
+		if !isTerminalPermissionStatus(s) {
+			t.Errorf("expected %q to be terminal", s)
+		}
+	}
+
+	nonTerminal := []string{
+		domain.RequestStatusDraft,
+		domain.RequestStatusReadyForReview,
+		domain.RequestStatusChanges,
+		"",
+		"UNKNOWN",
+	}
+	for _, s := range nonTerminal {
+		if isTerminalPermissionStatus(s) {
+			t.Errorf("expected %q to be non-terminal", s)
+		}
+	}
+}
+
+// TestRequirePermission_NilChecker_ReturnsForbidden verifies that requirePermission
+// fails closed when the function-permission checker has not been wired.
+// A nil checker must never allow a privileged operation to proceed.
+func TestRequirePermission_NilChecker_ReturnsForbidden(t *testing.T) {
+	t.Parallel()
+	svc := &Service{} // checker is nil
+	err := svc.requirePermission(context.Background(), uuid.New(), "permission.change_request.merge")
+	if err == nil {
+		t.Fatal("expected error from nil checker, got nil — this is a fail-open security bug")
+	}
+	pe, ok := err.(*domain.PermissionError)
+	if !ok {
+		t.Fatalf("expected *domain.PermissionError, got %T: %v", err, err)
+	}
+	if pe.Code != domain.CodeForbidden {
+		t.Fatalf("expected CodeForbidden, got %q", pe.Code)
+	}
+}

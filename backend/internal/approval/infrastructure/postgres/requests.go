@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,17 +20,19 @@ const requestSelect = `
 	       r.subject_title, r.subject_reference, r.contract_id, r.portfolio_id, r.submitter_id, r.submitted_at,
 	       r.current_stage_number, r.status, r.final_decision_by, r.final_decision_at, r.rejection_reason,
 	       r.created_at, r.updated_at,
-	       COALESCE(u.display_name, u.username, '')
+	       COALESCE(u.display_name, u.username, ''),
+	       COALESCE(r.config_snapshot, '[]'::jsonb)
 	FROM approval__requests r
 	LEFT JOIN iam_users u ON u.id = r.submitter_id`
 
 func scanRequest(row pgx.Row) (*entity.ApprovalRequest, error) {
 	var r entity.ApprovalRequest
 	var processType, subjectType, status string
+	var snapshotJSON []byte
 	err := row.Scan(&r.ID, &r.RequestNumber, &processType, &r.ProcessConfigID, &subjectType, &r.SubjectID,
 		&r.SubjectTitle, &r.SubjectReference, &r.ContractID, &r.PortfolioID, &r.SubmitterID, &r.SubmittedAt,
 		&r.CurrentStageNumber, &status, &r.FinalDecisionBy, &r.FinalDecisionAt, &r.RejectionReason,
-		&r.CreatedAt, &r.UpdatedAt, &r.SubmitterName)
+		&r.CreatedAt, &r.UpdatedAt, &r.SubmitterName, &snapshotJSON)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -39,6 +42,11 @@ func scanRequest(row pgx.Row) (*entity.ApprovalRequest, error) {
 	r.ProcessType = vo.ProcessType(processType)
 	r.SubjectType = vo.SubjectType(subjectType)
 	r.Status = vo.RequestStatus(status)
+	if len(snapshotJSON) > 0 {
+		if err := json.Unmarshal(snapshotJSON, &r.ConfigSnapshot); err != nil {
+			return nil, fmt.Errorf("decoding config snapshot: %w", err)
+		}
+	}
 	return &r, nil
 }
 
@@ -53,16 +61,20 @@ func (r *PostgresRepository) NextRequestNumber(ctx context.Context, tx pgx.Tx) (
 
 // CreateRequest inserts an approval request.
 func (r *PostgresRepository) CreateRequest(ctx context.Context, tx pgx.Tx, req *entity.ApprovalRequest) error {
-	_, err := tx.Exec(ctx, `
+	snapshotJSON, err := json.Marshal(req.ConfigSnapshot)
+	if err != nil {
+		return fmt.Errorf("encoding config snapshot: %w", err)
+	}
+	_, err = tx.Exec(ctx, `
 		INSERT INTO approval__requests
 			(id, request_number, process_type, process_config_id, subject_type, subject_id, subject_title,
 			 subject_reference, contract_id, portfolio_id, submitter_id, submitted_at, current_stage_number,
-			 status, final_decision_by, final_decision_at, rejection_reason)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+			 status, final_decision_by, final_decision_at, rejection_reason, config_snapshot)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
 		req.ID, req.RequestNumber, string(req.ProcessType), req.ProcessConfigID, string(req.SubjectType),
 		req.SubjectID, req.SubjectTitle, req.SubjectReference, req.ContractID, req.PortfolioID, req.SubmitterID,
 		req.SubmittedAt, req.CurrentStageNumber, string(req.Status), req.FinalDecisionBy, req.FinalDecisionAt,
-		req.RejectionReason)
+		req.RejectionReason, snapshotJSON)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {

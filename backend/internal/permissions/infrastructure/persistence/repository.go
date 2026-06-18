@@ -753,16 +753,33 @@ func (r *PostgresRepository) ListUsers(ctx context.Context, search string, page 
 }
 
 func (r *PostgresRepository) GetUser(ctx context.Context, id uuid.UUID) (*domain.UserSummary, error) {
-	users, _, err := r.ListUsers(ctx, "", 1, 500)
+	rows, err := r.pool.Query(ctx, `
+		SELECT u.id, u.username, u.display_name, COALESCE(u.email,''), u.is_active,
+		       (u.locked_until IS NOT NULL AND u.locked_until > NOW()) AS is_locked,
+		       u.locked_until, u.force_password_change, u.last_login_at,
+		       COALESCE(array_agg(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL), '{}'),
+		       COALESCE(array_agg(DISTINCT pr.role_code) FILTER (WHERE pr.role_code IS NOT NULL), '{}'),
+		       u.created_at, u.updated_at
+		FROM iam_users u
+		LEFT JOIN permissions_accounts_groups ag ON ag.user_id = u.id
+		LEFT JOIN permissions_groups g ON g.id = ag.group_id AND g.is_active = true AND g.deleted_at IS NULL
+		LEFT JOIN permission_user_role_assignments ura ON ura.user_id = u.id AND ura.status='APPROVED'
+		LEFT JOIN permission_roles pr ON pr.id = ura.role_id AND pr.is_active = true
+		WHERE u.id = $1 AND u.deleted_at IS NULL
+		GROUP BY u.id
+	`, id)
 	if err != nil {
 		return nil, err
 	}
-	for _, user := range users {
-		if user.ID == id {
-			return &user, nil
-		}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, rows.Err()
 	}
-	return nil, nil
+	var u domain.UserSummary
+	if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.IsActive, &u.IsLocked, &u.LockedUntil, &u.ForcePasswordChange, &u.LastLoginAt, &u.Groups, &u.Roles, &u.CreatedAt, &u.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &u, rows.Err()
 }
 
 func (r *PostgresRepository) ListGroups(ctx context.Context, search string, page int, limit int) ([]domain.GroupSummary, int, error) {
@@ -805,16 +822,26 @@ func (r *PostgresRepository) ListGroups(ctx context.Context, search string, page
 }
 
 func (r *PostgresRepository) GetGroup(ctx context.Context, id uuid.UUID) (*domain.GroupSummary, error) {
-	rows, _, err := r.ListGroups(ctx, "", 1, 500)
+	rows, err := r.pool.Query(ctx, `
+		SELECT g.id, g.name, COALESCE(g.description,''), g.is_active,
+		       COUNT(ag.user_id), g.created_at, g.updated_at
+		FROM permissions_groups g
+		LEFT JOIN permissions_accounts_groups ag ON ag.group_id = g.id
+		WHERE g.id = $1 AND g.deleted_at IS NULL
+		GROUP BY g.id
+	`, id)
 	if err != nil {
 		return nil, err
 	}
-	for _, group := range rows {
-		if group.ID == id {
-			return &group, nil
-		}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, rows.Err()
 	}
-	return nil, nil
+	var g domain.GroupSummary
+	if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.IsActive, &g.MembersCount, &g.CreatedAt, &g.UpdatedAt); err != nil {
+		return nil, err
+	}
+	return &g, rows.Err()
 }
 
 func (r *PostgresRepository) ListFunctionDefinitions(ctx context.Context) ([]domain.FunctionDefinition, error) {
@@ -936,9 +963,7 @@ func (r *PostgresRepository) DeleteGroupMembership(ctx context.Context, tx pgx.T
 func (r *PostgresRepository) EffectivePermissions(ctx context.Context, userID uuid.UUID) (*domain.EffectivePermissions, error) {
 	e := &domain.EffectivePermissions{UserID: userID}
 	e.Roles, _ = r.GetUserApprovedRoles(ctx, userID)
-	if groups, _, err := r.ListGroups(ctx, "", 1, 500); err == nil {
-		e.Groups = groups
-	}
+	e.Groups, _ = r.groupsForUser(ctx, userID)
 	var err error
 	e.DirectFunctions, err = r.functionRightsForUser(ctx, userID, "USER")
 	if err != nil {
@@ -1247,6 +1272,32 @@ func scanDataRights(rows pgx.Rows) ([]domain.DataRight, error) {
 			return nil, err
 		}
 		out = append(out, dr)
+	}
+	return out, rows.Err()
+}
+
+func (r *PostgresRepository) groupsForUser(ctx context.Context, userID uuid.UUID) ([]domain.GroupSummary, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT g.id, g.name, COALESCE(g.description,''), g.is_active,
+		       COUNT(ag2.user_id), g.created_at, g.updated_at
+		FROM permissions_groups g
+		JOIN permissions_accounts_groups ag ON ag.group_id = g.id AND ag.user_id = $1
+		LEFT JOIN permissions_accounts_groups ag2 ON ag2.group_id = g.id
+		WHERE g.deleted_at IS NULL
+		GROUP BY g.id
+		ORDER BY g.name
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []domain.GroupSummary{}
+	for rows.Next() {
+		var gs domain.GroupSummary
+		if err := rows.Scan(&gs.ID, &gs.Name, &gs.Description, &gs.IsActive, &gs.MembersCount, &gs.CreatedAt, &gs.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, gs)
 	}
 	return out, rows.Err()
 }

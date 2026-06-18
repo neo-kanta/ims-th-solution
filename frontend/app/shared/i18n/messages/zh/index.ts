@@ -1,3 +1,5 @@
+import { zhApprovalMessages } from "./approval";
+import { zhChatMessages } from "./chat";
 import { zhCommonMessages } from "./common";
 import { zhComplianceMessages } from "./compliance";
 import { zhDashboardMessages } from "./dashboard";
@@ -11,6 +13,8 @@ import { zhPlaceholderMessages } from "./placeholders";
 import { zhSettingsMessages } from "./settings";
 
 export const zhMessages = {
+  ...zhApprovalMessages,
+  ...zhChatMessages,
   ...zhCommonMessages,
   ...zhDashboardMessages,
   ...zhSettingsMessages,

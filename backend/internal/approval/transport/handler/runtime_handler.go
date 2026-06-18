@@ -75,7 +75,11 @@ func (h *RuntimeHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httputil.ErrorResponse
 // @Router /approvals/requests [get]
 func (h *RuntimeHandler) ListRequests(w http.ResponseWriter, r *http.Request) {
-	actor, _ := actorID(r)
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
 	page, limit := pagination(r)
 	f := domain.RequestListFilter{
 		Status:      vo.RequestStatus(r.URL.Query().Get("status")),

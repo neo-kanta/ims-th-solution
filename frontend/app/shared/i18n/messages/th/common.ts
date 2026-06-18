@@ -51,6 +51,7 @@ export const thCommonMessages = {
   },
   navigation: {
     dashboard: "แดชบอร์ด",
+    chat: "แชท",
     workflow: "เวิร์กโฟลว์",
     settings: "การตั้งค่า",
     personalSettings: "การตั้งค่าส่วนบุคคล",
@@ -88,6 +89,71 @@ export const thCommonMessages = {
   },
   workflow: {
     subtitle: "จัดการงานประจำวันของเวิร์กโฟลว์และขั้นตอนเริ่มต้นวันทำการ",
+    indexNotConfiguredTitle: "การดำเนินการ Workflow ทำที่ระดับกองทุน",
+    indexNotConfiguredCopy:
+      "เปิดกองทุนจากเมนู My Funds เพื่อดูสถานะ Workflow ปัจจุบันและทำการเปลี่ยนสถานะ (Day Start, Manager Approval, Transaction Closing, Accounting Closing) แบ็กเอนด์ผูกการเปลี่ยนสถานะกับสัญญาของกองทุนนั้นเสมอ ไม่มีหน้าจัดการ Workflow แบบรวมศูนย์",
+    tabs: {
+      overview: "ภาพรวม",
+      audit: "ประวัติการอนุมัติ",
+      settings: "การตั้งค่าผู้มีสิทธิ์อนุมัติ",
+    },
+    state: {
+      NOT_STARTED: "ยังไม่เริ่มวันทำการ",
+      INVESTMENT_DAY_STARTED: "เริ่มวันทำการแล้ว",
+      MANAGER_APPROVED: "ผู้จัดการอนุมัติแล้ว",
+      TRANSACTION_CLOSED: "ปิดการทำรายการแล้ว",
+      ACCOUNTING_CLOSED: "ปิดบัญชีแล้ว",
+    },
+    stage: {
+      INVESTMENT_DAY_STARTED: "เริ่มวันทำการ",
+      MANAGER_APPROVED: "ผู้จัดการอนุมัติ",
+      TRANSACTION_CLOSED: "ปิดการทำรายการ",
+      ACCOUNTING_CLOSED: "ปิดบัญชี",
+    },
+    status: {
+      complete: "เสร็จสิ้น",
+      active: "กำลังดำเนินการ",
+      upcoming: "ขั้นตอนถัดไป",
+      blocked: "ถูกบล็อก",
+    },
+    fields: {
+      timestamp: "เวลา",
+      personnel: "ผู้ดำเนินการ",
+      notes: "หมายเหตุ",
+    },
+    action: {
+      START_INVESTMENT_DAY: "เริ่มต้นวันทำการ",
+      CANCEL_INVESTMENT_DAY: "ยกเลิกการเริ่มต้นวันทำการ",
+      MANAGER_APPROVE: "ผู้จัดการอนุมัติ",
+      CANCEL_MANAGER_APPROVAL: "ยกเลิกการอนุมัติของผู้จัดการ",
+      CLOSE_TRANSACTION: "ปิดการทำรายการ",
+      CANCEL_TRANSACTION_CLOSE: "ยกเลิกการปิดทำรายการ",
+      CLOSE_ACCOUNTING: "ปิดบัญชีประจำวัน",
+      CANCEL_ACCOUNTING_CLOSE: "ยกเลิกการปิดบัญชีประจำวัน",
+    },
+    modules: {
+      approval: "โมดูลการอนุมัติ",
+      investment: "โมดูลการลงทุน",
+      compliance: "โมดูลการปฏิบัติตามเกณฑ์",
+      permission: "โมดูลการกำหนดสิทธิ์",
+      approvalWarning: "โมดูลการอนุมัติยังไม่ได้เปิดใช้งานอย่างสมบูรณ์ เวิร์กโฟลว์กำลังใช้การตั้งค่าภายในกลุ่มแอดมินเป็นค่าเริ่มต้น",
+    },
+    overview: {
+      actions: "การดำเนินการที่อนุญาต",
+      blocked: "การเปลี่ยนสถานะที่ยังทำไม่ได้",
+      timeline: "สรุปประวัติเวิร์กโฟลว์",
+    },
+    settings: {
+      defaultAdminFallback: "ยังไม่ได้กำหนดผู้อนุมัติ กลุ่มแอดมินจะทำหน้าที่เป็นผู้อนุมัติเริ่มต้น",
+      accountCodePlaceholder: "รหัสผู้ใช้ (เช่น jsmith)",
+      rolePlaceholder: "บทบาท/ป้ายกำกับ (ระบุหรือไม่ก็ได้)",
+      saveWarningText: "คุณแน่ใจหรือไม่ที่จะบันทึกการตั้งค่าผู้อนุมัติ? การเปลี่ยนแปลงทั้งหมดจะถูกเขียนบันทึกลงในเซิร์ฟเวอร์",
+      saveSuccessText: "บันทึกการตั้งค่าผู้อนุมัติสำเร็จแล้ว",
+      modifiedCount: "คุณมีรายการที่ยังไม่ได้บันทึกการเปลี่ยนแปลง",
+    },
+    blocked: {
+      reasonText: "ไม่ได้รับอนุญาตในสถานะปัจจุบัน",
+    },
   },
   forbidden: {
     title: "ปฏิเสธการเข้าถึง",

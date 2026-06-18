@@ -228,9 +228,8 @@ func (h *GetDailyWorkflowHandler) Handle(
 		}
 	}
 
-	// Module readiness — approval module is scaffold
 	moduleReadiness := map[string]DailyModuleStatus{
-		"approval": {Ready: false, Reason: "approval module is scaffold"},
+		"approval": {Ready: true},
 	}
 
 	return &DailyWorkflowResult{

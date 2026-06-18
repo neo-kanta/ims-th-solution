@@ -380,6 +380,9 @@ func (s *Service) RequestChanges(ctx context.Context, in DecisionInput) (*domain
 }
 
 func (s *Service) Reject(ctx context.Context, in DecisionInput) (*domain.ChangeRequest, error) {
+	if strings.TrimSpace(in.Comment) == "" {
+		return nil, domain.Invalid("a rejection reason is required")
+	}
 	return s.decide(ctx, in, domain.ReviewerStatusRejected)
 }
 
@@ -979,6 +982,10 @@ func (s *Service) finish(ctx context.Context, requestID uuid.UUID, actorID uuid.
 		if cr == nil {
 			return domain.NotFound("permission change request", requestID)
 		}
+		// Guard against overwriting terminal states (approved, rejected, merged, cancelled, closed).
+		if isTerminalPermissionStatus(cr.Status) {
+			return domain.InvalidTransition("cannot " + strings.ToLower(status) + " a request that is already in a terminal state (" + cr.Status + ")")
+		}
 		before := *cr
 		now := s.now()
 		cr.Status = status
@@ -998,7 +1005,7 @@ func (s *Service) finish(ctx context.Context, requestID uuid.UUID, actorID uuid.
 
 func (s *Service) requirePermission(ctx context.Context, actorID uuid.UUID, code string) error {
 	if s.checker == nil {
-		return nil
+		return domain.Forbidden("permission checker is not configured")
 	}
 	ok, err := s.checker.HasFunctionPermission(ctx, actorID.String(), code)
 	if err != nil {
@@ -1061,6 +1068,15 @@ func (s *Service) targetOwner(ctx context.Context, cr *domain.ChangeRequest) *uu
 func (s *Service) isTargetOwner(ctx context.Context, cr *domain.ChangeRequest, actorID uuid.UUID) bool {
 	owner := s.targetOwner(ctx, cr)
 	return owner != nil && *owner == actorID
+}
+
+func isTerminalPermissionStatus(s string) bool {
+	switch s {
+	case domain.RequestStatusApproved, domain.RequestStatusRejected,
+		domain.RequestStatusMerged, domain.RequestStatusCancelled, domain.RequestStatusClosed:
+		return true
+	}
+	return false
 }
 
 func hasBlocking(checks []domain.Check) bool {

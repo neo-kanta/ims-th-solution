@@ -101,6 +101,11 @@ export const approvalApi = {
     return unwrap(await apiFetch<Envelope<ApprovalRequest>>(`/approvals/requests/${requestId}/cancel`, { method: "POST" }));
   },
 
+  async revoke(requestId: string, body: ActionInput): Promise<ApprovalRequest> {
+    const { apiFetch } = useApi();
+    return unwrap(await apiFetch<Envelope<ApprovalRequest>>(`/approvals/requests/${requestId}/revoke`, { method: "POST", body }));
+  },
+
   // ── Config: groups ───────────────────────────────────────────────────────────
   async listGroups(): Promise<ApprovalGroup[]> {
     const { apiFetch } = useApi();
@@ -161,6 +166,11 @@ export const approvalApi = {
   async updateTeam(id: string, body: TeamInput): Promise<ApprovalTeam> {
     const { apiFetch } = useApi();
     return unwrap(await apiFetch<Envelope<ApprovalTeam>>(`/approval-config/teams/${id}`, { method: "PUT", body }));
+  },
+
+  async listTeamContracts(id: string): Promise<ApprovalTeamContract[]> {
+    const { apiFetch } = useApi();
+    return unwrap(await apiFetch<Envelope<ApprovalTeamContract[]>>(`/approval-config/teams/${id}/contracts`)) ?? [];
   },
 
   async assignTeamContract(id: string, body: TeamContractInput): Promise<ApprovalTeamContract> {

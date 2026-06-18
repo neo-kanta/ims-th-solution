@@ -15,7 +15,7 @@ export type ApprovalTeam = Schemas["TeamResponse"];
 export type ApprovalTeamContract = Schemas["TeamContractResponse"];
 export type ApprovalTeamMember = Schemas["TeamMemberResponse"];
 export type ApprovalProcessConfig = Schemas["ProcessConfigResponse"];
-export type ApprovalStage = Schemas["StageResponse"];
+export type ApprovalProcessStage = Schemas["StageResponse"];
 export type ApprovalRequest = Schemas["RequestResponse"];
 export type ApprovalTask = Schemas["TaskResponse"];
 export type ApprovalEvent = Schemas["EventResponse"];
@@ -69,6 +69,7 @@ export const REQUEST_STATUSES = [
   "REJECTED",
   "CANCELLED",
   "WITHDRAWN",
+  "REVOKED",
 ] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
@@ -82,3 +83,72 @@ export interface ApprovalListState<T> {
   loading: boolean;
   error: string | null;
 }
+
+export interface ApprovalTarget {
+  moduleCode: string;
+  processType: string;
+  recordType: string;
+  recordId: string;
+  businessDate?: string;
+  title?: string;
+  description?: string;
+}
+
+export type ApprovalAction = "SUBMIT" | "CANCEL_SUBMISSION" | "APPROVE" | "REJECT" | "REVOKE_APPROVAL";
+
+export type ApprovalStatus =
+  | "DRAFT"
+  | "NOT_SUBMITTED"
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "REVOKED";
+
+export interface ApprovalApprover {
+  userId: string;
+  displayName: string;
+  roleName?: string;
+  priority?: number;
+  status: "WAITING" | "APPROVED" | "REJECTED" | "SKIPPED";
+  actedAt?: string;
+  isAgent?: boolean;
+  principalUserName?: string;
+  remark?: string;
+}
+
+export interface ApprovalStage {
+  stageNo: number;
+  stageName: string;
+  approvalMode: "SINGLE" | "GROUP_ANY" | "TEAM_STAMP";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
+  requiredStampCount?: number;
+  currentStampCount?: number;
+  approvers: ApprovalApprover[];
+}
+
+export interface ApprovalInstance {
+  approvalId: string;
+  target: ApprovalTarget;
+  status: ApprovalStatus;
+  currentStageNo?: number;
+  nextApproverNames: string[];
+  submittedBy?: string;
+  submittedAt?: string;
+  completedAt?: string;
+  stages: ApprovalStage[];
+  history: ApprovalHistoryItem[];
+}
+
+export interface ApprovalHistoryItem {
+  id: string;
+  action: ApprovalAction;
+  actionBy: string;
+  actionByDisplayName: string;
+  actedAt: string;
+  stageNo?: number;
+  remark?: string;
+  isAgent?: boolean;
+  principalUserName?: string;
+}
+

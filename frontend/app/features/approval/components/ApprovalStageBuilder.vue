@@ -71,8 +71,8 @@ function needsCount(mode?: string): boolean {
         <AppFormField v-if="needsGroup(stage.approver_mode)" label="Approval group">
           <AppSelect v-model="stage.approval_group_id" :options="groupOptions" placeholder="Select a group…" />
         </AppFormField>
-        <AppFormField v-if="needsUser(stage.approver_mode)" label="Approver user UUID">
-          <AppInput v-model="stage.approver_user_id" placeholder="User UUID" />
+        <AppFormField v-if="needsUser(stage.approver_mode)" label="Approver">
+          <AppInput :model-value="''" disabled placeholder="User selector source not available" />
         </AppFormField>
         <AppFormField v-if="needsCount(stage.approver_mode)" label="Required approvals">
           <AppInput v-model="stage.required_approval_count" type="number" />
