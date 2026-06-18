@@ -60,15 +60,18 @@ cd frontend && npm run build
 `backend/cmd/server/main.go` is the source of truth for mounted modules:
 
 1. Load config and logging.
-2. Connect PostgreSQL.
+2. Connect PostgreSQL; run secure bootstrap check.
 3. Optionally connect Redis when `RATE_LIMIT_BACKEND=redis`.
-4. Wire audit, IAM, compliance, workflow, investment, and market data.
-5. Start the workflow scheduler on an hourly loop.
-6. Mount `/health`, `/swagger/*`, and `/api/v1`.
+4. Wire audit, IAM, compliance, workflow, investment, reference data, market data, integration, permissions, approval, notification, and chat modules.
+5. Wire cross-module callbacks: investment ↔ approval subject callbacks, workflow confirmation gate, contract catalog, and market-data quote provider.
+6. Wire notification as the workflow stuck-day operator notifier.
+7. Start the workflow scheduler on an hourly loop.
+8. Mount `/health`, `/metrics`, `/swagger/*`, and `/api/v1`.
 
 Public API:
 
 - `GET /health`
+- `GET /metrics` (Prometheus scrape endpoint)
 - `GET /swagger/*`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
@@ -81,22 +84,29 @@ Authenticated API groups:
 - Compliance under `/api/v1/compliance/*`
 - Investment under `/api/v1/investment/*`
 - Market data under `/api/v1/market-data/*`
+- Reference data under `/api/v1/reference-data/*`
+- Integration (user dashboard/tasks) under `/api/v1/integration/*`
+- Permissions under `/api/v1/permissions/*`
+- Approval under `/api/v1/approval/*`
+- Notification under `/api/v1/notifications/*`
+- Chat (conditionally mounted when LLM provider is configured) under `/api/v1/chat/*`
 
 ## Module Status
 
-| Module           | Status   | Notes                                                                                              |
-| ---------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `iam`            | Active   | Auth, sessions, MFA, admin user operations, permission and data-scope checks.                      |
-| `audit`          | Active   | Audit recorder plus admin audit list/export routes.                                                |
-| `workflow`       | Active   | Business-day state machine, transition history, scheduler, workflow state contract.                |
-| `compliance`     | Active   | IRG rule registry, checks, breaches, overrides, rule instances, contract adapter.                  |
-| `investment`     | Active   | Funds, portfolios, instruments, ledger, price snapshots, valuations, AUM, holdings and cash reads. |
-| `market_data`    | Active   | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence.             |
-| `approval`       | Scaffold | Module and permission policy only.                                                                 |
-| `integration`    | Scaffold | Module boundary only.                                                                              |
-| `notification`   | Scaffold | Module and permission policy only.                                                                 |
-| `permissions`    | Scaffold | Tables and catalogs exist; active admin workflows are currently through IAM/settings.              |
-| `reference_data` | Scaffold | Boundary only.                                                                                     |
+| Module           | Status | Notes                                                                                                      |
+| ---------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| `iam`            | Active | Auth, sessions, MFA, admin user operations, permission and data-scope checks.                              |
+| `audit`          | Active | Audit recorder plus admin audit list/export routes.                                                        |
+| `workflow`       | Active | Business-day state machine, transition history, scheduler, workflow state contract.                        |
+| `compliance`     | Active | IRG rule registry, checks, breaches, overrides, rule instances, contract adapter.                          |
+| `investment`     | Active | Funds, portfolios, instruments, ledger, price snapshots, valuations, AUM, holdings and cash reads.         |
+| `market_data`    | Active | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence.                     |
+| `approval`       | Active | Approval flows, groups, teams, inbox, subject callbacks for research reports, decisions, and portfolios.   |
+| `permissions`    | Active | Account/group management, function permissions, data permissions, effective-permissions view, role hierarchy.|
+| `notification`   | Active | Notification engine; provides `ApprovalNotifier` and workflow stuck-day `OperatorNotifier`. No UI nav.     |
+| `reference_data` | Active | Thai market holidays, currencies, markets, instruments; provides `Resolver()` to market data. No UI nav.   |
+| `integration`    | Active | User dashboard snapshot and task summary endpoints (`/integration/dashboard/me`, `/integration/tasks/my`). |
+| `chat`           | Active | AI financial assistant via Anthropic LLM + MCP. Conditionally mounted; rest of API unaffected if disabled. |
 
 ## Backend Placement Rules
 
@@ -172,6 +182,22 @@ Frontend rules:
 - Put user-facing copy in `app/shared/i18n/messages/{en,th,zh}` and consume it through `useI18n().t(...)`.
 - Use `definePageMeta` plus `auth`/`permission` middleware for protected pages.
 
+## Dashboard Tab Registry
+
+The dashboard header tabs are driven by a provider registry — `dashboard.vue` never needs to change when adding tabs for a new feature.
+
+- Registry file: `frontend/app/features/shell/tabs/dashboardTabRegistry.ts`
+- Each entry implements `DashboardTabProvider` (type in `frontend/app/features/shell/tabs/types.ts`)
+- To add tabs: create a `navigation/dashboardTabs.ts` in your feature and append it to the registry array.
+
+## MCP Server (tools/mcp)
+
+`tools/mcp/ims-mcp-server/` is a standalone Node.js stdio MCP server that exposes IMS read-only (and optionally mutating) tools to the chat module.
+
+- Built separately; output binary is `backend/ims-mcp.exe` (compiled alongside the server binary).
+- The server binary auto-discovers it via `filepath.Dir(executable) + "/ims-mcp"`.
+- An override path can be set with `CHAT_MCP_IMS_BIN`.
+
 ## Database And Seeds
 
 Migrations live in `database/migrations` and use:
@@ -205,6 +231,9 @@ Seed behavior:
 - Do not commit real secrets.
 - `APP_JWT_SECRET`, `MFA_ENCRYPTION_KEY`, and `ALPHA_VANTAGE_API_KEY` are required outside development/test according to `backend/platform/config/config.go`.
 - Redis is optional only when `RATE_LIMIT_BACKEND=memory`; if set to `redis`, backend startup requires a reachable Redis instance.
+- Chat module requires `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=<key>`. If unconfigured, the `/chat` route is not mounted and the server starts normally.
+- `CHAT_WRITE_ENABLED=true` enables mutating MCP tools; default is read-only.
+- The chat module spawns `ims-mcp` (compiled to `backend/ims-mcp.exe`) as a stdio MCP server. `IMS_API_BASE_URL` is forwarded to it.
 
 ## Git And Review Hygiene
 
