@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 definePageMeta({
   layout: 'dashboard',
@@ -95,7 +96,7 @@ onMounted(load);
     </AppPageHeader>
 
     <div class="card" style="margin-top:16px;">
-      <div v-if="loading" style="padding:24px;color:#64748b;">Loading…</div>
+      <AppLoadingState v-if="loading" message="Loading notifications..." />
       <div v-else-if="error" style="padding:24px;color:#b91c1c;">{{ error }}</div>
       <div v-else-if="!items.length" class="empty-state" style="padding:48px 24px;text-align:center;">
         <div class="empty-title" style="font-size:16px;font-weight:600;color:#1e293b;">

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { permissionWorkflowApi } from "../services/permissionWorkflowApi";
 import type { PermissionChangeRequest } from "../types";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const props = defineProps<{
   requestId: string;
@@ -114,7 +115,7 @@ onMounted(loadRequest);
     </NuxtLink>
 
     <p v-if="actionError" class="alert alert-danger">{{ actionError }}</p>
-    <p v-if="loading && !request" class="is-muted">Loading permission request...</p>
+    <AppLoadingState v-if="loading && !request" message="Loading permission request..." />
 
     <template v-if="request">
       <header class="permission-detail__header">

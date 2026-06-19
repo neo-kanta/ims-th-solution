@@ -11553,6 +11553,7 @@ export interface components {
             cancellation_reason?: string;
             cancelled_at?: string;
             compliance_check_group_id?: string;
+            compliance_release_approval_request_id?: string;
             contract_id?: string;
             created_at?: string;
             currency?: string;
@@ -12115,7 +12116,6 @@ export interface components {
             reason?: string;
         };
         OverrideRequest: {
-            approved_by?: string;
             reason?: string;
         };
         PermissionsResp: {

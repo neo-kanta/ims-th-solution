@@ -19,20 +19,7 @@ withDefaults(defineProps<Props>(), {
       <div class="app-loading__skeleton-item app-loading__skeleton-text w-2/3"></div>
     </template>
     <template v-else>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="32"
-        height="32"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="app-loading__spinner"
-      >
-        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-      </svg>
+      <div class="app-loading__spinner"></div>
       <span v-if="message" class="app-loading__message">{{ message }}</span>
     </template>
   </div>
@@ -45,18 +32,24 @@ withDefaults(defineProps<Props>(), {
   align-items: center;
   justify-content: center;
   gap: var(--space-4, 16px);
-  padding: var(--space-8, 32px);
+  padding: var(--space-10, 40px) 0;
   color: var(--text-secondary, #57606a);
+  width: 100%;
 }
 
 .app-loading__spinner {
-  animation: spin 0.8s linear infinite;
-  color: var(--action-primary, #0969da);
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-subtle, #e1e4e8);
+  border-top-color: var(--color-primary-500, #0969da);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .app-loading__message {
   font-size: var(--font-size-sm, 14px);
   font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary, #57606a);
 }
 
 .app-loading--skeleton {

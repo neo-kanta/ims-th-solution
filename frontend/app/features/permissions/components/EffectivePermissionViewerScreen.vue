@@ -4,6 +4,7 @@ import { computed, onMounted, ref, reactive } from "vue";
 import { permissionWorkflowApi } from "../services/permissionWorkflowApi";
 import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
 import type { EffectivePermissions, PermissionUserSummary } from "../types";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const props = defineProps<{
   initialUserId?: string;
@@ -309,15 +310,18 @@ onMounted(bootstrap);
 
     <p v-if="error" class="alert alert-danger">{{ error }}</p>
 
-    <section v-if="selectedUser" class="effective-permissions__identity">
-      <strong>{{ selectedUser.display_name }}</strong>
-      <span>{{ selectedUser.username }} | {{ selectedUser.email }}</span>
-      <span class="badge" :class="selectedUser.is_active && !selectedUser.is_locked ? 'badge-success' : 'badge-error'">
-        {{ selectedUser.is_active && !selectedUser.is_locked ? "Active" : "Restricted" }}
-      </span>
-    </section>
+    <AppLoadingState v-if="loading && !effective" message="Loading effective permissions..." />
 
-    <section v-if="effective" class="effective-permissions__grid">
+    <template v-else>
+      <section v-if="selectedUser" class="effective-permissions__identity">
+        <strong>{{ selectedUser.display_name }}</strong>
+        <span>{{ selectedUser.username }} | {{ selectedUser.email }}</span>
+        <span class="badge" :class="selectedUser.is_active && !selectedUser.is_locked ? 'badge-success' : 'badge-error'">
+          {{ selectedUser.is_active && !selectedUser.is_locked ? "Active" : "Restricted" }}
+        </span>
+      </section>
+
+      <section v-if="effective" class="effective-permissions__grid">
       <article>
         <h2>Final Function Permissions</h2>
         <div class="effective-permissions__chips">
@@ -354,6 +358,7 @@ onMounted(bootstrap);
         </div>
       </article>
     </section>
+    </template>
 
     <!-- Modal Backdrop -->
     <div v-if="showManageModal" class="modal-backdrop" @click.self="showManageModal = false">
@@ -404,7 +409,7 @@ onMounted(bootstrap);
           </nav>
 
           <p v-if="modalError" class="alert alert-danger">{{ modalError }}</p>
-          <p v-if="modalLoading" class="is-muted">Loading options...</p>
+          <AppLoadingState v-if="modalLoading" message="Loading options..." />
 
           <template v-if="!modalLoading">
             <!-- 1. Assign Role Tab -->

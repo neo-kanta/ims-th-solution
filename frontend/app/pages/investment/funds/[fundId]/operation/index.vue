@@ -17,6 +17,7 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
+import AppIcon from "~/shared/ui/AppIcon.vue";
 import { useI18n } from "~/composables/useI18n";
 import { myFundsApi, useFundDetail } from "~/features/my-funds";
 import type { ApiPortfolio } from "~/features/my-funds";
@@ -27,6 +28,9 @@ import type {
   PostTransactionPayload,
 } from "~/features/my-funds/services/myFundsApi";
 import { OpenApiRequestError } from "~/api/openapi";
+import { useWorkflowStore } from "~/features/workflow/store/useWorkflowStore";
+import { useAuthStore } from "~/stores/useAuthStore";
+import { useOpenApiClient } from "~/api/openapi";
 
 definePageMeta({
   layout: "dashboard",
@@ -36,6 +40,8 @@ definePageMeta({
 
 const { t } = useI18n();
 const route = useRoute();
+const authStore = useAuthStore();
+const workflowStore = useWorkflowStore();
 
 const fundIdParam = computed(() => String(route.params.fundId ?? ""));
 const fundDetail = useFundDetail(() => fundIdParam.value);
@@ -99,6 +105,10 @@ const netAmount = computed(() => {
   return side.value === "BUY" ? grossAmount.value + feesNum : grossAmount.value - feesNum;
 });
 
+const isLocked = computed(() => workflowStore.transactionsLocked);
+const canSimulate = computed(() => authStore.hasPermission("INVESTMENT_LEDGER_SIMULATE"));
+const canPostTx = computed(() => authStore.hasPermission("INVESTMENT_LEDGER_POST"));
+
 const canRunPretrade = computed(
   () =>
     !!portfolioId.value &&
@@ -106,7 +116,9 @@ const canRunPretrade = computed(
     Number(quantity.value) > 0 &&
     Number(price.value) > 0 &&
     !!businessDate.value &&
-    !simulating.value,
+    !simulating.value &&
+    canSimulate.value &&
+    !isLocked.value,
 );
 
 const verdict = computed<"PASS" | "WARN" | "BLOCK" | null>(() => {
@@ -118,12 +130,25 @@ const verdict = computed<"PASS" | "WARN" | "BLOCK" | null>(() => {
 });
 
 const canPost = computed(() => {
-  if (!canRunPretrade.value && !posting.value) return false;
+  if (isLocked.value) return false;
+  if (!canPostTx.value) return false;
+
+  // Basic validation checks (same as canRunPretrade but without checking canSimulate)
+  const hasValidInputs =
+    !!portfolioId.value &&
+    !!instrumentId.value &&
+    Number(quantity.value) > 0 &&
+    Number(price.value) > 0 &&
+    !!businessDate.value &&
+    !posting.value;
+
+  if (!hasValidInputs) return false;
+
   if (requirePretrade.value) {
     if (!simulation.value || verdict.value === null) return false;
     if (verdict.value === "BLOCK") return false;
   }
-  return !posting.value;
+  return true;
 });
 
 onMounted(async () => {
@@ -138,6 +163,12 @@ onMounted(async () => {
   } catch {
     instruments.value = [];
   }
+
+  // Initialize and fetch daily workflow state
+  if (workflowStore.client === null) {
+    workflowStore.setClient(useOpenApiClient());
+  }
+  await workflowStore.fetchState();
 });
 
 // When the user changes any field, invalidate the prior simulation so they
@@ -253,6 +284,27 @@ function fmtMoney(v: number, digits = 2): string {
       "
     >
       <div class="op-ticket">
+        <!-- Workflow Lock Ribbon -->
+        <div v-if="isLocked" class="op-ticket__lock-banner" role="alert">
+          <AppIcon name="lock" size="sm" class="op-ticket__lock-icon" />
+          <div class="op-ticket__lock-content">
+            <strong>Ledger Locked</strong>
+            <span>
+              The investment workflow for business date <strong>{{ workflowStore.businessDate }}</strong> is in state <strong>{{ workflowStore.currentStateCode }}</strong>. Transactions are locked and no new operations can be posted.
+            </span>
+          </div>
+        </div>
+
+        <!-- Permission Warning Banners -->
+        <div v-if="!canSimulate && !isLocked" class="op-ticket__permission-warning" role="alert">
+          <AppIcon name="info" size="xs" />
+          <span>You do not have the <code>INVESTMENT_LEDGER_SIMULATE</code> permission. The pre-trade simulator is disabled.</span>
+        </div>
+        <div v-if="!canPostTx && !isLocked" class="op-ticket__permission-warning" role="alert">
+          <AppIcon name="info" size="xs" />
+          <span>You do not have the <code>INVESTMENT_LEDGER_POST</code> permission. You will not be able to record transactions.</span>
+        </div>
+
         <!-- BUY / SELL toggle ------------------------------------------- -->
         <div class="op-ticket__row">
           <div class="op-ticket__sides">
@@ -260,19 +312,21 @@ function fmtMoney(v: number, digits = 2): string {
               type="button"
               class="op-ticket__side"
               :class="{ 'is-active': side === 'BUY', 'is-buy': side === 'BUY' }"
+              :disabled="isLocked"
               @click="side = 'BUY'"
             >{{ t("operation.buy", "BUY") }}</button>
             <button
               type="button"
               class="op-ticket__side"
               :class="{ 'is-active': side === 'SELL', 'is-sell': side === 'SELL' }"
+              :disabled="isLocked"
               @click="side = 'SELL'"
             >{{ t("operation.sell", "SELL") }}</button>
           </div>
 
           <div class="op-ticket__field">
             <label>{{ t("operation.portfolio", "Portfolio") }}</label>
-            <select v-model="portfolioId" class="cf-input">
+            <select v-model="portfolioId" class="cf-input" :disabled="isLocked">
               <option value="" disabled>
                 {{ t("operation.pickPortfolio", "Pick a portfolio") }}
               </option>
@@ -290,8 +344,9 @@ function fmtMoney(v: number, digits = 2): string {
             v-model="instrumentSearch"
             class="cf-input"
             :placeholder="t('operation.instrumentSearch', 'Search ticker or name…')"
+            :disabled="isLocked"
           />
-          <select v-model="instrumentId" class="cf-input op-ticket__instrument-select" size="6">
+          <select v-model="instrumentId" class="cf-input op-ticket__instrument-select" size="6" :disabled="isLocked">
             <option value="" disabled>{{ t("operation.pickInstrument", "Pick an instrument") }}</option>
             <option v-for="i in filteredInstruments" :key="i.id" :value="i.id">
               {{ instrumentLabel(i) }}
@@ -310,6 +365,7 @@ function fmtMoney(v: number, digits = 2): string {
               step="any"
               class="cf-input"
               placeholder="0"
+              :disabled="isLocked"
             />
           </div>
           <div class="op-ticket__field">
@@ -321,6 +377,7 @@ function fmtMoney(v: number, digits = 2): string {
               step="any"
               class="cf-input"
               placeholder="0.00"
+              :disabled="isLocked"
             />
           </div>
           <div class="op-ticket__field">
@@ -332,6 +389,7 @@ function fmtMoney(v: number, digits = 2): string {
               step="any"
               class="cf-input"
               placeholder="0.00"
+              :disabled="isLocked"
             />
           </div>
         </div>
@@ -339,11 +397,11 @@ function fmtMoney(v: number, digits = 2): string {
         <div class="op-ticket__row">
           <div class="op-ticket__field">
             <label>{{ t("operation.businessDate", "Business date") }}</label>
-            <input v-model="businessDate" type="date" class="cf-input" />
+            <input v-model="businessDate" type="date" class="cf-input" :disabled="isLocked" />
           </div>
           <div class="op-ticket__field">
             <label>{{ t("operation.settlementDate", "Settlement date") }}</label>
-            <input v-model="settlementDate" type="date" class="cf-input" />
+            <input v-model="settlementDate" type="date" class="cf-input" :disabled="isLocked" />
           </div>
           <div class="op-ticket__field">
             <label>{{ t("operation.currency", "Currency") }}</label>
@@ -357,6 +415,7 @@ function fmtMoney(v: number, digits = 2): string {
             v-model="reason"
             class="cf-input"
             :placeholder="t('operation.reasonHint', 'Free-text note attached to the audit trail')"
+            :disabled="isLocked"
           />
         </div>
 
@@ -673,5 +732,44 @@ function fmtMoney(v: number, digits = 2): string {
   .op-ticket__totals {
     grid-template-columns: 1fr;
   }
+}
+
+.op-ticket__lock-banner {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--alert-danger-bg, rgba(207, 34, 46, 0.08));
+  border: 1px solid var(--alert-danger-border, rgba(207, 34, 46, 0.35));
+  border-radius: var(--radius-lg, 6px);
+  color: var(--alert-danger-text, #cf222e);
+  align-items: center;
+  font-size: var(--font-size-sm, 14px);
+  margin-bottom: var(--space-2);
+}
+
+.op-ticket__lock-icon {
+  flex-shrink: 0;
+  color: var(--state-danger, #cf222e);
+}
+
+.op-ticket__lock-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.op-ticket__permission-warning {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--alert-warning-bg, rgba(214, 152, 0, 0.08));
+  border: 1px solid var(--alert-warning-border, rgba(214, 152, 0, 0.35));
+  border-radius: var(--radius-md, 4px);
+  color: var(--alert-warning-text, #b06800);
+  align-items: center;
+  font-size: var(--font-size-xs, 12px);
+  margin-bottom: var(--space-2);
+  text-align: left;
 }
 </style>

@@ -11,6 +11,7 @@ import MarketDataSecurityEditForm from "./components/MarketDataSecurityEditForm.
 import MarketDataMappingsEditor from "./components/MarketDataMappingsEditor.vue";
 import { useMarketDataSecurityDetail } from "./composables/useMarketDataSecurityDetail";
 import { useMarketDataCatalog } from "./composables/useMarketDataCatalog";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 import type {
   ApiSecurity,
   ApiUpdateSecurityRequest,
@@ -159,9 +160,7 @@ onMounted(() => { void load(); });
 
 <template>
   <section class="md-sec-detail">
-    <div v-if="loading && !detail" class="md-sec-detail__loading" role="status">
-      {{ t("marketData.messages.loadingSecurity") }}
-    </div>
+    <AppLoadingState v-if="loading && !detail" :message="t('marketData.messages.loadingSecurity')" />
 
     <div v-else-if="notFound" class="md-sec-detail__notfound" role="alert">
       <h1>{{ t("marketData.headings.securityNotFound") }}</h1>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 import AppBadge from "~/shared/ui/AppBadge.vue";
 
@@ -53,7 +54,9 @@ function sideTone(side: string | null | undefined): "success" | "error" | "neutr
 
 <template>
   <div class="txn-ledger">
-    <header v-if="loading || error" class="txn-ledger__state">
+    <AppLoadingState v-if="loading && transactions.length === 0" message="Loading transaction ledger…" />
+
+    <header v-else-if="loading || error" class="txn-ledger__state">
       <span v-if="loading">Loading transaction ledger…</span>
       <span v-else-if="error" class="txn-ledger__error" role="alert">
         {{ error }}

@@ -8,6 +8,7 @@
  * label adapts.
  */
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 import { useI18n } from "~/composables/useI18n";
 import type {
@@ -211,9 +212,7 @@ function onRange(r: FundNavHistoryRange) {
       </div>
     </header>
 
-    <p v-if="loading" class="rnav__empty rnav__empty--loading">
-      {{ t("holdings.navHistory.loading", "Loading NAV history…") }}
-    </p>
+    <AppLoadingState v-if="loading" :message="t('holdings.navHistory.loading', 'Loading NAV history…')" />
 
     <p v-else-if="isEmpty" class="rnav__empty">
       {{

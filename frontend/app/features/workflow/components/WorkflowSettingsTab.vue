@@ -8,6 +8,7 @@ import WorkflowApproverSelector from "./WorkflowApproverSelector.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppIcon from "~/shared/ui/AppIcon.vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 import type { components } from "~/api/ims-api";
 
 const { t } = useI18n();
@@ -136,10 +137,7 @@ function getOperationLabel(opType?: string): string {
     </div>
 
     <!-- Loading state -->
-    <div v-else-if="loading && localSettings.length === 0" class="workflow-settings-loading">
-      <div class="workflow-settings-loading__spinner"></div>
-      <span>Loading approval settings...</span>
-    </div>
+    <AppLoadingState v-else-if="loading && localSettings.length === 0" message="Loading approval settings..." />
 
     <template v-else>
       <div class="workflow-settings-grid">

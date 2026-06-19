@@ -3,20 +3,23 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import FundWorkspaceHeader from "~/features/investment-workspace/components/FundWorkspaceHeader.vue";
-import HoldingsKpiCards from "~/features/investment-workspace/components/HoldingsKpiCards.vue";
 import HoldingsSubTabs from "~/features/investment-workspace/components/HoldingsSubTabs.vue";
 import HoldingsToolbar from "~/features/investment-workspace/components/HoldingsToolbar.vue";
-import RealAllocationPanel from "~/features/investment-workspace/components/RealAllocationPanel.vue";
+import AllocationDonutChart from "~/features/investment-workspace/components/AllocationDonutChart.vue";
+import IntradayHoldingsCards from "~/features/investment-workspace/components/IntradayHoldingsCards.vue";
+import LivePositionsTable from "~/features/investment-workspace/components/LivePositionsTable.vue";
 import RealNavHistoryChart from "~/features/investment-workspace/components/RealNavHistoryChart.vue";
-import RealPositionsTable from "~/features/investment-workspace/components/RealPositionsTable.vue";
 import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
 import { useHoldings } from "~/features/investment-workspace/composables/useHoldings";
 import { buildRealSummary } from "~/features/investment-workspace/lib/realSummary";
+import {
+  intradayValuationApi,
+  type IntradayValuation,
+  type MarketDataRefresh,
+  type MarketDataStatus,
+} from "~/features/investment-workspace/services/intradayValuationApi";
 import { myFundsApi, useFundDetail } from "~/features/my-funds";
 import type {
-  ApiAssetClass,
-  ApiHolding,
-  ApiInstrument,
   FundAllocation,
   FundNavHistory,
   FundNavHistoryRange,
@@ -29,44 +32,77 @@ definePageMeta({
   permission: "INVESTMENT_FUND_VIEW",
 });
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
 const fundIdParam = computed(() => String(route.params.fundId ?? ""));
 
-// Mock backplane — still feeds the asset table, allocation, ratios, and the
-// NAV history chart until those endpoints land.
+// Fund switcher (real backend `GET /investment/funds`).
 const { funds, loadFunds, setActiveFund } = useFundWorkspace();
-const holdings = useHoldings(fundIdParam.value, locale.value);
 
-// Real backplane — drives identity (breadcrumb / contract badge) and KPIs
-// (NAV, AUM, stale flag, settlement label) for the actual selected fund.
+// Local UI-state controller (date picker, sub-tab, export spinner).
+const holdings = useHoldings();
+
+// Real backplane — drives identity (breadcrumb / contract badge) and the
+// "Last Settled" label for the actual selected fund.
 const fundDetail = useFundDetail(() => fundIdParam.value);
 const fundNav = ref<FundNavSnapshot | null>(null);
 
-// Real holdings + instrument + asset-class lookups for the positions table.
-const realHoldings = ref<ApiHolding[]>([]);
-const realInstruments = ref<ApiInstrument[]>([]);
-const realAssetClasses = ref<ApiAssetClass[]>([]);
-const realCashRows = ref<{ currency: string; balance: string }[]>([]);
-const positionsLoading = ref(false);
+// Live (intraday) backplane — replaces the legacy mocked KPI values.
+const intraday = ref<IntradayValuation | null>(null);
+const intradayLoading = ref(false);
+const feedStatus = ref<MarketDataStatus | null>(null);
 
-// Real allocation + NAV history (server-computed from the seed).
+// Real allocation + NAV history (server-computed from the ledger).
 const allocation = ref<FundAllocation | null>(null);
 const allocationLoading = ref(false);
 const navHistory = ref<FundNavHistory | null>(null);
 const navHistoryRange = ref<FundNavHistoryRange>("3M");
 const navHistoryLoading = ref(false);
 
-async function refreshRealSummary() {
+// Inline toast banner. We keep the toast in-page rather than introducing a
+// global notification library — keeps the scope tight and avoids a new dep.
+type ToastTone = "success" | "warning" | "error" | "info";
+const toast = ref<{ tone: ToastTone; text: string } | null>(null);
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+function showToast(tone: ToastTone, text: string) {
+  toast.value = { tone, text };
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.value = null;
+  }, 5000);
+}
+
+async function refreshFundDetail() {
   if (!fundIdParam.value) return;
   await fundDetail.load();
   try {
     fundNav.value = await myFundsApi.getLatestFundNav(fundIdParam.value);
   } catch {
-    // NAV is optional — non-unitised funds simply don't have one.
     fundNav.value = null;
+  }
+}
+
+async function refreshIntradayValuation() {
+  if (!fundIdParam.value) return;
+  intradayLoading.value = true;
+  try {
+    intraday.value = await intradayValuationApi.getFundValuation(fundIdParam.value);
+  } catch {
+    intraday.value = null;
+  } finally {
+    intradayLoading.value = false;
+  }
+}
+
+async function refreshFeedStatus() {
+  if (!fundIdParam.value) return;
+  try {
+    feedStatus.value = await intradayValuationApi.getFundFeedStatus(fundIdParam.value);
+  } catch {
+    feedStatus.value = null;
   }
 }
 
@@ -98,54 +134,17 @@ async function refreshNavHistory(next?: FundNavHistoryRange) {
   }
 }
 
-async function refreshPositions() {
-  if (!fundIdParam.value) return;
-  positionsLoading.value = true;
-  try {
-    // The fund detail composable already pulled the portfolios; if it hasn't
-    // run yet, wait for it so we know which portfolio(s) to query holdings on.
-    if (fundDetail.portfolios.value.length === 0) {
-      await fundDetail.load();
-    }
-    const portfolios = fundDetail.portfolios.value.filter((p) => !!p.id);
-    const [classes, instruments, ...holdingsBatches] = await Promise.all([
-      myFundsApi.listAssetClasses().catch(() => [] as ApiAssetClass[]),
-      myFundsApi.listInstruments(500).catch(() => [] as ApiInstrument[]),
-      ...portfolios.map((p) =>
-        myFundsApi.listPortfolioHoldings(p.id as string).catch(
-          () => [] as ApiHolding[],
-        ),
-      ),
-    ]);
-    realAssetClasses.value = classes;
-    realInstruments.value = instruments;
-    // Flatten holdings from every portfolio under this fund.
-    realHoldings.value = (holdingsBatches as ApiHolding[][]).flat();
-
-    // Cash balances per portfolio, flattened with currency stable.
-    const cashLists = await Promise.all(
-      portfolios.map((p) =>
-        myFundsApi.listCash(p.id as string).catch(() => []),
-      ),
-    );
-    realCashRows.value = cashLists
-      .flat()
-      .map((c) => ({ currency: c.currency ?? "", balance: c.balance ?? "0" }));
-  } finally {
-    positionsLoading.value = false;
-  }
-}
-
 onMounted(async () => {
   await Promise.allSettled([
     loadFunds(fundIdParam.value),
-    refreshRealSummary(),
-    holdings.refreshAll(),
+    refreshFundDetail(),
     refreshAllocation(),
     refreshNavHistory(),
+    refreshFeedStatus(),
   ]);
-  // Positions need the portfolios from refreshRealSummary first; run after.
-  await refreshPositions();
+  // Intraday valuation needs the fund detail loaded for the breadcrumb to
+  // resolve — but the API itself is fund-id keyed, so we run it next.
+  await refreshIntradayValuation();
 });
 
 watch(
@@ -153,18 +152,19 @@ watch(
   async (next) => {
     setActiveFund(next);
     await Promise.allSettled([
-      refreshRealSummary(),
+      refreshFundDetail(),
       refreshAllocation(),
       refreshNavHistory(),
+      refreshFeedStatus(),
     ]);
-    await refreshPositions();
+    await refreshIntradayValuation();
   },
 );
 
-// `realSummary` is preferred for the header + KPI strip whenever we have a
-// usable card; the mock summary remains as a fallback for the rare case where
-// the live fetch is still pending so the layout doesn't flash empty.
-const realSummary = computed(() =>
+// Identity / breadcrumb / contract badge come from the My Funds card. The
+// intraday KPI strip now consumes its own backplane (the IntradayValuation),
+// so realSummary only fuels the FundWorkspaceHeader.
+const effectiveSummary = computed(() =>
   fundDetail.card.value
     ? buildRealSummary({
         card: fundDetail.card.value,
@@ -175,15 +175,8 @@ const realSummary = computed(() =>
     : null,
 );
 
-const effectiveSummary = computed(
-  () => realSummary.value ?? holdings.summary.value ?? null,
-);
-
 const fundShortName = computed(
-  () =>
-    realSummary.value?.fund.short_name ??
-    holdings.summary.value?.fund.short_name ??
-    "",
+  () => effectiveSummary.value?.fund.short_name ?? "",
 );
 
 const pageSubtitle = computed(() => {
@@ -196,28 +189,62 @@ const pageSubtitle = computed(() => {
 });
 
 function onChangeFund(slug: string) {
-  // Navigate so the URL reflects the active fund (deep-link friendly).
   void router.push(`/investment/funds/${slug}/holdings`);
 }
 
 async function onChangeAsOf(date: string) {
   await holdings.setAsOf(date);
-  await refreshRealSummary();
+  await refreshFundDetail();
 }
 
+// Refresh button: POST the live refresh endpoint, then reload every read-side
+// payload. The toast mirrors the spec:
+//   success → "Market data refreshed"
+//   stale   → "Provider unavailable. Showing latest cached snapshot."
+//   error   → "No market data available for this contract."
 async function onRefreshAll() {
+  if (!fundIdParam.value) {
+    showToast("error", t("holdings.toast.error", "No market data available for this contract."));
+    return;
+  }
+  let summary: MarketDataRefresh | null = null;
+  try {
+    summary = await intradayValuationApi.refreshFundQuotes(fundIdParam.value);
+  } catch {
+    summary = null;
+  }
+
   await Promise.allSettled([
-    holdings.refreshAll(),
-    refreshRealSummary(),
-    refreshPositions(),
+    refreshFundDetail(),
     refreshAllocation(),
     refreshNavHistory(),
+    refreshFeedStatus(),
+    refreshIntradayValuation(),
   ]);
+
+  if (!summary) {
+    showToast("error", t("holdings.toast.error", "No market data available for this contract."));
+    return;
+  }
+  const failed = summary.failed_symbols ?? 0;
+  const success = summary.success_symbols ?? 0;
+  const stale = summary.stale_symbols ?? 0;
+  const unmapped = summary.unmapped_symbols?.length ?? 0;
+  if (success > 0 && failed + unmapped === 0 && stale === 0) {
+    showToast("success", t("holdings.toast.success", "Market data refreshed"));
+  } else if (success > 0 || stale > 0) {
+    showToast(
+      "warning",
+      t("holdings.toast.stale", "Provider unavailable. Showing latest cached snapshot."),
+    );
+  } else {
+    showToast("error", t("holdings.toast.error", "No market data available for this contract."));
+  }
 }
 
 const positionsSubtitle = computed(() => {
   const portfolios = fundDetail.portfolios.value.length;
-  const positions = realHoldings.value.length;
+  const positions = intraday.value?.positions?.length ?? 0;
   return t(
     "holdings.positions.cardSubtitle",
     { positions, portfolios },
@@ -227,11 +254,103 @@ const positionsSubtitle = computed(() => {
 
 const valuationCcy = computed(
   () =>
-    realSummary.value?.kpis.today_nav.currency ??
+    intraday.value?.valuation_ccy ??
+    effectiveSummary.value?.kpis.today_nav.currency ??
     fundDetail.card.value?.valuation.valuation_ccy ??
     fundDetail.card.value?.base_currency ??
     "THB",
 );
+
+const lastRefreshAt = computed(
+  () => intraday.value?.as_of || fundDetail.card.value?.updated_at || new Date().toISOString(),
+);
+
+const lastSettledDate = computed(
+  () => intraday.value?.business_date || fundDetail.card.value?.valuation.business_date || "",
+);
+
+const workflowLabel = computed(() => {
+  const state = fundDetail.card.value?.workflow.current_state ?? "";
+  switch (state) {
+    case "ACCOUNTING_CLOSED":
+      return "acctg closing";
+    case "TRANSACTION_CLOSED":
+      return "tx closing";
+    case "MANAGER_APPROVED":
+      return "mgr approved";
+    case "DAY_OPEN":
+      return "day open";
+    default:
+      return "valuation";
+  }
+});
+
+// Drives the Toolbar's "Feeds OK / Stale data" pill.
+const toolbarFreshness = computed(() => {
+  if (!intraday.value && !feedStatus.value) {
+    return effectiveSummary.value?.freshness ?? null;
+  }
+  const stale =
+    intraday.value?.is_stale ||
+    (feedStatus.value ? !feedStatus.value.healthy : false);
+  return {
+    is_stale: stale,
+    label: stale
+      ? intraday.value?.stale_reason ||
+        feedStatus.value?.note ||
+        "Provider unavailable"
+      : "Inputs fresh",
+  };
+});
+
+// CSV export uses ONLY the rows already loaded from the backend — no mock
+// fallback, no fabricated totals.
+async function onExport() {
+  if (!fundIdParam.value) return;
+  const rows: string[][] = [];
+  rows.push(["Fund", fundIdParam.value]);
+  rows.push(["As of", lastSettledDate.value || holdings.asOf.value]);
+  rows.push(["Official AUM", intraday.value?.official_aum ?? ""]);
+  rows.push(["Estimated AUM", intraday.value?.estimated_aum ?? ""]);
+  rows.push([]);
+  rows.push([
+    "Section",
+    "Ticker",
+    "Name",
+    "Asset class",
+    "Quantity",
+    "Avg cost",
+    "Latest price",
+    "Market value",
+    "Cost basis",
+    "Unrealised P&L",
+    "Provider",
+  ]);
+  for (const p of intraday.value?.positions ?? []) {
+    rows.push([
+      "HOLDING",
+      p.ticker ?? "",
+      p.name ?? "",
+      p.asset_class_label ?? "",
+      p.quantity ?? "",
+      p.average_cost ?? "",
+      p.latest_price ?? "",
+      p.market_value ?? "",
+      p.cost_basis ?? "",
+      p.unrealised_pnl ?? "",
+      p.provider ?? "",
+    ]);
+  }
+  rows.push([]);
+  rows.push(["Section", "Currency", "Balance"]);
+  for (const c of intraday.value?.cash ?? []) {
+    rows.push(["CASH", c.currency ?? "", c.balance ?? ""]);
+  }
+  await holdings.exportRows(
+    rows,
+    `holdings_${fundIdParam.value}_${lastSettledDate.value || holdings.asOf.value}.csv`,
+  );
+}
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
@@ -252,7 +371,6 @@ watch(
     </div>
 
     <div class="holdings-page__title-row">
-      <!-- Title is omitted here as it is rendered in layout breadcrumbs instead -->
       <p class="holdings-page__subtitle">{{ pageSubtitle }}</p>
     </div>
 
@@ -260,14 +378,26 @@ watch(
       :funds="funds"
       :active-fund-id="fundIdParam"
       :as-of="holdings.asOf.value"
-      :loading="holdings.loading.value || fundDetail.loading.value"
+      :loading="fundDetail.loading.value || intradayLoading"
       :exporting="holdings.exporting.value"
-      :freshness="effectiveSummary?.freshness ?? null"
+      :freshness="toolbarFreshness"
       @change-fund="onChangeFund"
       @change-as-of="onChangeAsOf"
       @refresh="onRefreshAll"
-      @export="holdings.download()"
+      @export="onExport"
     />
+
+    <transition name="holdings-toast">
+      <div
+        v-if="toast"
+        class="holdings-page__toast"
+        :class="`holdings-page__toast--${toast.tone}`"
+        role="status"
+        aria-live="polite"
+      >
+        {{ toast.text }}
+      </div>
+    </transition>
 
     <div v-if="holdings.error.value" class="holdings-page__alert" role="alert">
       {{ holdings.error.value }}
@@ -281,7 +411,13 @@ watch(
       @select="holdings.setSubTab($event)"
     />
 
-    <HoldingsKpiCards v-if="effectiveSummary" :kpis="effectiveSummary.kpis" />
+    <IntradayHoldingsCards
+      :valuation="intraday"
+      :status="feedStatus"
+      :last-refresh-at="lastRefreshAt"
+      :workflow-label="workflowLabel"
+      :last-settled-date="lastSettledDate"
+    />
 
     <div class="holdings-page__layout">
       <div class="holdings-page__main">
@@ -289,13 +425,11 @@ watch(
           :title="t('holdings.positions.cardTitle', 'Positions')"
           :subtitle="positionsSubtitle"
         >
-          <RealPositionsTable
-            :holdings="realHoldings"
-            :instruments="realInstruments"
-            :asset-classes="realAssetClasses"
-            :cash-rows="realCashRows"
+          <LivePositionsTable
+            :positions="intraday?.positions ?? []"
+            :cash-rows="intraday?.cash ?? []"
             :valuation-ccy="valuationCcy"
-            :loading="positionsLoading"
+            :loading="intradayLoading"
           />
         </AppCard>
       </div>
@@ -305,7 +439,11 @@ watch(
           :title="t('holdings.allocation.title', 'Allocation')"
           :subtitle="t('holdings.allocation.liveSubtitle', 'Asset class / sector / country / currency')"
         >
-          <RealAllocationPanel :payload="allocation" :loading="allocationLoading" />
+          <AllocationDonutChart
+            :payload="allocation"
+            :valuation="intraday"
+            :loading="allocationLoading"
+          />
         </AppCard>
 
         <AppCard
@@ -316,7 +454,7 @@ watch(
             {{
               t(
                 "holdings.ratios.placeholder",
-                "IRG-derived ratio gauges will surface here once the policy ratios endpoint is connected to the live ruleset.",
+                "Policy-ratio gauges are not configured yet — they will surface once the IRG policy-ratio endpoint is wired up.",
               )
             }}
           </div>
@@ -340,7 +478,7 @@ watch(
       {{
         t(
           "holdings.livePanelsNote",
-          "Header, KPIs, freshness flag, positions table, allocation breakdowns and the NAV history chart all reflect live database state. Only special ratios remain a placeholder until the IRG policy-ratio endpoint is wired up.",
+          "Official accounting values come from closing snapshots. Estimated values are live market-data approximations and are not the authoritative NAV.",
         )
       }}
     </p>
@@ -383,6 +521,42 @@ watch(
   font-size: 13px;
 }
 
+.holdings-page__toast {
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.holdings-page__toast--success {
+  background: var(--alert-success-bg);
+  border: 1px solid var(--alert-success-border);
+  color: var(--state-success);
+}
+.holdings-page__toast--warning {
+  background: var(--alert-warning-bg);
+  border: 1px solid var(--alert-warning-border);
+  color: var(--state-warning, var(--color-warning-500, #f59e0b));
+}
+.holdings-page__toast--error {
+  background: var(--alert-danger-bg);
+  border: 1px solid var(--alert-danger-border);
+  color: var(--alert-danger-text);
+}
+.holdings-page__toast--info {
+  background: var(--alert-info-bg, var(--surface-1));
+  border: 1px solid var(--alert-info-border, var(--border-default));
+  color: var(--text-primary);
+}
+
+.holdings-toast-enter-active,
+.holdings-toast-leave-active {
+  transition: opacity 0.18s ease;
+}
+.holdings-toast-enter-from,
+.holdings-toast-leave-to {
+  opacity: 0;
+}
+
 .holdings-page__layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
@@ -400,32 +574,6 @@ watch(
   gap: var(--space-3);
   min-width: 0;
   align-content: start;
-}
-
-.holdings-page__nav-card {
-  padding: 12px;
-}
-
-.holdings-page__pnl-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  background: var(--status-in-review-bg);
-  border: 1px solid var(--alert-info-border);
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--status-in-review-text);
-}
-
-.holdings-page__pnl-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--state-info);
 }
 
 .holdings-page__disclaimer {

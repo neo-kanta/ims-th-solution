@@ -6,6 +6,7 @@ import WorkflowAuditTable from "./WorkflowAuditTable.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppIcon from "~/shared/ui/AppIcon.vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const props = defineProps<{
   businessDate: string;
@@ -73,10 +74,7 @@ function nextPage() {
         <span class="workflow-audit-total">Total transitions: {{ total }}</span>
       </div>
 
-      <div v-if="loading && transitions.length === 0" class="workflow-audit-loading">
-        <div class="workflow-audit-loading__spinner"></div>
-        <span>Loading history entries...</span>
-      </div>
+      <AppLoadingState v-if="loading && transitions.length === 0" message="Loading history entries..." />
 
       <template v-else>
         <!-- Table view -->

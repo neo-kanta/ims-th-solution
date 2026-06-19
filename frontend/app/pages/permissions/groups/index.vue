@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 import { permissionWorkflowApi } from "~/features/permissions/services/permissionWorkflowApi";
 import type { PermissionGroupSummary } from "~/features/permissions/types";
@@ -53,7 +54,9 @@ onMounted(loadGroups);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="4" class="is-muted">Loading groups...</td>
+            <td colspan="4" class="app-table__state-row">
+              <AppLoadingState message="Loading groups..." />
+            </td>
           </tr>
           <tr v-for="group in groups" :key="group.id">
             <td><strong>{{ group.name }}</strong></td>
@@ -79,5 +82,10 @@ onMounted(loadGroups);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
+}
+
+.app-table__state-row {
+  text-align: center;
+  background: transparent !important;
 }
 </style>

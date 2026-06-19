@@ -60,10 +60,7 @@ function cancelOverride() {
   overrideTarget.value = null;
 }
 
-async function submitOverride(payload: {
-  reason: string;
-  approved_by?: string;
-}) {
+async function submitOverride(payload: { reason: string }) {
   if (!overrideTarget.value) return;
   try {
     await overrideMutation.override(overrideTarget.value.id, payload);

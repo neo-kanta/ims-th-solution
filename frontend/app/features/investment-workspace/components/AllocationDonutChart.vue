@@ -16,6 +16,7 @@
  * unreadable slivers.
  */
 import { computed, ref } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 import { useI18n } from "~/composables/useI18n";
 import type {
@@ -207,9 +208,7 @@ function fmtPct(n: number): string {
       </button>
     </div>
 
-    <p v-if="loading" class="adonut__empty adonut__empty--loading">
-      {{ t("holdings.allocation.loading", "Loading allocation…") }}
-    </p>
+    <AppLoadingState v-if="loading" :message="t('holdings.allocation.loading', 'Loading allocation…')" />
 
     <p v-else-if="isEmpty" class="adonut__empty">
       {{

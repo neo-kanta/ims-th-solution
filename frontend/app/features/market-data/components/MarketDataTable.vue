@@ -4,6 +4,7 @@ import type { WatchlistItem, WatchlistFilter, ProviderId } from "../market-data.
 import type { ApiSecurity } from "../services/marketDataCatalogApi";
 import MarketDataSparkline from "./MarketDataSparkline.vue";
 import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const props = defineProps<{
   type: "watchlist" | "securities";
@@ -277,9 +278,14 @@ function statusVariant(status?: string): string {
                 </td>
               </tr>
             </template>
-            <tr v-if="filteredWatchlist.length === 0">
+            <tr v-if="loading && filteredWatchlist.length === 0">
               <td colspan="12" class="md-empty">
-                {{ loading ? t("marketData.messages.loadingMarketData") : t("marketData.messages.filterNoWatchlist") }}
+                <AppLoadingState :message="t('marketData.messages.loadingMarketData')" />
+              </td>
+            </tr>
+            <tr v-else-if="filteredWatchlist.length === 0">
+              <td colspan="12" class="md-empty">
+                {{ t("marketData.messages.filterNoWatchlist") }}
               </td>
             </tr>
           </tbody>
@@ -333,9 +339,14 @@ function statusVariant(status?: string): string {
                 >{{ t("marketData.actions.open") }}</NuxtLink>
               </td>
             </tr>
-            <tr v-if="securitiesItems.length === 0">
+            <tr v-if="loading && securitiesItems.length === 0">
               <td colspan="10" class="md-empty">
-                {{ loading ? t("marketData.messages.loadingSecurities") : t("marketData.messages.filterNoSecurities") }}
+                <AppLoadingState :message="t('marketData.messages.loadingSecurities')" />
+              </td>
+            </tr>
+            <tr v-else-if="securitiesItems.length === 0">
+              <td colspan="10" class="md-empty">
+                {{ t("marketData.messages.filterNoSecurities") }}
               </td>
             </tr>
           </tbody>

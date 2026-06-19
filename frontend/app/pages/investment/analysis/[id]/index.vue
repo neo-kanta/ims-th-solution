@@ -5,10 +5,12 @@ import { useI18n } from "~/composables/useI18n";
 import AppConfirmDialog from "~/shared/ui/AppConfirmDialog.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
 import ResearchReportDetail from "~/features/investment-research/components/ResearchReportDetail.vue";
+import ApprovalSessionPanel from "~/features/approval/components/ApprovalSessionPanel.vue";
 import {
   useResearchReportDetail,
   useResearchReportMutation,
 } from "~/features/investment-research/composables/useResearchReports";
+
 
 definePageMeta({
   layout: "dashboard",
@@ -24,6 +26,7 @@ const reportId = computed(() => String(route.params.id ?? ""));
 const { report, loading, error, fetch } = useResearchReportDetail();
 const { saving, error: mutationError, remove, submit, cancelSubmit } =
   useResearchReportMutation();
+const approvalSessionRef = ref<any>(null);
 
 /**
  * Three confirm-dialog slots, all driven by AppConfirmDialog. Each
@@ -66,6 +69,7 @@ const confirmConfig = computed(() => {
 async function refresh() {
   if (!reportId.value) return;
   await fetch(reportId.value);
+  await approvalSessionRef.value?.refresh();
 }
 
 function goEdit() {
@@ -128,17 +132,29 @@ onMounted(() => {
     >
       {{ error }}
     </div>
-    <ResearchReportDetail
-      v-else-if="report"
-      :report="report"
-      :saving="saving"
-      :error="mutationError"
-      @edit="goEdit"
-      @delete="() => openConfirm('delete')"
-      @submit="() => openConfirm('submit')"
-      @cancel-submit="() => openConfirm('cancelSubmit')"
-      @back="goBack"
-    />
+    <template v-else-if="report">
+      <ResearchReportDetail
+        :report="report"
+        :saving="saving"
+        :error="mutationError"
+        @edit="goEdit"
+        @delete="() => openConfirm('delete')"
+        @submit="() => openConfirm('submit')"
+        @cancel-submit="() => openConfirm('cancelSubmit')"
+        @back="goBack"
+      />
+      <ApprovalSessionPanel
+        ref="approvalSessionRef"
+        :target="{
+          moduleCode: 'INVESTMENT',
+          processType: 'INVESTMENT_ANALYSIS_REPORT',
+          recordType: 'RESEARCH_REPORT',
+          recordId: reportId,
+          title: report.report_title || 'Research Report'
+        }"
+        @action-completed="fetch(reportId)"
+      />
+    </template>
 
     <AppConfirmDialog
       v-if="confirmConfig"

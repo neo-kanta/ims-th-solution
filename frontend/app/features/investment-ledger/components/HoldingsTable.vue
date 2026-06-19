@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 import { formatMoney, formatQuantity, shortenId } from "../lib/ledgerFormat";
 import type {
@@ -52,7 +53,9 @@ function instrumentExchange(h: ApiHolding): string {
 
 <template>
   <div class="holdings-table">
-    <header v-if="loading || error" class="holdings-table__state">
+    <AppLoadingState v-if="loading && holdings.length === 0" message="Loading holdings…" />
+
+    <header v-else-if="loading || error" class="holdings-table__state">
       <span v-if="loading">Loading holdings…</span>
       <span v-else-if="error" class="holdings-table__error" role="alert">
         {{ error }}

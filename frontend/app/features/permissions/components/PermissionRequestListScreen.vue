@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { permissionWorkflowApi } from "../services/permissionWorkflowApi";
 import type { PermissionChangeRequest } from "../types";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const requests = ref<PermissionChangeRequest[]>([]);
 const total = ref(0);
@@ -139,7 +140,9 @@ onMounted(loadRequests);
         </thead>
         <tbody>
           <tr v-if="loading && !hasRows">
-            <td colspan="7" class="is-muted">Loading permission requests...</td>
+            <td colspan="7" class="app-table__state-row">
+              <AppLoadingState message="Loading permission requests..." />
+            </td>
           </tr>
           <tr v-else-if="!hasRows">
             <td colspan="7" class="is-muted">No permission change requests found.</td>
@@ -246,5 +249,10 @@ onMounted(loadRequests);
   .permission-list__filters {
     grid-template-columns: 1fr;
   }
+}
+
+.app-table__state-row {
+  text-align: center;
+  background: transparent !important;
 }
 </style>

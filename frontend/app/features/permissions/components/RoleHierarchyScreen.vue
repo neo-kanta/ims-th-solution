@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { permissionWorkflowApi } from "../services/permissionWorkflowApi";
 import type { PermissionRole } from "../types";
+import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 
 const roles = ref<PermissionRole[]>([]);
 const loading = ref(false);
@@ -68,7 +69,9 @@ onMounted(loadRoles);
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="9" class="is-muted">Loading role hierarchy...</td>
+            <td colspan="9" class="app-table__state-row">
+              <AppLoadingState message="Loading role hierarchy..." />
+            </td>
           </tr>
           <tr v-for="role in filteredRoles" :key="role.id">
             <td><strong>{{ role.role_code }}</strong></td>
@@ -112,5 +115,10 @@ onMounted(loadRoles);
   .role-hierarchy__header {
     grid-template-columns: 1fr;
   }
+}
+
+.app-table__state-row {
+  text-align: center;
+  background: transparent !important;
 }
 </style>
