@@ -132,6 +132,33 @@ type AppConfig struct {
 	// investment__asset_classes; an unknown code falls back to default 1d.
 	ValuationStaleThresholdsByAssetClass map[string]time.Duration
 
+	// Email notification: feature + worker flags.
+	EmailEnabled             bool
+	EmailWorkerEnabled       bool
+	EmailWorkerInterval      time.Duration
+	EmailWorkerBatchSize     int
+	EmailMaxAttempts         int
+	EmailStaleSendingTimeout time.Duration
+	EmailRetryPolicy         []time.Duration // per-attempt delays
+	EmailAllowRawEmail       bool
+	EmailAllowedDomains      []string
+	EmailTestEndpointEnabled bool
+	EmailSendRealEmail       bool
+
+	// SMTP: provider-independent transport config.
+	// SMTPPassword is never emitted in API responses or logs.
+	SMTPHost        string
+	SMTPPort        int
+	SMTPUsername    string
+	SMTPPassword    string
+	SMTPTLSMode     string // "none", "starttls", "tls"
+	SMTPFromAddress string
+	SMTPFromName    string
+	SMTPTimeout     time.Duration
+
+	// AppPublicBaseURL is the frontend origin used to build action URLs in emails.
+	AppPublicBaseURL string
+
 	// Chat: provider selection + credentials.
 	//
 	// LLMProvider chooses which adapter the chat module uses. Slice A only
@@ -286,6 +313,31 @@ func Load() (*AppConfig, error) {
 			"EQUITY=24h,FIXED_INCOME=72h,FUND=24h,ETF=24h,CASH=720h,ALTERNATIVE=720h,DERIVATIVE=24h",
 		),
 
+		// Email notification
+		EmailEnabled:             parseBool("NOTIFICATION_EMAIL_ENABLED", false),
+		EmailWorkerEnabled:       parseBool("NOTIFICATION_EMAIL_WORKER_ENABLED", false),
+		EmailWorkerInterval:      parseDuration("NOTIFICATION_EMAIL_WORKER_INTERVAL", "10s"),
+		EmailWorkerBatchSize:     parseInt("NOTIFICATION_EMAIL_WORKER_BATCH_SIZE", 25),
+		EmailMaxAttempts:         parseInt("NOTIFICATION_EMAIL_MAX_ATTEMPTS", 5),
+		EmailStaleSendingTimeout: parseDuration("NOTIFICATION_EMAIL_STALE_SENDING_TIMEOUT", "10m"),
+		EmailRetryPolicy:         parseRetryPolicy("NOTIFICATION_EMAIL_RETRY_POLICY", "1m,5m,15m,1h"),
+		EmailAllowRawEmail:       parseBool("NOTIFICATION_EMAIL_ALLOW_RAW_EMAIL", false),
+		EmailAllowedDomains:      parseStringSlice("NOTIFICATION_EMAIL_ALLOWED_DOMAINS"),
+		EmailTestEndpointEnabled: parseBool("NOTIFICATION_EMAIL_TEST_ENDPOINT_ENABLED", false),
+		EmailSendRealEmail:       parseBool("NOTIFICATION_EMAIL_SEND_REAL_EMAIL", false),
+
+		// SMTP
+		SMTPHost:        getEnvOrDefault("SMTP_HOST", "localhost"),
+		SMTPPort:        parseInt("SMTP_PORT", 1025),
+		SMTPUsername:    os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:    os.Getenv("SMTP_PASSWORD"),
+		SMTPTLSMode:     strings.ToLower(getEnvOrDefault("SMTP_TLS_MODE", "none")),
+		SMTPFromAddress: getEnvOrDefault("SMTP_FROM_ADDRESS", "no-reply@ims-demo.local"),
+		SMTPFromName:    getEnvOrDefault("SMTP_FROM_NAME", "IMS Thailand"),
+		SMTPTimeout:     parseDuration("SMTP_TIMEOUT", "10s"),
+
+		AppPublicBaseURL: getEnvOrDefault("APP_PUBLIC_BASE_URL", "http://localhost:3000"),
+
 		// Chat
 		LLMProvider:          strings.ToLower(getEnvOrDefault("LLM_PROVIDER", "anthropic")),
 		AnthropicAPIKey:      os.Getenv("ANTHROPIC_API_KEY"),
@@ -421,6 +473,25 @@ func parseBool(key string, defaultVal bool) bool {
 		return defaultVal
 	}
 	return b
+}
+
+// parseRetryPolicy parses a comma-separated duration list (e.g. "1m,5m,15m,1h")
+// into a slice of time.Duration values. Invalid entries are skipped.
+func parseRetryPolicy(key, defaultVal string) []time.Duration {
+	val := getEnvOrDefault(key, defaultVal)
+	var out []time.Duration
+	for _, part := range strings.Split(val, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		d, err := time.ParseDuration(part)
+		if err != nil {
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
 }
 
 func parseStringSlice(key string) []string {
