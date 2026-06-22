@@ -316,6 +316,14 @@ definitions:
       verdict:
         type: string
     type: object
+  CancelDecisionRequest:
+    properties:
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - reason
+    type: object
   CandidatesResponse:
     properties:
       items:
@@ -591,6 +599,49 @@ definitions:
         type: string
       updatedAt:
         type: string
+    type: object
+  CreateDecisionRequest:
+    properties:
+      amount:
+        type: string
+      business_date:
+        type: string
+      contract_id:
+        type: string
+      currency:
+        type: string
+      exchange:
+        type: string
+      fund_id:
+        type: string
+      instrument_code:
+        maxLength: 40
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      portfolio_id:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      research_report_id:
+        type: string
+      side:
+        enum:
+        - BUY
+        - SELL
+        type: string
+    required:
+    - business_date
+    - contract_id
+    - currency
+    - fund_id
+    - instrument_code
+    - portfolio_id
+    - side
     type: object
   CreateFundRequest:
     properties:
@@ -1145,6 +1196,8 @@ definitions:
       cancelled_at:
         type: string
       compliance_check_group_id:
+        type: string
+      compliance_release_approval_request_id:
         type: string
       contract_id:
         type: string
@@ -2234,8 +2287,6 @@ definitions:
     type: object
   OverrideRequest:
     properties:
-      approved_by:
-        type: string
       reason:
         type: string
     type: object
@@ -6673,6 +6724,172 @@ paths:
       summary: Personal task summary
       tags:
       - Integration
+  /investment/decisions:
+    get:
+      description: Returns a paginated list of investment decisions with optional
+        filters.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by fund UUID
+        in: query
+        name: fund_id
+        type: string
+      - description: Filter by portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Filter by contract UUID
+        in: query
+        name: contract_id
+        type: string
+      - description: Filter by business date YYYY-MM-DD
+        in: query
+        name: business_date
+        type: string
+      - description: Filter by lifecycle status
+        in: query
+        name: status
+        type: string
+      - description: Filter by instrument code
+        in: query
+        name: instrument_code
+        type: string
+      - description: Substring search on decision_no / instrument_code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Decisions
+      tags:
+      - Investment - Decisions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new investment decision in DRAFT status.
+      parameters:
+      - description: Decision fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateDecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Investment Decision
+      tags:
+      - Investment - Decisions
+  /investment/decisions/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels a DRAFT or SUBMITTED decision. A cancellation reason is
+        required.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cancellation reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CancelDecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Investment Decision
+      tags:
+      - Investment - Decisions
   /investment/decisions/{id}/details:
     get:
       description: Returns a decision header with all child decision lines (for basket/rebalance/switch
@@ -6709,6 +6926,51 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Investment Decision With Lines
+      tags:
+      - Investment - Decisions
+  /investment/decisions/{id}/submit:
+    post:
+      description: Submits a DRAFT decision for approval. Transitions status to SUBMITTED.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit Investment Decision
       tags:
       - Investment - Decisions
   /investment/decisions/approval-items:
