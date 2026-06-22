@@ -118,7 +118,7 @@ func main() {
 	marketDataModule := marketdata.NewModule(pool, cfg, redisClient, referenceDataModule.Resolver())
 	integrationModule := integration.NewModule(pool, iamModule)
 	permissionsModule := permissions.NewModule(pool, iamModule)
-	notificationModule := notification.NewModule(pool)
+	notificationModule := notification.NewModule(pool, cfg, iamModule)
 	approvalModule := approval.NewModule(pool, iamModule, auditModule.Recorder(), notificationModule.ApprovalNotifier(), approvaladapter.NewPostgresDelegateResolver(pool), nil)
 
 	// Chat module. Builds the configured LLM provider, persists sessions +
@@ -159,9 +159,26 @@ func main() {
 	investmentModule.SetApprovalCanceller(approvalModule)
 	approvalModule.RegisterSubjectCallback("RESEARCH_REPORT", investmentModule.ApprovalSubjectCallback())
 	approvalModule.RegisterSubjectCallback("INVESTMENT_DECISION", investmentModule.DecisionApprovalSubjectCallback())
-	approvalModule.RegisterSubjectCallback("PORTFOLIO", investmentModule.PortfolioApprovalCallback())
+	approvalModule.RegisterSubjectCallback("COMPLIANCE_RELEASE", investmentModule.ComplianceReleaseSubjectCallback())
+	// PORTFOLIO approval is deferred (Option A): PortfolioApprovalCallback exists but is not
+	// registered until the subject access adapter supports PORTFOLIO (see docs/handoff/approval-subject-access-port.md).
 	approvalModule.RegisterSubjectValidator("RESEARCH_REPORT", investmentModule.ResearchReportSubjectValidator())
 	approvalModule.RegisterSubjectValidator("INVESTMENT_DECISION", investmentModule.DecisionSubjectValidator())
+	approvalModule.RegisterSubjectValidator("COMPLIANCE_RELEASE", investmentModule.ComplianceReleaseSubjectValidator())
+
+	// Register per-subject-type access ports so the approval engine enforces
+	// object-level authorisation without inspecting business-specific keys.
+	// COMPLIANCE_RELEASE additionally requires the INVESTMENT_COMPLIANCE_RELEASE_APPROVE
+	// function permission (enforced inside the accessor, not here).
+	// PORTFOLIO is intentionally excluded until its access port is implemented.
+	investSubjectAccessor := investmentModule.SubjectAccessor(iamModule)
+	if investSubjectAccessor != nil {
+		approvalModule.RegisterSubjectAccessPort("RESEARCH_REPORT", investSubjectAccessor)
+		approvalModule.RegisterSubjectAccessPort("INVESTMENT_DECISION", investSubjectAccessor)
+		approvalModule.RegisterSubjectAccessPort("COMPLIANCE_RELEASE", investSubjectAccessor)
+	} else {
+		slog.Warn("investment subject accessor is nil; approval subject access ports not registered — approval reads will fail closed")
+	}
 
 	// Install the trade-confirmation gate on the workflow CloseTransactions
 	// handler so close-day refuses to advance while broker confirmations are
@@ -193,6 +210,7 @@ func main() {
 	schedulerCtx, stopScheduler := context.WithCancel(context.Background())
 	defer stopScheduler()
 	workflowModule.StartScheduler(schedulerCtx, time.Hour)
+	notificationModule.StartWorker(schedulerCtx)
 
 	r := chi.NewRouter()
 
