@@ -66,6 +66,10 @@ export const zhCommonMessages = {
     },
     administration: "系统管理",
     administrationSettings: "系统设置",
+    notifications: "通知",
+    notificationCenter: "我的通知",
+    emailOperations: "邮件操作",
+    emailOutbox: "邮件发件箱",
   },
   shell: {
     workspaceLabel: "运营工作区",
