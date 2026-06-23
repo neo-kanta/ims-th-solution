@@ -66,6 +66,10 @@ export const thCommonMessages = {
     },
     administration: "การดูแลระบบ",
     administrationSettings: "การตั้งค่าการดูแลระบบ",
+    notifications: "การแจ้งเตือน",
+    notificationCenter: "การแจ้งเตือนของฉัน",
+    emailOperations: "การดำเนินการอีเมล",
+    emailOutbox: "กล่องขาออกอีเมล",
   },
   shell: {
     workspaceLabel: "พื้นที่ปฏิบัติงาน",

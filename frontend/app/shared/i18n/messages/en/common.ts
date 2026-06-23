@@ -66,6 +66,10 @@ export const enCommonMessages = {
     },
     administration: "Administration",
     administrationSettings: "Administration settings",
+    notifications: "Notifications",
+    notificationCenter: "My notifications",
+    emailOperations: "Email operations",
+    emailOutbox: "Email outbox",
   },
   shell: {
     workspaceLabel: "Operations workspace",

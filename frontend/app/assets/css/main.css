@@ -1743,10 +1743,48 @@ small {
   font-size: var(--font-size-xs);
 }
 
+.btn-xs {
+  min-height: 1.5rem;
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-xs);
+}
+
 .btn-lg {
   min-height: var(--size-control-lg);
   padding: 0 var(--space-6);
   font-size: var(--font-size-md);
+}
+
+.btn-tertiary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+.btn-tertiary:hover {
+  background: var(--action-ghost-hover);
+  text-decoration: none;
+}
+
+.btn-tertiary:active {
+  background: var(--action-ghost-pressed);
+}
+
+.btn-warning {
+  background: var(--color-warning-500);
+  border-color: var(--color-warning-500);
+  color: var(--color-neutral-900);
+}
+
+.btn-warning:hover {
+  background: var(--color-warning-600);
+  border-color: var(--color-warning-600);
+  text-decoration: none;
+}
+
+.btn-warning:active {
+  background: var(--color-warning-700);
+  border-color: var(--color-warning-700);
 }
 
 .btn-group {

@@ -6,6 +6,7 @@ import { buildDashboardNavigation } from "../features/shell/navigation";
 import { useDashboardHeaderTabs } from "~/features/shell/composables/useDashboardHeaderTabs";
 import AppTabs from "~/shared/ui/AppTabs.vue";
 import AppSearch from "~/shared/ui/AppSearch.vue";
+import NotificationBell from "~/features/notifications/components/NotificationBell.vue";
 
 
 const config = useRuntimeConfig();
@@ -548,6 +549,18 @@ watch(
                   <AppIcon name="audit" size="xs" />
                   <span>{{ t('header.audit') }}</span>
                 </div>
+              </div>
+
+              <!-- Notification Bell -->
+              <div class="github-header-item">
+                <ClientOnly>
+                  <NotificationBell />
+                  <template #fallback>
+                    <button class="github-header-btn" type="button" disabled aria-label="Notifications">
+                      <AppIcon name="notifications" size="sm" />
+                    </button>
+                  </template>
+                </ClientOnly>
               </div>
             </div>
 
