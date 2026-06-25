@@ -15,9 +15,6 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY --from=builder /app/.output ./.output
-WORKDIR /app/.output/server
-RUN npm install --omit=dev
-WORKDIR /app
 
 EXPOSE 3000
 

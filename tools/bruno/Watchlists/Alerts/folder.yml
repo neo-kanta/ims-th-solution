@@ -1,0 +1,6 @@
+info:
+  name: Alerts
+  type: folder
+
+request:
+  auth: inherit

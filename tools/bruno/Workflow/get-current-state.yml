@@ -5,8 +5,11 @@ info:
 
 http:
   method: GET
-  url: "{{workflow-base-url}}?businessDate={{workflow-business-date}}"
+  url: "{{workflow-base-url}}/:contractId?businessDate={{workflow-business-date}}"
   params:
+    - name: contractId
+      value: "{{workflow-contract-id}}"
+      type: path
     - name: businessDate
       value: "{{workflow-business-date}}"
       type: query

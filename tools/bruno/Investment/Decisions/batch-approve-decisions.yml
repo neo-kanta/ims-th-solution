@@ -1,20 +1,19 @@
 info:
-  name: override-breach
+  name: batch-approve-decisions
   type: http
   seq: 7
 
 http:
   method: POST
-  url: "{{compliance-base-url}}/breaches/:breachID/override"
-  params:
-    - name: breachID
-      value: "{{compliance-breach-id}}"
-      type: path
+  url: "{{investment-base-url}}/decisions/batch-approve"
   body:
     type: json
     data: |-
       {
-        "reason": "{{compliance-override-reason}}"
+        "decision_nos": [
+          "{{investment-decision-no}}"
+        ],
+        "comment": "{{investment-decision-comment}}"
       }
   auth:
     type: bearer

@@ -1,20 +1,20 @@
 info:
-  name: override-breach
+  name: acknowledge-alert
   type: http
-  seq: 7
+  seq: 2
 
 http:
   method: POST
-  url: "{{compliance-base-url}}/breaches/:breachID/override"
+  url: "{{watchlist-base-url}}/alerts/:id/acknowledge"
   params:
-    - name: breachID
-      value: "{{compliance-breach-id}}"
+    - name: id
+      value: "{{watchlist-alert-id}}"
       type: path
   body:
     type: json
     data: |-
       {
-        "reason": "{{compliance-override-reason}}"
+        "note": "{{watchlist-ack-note}}"
       }
   auth:
     type: bearer

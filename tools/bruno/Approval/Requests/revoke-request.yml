@@ -1,20 +1,21 @@
 info:
-  name: override-breach
+  name: revoke-request
   type: http
-  seq: 7
+  seq: 8
 
 http:
   method: POST
-  url: "{{compliance-base-url}}/breaches/:breachID/override"
+  url: "{{approval-base-url}}/requests/:requestId/revoke"
   params:
-    - name: breachID
-      value: "{{compliance-breach-id}}"
+    - name: requestId
+      value: "{{approval-request-id}}"
       type: path
   body:
     type: json
     data: |-
       {
-        "reason": "{{compliance-override-reason}}"
+        "comment": "{{approval-comment}}",
+        "reason": "{{approval-reason}}"
       }
   auth:
     type: bearer

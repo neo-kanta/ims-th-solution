@@ -229,9 +229,9 @@ Seed behavior:
 - Compose env files live under `infra/env`.
 - Local backend runs from `backend` and can load `backend/.env` if present.
 - Do not commit real secrets.
-- `APP_JWT_SECRET`, `MFA_ENCRYPTION_KEY`, and `ALPHA_VANTAGE_API_KEY` are required outside development/test according to `backend/platform/config/config.go`.
+- `APP_JWT_SECRET`, `MFA_ENCRYPTION_KEY`, and `ALPHA_VANTAGE_API_KEY` are required outside development/test according to `backend/platform/config/config.go`. `ANTHROPIC_API_KEY` is also required when the chat module is active — `LLM_PROVIDER` defaults to `anthropic`, so the key is effectively required in most deployments unless you explicitly set a different provider.
 - Redis is optional only when `RATE_LIMIT_BACKEND=memory`; if set to `redis`, backend startup requires a reachable Redis instance.
-- Chat module requires `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=<key>`. If unconfigured, the `/chat` route is not mounted and the server starts normally.
+- Chat module: `LLM_PROVIDER` defaults to `anthropic`; without a matching `ANTHROPIC_API_KEY` the `/chat` route is silently not mounted — no startup error, but all chat endpoints 404.
 - `CHAT_WRITE_ENABLED=true` enables mutating MCP tools; default is read-only.
 - The chat module spawns `ims-mcp` (compiled to `backend/ims-mcp.exe`) as a stdio MCP server. `IMS_API_BASE_URL` is forwarded to it.
 

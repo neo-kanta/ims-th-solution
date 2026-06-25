@@ -230,6 +230,30 @@ variables:
     value: ""
   - name: investment-research-post-submission-note
     value: Submitted from Bruno for workflow testing.
+  - name: investment-decision-id
+    value: ""
+  - name: investment-decision-no
+    value: ""
+  - name: investment-decision-status
+    value: PENDING_APPROVAL
+  - name: investment-decision-approval-status
+    value: PENDING_APPROVAL
+  - name: investment-decision-comment
+    value: Approved from Bruno batch action.
+  - name: investment-decision-search
+    value: BRUNO
+  - name: investment-decision-process-type
+    value: INVESTMENT_DECISION
+  - name: investment-decision-product-type
+    value: STOCK
+  - name: investment-decision-research-no
+    value: "{{investment-research-report-no}}"
+  - name: investment-decision-rationale
+    value: Bruno sample investment decision rationale.
+  - name: investment-decision-cancel-reason
+    value: Cancelled from Bruno after validation test.
+  - name: investment-decision-reject-reason
+    value: Rejected from Bruno batch action after validation test.
   - name: compliance-base-url
     value: http://localhost:8080/api/v1/compliance
   - name: compliance-portfolio-id
@@ -319,7 +343,7 @@ variables:
   - name: workflow-contract-code
     value: IMS-DEMO-001
   - name: workflow-operation-type
-    value: START_INVESTMENT_DAY
+    value: MANAGER_APPROVE
   - name: approval-config-base-url
     value: http://localhost:8080/api/v1/approval-config
   - name: approval-base-url
@@ -348,6 +372,10 @@ variables:
     value: "true"
   - name: approval-process-type
     value: PORTFOLIO_ONBOARDING
+  - name: approval-comment
+    value: Approved from Bruno.
+  - name: approval-reason
+    value: Revoked from Bruno for rework.
   - name: chat-base-url
     value: http://localhost:8080/api/v1/chat
   - name: chat-session-id
@@ -388,3 +416,85 @@ variables:
     value: "25"
   - name: market-data-screen-query
     value: technology
+  - name: notification-base-url
+    value: http://localhost:8080/api/v1/notifications
+  - name: notification-id
+    value: ""
+  - name: notification-outbox-id
+    value: ""
+  - name: notification-unread-only
+    value: "true"
+  - name: notification-limit
+    value: "20"
+  - name: notification-offset
+    value: "0"
+  - name: notification-email-status
+    value: FAILED
+  - name: notification-recipient-username
+    value: ""
+  - name: notification-recipient-email
+    value: ""
+  - name: notification-event-type
+    value: ""
+  - name: notification-event-category
+    value: ""
+  - name: notification-business-type
+    value: ""
+  - name: notification-business-reference
+    value: ""
+  - name: notification-created-from
+    value: ""
+  - name: notification-created-to
+    value: ""
+  - name: notification-test-to-email
+    value: bruno-notify@test.local
+  - name: notification-test-to-username
+    value: bruno.notify
+  - name: notification-test-subject
+    value: Bruno notification test
+  - name: notification-test-body
+    value: Bruno notification test email body.
+  - name: watchlist-base-url
+    value: http://localhost:8080/api/v1/watchlists
+  - name: watchlist-item-id
+    value: ""
+  - name: watchlist-alert-id
+    value: ""
+  - name: watchlist-rule-id
+    value: ""
+  - name: watchlist-scope-type
+    value: PERSONAL
+  - name: watchlist-include-disabled
+    value: "false"
+  - name: watchlist-include-thresholds
+    value: "true"
+  - name: watchlist-include-quote
+    value: "true"
+  - name: watchlist-limit
+    value: "20"
+  - name: watchlist-offset
+    value: "0"
+  - name: watchlist-acknowledged
+    value: "false"
+  - name: watchlist-created-from
+    value: ""
+  - name: watchlist-created-to
+    value: ""
+  - name: watchlist-note
+    value: Bruno watchlist note.
+  - name: watchlist-ack-note
+    value: Acknowledged from Bruno.
+  - name: watchlist-pinned
+    value: "true"
+  - name: watchlist-status
+    value: ACTIVE
+  - name: watchlist-metric-type
+    value: PRICE
+  - name: watchlist-direction
+    value: ABOVE
+  - name: watchlist-threshold-value
+    value: "35.00"
+  - name: watchlist-cooldown-minutes
+    value: "60"
+  - name: watchlist-dry-run
+    value: "true"

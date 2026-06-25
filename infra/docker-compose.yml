@@ -43,6 +43,11 @@ services:
       - "8080:8080"
     env_file:
       - ./env/.env.development
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
+      CHAT_MAX_TOKENS_PER_TURN: ${CHAT_MAX_TOKENS_PER_TURN:-1024}
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +66,18 @@ services:
       - NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
     depends_on:
       - backend
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ims-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: true
+      MP_SMTP_AUTH_ALLOW_INSECURE: true
 
 volumes:
   pgdata:

@@ -1,0 +1,40 @@
+info:
+  name: update-item
+  type: http
+  seq: 2
+
+http:
+  method: PATCH
+  url: "{{watchlist-base-url}}/items/:id"
+  params:
+    - name: id
+      value: "{{watchlist-item-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "note": "{{watchlist-note}}",
+        "pinned": {{watchlist-pinned}},
+        "status": "{{watchlist-status}}",
+        "threshold_rules": [
+          {
+            "id": "{{watchlist-rule-id}}",
+            "cooldown_minutes": {{watchlist-cooldown-minutes}},
+            "currency": "{{investment-instrument-currency}}",
+            "direction": "{{watchlist-direction}}",
+            "metric_type": "{{watchlist-metric-type}}",
+            "status": "{{watchlist-status}}",
+            "threshold_value": "{{watchlist-threshold-value}}"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

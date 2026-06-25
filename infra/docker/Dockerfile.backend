@@ -10,6 +10,7 @@ COPY backend/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/server ./cmd/server
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/migrate ./cmd/migrate
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/seed ./cmd/seed
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/ims-mcp ./cmd/ims-mcp
 
 # ===== Runtime stage =====
 FROM alpine:3.20
@@ -23,10 +24,11 @@ WORKDIR /app
 COPY --from=builder /app/server .
 COPY --from=builder /app/migrate .
 COPY --from=builder /app/seed .
+COPY --from=builder /app/ims-mcp .
 COPY database/migrations /app/migrations
 COPY database/seeds /app/seeds
 
-RUN chmod +x /app/server /app/migrate /app/seed
+RUN chmod +x /app/server /app/migrate /app/seed /app/ims-mcp
 
 EXPOSE 8080
 

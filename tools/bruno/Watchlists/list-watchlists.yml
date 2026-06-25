@@ -1,0 +1,61 @@
+info:
+  name: list-watchlists
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{watchlist-base-url}}"
+  params:
+    - name: scope_type
+      value: "{{watchlist-scope-type}}"
+      type: query
+    - name: portfolio_id
+      value: "{{investment-portfolio-id}}"
+      type: query
+    - name: security_id
+      value: "{{reference-data-security-id}}"
+      type: query
+    - name: include_disabled
+      value: "{{watchlist-include-disabled}}"
+      type: query
+    - name: include_thresholds
+      value: "{{watchlist-include-thresholds}}"
+      type: query
+    - name: include_quote
+      value: "{{watchlist-include-quote}}"
+      type: query
+    - name: limit
+      value: "{{watchlist-limit}}"
+      type: query
+    - name: offset
+      value: "{{watchlist-offset}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const payload = body?.data || {};
+        const rows = Array.isArray(payload) ? payload : Array.isArray(payload.items) ? payload.items : [];
+        const first = rows[0] || {};
+        const rules = Array.isArray(first.threshold_rules) ? first.threshold_rules : [];
+        const firstRule = rules[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("watchlist-item-id", first.id, { persist: true });
+        }
+
+        if (firstRule.id) {
+          bru.setEnvVar("watchlist-rule-id", firstRule.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

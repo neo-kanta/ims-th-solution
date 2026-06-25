@@ -1,0 +1,54 @@
+info:
+  name: create-item
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{watchlist-base-url}}/items"
+  body:
+    type: json
+    data: |-
+      {
+        "note": "{{watchlist-note}}",
+        "pinned": {{watchlist-pinned}},
+        "portfolio_id": "{{investment-portfolio-id}}",
+        "scope_type": "{{watchlist-scope-type}}",
+        "security_id": "{{reference-data-security-id}}",
+        "threshold_rules": [
+          {
+            "cooldown_minutes": {{watchlist-cooldown-minutes}},
+            "currency": "{{investment-instrument-currency}}",
+            "direction": "{{watchlist-direction}}",
+            "metric_type": "{{watchlist-metric-type}}",
+            "status": "{{watchlist-status}}",
+            "threshold_value": "{{watchlist-threshold-value}}"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const rules = Array.isArray(data.threshold_rules) ? data.threshold_rules : [];
+        const firstRule = rules[0] || {};
+
+        if (data.id) {
+          bru.setEnvVar("watchlist-item-id", data.id, { persist: true });
+        }
+
+        if (firstRule.id) {
+          bru.setEnvVar("watchlist-rule-id", firstRule.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

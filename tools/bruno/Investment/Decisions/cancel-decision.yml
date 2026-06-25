@@ -1,20 +1,20 @@
 info:
-  name: override-breach
+  name: cancel-decision
   type: http
-  seq: 7
+  seq: 6
 
 http:
   method: POST
-  url: "{{compliance-base-url}}/breaches/:breachID/override"
+  url: "{{investment-base-url}}/decisions/:id/cancel"
   params:
-    - name: breachID
-      value: "{{compliance-breach-id}}"
+    - name: id
+      value: "{{investment-decision-id}}"
       type: path
   body:
     type: json
     data: |-
       {
-        "reason": "{{compliance-override-reason}}"
+        "reason": "{{investment-decision-cancel-reason}}"
       }
   auth:
     type: bearer
