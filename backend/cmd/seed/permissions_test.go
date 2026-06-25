@@ -244,6 +244,11 @@ func TestDefaultCatalogs_CoverPhase1Codes(t *testing.T) {
 		"PERMISSIONS_MANAGE",
 		"NOTIFICATION_CONFIG",
 		"AUDIT_VIEW",
+		"WATCHLIST_VIEW",
+		"WATCHLIST_MANAGE",
+		"WATCHLIST_ALERT_ACK",
+		"WATCHLIST_EVALUATE",
+		"WATCHLIST_ADMIN",
 	}
 
 	catalogs := defaultPermissionCatalogs()

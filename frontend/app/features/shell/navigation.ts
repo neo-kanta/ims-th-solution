@@ -139,6 +139,29 @@ export function buildDashboardNavigation(
       ],
     },
     {
+      label: t("navigation.notifications", "Notifications"),
+      icon: "notifications",
+      items: [
+        {
+          label: t("navigation.notificationCenter", "My notifications"),
+          to: "/notifications",
+          icon: "notifications",
+        },
+        {
+          label: t("navigation.emailOperations", "Email operations"),
+          to: "/admin/notifications/email",
+          icon: "send",
+          requiredPermissions: ["NOTIFICATION_VIEW", "NOTIFICATION_HEALTH"],
+        },
+        {
+          label: t("navigation.emailOutbox", "Email outbox"),
+          to: "/admin/notifications/email/outbox",
+          icon: "list",
+          requiredPermissions: ["NOTIFICATION_VIEW"],
+        },
+      ],
+    },
+    {
       label: t("navigation.administration"),
       icon: "shield",
       items: [

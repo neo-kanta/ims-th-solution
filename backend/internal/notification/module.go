@@ -16,6 +16,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/notification/jobs"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/notification/transport"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/notification/transport/handler"
+	watchlistdomain "github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/domain"
 	workflowports "github.com/neo-kanta/ims-th-solution/backend/internal/workflow/ports"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
@@ -28,8 +29,9 @@ type Module struct {
 	emailSvc         *service.EmailOutboxService
 	handler          *handler.Handler
 	emailHandler     *handler.EmailOutboxHandler
-	notifier         *adapter.ApprovalNotifier
-	stuckDayNotifier *adapter.WorkflowStuckDayNotifier
+	notifier              *adapter.ApprovalNotifier
+	stuckDayNotifier      *adapter.WorkflowStuckDayNotifier
+	watchlistAlertNotifier *adapter.WatchlistAlertNotifier
 	worker           *jobs.EmailOutboxWorker
 	checker          middleware.PermissionChecker
 }
@@ -45,8 +47,9 @@ func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig, checker middleware.Per
 		repo:             repo,
 		svc:              svc,
 		handler:          handler.NewHandler(svc),
-		notifier:         adapter.NewApprovalNotifier(svc),
-		stuckDayNotifier: adapter.NewWorkflowStuckDayNotifier(svc),
+		notifier:               adapter.NewApprovalNotifier(svc),
+		stuckDayNotifier:       adapter.NewWorkflowStuckDayNotifier(svc),
+		watchlistAlertNotifier: adapter.NewWatchlistAlertNotifier(svc),
 		checker:          checker,
 	}
 
@@ -131,4 +134,13 @@ func (m *Module) WorkflowStuckDayNotifier() workflowports.OperatorNotifier {
 		return nil
 	}
 	return m.stuckDayNotifier
+}
+
+// WatchlistAlertNotifier returns the adapter the watchlist module uses to
+// deliver threshold-breach notifications.
+func (m *Module) WatchlistAlertNotifier() watchlistdomain.WatchlistAlertNotifier {
+	if m == nil {
+		return nil
+	}
+	return m.watchlistAlertNotifier
 }
