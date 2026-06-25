@@ -3,18 +3,18 @@ import type { DashboardTabProvider } from "~/features/shell/tabs/types";
 
 export const investmentDecisionDashboardTabs: DashboardTabProvider = {
   id: "investment-decision",
-  matches: (route) => route.path.startsWith("/investment/decision"),
-  setup({ t }) {
+  matches: (route) => route.path.startsWith("/investment/funds"),
+  setup() {
     const items = computed(() => [
       {
-        key: "approval",
-        label: t("investmentDecision.tabs.approval", "Batch Approval"),
-        to: "/investment/decision",
+        key: "operation",
+        label: "Operation",
+        to: "#",
         icon: "decision",
       },
     ]);
 
-    const activeKey = computed(() => "approval");
+    const activeKey = computed(() => "operation");
 
     return { items, activeKey, ariaLabel: "Investment decision tabs" };
   },
