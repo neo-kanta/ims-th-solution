@@ -25,16 +25,18 @@ func (r Recommendation) IsValid() bool {
 type ReportStatus string
 
 const (
-	ReportStatusDraft    ReportStatus = "DRAFT"
-	ReportStatusActive   ReportStatus = "ACTIVE"
-	ReportStatusExpired  ReportStatus = "EXPIRED"
-	ReportStatusRejected ReportStatus = "REJECTED"
+	ReportStatusDraft       ReportStatus = "DRAFT"
+	ReportStatusActive      ReportStatus = "ACTIVE"
+	ReportStatusExpired     ReportStatus = "EXPIRED"
+	ReportStatusRejected    ReportStatus = "REJECTED"
+	ReportStatusInvalidated ReportStatus = "INVALIDATED"
 )
 
 // IsValid reports whether the status string is one of the accepted values.
 func (s ReportStatus) IsValid() bool {
 	switch s {
-	case ReportStatusDraft, ReportStatusActive, ReportStatusExpired, ReportStatusRejected:
+	case ReportStatusDraft, ReportStatusActive, ReportStatusExpired,
+		ReportStatusRejected, ReportStatusInvalidated:
 		return true
 	default:
 		return false
@@ -49,12 +51,17 @@ const (
 	ReviewStatusNotSubmitted    ReviewStatus = "NOT_SUBMITTED"
 	ReviewStatusSubmitted       ReviewStatus = "SUBMITTED"
 	ReviewStatusReviewCompleted ReviewStatus = "REVIEW_COMPLETED"
+	// ReviewStatusInvalidated mirrors ReportStatusInvalidated. The two flip
+	// together (DB CHECK enforces) so a single front-end "INVALIDATED" badge
+	// is unambiguous regardless of which column the UI consults.
+	ReviewStatusInvalidated ReviewStatus = "INVALIDATED"
 )
 
 // IsValid reports whether the status string is one of the accepted values.
 func (s ReviewStatus) IsValid() bool {
 	switch s {
-	case ReviewStatusNotSubmitted, ReviewStatusSubmitted, ReviewStatusReviewCompleted:
+	case ReviewStatusNotSubmitted, ReviewStatusSubmitted,
+		ReviewStatusReviewCompleted, ReviewStatusInvalidated:
 		return true
 	default:
 		return false

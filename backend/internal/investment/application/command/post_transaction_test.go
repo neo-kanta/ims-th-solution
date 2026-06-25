@@ -430,6 +430,9 @@ func (r postFundRepo) GetByID(context.Context, uuid.UUID) (*entity.Fund, error) 
 	return r.fund, nil
 }
 func (r postFundRepo) GetByCode(context.Context, string) (*entity.Fund, error) { return nil, nil }
+func (r postFundRepo) GetByContractCode(context.Context, string) (*entity.Fund, error) {
+	return nil, nil
+}
 func (r postFundRepo) List(context.Context, domain.FundListFilter) ([]*entity.Fund, int, error) {
 	return nil, 0, nil
 }
@@ -607,3 +610,5 @@ func (c *capturingBlockingCompliance) CheckProposedOrder(_ context.Context, req 
 type nilAudit struct{}
 
 func (nilAudit) LogAction(contract.AuditEntry) error { return nil }
+
+func (nilAudit) LogActionStrict(context.Context, contract.AuditEntry) error { return nil }

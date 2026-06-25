@@ -165,40 +165,19 @@ func (s *ApprovalRuntimeService) SubmitApproval(ctx context.Context, in SubmitIn
 	if in.SubmitterID == uuid.Nil {
 		return nil, domain.Validation("submitter_id is required")
 	}
-
-	// Authorise the submitter via the subject access port.
 	if err := s.checkSubjectSubmit(ctx, in.SubmitterID, in.SubjectType, in.SubjectID); err != nil {
 		return nil, err
 	}
-
-	// Reject duplicate active requests for the same subject.
 	if existing, err := s.repo.GetActiveBySubject(ctx, in.SubjectType, in.SubjectID); err != nil {
 		return nil, err
 	} else if existing != nil {
 		return nil, domain.NewError(domain.ErrDuplicateActiveRequest, domain.ErrDuplicateActiveRequest.Error())
 	}
 
-	// Resolve config by scope.
-	ct := in.ContractType
-	if ct == "" {
-		if in.ContractID != nil {
-			ct = vo.ContractTypeFund
-		} else {
-			ct = vo.ContractTypeCompany
-		}
-	}
-	cfg, err := s.repo.Resolve(ctx, in.ProcessType, in.ContractID, ct, s.now())
+	cfg, entry, err := s.resolveConfigAndStage(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	if cfg == nil {
-		return nil, domain.NewError(domain.ErrConfigNotFound, "no active approval process is configured for this process type / contract")
-	}
-	entryStage, ok := entryStage(cfg.Stages)
-	if !ok {
-		return nil, domain.NewError(domain.ErrConfigNotFound, "approval process has no stages configured")
-	}
-
 	now := s.now()
 	req := &entity.ApprovalRequest{
 		ID:                 uuid.New(),
@@ -212,39 +191,15 @@ func (s *ApprovalRuntimeService) SubmitApproval(ctx context.Context, in SubmitIn
 		PortfolioID:        in.PortfolioID,
 		SubmitterID:        in.SubmitterID,
 		SubmittedAt:        &now,
-		CurrentStageNumber: entryStage.StageNumber,
+		CurrentStageNumber: entry.StageNumber,
 		Status:             vo.RequestStatusPendingApproval,
 		ConfigSnapshot:     entity.StageSnapshotFromConfig(cfg.Stages),
 	}
 
-	var createdTasks []*entity.ApprovalTask
-	err = s.runTx(ctx, func(tx pgx.Tx) error {
-		num, err := s.repo.NextRequestNumber(ctx, tx)
-		if err != nil {
-			return err
-		}
-		req.RequestNumber = num
-		if err := s.repo.CreateRequest(ctx, tx, req); err != nil {
-			return err
-		}
-		if err := s.appendEvent(ctx, tx, req.ID, vo.EventSubmitted, &entryStage.StageNumber, &in.SubmitterID, nil, "", map[string]any{
-			"process_type": string(in.ProcessType),
-			"subject_type": string(in.SubjectType),
-			"subject_id":   in.SubjectID.String(),
-		}); err != nil {
-			return err
-		}
-		tasks, err := s.createStageTasks(ctx, tx, req, entryStage)
-		if err != nil {
-			return err
-		}
-		createdTasks = tasks
-		return nil
-	})
+	createdTasks, err := s.submitApprovalTx(ctx, req, in, entry)
 	if err != nil {
 		return nil, err
 	}
-
 	s.audit.Record(ctx, &in.SubmitterID, "APPROVAL_SUBMITTED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
 		"request_number": req.RequestNumber,
 		"process_type":   string(in.ProcessType),
@@ -284,95 +239,23 @@ func (s *ApprovalRuntimeService) ApproveTask(ctx context.Context, taskID, actorI
 			return err
 		}
 
-		// Guard against the subject being cancelled/invalidated between submit and approve.
 		if v, ok := s.subjectValidators[r.SubjectType]; ok {
 			if verr := v.ValidateSubjectApprovable(ctx, r.SubjectID); verr != nil {
 				return domain.NewError(domain.ErrConflict, "subject is no longer approvable: "+verr.Error())
 			}
 		}
 
-		now := s.now()
-		task.Status = vo.TaskStatusApproved
-		task.ActedBy = &actorID
-		task.ActedAt = &now
-		task.ActionComment = strings.TrimSpace(comment)
-		task.IsDelegatedAction = delegated
-		if delegated {
-			task.DelegatedFromUserID = &actedFor
-		}
-		if err := s.repo.UpdateTask(ctx, tx, task); err != nil {
+		if err := s.recordApprovedTask(ctx, tx, r, task, actorID, comment, delegated, actedFor); err != nil {
 			return err
 		}
-
-		if delegated {
-			if err := s.appendEvent(ctx, tx, r.ID, vo.EventDelegated, &task.StageNumber, &actorID, &actedFor, task.ActionComment, nil); err != nil {
-				return err
-			}
-		}
-		if err := s.appendEvent(ctx, tx, r.ID, vo.EventApproved, &task.StageNumber, &actorID, delegatedPtr(delegated, actedFor), task.ActionComment, nil); err != nil {
-			return err
-		}
-		if err := s.writeSignature(ctx, tx, r, task.StageNumber, actorID, delegated, actedFor); err != nil {
-			return err
-		}
-
-		// Stage completion check.
-		approved, err := s.repo.CountApprovedInStage(ctx, tx, r.ID, task.StageNumber)
+		met, err := s.stageThresholdMet(ctx, tx, r, stage)
 		if err != nil {
 			return err
 		}
-		// total tasks created in this stage (pending + approved + skipped) — use
-		// approved + pending to size GROUP_ANY/TEAM thresholds sensibly.
-		pending, err := s.repo.ListPendingByStage(ctx, tx, r.ID, task.StageNumber)
-		if err != nil {
-			return err
-		}
-		required, err := s.resolver.requiredCountForStage(ctx, stage, r.ContractID, approved+len(pending))
-		if err != nil {
-			return err
-		}
-		if approved < required {
-			return nil // stage still in progress
-		}
-
-		// Stage complete: skip remaining pending tasks.
-		if err := s.repo.SkipOtherPendingInStage(ctx, tx, r.ID, task.StageNumber, task.ID); err != nil {
-			return err
-		}
-		if err := s.appendEvent(ctx, tx, r.ID, vo.EventStageCompleted, &task.StageNumber, &actorID, nil, "", nil); err != nil {
-			return err
-		}
-
-		cfgStagesForAdvance, err := s.resolveStages(ctx, r)
-		if err != nil {
-			return err
-		}
-		next, hasNext := nextStage(cfgStagesForAdvance, task.StageNumber)
-		if hasNext && !stage.IsFinalStage {
-			r.CurrentStageNumber = next.StageNumber
-			if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
-				return err
-			}
-			tasks, err := s.createStageTasks(ctx, tx, r, next)
-			if err != nil {
-				return err
-			}
-			outcome.advancedTasks = tasks
+		if !met {
 			return nil
 		}
-
-		// Final: request approved.
-		r.Status = vo.RequestStatusApproved
-		r.FinalDecisionBy = &actorID
-		r.FinalDecisionAt = &now
-		if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
-			return err
-		}
-		if err := s.appendEvent(ctx, tx, r.ID, vo.EventRequestCompleted, nil, &actorID, nil, "", map[string]any{"final_status": "APPROVED"}); err != nil {
-			return err
-		}
-		outcome.completed = true
-		return nil
+		return s.advanceStage(ctx, tx, r, stage, task.ID, actorID, &outcome)
 	})
 	if err != nil {
 		return nil, err
@@ -404,45 +287,15 @@ func (s *ApprovalRuntimeService) RejectTask(ctx context.Context, taskID, actorID
 		if err != nil {
 			return err
 		}
-
-		// Guard against the subject being cancelled/invalidated between submit and reject.
 		if v, ok := s.subjectValidators[r.SubjectType]; ok {
 			if verr := v.ValidateSubjectApprovable(ctx, r.SubjectID); verr != nil {
 				return domain.NewError(domain.ErrConflict, "subject is no longer approvable: "+verr.Error())
 			}
 		}
-
-		now := s.now()
-		task.Status = vo.TaskStatusRejected
-		task.ActedBy = &actorID
-		task.ActedAt = &now
-		task.ActionComment = reason
-		task.IsDelegatedAction = delegated
-		if delegated {
-			task.DelegatedFromUserID = &actedFor
-		}
-		if err := s.repo.UpdateTask(ctx, tx, task); err != nil {
+		if err := s.recordRejectedTask(ctx, tx, r, task, actorID, reason, delegated, actedFor); err != nil {
 			return err
 		}
-		if delegated {
-			if err := s.appendEvent(ctx, tx, r.ID, vo.EventDelegated, &task.StageNumber, &actorID, &actedFor, reason, nil); err != nil {
-				return err
-			}
-		}
-		if err := s.appendEvent(ctx, tx, r.ID, vo.EventRejected, &task.StageNumber, &actorID, delegatedPtr(delegated, actedFor), reason, nil); err != nil {
-			return err
-		}
-		if err := s.repo.CancelPendingByRequest(ctx, tx, r.ID); err != nil {
-			return err
-		}
-		r.Status = vo.RequestStatusRejected
-		r.FinalDecisionBy = &actorID
-		r.FinalDecisionAt = &now
-		r.RejectionReason = reason
-		if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
-			return err
-		}
-		return s.appendEvent(ctx, tx, r.ID, vo.EventRequestCompleted, nil, &actorID, nil, "", map[string]any{"final_status": "REJECTED"})
+		return s.finalizeRejectedRequest(ctx, tx, r, actorID, reason)
 	})
 	if err != nil {
 		return nil, err
@@ -509,26 +362,7 @@ func (s *ApprovalRuntimeService) RevokeRequest(ctx context.Context, requestID, a
 		"request_number": req.RequestNumber,
 		"reason":         reason,
 	})
-	// Notify the business module that the subject is no longer approved.
-	if sync, ok := s.subjectSyncs[req.SubjectType]; ok {
-		if serr := sync.OnRejected(ctx, req.SubjectType, req.SubjectID, req.ID, reason); serr != nil {
-			slog.Error("approval sync callback failed after revoke",
-				"request_id", req.ID.String(),
-				"subject_type", string(req.SubjectType),
-				"subject_id", req.SubjectID.String(),
-				"error", serr,
-			)
-			s.audit.Record(ctx, nil, "APPROVAL_REVOKE_SYNC_FAILED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
-				"subject_type":        string(req.SubjectType),
-				"subject_id":          req.SubjectID.String(),
-				"approval_request_id": req.ID.String(),
-				"outcome":             "REVOKED",
-				"reason":              reason,
-				"error":               serr.Error(),
-				"retryable":           true,
-			})
-		}
-	}
+	s.notifyRevoked(ctx, req, reason)
 	return s.repo.GetRequest(ctx, requestID)
 }
 
@@ -574,7 +408,224 @@ func (s *ApprovalRuntimeService) terminate(ctx context.Context, requestID, actor
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Internal helpers
+// Internal helpers — approve/reject/submit
+// ─────────────────────────────────────────────────────────────────────────────
+
+// recordApprovedTask mutates the task to APPROVED, persists it, and writes the
+// approval (and optional delegation) events plus the digital signature record.
+func (s *ApprovalRuntimeService) recordApprovedTask(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, task *entity.ApprovalTask, actorID uuid.UUID, comment string, delegated bool, actedFor uuid.UUID) error {
+	now := s.now()
+	task.Status = vo.TaskStatusApproved
+	task.ActedBy = &actorID
+	task.ActedAt = &now
+	task.ActionComment = strings.TrimSpace(comment)
+	task.IsDelegatedAction = delegated
+	if delegated {
+		task.DelegatedFromUserID = &actedFor
+	}
+	if err := s.repo.UpdateTask(ctx, tx, task); err != nil {
+		return err
+	}
+	if delegated {
+		if err := s.appendEvent(ctx, tx, r.ID, vo.EventDelegated, &task.StageNumber, &actorID, &actedFor, task.ActionComment, nil); err != nil {
+			return err
+		}
+	}
+	if err := s.appendEvent(ctx, tx, r.ID, vo.EventApproved, &task.StageNumber, &actorID, delegatedPtr(delegated, actedFor), task.ActionComment, nil); err != nil {
+		return err
+	}
+	return s.writeSignature(ctx, tx, r, task.StageNumber, actorID, delegated, actedFor)
+}
+
+// stageThresholdMet returns true when the number of approvals in the current
+// stage satisfies the configured required count. Uses approved+pending to size
+// GROUP_ANY/TEAM thresholds sensibly against the actual pool.
+func (s *ApprovalRuntimeService) stageThresholdMet(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, stage entity.ApprovalProcessStage) (bool, error) {
+	approved, err := s.repo.CountApprovedInStage(ctx, tx, r.ID, stage.StageNumber)
+	if err != nil {
+		return false, err
+	}
+	pending, err := s.repo.ListPendingByStage(ctx, tx, r.ID, stage.StageNumber)
+	if err != nil {
+		return false, err
+	}
+	required, err := s.resolver.requiredCountForStage(ctx, stage, r.ContractID, approved+len(pending))
+	if err != nil {
+		return false, err
+	}
+	return approved >= required, nil
+}
+
+// advanceStage skips remaining pending tasks, appends the StageCompleted event,
+// then either opens the next stage or calls finalizeApproval.
+func (s *ApprovalRuntimeService) advanceStage(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, stage entity.ApprovalProcessStage, completedTaskID, actorID uuid.UUID, outcome *actionOutcome) error {
+	if err := s.repo.SkipOtherPendingInStage(ctx, tx, r.ID, stage.StageNumber, completedTaskID); err != nil {
+		return err
+	}
+	if err := s.appendEvent(ctx, tx, r.ID, vo.EventStageCompleted, &stage.StageNumber, &actorID, nil, "", nil); err != nil {
+		return err
+	}
+	cfgStages, err := s.resolveStages(ctx, r)
+	if err != nil {
+		return err
+	}
+	next, hasNext := nextStage(cfgStages, stage.StageNumber)
+	if hasNext && !stage.IsFinalStage {
+		r.CurrentStageNumber = next.StageNumber
+		if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
+			return err
+		}
+		tasks, err := s.createStageTasks(ctx, tx, r, next)
+		if err != nil {
+			return err
+		}
+		outcome.advancedTasks = tasks
+		return nil
+	}
+	return s.finalizeApproval(ctx, tx, r, actorID, outcome)
+}
+
+// finalizeApproval marks the request APPROVED and records the completion event.
+func (s *ApprovalRuntimeService) finalizeApproval(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, actorID uuid.UUID, outcome *actionOutcome) error {
+	now := s.now()
+	r.Status = vo.RequestStatusApproved
+	r.FinalDecisionBy = &actorID
+	r.FinalDecisionAt = &now
+	if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
+		return err
+	}
+	if err := s.appendEvent(ctx, tx, r.ID, vo.EventRequestCompleted, nil, &actorID, nil, "", map[string]any{"final_status": "APPROVED"}); err != nil {
+		return err
+	}
+	outcome.completed = true
+	return nil
+}
+
+// recordRejectedTask mutates the task to REJECTED, persists it, and writes the
+// rejection (and optional delegation) events.
+func (s *ApprovalRuntimeService) recordRejectedTask(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, task *entity.ApprovalTask, actorID uuid.UUID, reason string, delegated bool, actedFor uuid.UUID) error {
+	now := s.now()
+	task.Status = vo.TaskStatusRejected
+	task.ActedBy = &actorID
+	task.ActedAt = &now
+	task.ActionComment = reason
+	task.IsDelegatedAction = delegated
+	if delegated {
+		task.DelegatedFromUserID = &actedFor
+	}
+	if err := s.repo.UpdateTask(ctx, tx, task); err != nil {
+		return err
+	}
+	if delegated {
+		if err := s.appendEvent(ctx, tx, r.ID, vo.EventDelegated, &task.StageNumber, &actorID, &actedFor, reason, nil); err != nil {
+			return err
+		}
+	}
+	return s.appendEvent(ctx, tx, r.ID, vo.EventRejected, &task.StageNumber, &actorID, delegatedPtr(delegated, actedFor), reason, nil)
+}
+
+// finalizeRejectedRequest cancels all pending tasks, marks the request REJECTED,
+// and records the completion event.
+func (s *ApprovalRuntimeService) finalizeRejectedRequest(ctx context.Context, tx pgx.Tx, r *entity.ApprovalRequest, actorID uuid.UUID, reason string) error {
+	now := s.now()
+	if err := s.repo.CancelPendingByRequest(ctx, tx, r.ID); err != nil {
+		return err
+	}
+	r.Status = vo.RequestStatusRejected
+	r.FinalDecisionBy = &actorID
+	r.FinalDecisionAt = &now
+	r.RejectionReason = reason
+	if err := s.repo.UpdateRequestState(ctx, tx, r); err != nil {
+		return err
+	}
+	return s.appendEvent(ctx, tx, r.ID, vo.EventRequestCompleted, nil, &actorID, nil, "", map[string]any{"final_status": "REJECTED"})
+}
+
+// resolveConfigAndStage derives the contract type, resolves the active process
+// config, and returns the entry stage — all pure DB reads with no side effects.
+func (s *ApprovalRuntimeService) resolveConfigAndStage(ctx context.Context, in SubmitInput) (*entity.ApprovalProcessConfig, entity.ApprovalProcessStage, error) {
+	var zero entity.ApprovalProcessStage
+	ct := in.ContractType
+	if ct == "" {
+		if in.ContractID != nil {
+			ct = vo.ContractTypeFund
+		} else {
+			ct = vo.ContractTypeCompany
+		}
+	}
+	cfg, err := s.repo.Resolve(ctx, in.ProcessType, in.ContractID, ct, s.now())
+	if err != nil {
+		return nil, zero, err
+	}
+	if cfg == nil {
+		return nil, zero, domain.NewError(domain.ErrConfigNotFound, "no active approval process is configured for this process type / contract")
+	}
+	entry, ok := entryStage(cfg.Stages)
+	if !ok {
+		return nil, zero, domain.NewError(domain.ErrConfigNotFound, "approval process has no stages configured")
+	}
+	return cfg, entry, nil
+}
+
+// submitApprovalTx runs the DB transaction for SubmitApproval: assigns a
+// request number, persists the request and submitted event, and creates the
+// first stage's tasks.
+func (s *ApprovalRuntimeService) submitApprovalTx(ctx context.Context, req *entity.ApprovalRequest, in SubmitInput, entry entity.ApprovalProcessStage) ([]*entity.ApprovalTask, error) {
+	var createdTasks []*entity.ApprovalTask
+	err := s.runTx(ctx, func(tx pgx.Tx) error {
+		num, err := s.repo.NextRequestNumber(ctx, tx)
+		if err != nil {
+			return err
+		}
+		req.RequestNumber = num
+		if err := s.repo.CreateRequest(ctx, tx, req); err != nil {
+			return err
+		}
+		if err := s.appendEvent(ctx, tx, req.ID, vo.EventSubmitted, &entry.StageNumber, &in.SubmitterID, nil, "", map[string]any{
+			"process_type": string(in.ProcessType),
+			"subject_type": string(in.SubjectType),
+			"subject_id":   in.SubjectID.String(),
+		}); err != nil {
+			return err
+		}
+		tasks, err := s.createStageTasks(ctx, tx, req, entry)
+		if err != nil {
+			return err
+		}
+		createdTasks = tasks
+		return nil
+	})
+	return createdTasks, err
+}
+
+// notifyRevoked fires the subject-sync OnRejected callback after a revoke
+// and records any callback failure in the audit trail for operator replay.
+func (s *ApprovalRuntimeService) notifyRevoked(ctx context.Context, req *entity.ApprovalRequest, reason string) {
+	sync, ok := s.subjectSyncs[req.SubjectType]
+	if !ok {
+		return
+	}
+	if serr := sync.OnRejected(ctx, req.SubjectType, req.SubjectID, req.ID, reason); serr != nil {
+		slog.Error("approval sync callback failed after revoke",
+			"request_id", req.ID.String(),
+			"subject_type", string(req.SubjectType),
+			"subject_id", req.SubjectID.String(),
+			"error", serr,
+		)
+		s.audit.Record(ctx, nil, "APPROVAL_REVOKE_SYNC_FAILED", "APPROVAL_REQUEST", req.ID.String(), map[string]any{
+			"subject_type":        string(req.SubjectType),
+			"subject_id":          req.SubjectID.String(),
+			"approval_request_id": req.ID.String(),
+			"outcome":             "REVOKED",
+			"reason":              reason,
+			"error":               serr.Error(),
+			"retryable":           true,
+		})
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal helpers — action context / auth
 // ─────────────────────────────────────────────────────────────────────────────
 
 // loadActionContext locks the request + task and validates the request is

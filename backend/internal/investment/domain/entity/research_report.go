@@ -41,6 +41,13 @@ type ResearchReport struct {
 	ReportStatus vo.ReportStatus
 	ReviewStatus vo.ReviewStatus
 
+	// Invalidation metadata. Populated together when the report is invalidated;
+	// the database CHECK constraint chk_inv_research_invalidation_coherent
+	// rejects partial population.
+	InvalidatedAt      *time.Time
+	InvalidatedBy      *uuid.UUID
+	InvalidationReason string
+
 	CreatedAt time.Time
 	CreatedBy *uuid.UUID
 	UpdatedAt time.Time
@@ -53,16 +60,43 @@ func (r *ResearchReport) IsDeleted() bool {
 	return r != nil && r.DeletedAt != nil
 }
 
+// IsInvalidated reports whether the report has been invalidated.
+// The DB CHECK keeps ReportStatus and ReviewStatus aligned, so either
+// column is authoritative.
+func (r *ResearchReport) IsInvalidated() bool {
+	if r == nil {
+		return false
+	}
+	return r.ReportStatus == vo.ReportStatusInvalidated ||
+		r.ReviewStatus == vo.ReviewStatusInvalidated
+}
+
+// CanInvalidate returns true when the report may be moved to INVALIDATED.
+// Rules:
+//   - deleted reports cannot be invalidated (the row is gone from the demo view).
+//   - already-invalidated reports cannot be invalidated again.
+//   - reports may be invalidated from any other lifecycle state, including
+//     ACTIVE / REVIEW_COMPLETED — invalidation is the safety hatch for a
+//     report that turned out to be wrong after approval.
+func (r *ResearchReport) CanInvalidate() bool {
+	if r == nil || r.IsDeleted() {
+		return false
+	}
+	return !r.IsInvalidated()
+}
+
 // CanUpdate returns true when the report may be modified.
 //
 // Rules:
 //   - deleted reports cannot be updated
-//   - reports whose review has already been completed cannot be updated
+//   - invalidated reports cannot be updated
+//   - reports in SUBMITTED or REVIEW_COMPLETED state cannot be updated
+//     (submitted reports are locked while their approval is in-flight)
 func (r *ResearchReport) CanUpdate() bool {
-	if r == nil || r.IsDeleted() {
+	if r == nil || r.IsDeleted() || r.IsInvalidated() {
 		return false
 	}
-	if r.ReviewStatus == vo.ReviewStatusReviewCompleted {
+	if r.ReviewStatus == vo.ReviewStatusSubmitted || r.ReviewStatus == vo.ReviewStatusReviewCompleted {
 		return false
 	}
 	return true
@@ -72,28 +106,30 @@ func (r *ResearchReport) CanUpdate() bool {
 //
 // Rules:
 //   - deleted reports cannot be deleted again
+//   - invalidated reports cannot be deleted (the invalidation record must
+//     remain visible for the audit trail)
 //   - submitted or reviewed reports cannot be deleted (only NOT_SUBMITTED)
 func (r *ResearchReport) CanDelete() bool {
-	if r == nil || r.IsDeleted() {
+	if r == nil || r.IsDeleted() || r.IsInvalidated() {
 		return false
 	}
 	return r.ReviewStatus == vo.ReviewStatusNotSubmitted
 }
 
 // CanSubmit returns true when the report may be moved from NOT_SUBMITTED to
-// SUBMITTED. Deleted reports cannot be submitted.
+// SUBMITTED. Deleted or invalidated reports cannot be submitted.
 func (r *ResearchReport) CanSubmit() bool {
-	if r == nil || r.IsDeleted() {
+	if r == nil || r.IsDeleted() || r.IsInvalidated() {
 		return false
 	}
 	return r.ReviewStatus == vo.ReviewStatusNotSubmitted
 }
 
 // CanCancelSubmit returns true when the report may be returned from SUBMITTED
-// back to NOT_SUBMITTED. Once the review has been completed, cancelling is no
-// longer permitted.
+// back to NOT_SUBMITTED. Once the review has been completed or the report has
+// been invalidated, cancelling is no longer permitted.
 func (r *ResearchReport) CanCancelSubmit() bool {
-	if r == nil || r.IsDeleted() {
+	if r == nil || r.IsDeleted() || r.IsInvalidated() {
 		return false
 	}
 	return r.ReviewStatus == vo.ReviewStatusSubmitted

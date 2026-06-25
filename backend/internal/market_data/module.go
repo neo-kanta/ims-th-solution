@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/infrastructure/alphavantage"
@@ -14,6 +15,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/infrastructure/yahoo"
 	httptransport "github.com/neo-kanta/ims-th-solution/backend/internal/market_data/transport/http"
 	refdomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 )
 
@@ -76,6 +78,17 @@ func (m *Module) Service() *application.Service {
 		return nil
 	}
 	return m.service
+}
+
+// QuoteProvider returns a contract.MarketQuoteProvider implementation backed
+// by this module's application service. Consumed by the investment module
+// (intraday valuation) so the cross-module dependency direction stays
+// investment → contract ← market_data/adapter.
+func (m *Module) QuoteProvider() contract.MarketQuoteProvider {
+	if m == nil || m.service == nil {
+		return nil
+	}
+	return adapter.NewQuoteProviderAdapter(m.service)
 }
 
 func marketDataOperationTimeout(httpTimeout time.Duration, providers ...string) time.Duration {

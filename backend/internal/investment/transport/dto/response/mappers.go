@@ -389,12 +389,15 @@ func FromAUM(a *entity.AUMSnapshot) AUMResponse {
 }
 
 // FromResearchReport converts an entity.ResearchReport into a
-// ResearchReportResponse for HTTP transport.
+// ResearchReportResponse for HTTP transport. The DerivedReviewStage field is
+// computed from the report's own review_status — callers that have a richer
+// view (e.g., the approval engine's task state) can overwrite it with a
+// stage-aware label such as "PENDING_LEVEL_2".
 func FromResearchReport(r *entity.ResearchReport) ResearchReportResponse {
 	if r == nil {
 		return ResearchReportResponse{}
 	}
-	return ResearchReportResponse{
+	out := ResearchReportResponse{
 		ID:                   r.ID,
 		ReportNo:             r.ReportNo,
 		ReportDate:           FormatDate(r.ReportDate),
@@ -418,11 +421,47 @@ func FromResearchReport(r *entity.ResearchReport) ResearchReportResponse {
 		PostSubmissionNote:   r.PostSubmissionNote,
 		ReportStatus:         string(r.ReportStatus),
 		ReviewStatus:         string(r.ReviewStatus),
+		DerivedReviewStage:   deriveReviewStage(r),
+		InvalidatedAt:        r.InvalidatedAt,
+		InvalidatedBy:        r.InvalidatedBy,
+		InvalidationReason:   r.InvalidationReason,
 		CreatedAt:            r.CreatedAt,
 		CreatedBy:            r.CreatedBy,
 		UpdatedAt:            r.UpdatedAt,
 		UpdatedBy:            r.UpdatedBy,
 	}
+	return out
+}
+
+// deriveReviewStage maps the report's own review/report status to a single
+// display string. The approval engine is the source of truth for in-flight
+// multi-stage approvals; callers that resolve the active approval task can
+// overwrite DerivedReviewStage with a more precise label such as
+// "PENDING_LEVEL_<N>" before returning the response. This default lets the
+// frontend render a sensible badge even when the approval cross-module
+// lookup is skipped.
+func deriveReviewStage(r *entity.ResearchReport) string {
+	if r == nil {
+		return ""
+	}
+	if r.IsInvalidated() {
+		return "INVALIDATED"
+	}
+	switch r.ReportStatus {
+	case "REJECTED":
+		return "REJECTED"
+	}
+	switch r.ReviewStatus {
+	case "NOT_SUBMITTED":
+		return "NOT_SUBMITTED"
+	case "SUBMITTED":
+		// Single-stage display fallback when the approval engine lookup is
+		// not in play. Multi-level callers overwrite this.
+		return "PENDING_LEVEL_1"
+	case "REVIEW_COMPLETED":
+		return "REVIEW_COMPLETED"
+	}
+	return ""
 }
 
 // FromPrice converts an entity.PriceSnapshot.
@@ -440,5 +479,133 @@ func FromPrice(p *entity.PriceSnapshot) PriceResponse {
 		ProviderRef:  p.ProviderRef,
 		IsStale:      p.IsStale,
 		CapturedAt:   p.CapturedAt,
+	}
+}
+
+// FromDecision converts an entity.Decision to its API response.
+func FromDecision(d *entity.Decision) DecisionResponse {
+	if d == nil {
+		return DecisionResponse{}
+	}
+	r := DecisionResponse{
+		ID:                     d.ID,
+		DecisionNumber:         d.DecisionNumber,
+		FundID:                 d.FundID,
+		PortfolioID:            d.PortfolioID,
+		ContractID:             d.ContractID,
+		InstrumentID:           d.InstrumentID,
+		InstrumentCode:         d.InstrumentCode,
+		BusinessDate:           FormatDate(d.BusinessDate),
+		Side:                   string(d.Side),
+		Quantity:               FormatDecimal(d.Quantity),
+		Amount:                 FormatDecimal(d.Amount),
+		LimitPrice:             FormatDecimal(d.LimitPrice),
+		Currency:               d.Currency,
+		Exchange:               d.Exchange,
+		DecisionType:           string(d.DecisionType),
+		ProcessType:            string(d.ProcessType),
+		ProductType:            string(d.ProductType),
+		StrategyCode:           d.StrategyCode,
+		AmendmentNo:            d.AmendmentNo,
+		ResearchReportID:       d.ResearchReportID,
+		ResearchReportNo:       d.ResearchReportNo,
+		Rationale:              d.Rationale,
+		Status:                 string(d.Status),
+		ApprovalRequestID:                  d.ApprovalRequestID,
+		ComplianceReleaseApprovalRequestID: d.ComplianceReleaseApprovalRequestID,
+		ApprovalStatus:         d.ApprovalStatus,
+		ComplianceCheckGroupID: d.ComplianceCheckGroupID,
+		SubmitterUserID:        d.SubmitterUserID,
+		SubmittedAt:            d.SubmittedAt,
+		CancelledAt:            d.CancelledAt,
+		CancellationReason:     d.CancellationReason,
+		ReadyForExecutionAt:    d.ReadyForExecutionAt,
+		CreatedAt:              d.CreatedAt,
+		UpdatedAt:              d.UpdatedAt,
+	}
+	for _, l := range d.Lines {
+		r.Lines = append(r.Lines, FromDecisionLine(l))
+	}
+	return r
+}
+
+// FromDecisionLine converts an entity.DecisionLine to its API response.
+func FromDecisionLine(l *entity.DecisionLine) DecisionLineResponse {
+	if l == nil {
+		return DecisionLineResponse{}
+	}
+	return DecisionLineResponse{
+		ID:             l.ID,
+		LineNumber:     l.LineNumber,
+		InstrumentID:   l.InstrumentID,
+		InstrumentCode: l.InstrumentCode,
+		ProductType:    string(l.ProductType),
+		Side:           string(l.Side),
+		Quantity:       FormatDecimal(l.Quantity),
+		Amount:         FormatDecimal(l.Amount),
+		TargetWeight:   FormatDecimal(l.TargetWeight),
+		LimitPrice:     FormatDecimal(l.LimitPrice),
+		Currency:       l.Currency,
+		Notes:          l.Notes,
+	}
+}
+
+// FromExecution converts an entity.Execution to its API response.
+func FromExecution(e *entity.Execution) ExecutionResponse {
+	if e == nil {
+		return ExecutionResponse{}
+	}
+	return ExecutionResponse{
+		ID:                 e.ID,
+		DecisionID:         e.DecisionID,
+		FundID:             e.FundID,
+		PortfolioID:        e.PortfolioID,
+		ContractID:         e.ContractID,
+		InstrumentID:       e.InstrumentID,
+		InstrumentCode:     e.InstrumentCode,
+		BusinessDate:       FormatDate(e.BusinessDate),
+		Side:               string(e.Side),
+		OrderedQuantity:    FormatDecimal(e.OrderedQuantity),
+		OrderedAmount:      FormatDecimal(e.OrderedAmount),
+		ExecutedQuantity:   FormatDecimal(e.ExecutedQuantity),
+		ExecutedAmount:     FormatDecimal(e.ExecutedAmount),
+		ExecutionPrice:     FormatDecimal(e.ExecutionPrice),
+		Currency:           e.Currency,
+		Status:             string(e.Status),
+		TraderUserID:       e.TraderUserID,
+		BrokerReference:    e.BrokerReference,
+		ExecutedAt:         e.ExecutedAt,
+		CancelledAt:        e.CancelledAt,
+		CancellationReason: e.CancellationReason,
+		CreatedAt:          e.CreatedAt,
+		UpdatedAt:          e.UpdatedAt,
+	}
+}
+
+// FromTradeConfirmation converts an entity.TradeConfirmation to its API response.
+func FromTradeConfirmation(c *entity.TradeConfirmation) TradeConfirmationResponse {
+	if c == nil {
+		return TradeConfirmationResponse{}
+	}
+	return TradeConfirmationResponse{
+		ID:                c.ID,
+		ExecutionID:       c.ExecutionID,
+		DecisionID:        c.DecisionID,
+		FundID:            c.FundID,
+		PortfolioID:       c.PortfolioID,
+		ContractID:        c.ContractID,
+		BusinessDate:      FormatDate(c.BusinessDate),
+		ConfirmedQuantity: FormatDecimal(c.ConfirmedQuantity),
+		ConfirmedAmount:   FormatDecimal(c.ConfirmedAmount),
+		ConfirmedPrice:    FormatDecimal(c.ConfirmedPrice),
+		Currency:          c.Currency,
+		BrokerReference:   c.BrokerReference,
+		ImportBatchID:     c.ImportBatchID,
+		Status:            string(c.Status),
+		DiscrepancyReason: c.DiscrepancyReason,
+		ReviewedAt:        c.ReviewedAt,
+		ReviewedBy:        c.ReviewedBy,
+		CreatedAt:         c.CreatedAt,
+		UpdatedAt:         c.UpdatedAt,
 	}
 }

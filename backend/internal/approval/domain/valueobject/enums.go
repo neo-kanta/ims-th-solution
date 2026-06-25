@@ -16,6 +16,7 @@ const (
 	ProcessLeaveCancellation        ProcessType = "LEAVE_CANCELLATION"
 	ProcessDelegationRequest        ProcessType = "DELEGATION_REQUEST"
 	ProcessPortfolioOnboarding      ProcessType = "PORTFOLIO_ONBOARDING"
+	ProcessComplianceRelease        ProcessType = "COMPLIANCE_RELEASE"
 )
 
 // ValidProcessType reports whether the value is a recognised process type.
@@ -24,7 +25,7 @@ func ValidProcessType(v ProcessType) bool {
 	case ProcessInvestmentAnalysisReport, ProcessInvestmentDecision,
 		ProcessInvestmentCancellation, ProcessWorkflowOperation,
 		ProcessLeaveRequest, ProcessLeaveCancellation, ProcessDelegationRequest,
-		ProcessPortfolioOnboarding:
+		ProcessPortfolioOnboarding, ProcessComplianceRelease:
 		return true
 	}
 	return false
@@ -59,6 +60,7 @@ const (
 	SubjectDelegationRequest  SubjectType = "DELEGATION_REQUEST"
 	SubjectPortfolio          SubjectType = "PORTFOLIO"
 	SubjectFund               SubjectType = "FUND"
+	SubjectComplianceRelease  SubjectType = "COMPLIANCE_RELEASE"
 )
 
 // ValidSubjectType reports whether the value is a recognised subject type.
@@ -66,7 +68,7 @@ func ValidSubjectType(v SubjectType) bool {
 	switch v {
 	case SubjectResearchReport, SubjectInvestmentDecision, SubjectWorkflowOperation,
 		SubjectLeaveRequest, SubjectDelegationRequest,
-		SubjectPortfolio, SubjectFund:
+		SubjectPortfolio, SubjectFund, SubjectComplianceRelease:
 		return true
 	}
 	return false

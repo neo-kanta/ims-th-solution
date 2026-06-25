@@ -41,6 +41,7 @@ const researchReportSelect = `
 	       company_overview, company_outlook, esg_comment, financial_status, investment_analysis,
 	       rejection_reason, post_submission_note,
 	       report_status, review_status,
+	       invalidated_at, invalidated_by, invalidation_reason,
 	       created_at, created_by, updated_at, updated_by, deleted_at
 	FROM investment__research_reports`
 
@@ -239,6 +240,48 @@ func (r *PostgresResearchReportRepository) Update(ctx context.Context, tx pgx.Tx
 	return nil
 }
 
+// Invalidate atomically transitions the report to the INVALIDATED terminal
+// state. It updates report_status, review_status, invalidated_at,
+// invalidated_by, invalidation_reason, updated_at, updated_by in a single
+// statement so the DB CHECK chk_inv_research_invalidation_coherent always
+// sees a coherent row.
+//
+// The WHERE clause refuses to invalidate a row that is already INVALIDATED
+// or has been soft-deleted; callers should still pre-check with the entity
+// guard CanInvalidate so a typed lifecycle error reaches the API caller
+// instead of a generic "not found".
+func (r *PostgresResearchReportRepository) Invalidate(
+	ctx context.Context,
+	tx pgx.Tx,
+	id uuid.UUID,
+	actorID uuid.UUID,
+	reason string,
+	at time.Time,
+) error {
+	tag, err := tx.Exec(ctx, `
+		UPDATE investment__research_reports
+		   SET report_status        = 'INVALIDATED',
+		       review_status        = 'INVALIDATED',
+		       invalidated_at       = $2,
+		       invalidated_by       = $3,
+		       invalidation_reason  = $4,
+		       updated_at           = $2,
+		       updated_by           = $3
+		 WHERE id = $1
+		   AND deleted_at IS NULL
+		   AND report_status <> 'INVALIDATED'
+		   AND review_status <> 'INVALIDATED'`,
+		id, at, actorID, reason,
+	)
+	if err != nil {
+		return fmt.Errorf("invalidating research report: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return &domain.ErrResearchReportNotFound{ReportID: id.String()}
+	}
+	return nil
+}
+
 // SoftDelete stamps deleted_at and updated_at fields.
 func (r *PostgresResearchReportRepository) SoftDelete(
 	ctx context.Context,
@@ -279,6 +322,7 @@ func scanResearchReport(s scanner) (*entity.ResearchReport, error) {
 		&e.CompanyOverview, &e.CompanyOutlook, &e.ESGComment, &e.FinancialStatus, &e.InvestmentAnalysis,
 		&e.RejectionReason, &e.PostSubmissionNote,
 		&repStatStr, &revStatStr,
+		&e.InvalidatedAt, &e.InvalidatedBy, &e.InvalidationReason,
 		&e.CreatedAt, &e.CreatedBy, &e.UpdatedAt, &e.UpdatedBy, &e.DeletedAt,
 	)
 	if err != nil {

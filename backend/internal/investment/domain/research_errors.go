@@ -123,3 +123,31 @@ func (e *ErrResearchReportCannotCancelSubmit) Error() string {
 		e.ReportID, e.ReviewStatus,
 	)
 }
+
+// ErrResearchReportCannotInvalidate is raised when invalidation is blocked —
+// typically because the report has been soft-deleted or is already
+// invalidated.
+type ErrResearchReportCannotInvalidate struct {
+	ReportID     string
+	ReportStatus string
+	ReviewStatus string
+	Reason       string
+}
+
+func (e *ErrResearchReportCannotInvalidate) Error() string {
+	if e.Reason != "" {
+		return fmt.Sprintf("research report %s cannot be invalidated: %s", e.ReportID, e.Reason)
+	}
+	return fmt.Sprintf(
+		"research report %s cannot be invalidated from report_status %q / review_status %q",
+		e.ReportID, e.ReportStatus, e.ReviewStatus,
+	)
+}
+
+// ErrorCode implements errcode.Coded.
+func (*ErrResearchReportCannotInvalidate) ErrorCode() string {
+	return errcode.CodeResearchReportInvalidateBlocked
+}
+
+// HTTPStatus implements errcode.HTTPStatus.
+func (*ErrResearchReportCannotInvalidate) HTTPStatus() int { return http.StatusConflict }

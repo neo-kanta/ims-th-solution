@@ -404,6 +404,19 @@ type ResearchReportResponse struct {
 	ReportStatus string `json:"report_status"`
 	ReviewStatus string `json:"review_status"`
 
+	// Multi-level review badge derived from the approval engine. Empty when
+	// the report has not been submitted; "PENDING_LEVEL_<N>" while the
+	// approval is in progress; "REVIEW_COMPLETED" / "REJECTED" / "INVALIDATED"
+	// at terminal states. Backend remains the source of truth; UI uses this
+	// field for display only.
+	DerivedReviewStage string `json:"derived_review_stage,omitempty"`
+
+	// Invalidation metadata. Populated together when the report is in
+	// INVALIDATED state; omitted otherwise.
+	InvalidatedAt      *time.Time `json:"invalidated_at,omitempty"`
+	InvalidatedBy      *uuid.UUID `json:"invalidated_by,omitempty"`
+	InvalidationReason string     `json:"invalidation_reason,omitempty"`
+
 	CreatedAt time.Time  `json:"created_at"`
 	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
 	UpdatedAt time.Time  `json:"updated_at"`
@@ -443,4 +456,168 @@ func FormatDatePtr(t *time.Time) *string {
 	}
 	s := t.Format("2006-01-02")
 	return &s
+}
+
+// DecisionResponse mirrors entity.Decision for HTTP transport.
+type DecisionResponse struct {
+	ID                     uuid.UUID  `json:"id"`
+	DecisionNumber         string     `json:"decision_number"`
+	FundID                 uuid.UUID  `json:"fund_id"`
+	PortfolioID            uuid.UUID  `json:"portfolio_id"`
+	ContractID             uuid.UUID  `json:"contract_id"`
+	InstrumentID           *uuid.UUID `json:"instrument_id,omitempty"`
+	InstrumentCode         string     `json:"instrument_code,omitempty"`
+	BusinessDate           string     `json:"business_date"`
+	Side                   string     `json:"side,omitempty"`
+	Quantity               string     `json:"quantity,omitempty"`
+	Amount                 string     `json:"amount,omitempty"`
+	LimitPrice             string     `json:"limit_price,omitempty"`
+	Currency               string     `json:"currency"`
+	Exchange               string     `json:"exchange,omitempty"`
+	DecisionType           string     `json:"decision_type"`
+	ProcessType            string     `json:"process_type"`
+	ProductType            string     `json:"product_type"`
+	StrategyCode           string     `json:"strategy_code,omitempty"`
+	AmendmentNo            int        `json:"amendment_no"`
+	ResearchReportID       *uuid.UUID `json:"research_report_id,omitempty"`
+	ResearchReportNo       string     `json:"research_report_no,omitempty"`
+	Rationale              string     `json:"rationale,omitempty"`
+	Status                 string     `json:"status"`
+	ApprovalRequestID                    *uuid.UUID `json:"approval_request_id,omitempty"`
+	ComplianceReleaseApprovalRequestID   *uuid.UUID `json:"compliance_release_approval_request_id,omitempty"`
+	ApprovalStatus         string     `json:"approval_status,omitempty"`
+	ComplianceCheckGroupID *uuid.UUID `json:"compliance_check_group_id,omitempty"`
+	SubmitterUserID        uuid.UUID  `json:"submitter_user_id"`
+	SubmittedAt            *time.Time `json:"submitted_at,omitempty"`
+	CancelledAt            *time.Time `json:"cancelled_at,omitempty"`
+	CancellationReason     string     `json:"cancellation_reason,omitempty"`
+	ReadyForExecutionAt    *time.Time `json:"ready_for_execution_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
+
+	// Lines are included when the decision has basket/rebalance/switch lines.
+	Lines []DecisionLineResponse `json:"lines,omitempty"`
+
+	// Approval enrichment — populated by the approval-items endpoint.
+	ApprovalStage      int      `json:"approval_stage,omitempty"`
+	ApprovalTotalStages int     `json:"approval_total_stages,omitempty"`
+	CurrentApprovers   []string `json:"current_approvers,omitempty"`
+	PreviousApprovers  []string `json:"previous_approvers,omitempty"`
+}
+
+// DecisionLineResponse mirrors entity.DecisionLine for HTTP transport.
+type DecisionLineResponse struct {
+	ID             uuid.UUID  `json:"id"`
+	LineNumber     int        `json:"line_number"`
+	InstrumentID   *uuid.UUID `json:"instrument_id,omitempty"`
+	InstrumentCode string     `json:"instrument_code"`
+	ProductType    string     `json:"product_type"`
+	Side           string     `json:"side"`
+	Quantity       string     `json:"quantity,omitempty"`
+	Amount         string     `json:"amount,omitempty"`
+	TargetWeight   string     `json:"target_weight,omitempty"`
+	LimitPrice     string     `json:"limit_price,omitempty"`
+	Currency       string     `json:"currency"`
+	Notes          string     `json:"notes,omitempty"`
+}
+
+// ApproverInfo is a minimal approver identity for the batch-approval screen.
+type ApproverInfo struct {
+	UserID      uuid.UUID `json:"user_id"`
+	DisplayName string    `json:"display_name"`
+}
+
+// BatchApprovalResultResponse reports the per-decision outcome of a batch action.
+type BatchApprovalResultResponse struct {
+	DecisionNo string `json:"decision_no"`
+	OK         bool   `json:"ok"`
+	Error      string `json:"error,omitempty"`
+}
+
+// BatchApprovalResponse is the envelope for batch approve/reject.
+type BatchApprovalResponse struct {
+	Results   []BatchApprovalResultResponse `json:"results"`
+	Succeeded int                           `json:"succeeded"`
+	Failed    int                           `json:"failed"`
+}
+
+type DecisionListResponse struct {
+	Items []DecisionResponse `json:"items"`
+	Total int                `json:"total"`
+	Page  int                `json:"page"`
+	Limit int                `json:"limit"`
+}
+
+// ExecutionResponse mirrors entity.Execution.
+type ExecutionResponse struct {
+	ID                 uuid.UUID  `json:"id"`
+	DecisionID         uuid.UUID  `json:"decision_id"`
+	FundID             uuid.UUID  `json:"fund_id"`
+	PortfolioID        uuid.UUID  `json:"portfolio_id"`
+	ContractID         uuid.UUID  `json:"contract_id"`
+	InstrumentID       *uuid.UUID `json:"instrument_id,omitempty"`
+	InstrumentCode     string     `json:"instrument_code"`
+	BusinessDate       string     `json:"business_date"`
+	Side               string     `json:"side"`
+	OrderedQuantity    string     `json:"ordered_quantity,omitempty"`
+	OrderedAmount      string     `json:"ordered_amount,omitempty"`
+	ExecutedQuantity   string     `json:"executed_quantity,omitempty"`
+	ExecutedAmount     string     `json:"executed_amount,omitempty"`
+	ExecutionPrice     string     `json:"execution_price,omitempty"`
+	Currency           string     `json:"currency"`
+	Status             string     `json:"status"`
+	TraderUserID       *uuid.UUID `json:"trader_user_id,omitempty"`
+	BrokerReference    string     `json:"broker_reference,omitempty"`
+	ExecutedAt         *time.Time `json:"executed_at,omitempty"`
+	CancelledAt        *time.Time `json:"cancelled_at,omitempty"`
+	CancellationReason string     `json:"cancellation_reason,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+// ConfirmationBatchImportRowResponse summarises one row outcome of a batch
+// import. Accepted rows expose the new confirmation ID; rejected rows expose
+// the validation message so the caller does not need to query the batch
+// items table to understand the result.
+type ConfirmationBatchImportRowResponse struct {
+	RowIndex       int        `json:"row_index"`
+	Accepted       bool       `json:"accepted"`
+	ConfirmationID *uuid.UUID `json:"confirmation_id,omitempty"`
+	Error          string     `json:"error,omitempty"`
+}
+
+// ConfirmationBatchImportResponse is the wire shape returned by
+// POST /investment/trade-confirmations/batch. Rejected rows are reported in
+// the same payload so the importer never has to "hide" failures behind a
+// second request — every row's fate is right there.
+type ConfirmationBatchImportResponse struct {
+	BatchID         uuid.UUID                            `json:"batch_id"`
+	Status          string                               `json:"status"`
+	TotalRecords    int                                  `json:"total_records"`
+	AcceptedRecords int                                  `json:"accepted_records"`
+	RejectedRecords int                                  `json:"rejected_records"`
+	Rows            []ConfirmationBatchImportRowResponse `json:"rows"`
+}
+
+// TradeConfirmationResponse mirrors entity.TradeConfirmation.
+type TradeConfirmationResponse struct {
+	ID                uuid.UUID  `json:"id"`
+	ExecutionID       uuid.UUID  `json:"execution_id"`
+	DecisionID        uuid.UUID  `json:"decision_id"`
+	FundID            uuid.UUID  `json:"fund_id"`
+	PortfolioID       uuid.UUID  `json:"portfolio_id"`
+	ContractID        uuid.UUID  `json:"contract_id"`
+	BusinessDate      string     `json:"business_date"`
+	ConfirmedQuantity string     `json:"confirmed_quantity,omitempty"`
+	ConfirmedAmount   string     `json:"confirmed_amount,omitempty"`
+	ConfirmedPrice    string     `json:"confirmed_price,omitempty"`
+	Currency          string     `json:"currency"`
+	BrokerReference   string     `json:"broker_reference,omitempty"`
+	ImportBatchID     *uuid.UUID `json:"import_batch_id,omitempty"`
+	Status            string     `json:"status"`
+	DiscrepancyReason string     `json:"discrepancy_reason,omitempty"`
+	ReviewedAt        *time.Time `json:"reviewed_at,omitempty"`
+	ReviewedBy        *uuid.UUID `json:"reviewed_by,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
 }

@@ -115,6 +115,27 @@ func (r *fakeResearchReportRepo) Update(ctx context.Context, tx pgx.Tx, e *entit
 	return nil
 }
 
+func (r *fakeResearchReportRepo) Invalidate(_ context.Context, _ pgx.Tx, id uuid.UUID, actorID uuid.UUID, reason string, at time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	rep, ok := r.byID[id]
+	if !ok {
+		return &domain.ErrResearchReportNotFound{ReportID: id.String()}
+	}
+	if rep.IsInvalidated() {
+		return &domain.ErrResearchReportNotFound{ReportID: id.String()}
+	}
+	rep.ReportStatus = vo.ReportStatusInvalidated
+	rep.ReviewStatus = vo.ReviewStatusInvalidated
+	actor := actorID
+	rep.InvalidatedAt = &at
+	rep.InvalidatedBy = &actor
+	rep.InvalidationReason = reason
+	rep.UpdatedAt = at
+	rep.UpdatedBy = &actor
+	return nil
+}
+
 func (r *fakeResearchReportRepo) SoftDelete(ctx context.Context, tx pgx.Tx, id uuid.UUID, deletedBy uuid.UUID, deletedAt time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -135,6 +156,13 @@ type recordingAudit struct {
 }
 
 func (a *recordingAudit) LogAction(entry contract.AuditEntry) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.entries = append(a.entries, entry)
+	return nil
+}
+
+func (a *recordingAudit) LogActionStrict(_ context.Context, entry contract.AuditEntry) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.entries = append(a.entries, entry)
@@ -485,4 +513,244 @@ func TestCancelSubmit_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, vo.ReviewStatusNotSubmitted, got.ReviewStatus)
 	require.Equal(t, []string{"INVESTMENT_RESEARCH_SUBMIT_CANCELLED"}, audit.actions())
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// P0: lifecycle status fields must NOT be mutable via the generic Update
+// path. The DTO no longer carries report_status; if any caller bypasses
+// the wire and constructs the command struct directly, the absence of
+// the field still means status is preserved. These tests pin the
+// invariant: a REJECTED/EXPIRED report stays REJECTED/EXPIRED after a
+// content edit, and an ACTIVE report does not become DRAFT or back.
+// ──────────────────────────────────────────────────────────────────────
+
+// seededReportWithStatus seeds a report whose review is completed (so it
+// has reached a terminal lifecycle state) with the requested ReportStatus.
+// REVIEW_COMPLETED reports refuse Update outright — for the lifecycle-flip
+// tests we use NOT_SUBMITTED reports whose ReportStatus is REJECTED /
+// EXPIRED / ACTIVE so the entity will accept the edit but the command must
+// never overwrite ReportStatus.
+func seededReportWithStatus(rep *fakeResearchReportRepo, reportStatus vo.ReportStatus) *entity.ResearchReport {
+	r := &entity.ResearchReport{
+		ID:                 uuid.New(),
+		ReportNo:           "RR-LIFECYCLE-" + string(reportStatus),
+		ReportDate:         time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		OwnerUserID:        uuid.New(),
+		AuthorUserID:       uuid.New(),
+		InstrumentCode:     "PTT",
+		Recommendation:     vo.RecommendationHold,
+		InvestmentAnalysis: "Seeded analyst note that meets the 25-character minimum.",
+		ReportStatus:       reportStatus,
+		ReviewStatus:       vo.ReviewStatusNotSubmitted,
+		CreatedAt:          time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt:          time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+	}
+	rep.seed(r)
+	return r
+}
+
+// TestUpdate_DoesNotFlipReportStatus_Rejected proves that editing a REJECTED
+// report's content fields leaves ReportStatus = REJECTED — there is no path
+// through Update that can resurrect a rejected report. Only the approval
+// engine's final-decision callback can reset status.
+func TestUpdate_DoesNotFlipReportStatus_Rejected(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusRejected)
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	newTitle := "Edited title on a rejected report"
+	got, err := h.Update(context.Background(), UpdateResearchReportRequest{
+		ReportID:    r.ID,
+		ActorID:     uuid.New(),
+		ReportTitle: &newTitle,
+	})
+	require.NoError(t, err)
+	require.Equal(t, vo.ReportStatusRejected, got.ReportStatus,
+		"editing content must not flip REJECTED → ACTIVE")
+	require.Equal(t, newTitle, got.ReportTitle)
+}
+
+// TestUpdate_DoesNotFlipReportStatus_Expired proves that editing an EXPIRED
+// report's content does not reactivate it. An expired report cannot become
+// ACTIVE via a normal edit; it must go through the proper resubmission flow.
+func TestUpdate_DoesNotFlipReportStatus_Expired(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusExpired)
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	newTitle := "Edited title on an expired report"
+	got, err := h.Update(context.Background(), UpdateResearchReportRequest{
+		ReportID:    r.ID,
+		ActorID:     uuid.New(),
+		ReportTitle: &newTitle,
+	})
+	require.NoError(t, err)
+	require.Equal(t, vo.ReportStatusExpired, got.ReportStatus,
+		"editing content must not flip EXPIRED → ACTIVE")
+}
+
+// TestUpdate_DoesNotFlipReportStatus_Active proves the symmetry: an ACTIVE
+// report keeps its ACTIVE status when only content fields are edited.
+func TestUpdate_DoesNotFlipReportStatus_Active(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusActive)
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	newTitle := "Refreshed title"
+	got, err := h.Update(context.Background(), UpdateResearchReportRequest{
+		ReportID:    r.ID,
+		ActorID:     uuid.New(),
+		ReportTitle: &newTitle,
+	})
+	require.NoError(t, err)
+	require.Equal(t, vo.ReportStatusActive, got.ReportStatus)
+}
+
+// failingAudit returns an error from LogActionStrict so we can prove the
+// financial-action audit hardening surfaces failures instead of silently
+// dropping them. LogAction stays fire-and-forget to match the contract.
+type failingAudit struct {
+	strictErr error
+}
+
+func (f *failingAudit) LogAction(contract.AuditEntry) error { return nil }
+func (f *failingAudit) LogActionStrict(context.Context, contract.AuditEntry) error {
+	return f.strictErr
+}
+
+// TestInvalidate_StrictAuditFailureSurfaces asserts that when the strict
+// audit emit fails, the Invalidate command returns an error to the caller.
+// The DB row may still be invalidated (the audit emit is post-commit), but
+// the operator MUST see the failure — not a silent success.
+func TestInvalidate_StrictAuditFailureSurfaces(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusActive)
+
+	audit := &failingAudit{strictErr: errors.New("audit store down")}
+	h := newTestHandler(repo, audit,
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	_, err := h.Invalidate(context.Background(), InvalidateResearchReportRequest{
+		ReportID: r.ID,
+		ActorID:  uuid.New(),
+		Reason:   "Risk override — superseded by RR-2026-0050 release.",
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "auditing invalidation")
+}
+
+// TestInvalidate_RejectsShortReason proves the ≥20-char reason gate fires
+// before any repository write. Distinct from the database CHECK so the
+// caller sees a typed validation error, not a generic CHECK violation.
+func TestInvalidate_RejectsShortReason(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusActive)
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	_, err := h.Invalidate(context.Background(), InvalidateResearchReportRequest{
+		ReportID: r.ID,
+		ActorID:  uuid.New(),
+		Reason:   "too short",
+	})
+	var bad *domain.ErrInvalidResearchReportRequest
+	require.ErrorAs(t, err, &bad)
+	require.Equal(t, "reason", bad.Field)
+}
+
+// TestInvalidate_BlocksDecisionReference proves the report-reference policy
+// refuses an INVALIDATED report. Closes the loop between the new lifecycle
+// state and the decision-side enforcement.
+func TestInvalidate_BlocksDecisionReference(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReportWithStatus(repo, vo.ReportStatusActive)
+	// Set the effective_date in the past so it cannot trip earlier guards.
+	effective := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	r.EffectiveDate = &effective
+	r.ReviewStatus = vo.ReviewStatusReviewCompleted
+	repo.seed(r)
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	_, err := h.Invalidate(context.Background(), InvalidateResearchReportRequest{
+		ReportID: r.ID,
+		ActorID:  uuid.New(),
+		Reason:   "Recall: thesis disproved by Q1 results — full retraction.",
+	})
+	require.NoError(t, err)
+
+	inv, err := repo.GetByID(context.Background(), r.ID)
+	require.NoError(t, err)
+	require.True(t, inv.IsInvalidated())
+	require.NotNil(t, inv.InvalidatedAt)
+	require.NotNil(t, inv.InvalidatedBy)
+}
+
+// ── P0 Fix #1: submitted reports are locked for editing ──────────────────────
+
+// TestUpdate_SubmittedBlocked ensures the CanUpdate() guard now also blocks
+// mutation of a report whose review is in SUBMITTED state (in-flight approval).
+func TestUpdate_SubmittedBlocked(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReport(repo, vo.ReviewStatusSubmitted)
+
+	h := NewResearchReportCommandHandler(nil, repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+
+	newTitle := "Trying to edit a submitted report"
+	_, err := h.Update(context.Background(), UpdateResearchReportRequest{
+		ReportID:    r.ID,
+		ActorID:     uuid.New(),
+		ReportTitle: &newTitle,
+	})
+	var cannot *domain.ErrResearchReportCannotUpdate
+	require.ErrorAs(t, err, &cannot, "submitting a report must lock it against edits")
+	require.Equal(t, string(vo.ReviewStatusSubmitted), cannot.ReviewStatus)
+}
+
+// ── P0 Fix #2: cancel-submit cancels the active approval request ──────────────
+
+// fakeApprovalCanceller records which subjects were cancelled so the test can
+// assert the approval cancel was triggered.
+type fakeApprovalCanceller struct {
+	cancelled []uuid.UUID
+}
+
+func (f *fakeApprovalCanceller) CancelApprovalBySubject(_ context.Context, _ string, subjectID uuid.UUID, _ uuid.UUID) error {
+	f.cancelled = append(f.cancelled, subjectID)
+	return nil
+}
+
+// TestCancelSubmit_CancelsActiveApproval verifies that CancelSubmit invokes the
+// ApprovalCanceller so any in-flight approval request is terminated when the
+// analyst retracts their submission.
+func TestCancelSubmit_CancelsActiveApproval(t *testing.T) {
+	t.Parallel()
+	repo := newFakeResearchReportRepo()
+	r := seededReport(repo, vo.ReviewStatusSubmitted)
+	canceller := &fakeApprovalCanceller{}
+
+	h := newTestHandler(repo, &recordingAudit{},
+		researchFixedClock(time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)))
+	h.SetApprovalCanceller(canceller)
+
+	_, err := h.CancelSubmit(context.Background(), r.ID, uuid.New())
+	require.NoError(t, err, "cancel-submit must succeed when approval cancel succeeds")
+	require.Len(t, canceller.cancelled, 1, "approval canceller must be called exactly once")
+	require.Equal(t, r.ID, canceller.cancelled[0], "canceller must receive the report ID as the subject")
 }

@@ -49,16 +49,18 @@ type UpdatePortfolioRequest struct {
 	ActorID         uuid.UUID
 }
 
-// PortfolioCommandHandler bundles the small portfolio CRUD operations.
+// PortfolioCommandHandler bundles the portfolio CRUD and lifecycle operations.
 type PortfolioCommandHandler struct {
-	pool       *pgxpool.Pool
-	portfolios domain.PortfolioRepository
-	funds      domain.FundRepository
-	audit      contract.AuditLogger
-	now        func() time.Time
+	pool          *pgxpool.Pool
+	portfolios    domain.PortfolioRepository
+	statusHistory domain.PortfolioStatusHistoryRepository
+	funds         domain.FundRepository
+	audit         contract.AuditLogger
+	now           func() time.Time
 }
 
 // NewPortfolioCommandHandler wires the handler.
+// statusHistory may be nil — when nil, history writes are skipped (tests / early bring-up).
 func NewPortfolioCommandHandler(
 	pool *pgxpool.Pool,
 	portfolios domain.PortfolioRepository,
@@ -70,6 +72,15 @@ func NewPortfolioCommandHandler(
 		now = func() time.Time { return time.Now().UTC() }
 	}
 	return &PortfolioCommandHandler{pool: pool, portfolios: portfolios, funds: funds, audit: audit, now: now}
+}
+
+// SetStatusHistoryRepository wires the status-history repo post-construction.
+// Called from module.go after the repo is created so the constructor signature
+// stays backward-compatible.
+func (h *PortfolioCommandHandler) SetStatusHistoryRepository(r domain.PortfolioStatusHistoryRepository) {
+	if h != nil {
+		h.statusHistory = r
+	}
 }
 
 // Create persists a new Portfolio. (FundID, Code) must be unique among alive rows.
@@ -228,6 +239,82 @@ func (h *PortfolioCommandHandler) Update(ctx context.Context, req UpdatePortfoli
 	})
 
 	return p, nil
+}
+
+// ApplyApprovalDecision is called by the approval module when a
+// PORTFOLIO_ONBOARDING approval request reaches a final decision.
+// approved=true → ACTIVE; approved=false → REJECTED.
+// Writes both the portfolio status update and a history row in one transaction.
+func (h *PortfolioCommandHandler) ApplyApprovalDecision(
+	ctx context.Context,
+	portfolioID uuid.UUID,
+	approved bool,
+	reason string,
+) error {
+	p, err := h.portfolios.GetByID(ctx, portfolioID)
+	if err != nil {
+		return fmt.Errorf("loading portfolio for approval decision: %w", err)
+	}
+	if p == nil {
+		return &domain.ErrPortfolioNotFound{PortfolioID: portfolioID.String()}
+	}
+	if p.Status != vo.PortfolioStatusPendingApproval {
+		return fmt.Errorf("portfolio %s is in status %s, expected PENDING_APPROVAL", portfolioID, p.Status)
+	}
+
+	now := h.now()
+	fromStatus := p.Status
+	if approved {
+		p.Status = vo.PortfolioStatusActive
+	} else {
+		p.Status = vo.PortfolioStatusRejected
+	}
+	p.UpdatedAt = now
+
+	var reasonPtr *string
+	if reason != "" {
+		reasonPtr = &reason
+	}
+
+	if err := withTransaction(ctx, h.pool, func(tx pgx.Tx) error {
+		if err := h.portfolios.Update(ctx, tx, p); err != nil {
+			return err
+		}
+		if h.statusHistory != nil {
+			histEntry := &entity.PortfolioStatusHistory{
+				ID:          uuid.New(),
+				PortfolioID: portfolioID,
+				FromStatus:  &fromStatus,
+				ToStatus:    p.Status,
+				ActorID:     nil, // system-initiated via approval engine
+				Reason:      reasonPtr,
+				CreatedAt:   now,
+			}
+			if err := h.statusHistory.Append(ctx, tx, histEntry); err != nil {
+				return fmt.Errorf("appending portfolio status history: %w", err)
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	action := "INVESTMENT_PORTFOLIO_APPROVED"
+	details := map[string]any{"fund_id": p.FundID, "code": p.Code}
+	if !approved {
+		action = "INVESTMENT_PORTFOLIO_REJECTED"
+		details["reason"] = reason
+	}
+	_ = h.audit.LogAction(contract.AuditEntry{
+		ActorID:      "approval-engine",
+		Action:       action,
+		Module:       "investment",
+		ResourceType: "INVESTMENT_PORTFOLIO",
+		ResourceID:   portfolioID.String(),
+		Details:      details,
+		BusinessDate: now,
+	})
+	return nil
 }
 
 // SoftDelete marks a Portfolio as deleted, refusing if it has open activity.
