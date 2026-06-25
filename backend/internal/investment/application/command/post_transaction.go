@@ -564,7 +564,7 @@ func (h *PostTransactionHandler) lockWorkflowDayForPosting(
 			Detail:    "workflow day is missing or not open",
 		}
 	}
-	if locked.CurrentState != contract.WorkflowStateDayOpen {
+	if !contract.IsWorkflowOpenForTrading(locked.CurrentState) {
 		return &domain.ErrPostPreconditionFailed{
 			Violation: string(policy.PostViolationTradingNotAllowed),
 			Detail:    fmt.Sprintf("workflow day state is %s", locked.CurrentState),

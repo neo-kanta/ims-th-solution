@@ -22,7 +22,7 @@ func TestResearchReport_CanUpdate(t *testing.T) {
 		expect bool
 	}{
 		{"draft not_submitted", func(r *entity.ResearchReport) {}, true},
-		{"draft submitted", func(r *entity.ResearchReport) { r.ReviewStatus = vo.ReviewStatusSubmitted }, true},
+		{"submitted locks update", func(r *entity.ResearchReport) { r.ReviewStatus = vo.ReviewStatusSubmitted }, false},
 		{
 			"review completed locks update",
 			func(r *entity.ResearchReport) { r.ReviewStatus = vo.ReviewStatusReviewCompleted },

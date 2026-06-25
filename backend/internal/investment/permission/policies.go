@@ -41,6 +41,21 @@ const (
 	CodeResearchDelete       = "INVESTMENT_RESEARCH_DELETE"
 	CodeResearchSubmit       = "INVESTMENT_RESEARCH_SUBMIT"
 	CodeResearchCancelSubmit = "INVESTMENT_RESEARCH_CANCEL_SUBMIT"
+	CodeResearchInvalidate   = "INVESTMENT_RESEARCH_INVALIDATE"
+
+	CodeDecisionView               = "INVESTMENT_DECISION_VIEW"
+	CodeDecisionManage             = "INVESTMENT_DECISION_MANAGE"
+	CodeDecisionSubmit             = "INVESTMENT_DECISION_SUBMIT"
+	CodeDecisionCancel             = "INVESTMENT_DECISION_CANCEL"
+	CodeDecisionApprove            = "INVESTMENT_DECISION_APPROVE"
+	CodeComplianceReleaseApprove   = "INVESTMENT_COMPLIANCE_RELEASE_APPROVE"
+
+	CodeExecutionView   = "INVESTMENT_EXECUTION_VIEW"
+	CodeExecutionManage = "INVESTMENT_EXECUTION_MANAGE"
+
+	CodeConfirmationView   = "INVESTMENT_CONFIRMATION_VIEW"
+	CodeConfirmationManage = "INVESTMENT_CONFIRMATION_MANAGE"
+	CodeConfirmationImport = "INVESTMENT_CONFIRMATION_IMPORT"
 )
 
 // All returns every permission code owned by this module.
@@ -86,5 +101,20 @@ func (Provider) Permissions() []contract.PermissionDefinition {
 		{Code: CodeResearchDelete, Name: "Investment Research Delete", Description: "Soft-delete investment research reports while review is not submitted."},
 		{Code: CodeResearchSubmit, Name: "Investment Research Submit", Description: "Submit an investment research report for review."},
 		{Code: CodeResearchCancelSubmit, Name: "Investment Research Cancel Submit", Description: "Cancel the submission of an investment research report still in review."},
+		{Code: CodeResearchInvalidate, Name: "Investment Research Invalidate", Description: "Mark a research report as INVALIDATED (terminal). Reserved for admin / risk roles."},
+
+		{Code: CodeDecisionView, Name: "Investment Decision View", Description: "Read investment decisions."},
+		{Code: CodeDecisionManage, Name: "Investment Decision Manage", Description: "Create and edit DRAFT investment decisions."},
+		{Code: CodeDecisionSubmit, Name: "Investment Decision Submit", Description: "Submit an investment decision into the approval workflow."},
+		{Code: CodeDecisionCancel, Name: "Investment Decision Cancel", Description: "Cancel a DRAFT or pending investment decision."},
+		{Code: CodeDecisionApprove, Name: "Investment Decision Approve", Description: "Approve or reject pending investment decisions via the batch approval screen."},
+		{Code: CodeComplianceReleaseApprove, Name: "Investment Compliance Release Approve", Description: "Approve or reject COMPLIANCE_RELEASE approval requests as a compliance officer or IRG reviewer."},
+
+		{Code: CodeExecutionView, Name: "Investment Execution View", Description: "Read trade executions."},
+		{Code: CodeExecutionManage, Name: "Investment Execution Manage", Description: "Open, fill, and cancel trade executions."},
+
+		{Code: CodeConfirmationView, Name: "Investment Confirmation View", Description: "Read trade confirmations."},
+		{Code: CodeConfirmationManage, Name: "Investment Confirmation Manage", Description: "Record and resolve broker trade confirmations."},
+		{Code: CodeConfirmationImport, Name: "Investment Confirmation Import", Description: "Run batch import of broker trade confirmations from a structured file/JSON payload."},
 	}
 }

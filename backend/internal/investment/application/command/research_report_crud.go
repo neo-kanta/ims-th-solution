@@ -45,8 +45,16 @@ type CreateResearchReportRequest struct {
 	ActorID uuid.UUID
 }
 
-// UpdateResearchReportRequest patches mutable fields on a research report.
-// Only non-nil pointer fields are applied.
+// UpdateResearchReportRequest patches mutable content fields on a research
+// report. Only non-nil pointer fields are applied.
+//
+// Lifecycle fields (ReportStatus, ReviewStatus, RejectionReason) are
+// intentionally NOT updatable here. Status transitions must go through the
+// dedicated commands (Submit / CancelSubmit / ApplyApprovalDecision) so that
+// every status flip runs through the policy gate and emits a status-specific
+// audit event. Accepting them on the generic edit path would let any caller
+// with INVESTMENT_RESEARCH_UPDATE flip REJECTED → ACTIVE or EXPIRED → ACTIVE
+// without going through approval.
 type UpdateResearchReportRequest struct {
 	ReportID uuid.UUID
 
@@ -71,10 +79,7 @@ type UpdateResearchReportRequest struct {
 	FinancialStatus    *string
 	InvestmentAnalysis *string
 
-	RejectionReason    *string
 	PostSubmissionNote *string
-
-	ReportStatus *vo.ReportStatus
 
 	ActorID uuid.UUID
 }
@@ -94,6 +99,33 @@ type ResearchReportCommandHandler struct {
 	audit   contract.AuditLogger
 	now     func() time.Time
 	runTx   func(ctx context.Context, fn func(pgx.Tx) error) error
+
+	// approval is an optional hook into the generic Approval Module. When set
+	// (wired in production), submitting a report creates a real approval
+	// request and the report's lifecycle is driven by the approval outcome.
+	// When nil (tests / approval not wired), Submit behaves as before.
+	approval contract.ApprovalSubmitter
+
+	// approvalCanceller terminates any active approval request for a subject
+	// when the subject itself is cancelled or withdrawn. Optional — safe to
+	// leave nil in tests or when approval is not wired.
+	approvalCanceller contract.ApprovalCanceller
+}
+
+// SetApprovalSubmitter injects the approval submitter after construction. This
+// keeps the constructor signature (and its existing test call sites) unchanged
+// while letting production wiring connect the Approval Module.
+func (h *ResearchReportCommandHandler) SetApprovalSubmitter(s contract.ApprovalSubmitter) {
+	if h != nil {
+		h.approval = s
+	}
+}
+
+// SetApprovalCanceller injects the approval canceller after construction.
+func (h *ResearchReportCommandHandler) SetApprovalCanceller(c contract.ApprovalCanceller) {
+	if h != nil {
+		h.approvalCanceller = c
+	}
 }
 
 // NewResearchReportCommandHandler wires the handler.
@@ -351,17 +383,8 @@ func (h *ResearchReportCommandHandler) Update(
 	if req.InvestmentAnalysis != nil {
 		r.InvestmentAnalysis = *req.InvestmentAnalysis
 	}
-	if req.RejectionReason != nil {
-		r.RejectionReason = *req.RejectionReason
-	}
 	if req.PostSubmissionNote != nil {
 		r.PostSubmissionNote = *req.PostSubmissionNote
-	}
-	if req.ReportStatus != nil {
-		if !req.ReportStatus.IsValid() {
-			return nil, &domain.ErrInvalidResearchReportRequest{Field: "report_status", Detail: "invalid"}
-		}
-		r.ReportStatus = *req.ReportStatus
 	}
 
 	// Re-validate the post-patch entity against the same policy used on create
@@ -448,23 +471,213 @@ func (h *ResearchReportCommandHandler) SoftDelete(
 	return nil
 }
 
-// Submit moves review_status from NOT_SUBMITTED to SUBMITTED. No real
-// approval workflow is invoked — that ships separately.
+// InvalidateRequest is the input for the Invalidate command.
+type InvalidateResearchReportRequest struct {
+	ReportID uuid.UUID
+	ActorID  uuid.UUID
+	Reason   string
+}
+
+// minInvalidationReasonLen mirrors the DB CHECK constraint requirement that
+// invalidation reason is at least 20 characters.
+const minInvalidationReasonLen = 20
+
+// Invalidate marks the report as INVALIDATED (terminal). This is a one-way
+// transition; an invalidated report can no longer be referenced by an
+// investment decision, edited, submitted, cancelled, or deleted.
+//
+// Authorisation: callers must hold the INVESTMENT_RESEARCH_INVALIDATE
+// function permission — enforced at the route, not here.
+//
+// Audit: emitted post-commit by the caller via h.audit.LogAction so a failed
+// audit insert does not roll back the invalidation (task 5 will tighten this
+// for financial actions; this command is treated as financial-grade and the
+// audit error IS returned).
+func (h *ResearchReportCommandHandler) Invalidate(
+	ctx context.Context,
+	req InvalidateResearchReportRequest,
+) (*entity.ResearchReport, error) {
+	if req.ReportID == uuid.Nil {
+		return nil, &domain.ErrInvalidResearchReportRequest{Field: "id", Detail: "is required"}
+	}
+	if req.ActorID == uuid.Nil {
+		return nil, &domain.ErrInvalidResearchReportRequest{Field: "actor_id", Detail: "is required"}
+	}
+	reason := strings.TrimSpace(req.Reason)
+	if len(reason) < minInvalidationReasonLen {
+		return nil, &domain.ErrInvalidResearchReportRequest{
+			Field: "reason",
+			Detail: fmt.Sprintf(
+				"must be at least %d characters (got %d)",
+				minInvalidationReasonLen, len(reason),
+			),
+		}
+	}
+
+	r, err := h.reports.GetByID(ctx, req.ReportID)
+	if err != nil {
+		return nil, fmt.Errorf("loading research report: %w", err)
+	}
+	if r == nil {
+		return nil, &domain.ErrResearchReportNotFound{ReportID: req.ReportID.String()}
+	}
+	if !r.CanInvalidate() {
+		return nil, &domain.ErrResearchReportCannotInvalidate{
+			ReportID:     r.ID.String(),
+			ReportStatus: string(r.ReportStatus),
+			ReviewStatus: string(r.ReviewStatus),
+		}
+	}
+
+	now := h.now()
+	if err := h.runTx(ctx, func(tx pgx.Tx) error {
+		return h.reports.Invalidate(ctx, tx, r.ID, req.ActorID, reason, now)
+	}); err != nil {
+		return nil, err
+	}
+
+	// Surface the audit failure for this financial action — invalidating a
+	// research report must always leave an audit trail.
+	if err := h.audit.LogActionStrict(ctx, contract.AuditEntry{
+		ActorID:      req.ActorID.String(),
+		Action:       "INVESTMENT_RESEARCH_INVALIDATED",
+		Module:       "investment",
+		ResourceType: "INVESTMENT_RESEARCH_REPORT",
+		ResourceID:   r.ID.String(),
+		Details: map[string]any{
+			"reason":        reason,
+			"report_no":     r.ReportNo,
+			"prior_status":  string(r.ReportStatus),
+			"prior_review":  string(r.ReviewStatus),
+		},
+		BusinessDate: now,
+	}); err != nil {
+		return nil, fmt.Errorf("auditing invalidation: %w", err)
+	}
+
+	// Refresh and return the canonical row.
+	out, err := h.reports.GetByID(ctx, r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("re-loading invalidated report: %w", err)
+	}
+	return out, nil
+}
+
+// Submit moves review_status from NOT_SUBMITTED to SUBMITTED. When the Approval
+// Module is wired (h.approval != nil), it also creates a real approval request
+// (process INVESTMENT_ANALYSIS_REPORT). Approval is created first so that, if no
+// approval process is configured or the resolver fails, the report is NOT moved
+// to SUBMITTED and the caller receives a clean error.
 func (h *ResearchReportCommandHandler) Submit(
 	ctx context.Context,
 	id uuid.UUID,
 	actorID uuid.UUID,
 ) (*entity.ResearchReport, error) {
+	if h.approval != nil {
+		if id == uuid.Nil {
+			return nil, &domain.ErrInvalidResearchReportRequest{Field: "id", Detail: "is required"}
+		}
+		if actorID == uuid.Nil {
+			return nil, &domain.ErrInvalidResearchReportRequest{Field: "actor_id", Detail: "is required"}
+		}
+		r, err := h.reports.GetByID(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("loading research report: %w", err)
+		}
+		if r == nil {
+			return nil, &domain.ErrResearchReportNotFound{ReportID: id.String()}
+		}
+		if !r.CanSubmit() {
+			return nil, &domain.ErrResearchReportCannotSubmit{ReportID: r.ID.String(), ReviewStatus: string(r.ReviewStatus)}
+		}
+		title := strings.TrimSpace(r.ReportTitle)
+		if title == "" {
+			title = r.ReportNo
+		}
+		contractType := "COMPANY"
+		if r.ApplicableContractID != nil {
+			contractType = "FUND"
+		}
+		if _, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
+			ProcessType:      "INVESTMENT_ANALYSIS_REPORT",
+			SubjectType:      "RESEARCH_REPORT",
+			SubjectID:        r.ID,
+			SubjectTitle:     title,
+			SubjectReference: r.ReportNo,
+			ContractType:     contractType,
+			ContractID:       r.ApplicableContractID,
+			SubmitterID:      actorID,
+		}); err != nil {
+			return nil, err
+		}
+	}
 	return h.transitionReview(ctx, id, actorID, vo.ReviewStatusSubmitted, "INVESTMENT_RESEARCH_SUBMITTED")
 }
 
+// ApplyApprovalDecision updates a research report's lifecycle when its approval
+// request reaches a final decision. Approved → ACTIVE / REVIEW_COMPLETED;
+// rejected → REJECTED with the reason stored and review reset so it can be
+// revised. Invoked by the Approval Module via the registered subject callback.
+func (h *ResearchReportCommandHandler) ApplyApprovalDecision(
+	ctx context.Context,
+	reportID uuid.UUID,
+	approved bool,
+	reason string,
+) error {
+	r, err := h.reports.GetByID(ctx, reportID)
+	if err != nil {
+		return fmt.Errorf("loading research report: %w", err)
+	}
+	if r == nil {
+		return &domain.ErrResearchReportNotFound{ReportID: reportID.String()}
+	}
+	now := h.now()
+	if approved {
+		r.ReviewStatus = vo.ReviewStatusReviewCompleted
+		r.ReportStatus = vo.ReportStatusActive
+	} else {
+		r.ReportStatus = vo.ReportStatusRejected
+		r.ReviewStatus = vo.ReviewStatusNotSubmitted
+		r.RejectionReason = strings.TrimSpace(reason)
+	}
+	r.UpdatedAt = now
+	r.UpdatedBy = nil
+	if err := h.runTx(ctx, func(tx pgx.Tx) error { return h.reports.Update(ctx, tx, r) }); err != nil {
+		return err
+	}
+	action := "INVESTMENT_RESEARCH_APPROVAL_APPROVED"
+	if !approved {
+		action = "INVESTMENT_RESEARCH_APPROVAL_REJECTED"
+	}
+	// Approval-callback drives the report lifecycle — surface the audit error
+	// so a silent loss never leaves the operator confused about who approved
+	// the report.
+	if err := h.audit.LogActionStrict(ctx, contract.AuditEntry{
+		Action:       action,
+		Module:       "investment",
+		ResourceType: "INVESTMENT_RESEARCH_REPORT",
+		ResourceID:   r.ID.String(),
+		Details:      map[string]any{"approved": approved, "reason": reason},
+		BusinessDate: now,
+	}); err != nil {
+		return fmt.Errorf("auditing approval callback: %w", err)
+	}
+	return nil
+}
+
 // CancelSubmit moves review_status from SUBMITTED back to NOT_SUBMITTED.
-// Refuses once review has been completed.
+// Refuses once review has been completed. When an approval request is in-flight,
+// it is cancelled first so the two states stay in sync.
 func (h *ResearchReportCommandHandler) CancelSubmit(
 	ctx context.Context,
 	id uuid.UUID,
 	actorID uuid.UUID,
 ) (*entity.ResearchReport, error) {
+	if h.approvalCanceller != nil {
+		if err := h.approvalCanceller.CancelApprovalBySubject(ctx, "RESEARCH_REPORT", id, actorID); err != nil {
+			return nil, fmt.Errorf("cancelling approval request: %w", err)
+		}
+	}
 	return h.transitionReview(ctx, id, actorID, vo.ReviewStatusNotSubmitted, "INVESTMENT_RESEARCH_SUBMIT_CANCELLED")
 }
 
@@ -524,7 +737,9 @@ func (h *ResearchReportCommandHandler) transitionReview(
 		return nil, err
 	}
 
-	_ = h.audit.LogAction(contract.AuditEntry{
+	// Submit / cancel-submit are review lifecycle changes — financial-grade
+	// because they gate the report's referenceability by decisions.
+	if err := h.audit.LogActionStrict(ctx, contract.AuditEntry{
 		ActorID:      actorID.String(),
 		Action:       auditAction,
 		Module:       "investment",
@@ -532,7 +747,9 @@ func (h *ResearchReportCommandHandler) transitionReview(
 		ResourceID:   r.ID.String(),
 		Details:      map[string]any{"review_status": string(target)},
 		BusinessDate: now,
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("auditing review transition: %w", err)
+	}
 
 	return r, nil
 }

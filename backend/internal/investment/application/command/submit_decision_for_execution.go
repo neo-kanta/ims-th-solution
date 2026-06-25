@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
@@ -99,16 +100,26 @@ func (h *SubmitDecisionForExecutionHandler) Handle(
 		}
 	}
 
+	// Translate optional decimal pointers to the contract's value type.
+	// Missing quantity defaults to zero so the IRG pipeline can still
+	// evaluate amount-based rules.
+	var qty, price decimal.Decimal
+	if decision.Quantity != nil {
+		qty = *decision.Quantity
+	}
+	if decision.LimitPrice != nil {
+		price = *decision.LimitPrice
+	}
 	checkReq := contract.ProposedOrderCheck{
 		PortfolioID:  decision.PortfolioID,
 		ContractID:   decision.ContractID,
 		BusinessDate: decision.BusinessDate,
 		Actor:        req.ActorID.String(),
 		OrderID:      decision.ID,
-		Ticker:       decision.Ticker,
+		Ticker:       decision.InstrumentCode,
 		Side:         mapOrderSideToContract(decision.Side),
-		Quantity:     decision.Quantity,
-		Price:        decision.Price,
+		Quantity:     qty,
+		Price:        price,
 		Currency:     decision.Currency,
 		Exchange:     decision.Exchange,
 	}

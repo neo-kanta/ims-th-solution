@@ -41,6 +41,11 @@ func parseUUIDParam(r *http.Request, key string) (uuid.UUID, error) {
 	return uuid.Parse(v)
 }
 
+// parseUUID parses a UUID string, returning a typed error on failure.
+func parseUUID(v string) (uuid.UUID, error) {
+	return uuid.Parse(v)
+}
+
 // parseDate parses a YYYY-MM-DD date string. Empty input is treated as an
 // error so callers wanting nullable dates should use parseDateOpt instead.
 func parseDate(s string) (time.Time, error) {

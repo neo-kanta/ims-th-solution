@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -13,6 +15,7 @@ import (
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 
@@ -20,16 +23,55 @@ import (
 // investment research reports. Kept in its own file so it does not enlarge
 // the already-busy InvestmentHandler.
 type ResearchReportHandler struct {
-	reports domain.ResearchReportRepository
-	cmd     *command.ResearchReportCommandHandler
+	reports        domain.ResearchReportRepository
+	cmd            *command.ResearchReportCommandHandler
+	approvalStatus contract.ApprovalStatusProvider
 }
 
-// NewResearchReportHandler wires the handler.
+// NewResearchReportHandler wires the handler. approvalStatus may be nil — when
+// unset, the handler falls back to the report's own review_status for the
+// derived stage label.
 func NewResearchReportHandler(
 	reports domain.ResearchReportRepository,
 	cmd *command.ResearchReportCommandHandler,
 ) *ResearchReportHandler {
 	return &ResearchReportHandler{reports: reports, cmd: cmd}
+}
+
+// SetApprovalStatusProvider injects the cross-module approval lookup used to
+// enrich response DTOs with the precise multi-level review stage. Wired
+// post-construction from cmd/server/main.go to avoid a circular dependency.
+func (h *ResearchReportHandler) SetApprovalStatusProvider(p contract.ApprovalStatusProvider) {
+	if h != nil {
+		h.approvalStatus = p
+	}
+}
+
+// enrichReviewStage overlays the live approval stage onto a single response
+// when the approval status provider is wired. Falls back to the response's
+// existing (status-derived) value on any lookup error so the read path never
+// fails because of a cross-module hiccup.
+func (h *ResearchReportHandler) enrichReviewStage(ctx context.Context, resp *response.ResearchReportResponse) {
+	if h == nil || h.approvalStatus == nil || resp == nil {
+		return
+	}
+	info, err := h.approvalStatus.GetApprovalStage(ctx, "RESEARCH_REPORT", resp.ID)
+	if err != nil || info == nil {
+		return
+	}
+	switch info.Status {
+	case "PENDING_APPROVAL":
+		if info.CurrentStageNumber > 0 {
+			resp.DerivedReviewStage = fmt.Sprintf("PENDING_LEVEL_%d", info.CurrentStageNumber)
+		}
+	case "APPROVED":
+		// Leave whatever the response already says — if the callback ran the
+		// report status is already REVIEW_COMPLETED.
+	case "REJECTED":
+		resp.DerivedReviewStage = "REJECTED"
+	case "CANCELLED", "WITHDRAWN":
+		resp.DerivedReviewStage = "NOT_SUBMITTED"
+	}
 }
 
 // ListResearchReports handles GET /investment/research-reports.
@@ -121,7 +163,9 @@ func (h *ResearchReportHandler) ListResearchReports(w http.ResponseWriter, r *ht
 
 	out := make([]response.ResearchReportResponse, 0, len(items))
 	for _, item := range items {
-		out = append(out, response.FromResearchReport(item))
+		row := response.FromResearchReport(item)
+		h.enrichReviewStage(r.Context(), &row)
+		out = append(out, row)
 	}
 	httputil.OK(w, response.ResearchReportListResponse{
 		Items: out,
@@ -159,7 +203,9 @@ func (h *ResearchReportHandler) GetResearchReport(w http.ResponseWriter, r *http
 		httputil.NotFound(w, "research report not found")
 		return
 	}
-	httputil.OK(w, response.FromResearchReport(rep))
+	row := response.FromResearchReport(rep)
+	h.enrichReviewStage(r.Context(), &row)
+	httputil.OK(w, row)
 }
 
 // CreateResearchReport handles POST /investment/research-reports.
@@ -300,16 +346,7 @@ func (h *ResearchReportHandler) UpdateResearchReport(w http.ResponseWriter, r *h
 	cmdReq.ESGComment = req.ESGComment
 	cmdReq.FinancialStatus = req.FinancialStatus
 	cmdReq.InvestmentAnalysis = req.InvestmentAnalysis
-	cmdReq.RejectionReason = req.RejectionReason
 	cmdReq.PostSubmissionNote = req.PostSubmissionNote
-	if req.ReportStatus != nil {
-		s := vo.ReportStatus(*req.ReportStatus)
-		if !s.IsValid() {
-			httputil.BadRequest(w, "invalid report_status")
-			return
-		}
-		cmdReq.ReportStatus = &s
-	}
 
 	report, err := h.cmd.Update(r.Context(), cmdReq)
 	if err != nil {
@@ -416,6 +453,50 @@ func (h *ResearchReportHandler) CancelSubmitResearchReport(w http.ResponseWriter
 	httputil.OK(w, response.FromResearchReport(report))
 }
 
+// InvalidateResearchReport handles POST /investment/research-reports/{id}/invalidate.
+// @Summary Invalidate Investment Research Report
+// @Description One-way transition to INVALIDATED. An invalidated report cannot be referenced by a decision, edited, submitted, cancelled, or soft-deleted. The reason (≥20 characters) is stored and audited.
+// @Tags Investment - Research
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Research report UUID"
+// @Param request body request.InvalidateResearchReportRequest true "Invalidation reason"
+// @Success 200 {object} response.ResearchReportResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Router /investment/research-reports/{id}/invalidate [post]
+func (h *ResearchReportHandler) InvalidateResearchReport(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid report id")
+		return
+	}
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+	var req request.InvalidateResearchReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httputil.BadRequest(w, "invalid JSON body")
+		return
+	}
+	report, err := h.cmd.Invalidate(r.Context(), command.InvalidateResearchReportRequest{
+		ReportID: id,
+		ActorID:  actor,
+		Reason:   req.Reason,
+	})
+	if err != nil {
+		writeResearchReportError(w, err)
+		return
+	}
+	httputil.OK(w, response.FromResearchReport(report))
+}
+
 // writeResearchReportError maps research-report domain errors to HTTP statuses.
 func writeResearchReportError(w http.ResponseWriter, err error) {
 	if err == nil {
@@ -430,6 +511,7 @@ func writeResearchReportError(w http.ResponseWriter, err error) {
 		cannotDelete    *domain.ErrResearchReportCannotDelete
 		cannotSubmit    *domain.ErrResearchReportCannotSubmit
 		cannotCancelSub *domain.ErrResearchReportCannotCancelSubmit
+		cannotInvalid   *domain.ErrResearchReportCannotInvalidate
 	)
 	switch {
 	case errors.As(err, &invalidResearch):
@@ -441,7 +523,8 @@ func writeResearchReportError(w http.ResponseWriter, err error) {
 		httputil.BadRequest(w, err.Error())
 	case errors.As(err, &notFound):
 		httputil.NotFound(w, err.Error())
-	case errors.As(err, &duplicate):
+	case errors.As(err, &duplicate),
+		errors.As(err, &cannotInvalid):
 		httputil.Conflict(w, err.Error())
 	case errors.As(err, &cannotUpdate),
 		errors.As(err, &cannotDelete),

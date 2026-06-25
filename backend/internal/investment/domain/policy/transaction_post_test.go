@@ -201,3 +201,71 @@ func TestEvaluatePost(t *testing.T) {
 }
 
 func ptrDecimal(d decimal.Decimal) *decimal.Decimal { return &d }
+
+// portfolioWithStatus returns a minimal Portfolio with the given status.
+func portfolioWithStatus(s vo.PortfolioStatus) *entity.Portfolio {
+	return &entity.Portfolio{ID: uuid.New(), Status: s, BaseCurrency: "THB"}
+}
+
+// TestEvaluatePost_PortfolioStatusGate verifies that every non-ACTIVE portfolio
+// status produces PORTFOLIO_INACTIVE, and that only ACTIVE + open workflow allows
+// a transaction through.
+func TestEvaluatePost_PortfolioStatusGate(t *testing.T) {
+	nonActiveStatuses := []vo.PortfolioStatus{
+		vo.PortfolioStatusDraft,
+		vo.PortfolioStatusPendingApproval,
+		vo.PortfolioStatusRejected,
+		vo.PortfolioStatusSuspended,
+		vo.PortfolioStatusPaused,
+		vo.PortfolioStatusClosed,
+	}
+
+	instr := activeInstrument("THB", 1)
+	fund := activeFund()
+
+	for _, st := range nonActiveStatuses {
+		st := st
+		t.Run(string(st)+" cannot trade", func(t *testing.T) {
+			got := policy.EvaluatePost(policy.PostInputs{
+				Type:           vo.TransactionTypeBuy,
+				Portfolio:      portfolioWithStatus(st),
+				Fund:           fund,
+				Instrument:     instr,
+				Quantity:       d("100"),
+				Price:          d("50"),
+				Currency:       "THB",
+				IsTradeAllowed: true, // workflow says open — portfolio status wins
+			})
+			assert.Equal(t, policy.PostViolationPortfolioInactive, got,
+				"status %s must block trading", st)
+		})
+	}
+
+	t.Run("ACTIVE portfolio can trade only when workflow day is open", func(t *testing.T) {
+		openGot := policy.EvaluatePost(policy.PostInputs{
+			Type:           vo.TransactionTypeBuy,
+			Portfolio:      portfolioWithStatus(vo.PortfolioStatusActive),
+			Fund:           fund,
+			Instrument:     instr,
+			Quantity:       d("100"),
+			Price:          d("50"),
+			Currency:       "THB",
+			IsTradeAllowed: true,
+		})
+		assert.Equal(t, policy.PostPreconditionViolation(""), openGot,
+			"ACTIVE + open workflow must succeed")
+
+		closedGot := policy.EvaluatePost(policy.PostInputs{
+			Type:           vo.TransactionTypeBuy,
+			Portfolio:      portfolioWithStatus(vo.PortfolioStatusActive),
+			Fund:           fund,
+			Instrument:     instr,
+			Quantity:       d("100"),
+			Price:          d("50"),
+			Currency:       "THB",
+			IsTradeAllowed: false, // workflow day not open
+		})
+		assert.Equal(t, policy.PostViolationTradingNotAllowed, closedGot,
+			"ACTIVE + closed workflow must block")
+	})
+}

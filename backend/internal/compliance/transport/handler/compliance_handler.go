@@ -325,8 +325,7 @@ func (h *ComplianceHandler) ListBreaches(w http.ResponseWriter, r *http.Request)
 // ============================================================
 
 type OverrideRequest struct {
-	Reason     string `json:"reason"`
-	ApprovedBy string `json:"approved_by,omitempty"`
+	Reason string `json:"reason"`
 }
 
 // OverrideBreach handles POST /compliance/breaches/{breachID}/override.
@@ -378,11 +377,10 @@ func (h *ComplianceHandler) OverrideBreach(w http.ResponseWriter, r *http.Reques
 		BreachID:     breachID,
 		Reason:       req.Reason,
 		OverriddenBy: actorUUID,
-	}
-	if req.ApprovedBy != "" {
-		if id, err := uuid.Parse(req.ApprovedBy); err == nil {
-			overrideReq.ApprovedBy = &id
-		}
+		// ApprovedBy is intentionally not populated from the request body.
+		// A second-level approver identity must never come from the caller;
+		// it is derived from authenticated context or routed through the
+		// shared approval engine in a future phase.
 	}
 
 	override, err := h.overrideCmd.Handle(r.Context(), overrideReq)

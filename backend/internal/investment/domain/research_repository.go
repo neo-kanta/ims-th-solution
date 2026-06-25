@@ -48,4 +48,11 @@ type ResearchReportRepository interface {
 
 	// SoftDelete stamps deleted_at and updated_at.
 	SoftDelete(ctx context.Context, tx pgx.Tx, id uuid.UUID, deletedBy uuid.UUID, deletedAt time.Time) error
+
+	// Invalidate atomically flips report_status and review_status to
+	// INVALIDATED and stores the invalidation actor/reason/timestamp. The
+	// repository MUST refuse to invalidate a row that is already INVALIDATED
+	// or soft-deleted; callers are expected to pre-check entity.CanInvalidate
+	// so a typed conflict error reaches the API caller.
+	Invalidate(ctx context.Context, tx pgx.Tx, id uuid.UUID, actorID uuid.UUID, reason string, at time.Time) error
 }

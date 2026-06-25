@@ -28,7 +28,11 @@ type Fund struct {
 	// before allowing the post. The backend's post handler still enforces
 	// the pre-trade rules independently — this flag only affects the UI flow.
 	RequirePretradePreview bool
-	ExternalPAMRef         string
+	// RequireResearchReportForDecision enforces that a research report must be
+	// linked before a decision can be submitted for approval. This is a backend
+	// policy gate independent of the pre-trade simulation UX flag above.
+	RequireResearchReportForDecision bool
+	ExternalPAMRef                   string
 	Status                 vo.FundStatus
 	Version                int
 

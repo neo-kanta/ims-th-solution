@@ -22,6 +22,9 @@ type FundRepository interface {
 	Create(ctx context.Context, tx pgx.Tx, f *entity.Fund) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Fund, error)
 	GetByCode(ctx context.Context, code string) (*entity.Fund, error)
+	// GetByContractCode returns the fund whose cross-module contract_code matches
+	// the given value, alive only. Returns (nil, nil) when no match is found.
+	GetByContractCode(ctx context.Context, contractCode string) (*entity.Fund, error)
 	List(ctx context.Context, filter FundListFilter) ([]*entity.Fund, int, error)
 	Update(ctx context.Context, tx pgx.Tx, f *entity.Fund) error
 	SoftDelete(ctx context.Context, tx pgx.Tx, id uuid.UUID, expectedVersion int, deletedBy uuid.UUID) error
@@ -37,6 +40,17 @@ type FundListFilter struct {
 	AccessibleFundIDs []uuid.UUID
 	Page              int
 	Limit             int
+}
+
+// PortfolioStatusHistoryRepository persists the immutable portfolio lifecycle
+// event log. Backed by investment__portfolio_status_history.
+// All writes MUST use a pgx.Tx so the history row lands in the same DB
+// transaction as the corresponding portfolio status update.
+type PortfolioStatusHistoryRepository interface {
+	// Append inserts one immutable history row inside the caller's transaction.
+	Append(ctx context.Context, tx pgx.Tx, h *entity.PortfolioStatusHistory) error
+	// ListByPortfolio returns the full history for a portfolio, newest first.
+	ListByPortfolio(ctx context.Context, portfolioID uuid.UUID) ([]*entity.PortfolioStatusHistory, error)
 }
 
 // PortfolioRepository persists Portfolio master records.

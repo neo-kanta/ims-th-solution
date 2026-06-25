@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain"
@@ -51,6 +52,49 @@ func (r *fakeDecisionRepo) GetByID(_ context.Context, id uuid.UUID) (*entity.Dec
 	return &cp, nil
 }
 
+func (r *fakeDecisionRepo) GetByDecisionNumber(_ context.Context, decisionNumber string) (*entity.Decision, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, d := range r.items {
+		if d.DecisionNumber == decisionNumber {
+			cp := *d
+			return &cp, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *fakeDecisionRepo) FindDecisionSubjectRefByNumber(_ context.Context, decisionNumber string) (*domain.DecisionSubjectRef, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, d := range r.items {
+		if d.DecisionNumber == decisionNumber {
+			return &domain.DecisionSubjectRef{
+				DecisionID:        d.ID,
+				DecisionNumber:    d.DecisionNumber,
+				ContractID:        d.ContractID,
+				ApprovalRequestID: d.ApprovalRequestID,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
+// Create / Update / List / NextDecisionNumber satisfy the expanded interface
+// but are not exercised by the pre-trade submit pipeline tests.
+func (r *fakeDecisionRepo) Create(_ context.Context, _ pgx.Tx, _ *entity.Decision) error {
+	return nil
+}
+func (r *fakeDecisionRepo) Update(_ context.Context, _ pgx.Tx, _ *entity.Decision) error {
+	return nil
+}
+func (r *fakeDecisionRepo) List(_ context.Context, _ domain.DecisionListFilter) ([]*entity.Decision, int, error) {
+	return nil, 0, nil
+}
+func (r *fakeDecisionRepo) NextDecisionNumber(_ context.Context, _ pgx.Tx, _ time.Time) (string, error) {
+	return "", nil
+}
+
 func (r *fakeDecisionRepo) UpdateStatus(
 	_ context.Context, id uuid.UUID, to vo.DecisionStatus,
 	checkGroupID uuid.UUID, updatedBy uuid.UUID, updatedAt time.Time,
@@ -64,7 +108,21 @@ func (r *fakeDecisionRepo) UpdateStatus(
 	if !ok {
 		return &domain.ErrDecisionNotFound{DecisionID: id.String()}
 	}
-	d.Status = to
+	// Translate the narrow status onto the entity's lifecycle status. Tests
+	// only check the recorded value via r.lastStatus, so the entity-side
+	// translation is purely for fixture coherence.
+	switch to {
+	case vo.DecisionStatusDraft:
+		d.Status = vo.DecisionLifecycleDraft
+	case vo.DecisionStatusSubmitted:
+		d.Status = vo.DecisionLifecyclePendingApproval
+	case vo.DecisionStatusBlocked:
+		d.Status = vo.DecisionLifecycleRejected
+	case vo.DecisionStatusExecuted:
+		d.Status = vo.DecisionLifecycleExecuted
+	case vo.DecisionStatusCancelled:
+		d.Status = vo.DecisionLifecycleCancelled
+	}
 	g := checkGroupID
 	d.ComplianceCheckGroupID = &g
 	d.UpdatedAt = updatedAt
@@ -97,20 +155,23 @@ func (c *fakeComplianceChecker) CheckProposedOrder(
 // helpers
 
 func draftDecision() *entity.Decision {
+	qty := decimal.NewFromInt(1000)
+	price := decimal.NewFromFloat(35.5)
 	return &entity.Decision{
-		ID:           uuid.New(),
-		PortfolioID:  uuid.New(),
-		ContractID:   uuid.New(),
-		Ticker:       "PTT",
-		Side:         vo.OrderSideBuy,
-		Quantity:     decimal.NewFromInt(1000),
-		Price:        decimal.NewFromFloat(35.5),
-		Currency:     "THB",
-		Exchange:     "SET",
-		BusinessDate: time.Date(2026, 4, 24, 0, 0, 0, 0, time.UTC),
-		Status:       vo.DecisionStatusDraft,
-		CreatedBy:    uuid.New(),
-		CreatedAt:    time.Now().UTC().Add(-time.Hour),
+		ID:             uuid.New(),
+		FundID:         uuid.New(),
+		PortfolioID:    uuid.New(),
+		ContractID:     uuid.New(),
+		InstrumentCode: "PTT",
+		Side:           vo.OrderSideBuy,
+		Quantity:       &qty,
+		LimitPrice:     &price,
+		Currency:       "THB",
+		Exchange:       "SET",
+		BusinessDate:   time.Date(2026, 4, 24, 0, 0, 0, 0, time.UTC),
+		Status:         vo.DecisionLifecycleDraft,
+		CreatedBy:      uuid.New(),
+		CreatedAt:      time.Now().UTC().Add(-time.Hour),
 	}
 }
 
@@ -249,7 +310,7 @@ func TestSubmitDecision_NotFound(t *testing.T) {
 
 func TestSubmitDecision_NotDraft_Rejected(t *testing.T) {
 	d := draftDecision()
-	d.Status = vo.DecisionStatusSubmitted
+	d.Status = vo.DecisionLifecyclePendingApproval
 	repo := newFakeDecisionRepo(d)
 	checker := &fakeComplianceChecker{}
 	h := NewSubmitDecisionForExecutionHandler(repo, checker, nil)
