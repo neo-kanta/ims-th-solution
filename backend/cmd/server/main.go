@@ -22,6 +22,7 @@ import (
 	approvaladapter "github.com/neo-kanta/ims-th-solution/backend/internal/approval/infrastructure/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/audit"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/chat"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/watchlist"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/chat/domain/valueobject"
 	chatprovider "github.com/neo-kanta/ims-th-solution/backend/internal/chat/infrastructure/provider"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance"
@@ -120,6 +121,15 @@ func main() {
 	permissionsModule := permissions.NewModule(pool, iamModule)
 	notificationModule := notification.NewModule(pool, cfg, iamModule)
 	approvalModule := approval.NewModule(pool, iamModule, auditModule.Recorder(), notificationModule.ApprovalNotifier(), approvaladapter.NewPostgresDelegateResolver(pool), nil)
+	watchlistModule := watchlist.NewModule(watchlist.Dependencies{
+		Pool:             pool,
+		SecurityResolver: referenceDataModule.Resolver(),
+		QuoteProvider:    marketDataModule.QuoteProvider(),
+		PortfolioScope:   investmentModule.PortfolioScopeResolver(),
+		Notifier:         notificationModule.WatchlistAlertNotifier(),
+		AuditRecorder:    auditModule.Recorder(),
+		IAM:              iamModule,
+	})
 
 	// Chat module. Builds the configured LLM provider, persists sessions +
 	// messages, and connects the MCP client through which ALL business data
@@ -246,6 +256,7 @@ func main() {
 			permissionsModule.RegisterRoutes(r)
 			approvalModule.RegisterRoutes(r)
 			notificationModule.RegisterRoutes(r)
+			watchlistModule.RegisterRoutes(r, iamModule)
 			if chatModule != nil {
 				chatModule.RegisterRoutes(r)
 			}

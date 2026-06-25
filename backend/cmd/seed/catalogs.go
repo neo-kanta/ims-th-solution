@@ -10,6 +10,7 @@ import (
 	notificationperm "github.com/neo-kanta/ims-th-solution/backend/internal/notification/permission"
 	permissionsperm "github.com/neo-kanta/ims-th-solution/backend/internal/permissions/permission"
 	referencedataperm "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/permission"
+	watchlistperm "github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/permission"
 	workflowperm "github.com/neo-kanta/ims-th-solution/backend/internal/workflow/permission"
 
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
@@ -31,5 +32,6 @@ func defaultPermissionCatalogs() []contract.PermissionCatalog {
 		referencedataperm.Provider{},
 		approvalperm.Provider{},
 		notificationperm.Provider{},
+		watchlistperm.Provider{},
 	}
 }
