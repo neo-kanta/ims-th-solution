@@ -1,4 +1,5 @@
 import { thApprovalMessages } from "./approval";
+import { thWatchlistMessages } from "./watchlist";
 import { thChatMessages } from "./chat";
 import { thCommonMessages } from "./common";
 import { thComplianceMessages } from "./compliance";
@@ -26,4 +27,5 @@ export const thMessages = {
   ...thMarketDataMessages,
   ...thMyFundsMessages,
   ...thFundsCreateMessages,
+  ...thWatchlistMessages,
 } as const;

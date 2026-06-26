@@ -70,6 +70,7 @@ export const enCommonMessages = {
     notificationCenter: "My notifications",
     emailOperations: "Email operations",
     emailOutbox: "Email outbox",
+    watchlist: "Watchlist",
   },
   shell: {
     workspaceLabel: "Operations workspace",

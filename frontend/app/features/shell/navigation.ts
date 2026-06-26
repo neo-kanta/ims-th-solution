@@ -58,6 +58,12 @@ export function buildDashboardNavigation(
           to: "/market-data",
           icon: "globe",
         },
+        {
+          label: t("navigation.watchlist", "Watchlist"),
+          to: "/watchlist",
+          icon: "notifications",
+          requiredPermissions: ["WATCHLIST_VIEW"],
+        },
       ],
     },
     {

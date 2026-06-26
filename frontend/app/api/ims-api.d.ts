@@ -11155,6 +11155,551 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watchlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List watchlist items */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description PERSONAL or PORTFOLIO */
+                    scope_type?: string;
+                    /** @description Portfolio UUID (PORTFOLIO scope only) */
+                    portfolio_id?: string;
+                    /** @description Canonical security UUID */
+                    security_id?: string;
+                    /** @description Include disabled items (default false) */
+                    include_disabled?: boolean;
+                    /** @description Include threshold rules (default true) */
+                    include_thresholds?: boolean;
+                    /** @description Include live quote (default true) */
+                    include_quote?: boolean;
+                    /** @description Page size (1-200, default 50) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListItemsResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List alert events */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description PERSONAL or PORTFOLIO */
+                    scope_type?: string;
+                    /** @description Portfolio UUID */
+                    portfolio_id?: string;
+                    /** @description Canonical security UUID */
+                    security_id?: string;
+                    /** @description Threshold rule UUID */
+                    rule_id?: string;
+                    /** @description Filter by acknowledgement state */
+                    acknowledged?: boolean;
+                    /** @description RFC3339 inclusive lower bound */
+                    created_from?: string;
+                    /** @description RFC3339 inclusive upper bound */
+                    created_to?: string;
+                    /** @description Page size (1-200, default 50) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListAlertsResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/alerts/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge an alert event */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Alert event UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Acknowledgement payload */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["AcknowledgeAlertRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["AlertEventResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually trigger rule evaluation */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Evaluation filter */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["EvaluateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["EvaluateResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a watchlist item */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Create payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateItemRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["WatchlistItemResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a watchlist item */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Item UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a watchlist item */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Item UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateItemRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["WatchlistItemResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/workflow/daily": {
         parameters: {
             query?: never;
@@ -11900,6 +12445,9 @@ export interface components {
             source?: string;
             valuation_ccy?: string;
         };
+        AcknowledgeAlertRequest: {
+            note?: string;
+        };
         ActionRequest: {
             comment?: string;
             reason?: string;
@@ -11938,6 +12486,36 @@ export interface components {
             password_changed_at?: string;
             updated_at?: string;
             username?: string;
+        };
+        AlertEventResponse: {
+            acknowledged_at?: string;
+            acknowledged_by?: string;
+            acknowledged_by_user?: components["schemas"]["UserDescriptor"];
+            acknowledgement_note?: string;
+            acknowledgement_state?: string;
+            created_at?: string;
+            created_by_user?: components["schemas"]["UserDescriptor"];
+            created_by_user_id?: string;
+            currency?: string;
+            current_state?: string;
+            direction?: string;
+            evaluated_at?: string;
+            id?: string;
+            notification_status?: string;
+            observed_at?: string;
+            observed_price?: string;
+            owner_user_id?: string;
+            portfolio?: components["schemas"]["PortfolioDescriptor"];
+            portfolio_id?: string;
+            previous_state?: string;
+            quote_provider?: string;
+            scope_type?: string;
+            security?: components["schemas"]["SecurityDescriptor"];
+            stale?: boolean;
+            stale_reason?: string;
+            threshold_rule_id?: string;
+            threshold_value?: string;
+            watchlist_item_id?: string;
         };
         AllocationBucketResponse: {
             /** @description stable machine key */
@@ -12296,6 +12874,14 @@ export interface components {
             sector_id?: string;
             tick_size?: string;
         };
+        CreateItemRequest: {
+            note?: string;
+            pinned?: boolean;
+            portfolio_id?: string;
+            scope_type?: string;
+            security_id?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleRequest"][];
+        };
         CreatePortfolioRequest: {
             base_currency: string;
             benchmark?: string;
@@ -12568,6 +13154,37 @@ export interface components {
             code?: string;
             details?: unknown;
             error?: string;
+        };
+        EvaluateRequest: {
+            dry_run?: boolean;
+            item_id?: string;
+            portfolio_id?: string;
+            rule_id?: string;
+            scope_type?: string;
+            security_id?: string;
+        };
+        EvaluateResponseData: {
+            alerts_created?: number;
+            alerts_suppressed?: number;
+            dry_run?: boolean;
+            provider_failures?: number;
+            results?: components["schemas"]["EvaluateRuleResultResponse"][];
+            rules_evaluated?: number;
+            rules_skipped?: number;
+        };
+        EvaluateRuleResultResponse: {
+            computed_state?: string;
+            notification_status?: string;
+            observed_price?: string;
+            previous_state?: string;
+            quote_status?: string;
+            rule_id?: string;
+            security_id?: string;
+            stale?: boolean;
+            stale_reason?: string;
+            threshold_value?: string;
+            watchlist_item_id?: string;
+            would_create_alert?: boolean;
         };
         EventResponse: {
             actor?: components["schemas"]["UserDescriptor"];
@@ -12932,11 +13549,19 @@ export interface components {
             name?: string;
             updatedAt?: string;
         };
+        ListAlertsResponseData: {
+            items?: components["schemas"]["AlertEventResponse"][];
+            pagination?: components["schemas"]["PaginationMeta"];
+        };
         ListBreachesResult: {
             breaches?: components["schemas"]["Breach"][];
             limit?: number;
             offset?: number;
             total?: number;
+        };
+        ListItemsResponseData: {
+            items?: components["schemas"]["WatchlistItemResponse"][];
+            pagination?: components["schemas"]["PaginationMeta"];
         };
         ListRuleInstancesResult: {
             instances?: components["schemas"]["RuleInstanceDetail"][];
@@ -13092,9 +13717,23 @@ export interface components {
         OverrideRequest: {
             reason?: string;
         };
+        PaginationMeta: {
+            limit?: number;
+            offset?: number;
+            total?: number;
+        };
         PermissionsResp: {
             contracts?: string[];
             functions?: string[];
+        };
+        PortfolioDescriptor: {
+            display_name?: string;
+            fund_code?: string;
+            fund_id?: string;
+            fund_name?: string;
+            portfolio_code?: string;
+            portfolio_id?: string;
+            portfolio_name?: string;
         };
         PortfolioListResponse: {
             items?: components["schemas"]["PortfolioResponse"][];
@@ -13330,6 +13969,19 @@ export interface components {
             symbol?: string;
             volume?: number;
         };
+        QuoteSnapshot: {
+            change_percent?: string;
+            currency?: string;
+            effective_at?: string;
+            fetched_at?: string;
+            market_status?: string;
+            previous_close?: string;
+            price?: string;
+            provider?: string;
+            stale?: boolean;
+            stale_reason?: string;
+            symbol?: string;
+        };
         RefreshRequest: {
             refresh_token: string;
         };
@@ -13553,6 +14205,15 @@ export interface components {
             security_id?: string;
             status?: string;
         };
+        SecurityDescriptor: {
+            asset_type?: string;
+            currency?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            ims_symbol?: string;
+            name?: string;
+            security_id?: string;
+        };
         SendMessageRequest: {
             /**
              * @description Content is the user's message. Required.
@@ -13771,6 +14432,34 @@ export interface components {
             team_name?: string;
             updated_at?: string;
         };
+        ThresholdRuleRequest: {
+            cooldown_minutes?: number;
+            currency?: string;
+            direction?: string;
+            id?: string;
+            metric_type?: string;
+            status?: string;
+            threshold_value?: string;
+        };
+        ThresholdRuleResponse: {
+            cooldown_minutes?: number;
+            created_at?: string;
+            currency?: string;
+            direction?: string;
+            id?: string;
+            last_alerted_at?: string;
+            last_evaluated_at?: string;
+            last_observed_at?: string;
+            last_observed_price?: string;
+            last_quote_stale?: boolean;
+            last_stale_reason?: string;
+            last_state?: string;
+            last_state_changed_at?: string;
+            metric_type?: string;
+            status?: string;
+            threshold_value?: string;
+            updated_at?: string;
+        };
         TransactionListResponse: {
             items?: components["schemas"]["TransactionResponse"][];
             limit?: number;
@@ -13894,6 +14583,12 @@ export interface components {
             status?: string;
             tick_size?: string;
         };
+        UpdateItemRequest: {
+            note?: string;
+            pinned?: boolean;
+            status?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleRequest"][];
+        };
         UpdatePortfolioRequest: {
             benchmark?: string;
             description?: string;
@@ -13940,8 +14635,7 @@ export interface components {
         };
         UserDescriptor: {
             display_name?: string;
-            id?: string;
-            username?: string;
+            user_id?: string;
         };
         UserResponse: {
             display_name?: string;
@@ -13986,6 +14680,23 @@ export interface components {
             source?: string;
             unrealised_pnl?: string;
             valuation_ccy?: string;
+        };
+        WatchlistItemResponse: {
+            created_at?: string;
+            created_by_user?: components["schemas"]["UserDescriptor"];
+            created_by_user_id?: string;
+            id?: string;
+            note?: string;
+            owner_user_id?: string;
+            pinned?: boolean;
+            portfolio?: components["schemas"]["PortfolioDescriptor"];
+            portfolio_id?: string;
+            quote?: components["schemas"]["QuoteSnapshot"];
+            scope_type?: string;
+            security?: components["schemas"]["SecurityDescriptor"];
+            status?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleResponse"][];
+            updated_at?: string;
         };
         WorkflowSettingsResponse: {
             settings?: components["schemas"]["OperationSettingEntry"][];

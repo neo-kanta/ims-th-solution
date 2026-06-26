@@ -9506,7 +9506,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListItemsResponseData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -9604,7 +9616,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListAlertsResponseData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -9666,7 +9690,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/AlertEventResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -9733,7 +9769,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/EvaluateResponseData"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -9795,7 +9843,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/WatchlistItemResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -9910,7 +9970,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SuccessResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/WatchlistItemResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -10670,6 +10742,95 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "AlertEventResponse": {
+            "type": "object",
+            "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
+                "acknowledged_by": {
+                    "type": "string"
+                },
+                "acknowledged_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "acknowledgement_note": {
+                    "type": "string"
+                },
+                "acknowledgement_state": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "created_by_user_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_state": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "evaluated_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "notification_status": {
+                    "type": "string"
+                },
+                "observed_at": {
+                    "type": "string"
+                },
+                "observed_price": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "portfolio": {
+                    "$ref": "#/definitions/PortfolioDescriptor"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "previous_state": {
+                    "type": "string"
+                },
+                "quote_provider": {
+                    "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security": {
+                    "$ref": "#/definitions/SecurityDescriptor"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "threshold_rule_id": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "watchlist_item_id": {
                     "type": "string"
                 }
             }
@@ -12417,6 +12578,76 @@ const docTemplate = `{
                 }
             }
         },
+        "EvaluateResponseData": {
+            "type": "object",
+            "properties": {
+                "alerts_created": {
+                    "type": "integer"
+                },
+                "alerts_suppressed": {
+                    "type": "integer"
+                },
+                "dry_run": {
+                    "type": "boolean"
+                },
+                "provider_failures": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EvaluateRuleResultResponse"
+                    }
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "rules_skipped": {
+                    "type": "integer"
+                }
+            }
+        },
+        "EvaluateRuleResultResponse": {
+            "type": "object",
+            "properties": {
+                "computed_state": {
+                    "type": "string"
+                },
+                "notification_status": {
+                    "type": "string"
+                },
+                "observed_price": {
+                    "type": "string"
+                },
+                "previous_state": {
+                    "type": "string"
+                },
+                "quote_status": {
+                    "type": "string"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "watchlist_item_id": {
+                    "type": "string"
+                },
+                "would_create_alert": {
+                    "type": "boolean"
+                }
+            }
+        },
         "EventResponse": {
             "type": "object",
             "properties": {
@@ -13418,6 +13649,20 @@ const docTemplate = `{
                 }
             }
         },
+        "ListAlertsResponseData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AlertEventResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PaginationMeta"
+                }
+            }
+        },
         "ListBreachesResult": {
             "type": "object",
             "properties": {
@@ -13435,6 +13680,20 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "ListItemsResponseData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WatchlistItemResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PaginationMeta"
                 }
             }
         },
@@ -13907,6 +14166,20 @@ const docTemplate = `{
                 }
             }
         },
+        "PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "PermissionsResp": {
             "type": "object",
             "properties": {
@@ -13921,6 +14194,32 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "PortfolioDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "fund_name": {
+                    "type": "string"
+                },
+                "portfolio_code": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "portfolio_name": {
+                    "type": "string"
                 }
             }
         },
@@ -14628,6 +14927,44 @@ const docTemplate = `{
                 }
             }
         },
+        "QuoteSnapshot": {
+            "type": "object",
+            "properties": {
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_at": {
+                    "type": "string"
+                },
+                "fetched_at": {
+                    "type": "string"
+                },
+                "market_status": {
+                    "type": "string"
+                },
+                "previous_close": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                }
+            }
+        },
         "RefreshRequest": {
             "type": "object",
             "required": [
@@ -15278,6 +15615,32 @@ const docTemplate = `{
                 }
             }
         },
+        "SecurityDescriptor": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                }
+            }
+        },
         "SendMessageRequest": {
             "type": "object",
             "required": [
@@ -15894,6 +16257,62 @@ const docTemplate = `{
                 }
             }
         },
+        "ThresholdRuleResponse": {
+            "type": "object",
+            "properties": {
+                "cooldown_minutes": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_alerted_at": {
+                    "type": "string"
+                },
+                "last_evaluated_at": {
+                    "type": "string"
+                },
+                "last_observed_at": {
+                    "type": "string"
+                },
+                "last_observed_price": {
+                    "type": "string"
+                },
+                "last_quote_stale": {
+                    "type": "boolean"
+                },
+                "last_stale_reason": {
+                    "type": "string"
+                },
+                "last_state": {
+                    "type": "string"
+                },
+                "last_state_changed_at": {
+                    "type": "string"
+                },
+                "metric_type": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "TransactionListResponse": {
             "type": "object",
             "properties": {
@@ -16397,10 +16816,7 @@ const docTemplate = `{
                 "display_name": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
-                "username": {
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -16538,6 +16954,59 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "WatchlistItemResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "created_by_user_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "portfolio": {
+                    "$ref": "#/definitions/PortfolioDescriptor"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "quote": {
+                    "$ref": "#/definitions/QuoteSnapshot"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security": {
+                    "$ref": "#/definitions/SecurityDescriptor"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ThresholdRuleResponse"
+                    }
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

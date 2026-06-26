@@ -1,4 +1,5 @@
 import { enApprovalMessages } from "./approval";
+import { enWatchlistMessages } from "./watchlist";
 import { enChatMessages } from "./chat";
 import { enCommonMessages } from "./common";
 import { enComplianceMessages } from "./compliance";
@@ -26,4 +27,5 @@ export const enMessages = {
   ...enMarketDataMessages,
   ...enMyFundsMessages,
   ...enFundsCreateMessages,
+  ...enWatchlistMessages,
 } as const;

@@ -83,7 +83,7 @@ func NewHandler(
 // @Param include_quote query bool false "Include live quote (default true)"
 // @Param limit query int false "Page size (1-200, default 50)"
 // @Param offset query int false "Page offset (default 0)"
-// @Success 200 {object} httputil.SuccessResponse
+// @Success 200 {object} httputil.SuccessResponse{data=ListItemsResponseData}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -220,7 +220,7 @@ func (h *Handler) ListItems(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param payload body CreateItemRequest true "Create payload"
-// @Success 201 {object} httputil.SuccessResponse
+// @Success 201 {object} httputil.SuccessResponse{data=WatchlistItemResponse}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -327,7 +327,7 @@ func (h *Handler) CreateItem(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "Item UUID"
 // @Param payload body UpdateItemRequest true "Update payload"
-// @Success 200 {object} httputil.SuccessResponse
+// @Success 200 {object} httputil.SuccessResponse{data=WatchlistItemResponse}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -454,7 +454,7 @@ func (h *Handler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 // @Param created_to query string false "RFC3339 inclusive upper bound"
 // @Param limit query int false "Page size (1-200, default 50)"
 // @Param offset query int false "Page offset (default 0)"
-// @Success 200 {object} httputil.SuccessResponse
+// @Success 200 {object} httputil.SuccessResponse{data=ListAlertsResponseData}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -616,7 +616,7 @@ func (h *Handler) ListAlerts(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "Alert event UUID"
 // @Param payload body AcknowledgeAlertRequest false "Acknowledgement payload"
-// @Success 200 {object} httputil.SuccessResponse
+// @Success 200 {object} httputil.SuccessResponse{data=AlertEventResponse}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -690,7 +690,7 @@ func (h *Handler) AcknowledgeAlert(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param payload body EvaluateRequest false "Evaluation filter"
-// @Success 200 {object} httputil.SuccessResponse
+// @Success 200 {object} httputil.SuccessResponse{data=EvaluateResponseData}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse

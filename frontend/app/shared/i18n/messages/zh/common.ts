@@ -70,6 +70,7 @@ export const zhCommonMessages = {
     notificationCenter: "我的通知",
     emailOperations: "邮件操作",
     emailOutbox: "邮件发件箱",
+    watchlist: "关注列表",
   },
   shell: {
     workspaceLabel: "运营工作区",

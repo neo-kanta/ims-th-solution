@@ -104,6 +104,65 @@ definitions:
       username:
         type: string
     type: object
+  AlertEventResponse:
+    properties:
+      acknowledged_at:
+        type: string
+      acknowledged_by:
+        type: string
+      acknowledged_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      acknowledgement_note:
+        type: string
+      acknowledgement_state:
+        type: string
+      created_at:
+        type: string
+      created_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      created_by_user_id:
+        type: string
+      currency:
+        type: string
+      current_state:
+        type: string
+      direction:
+        type: string
+      evaluated_at:
+        type: string
+      id:
+        type: string
+      notification_status:
+        type: string
+      observed_at:
+        type: string
+      observed_price:
+        type: string
+      owner_user_id:
+        type: string
+      portfolio:
+        $ref: '#/definitions/PortfolioDescriptor'
+      portfolio_id:
+        type: string
+      previous_state:
+        type: string
+      quote_provider:
+        type: string
+      scope_type:
+        type: string
+      security:
+        $ref: '#/definitions/SecurityDescriptor'
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      threshold_rule_id:
+        type: string
+      threshold_value:
+        type: string
+      watchlist_item_id:
+        type: string
+    type: object
   AllocationBucketResponse:
     properties:
       key:
@@ -1325,6 +1384,52 @@ definitions:
       security_id:
         type: string
     type: object
+  EvaluateResponseData:
+    properties:
+      alerts_created:
+        type: integer
+      alerts_suppressed:
+        type: integer
+      dry_run:
+        type: boolean
+      provider_failures:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/EvaluateRuleResultResponse'
+        type: array
+      rules_evaluated:
+        type: integer
+      rules_skipped:
+        type: integer
+    type: object
+  EvaluateRuleResultResponse:
+    properties:
+      computed_state:
+        type: string
+      notification_status:
+        type: string
+      observed_price:
+        type: string
+      previous_state:
+        type: string
+      quote_status:
+        type: string
+      rule_id:
+        type: string
+      security_id:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      threshold_value:
+        type: string
+      watchlist_item_id:
+        type: string
+      would_create_alert:
+        type: boolean
+    type: object
   EventResponse:
     properties:
       actor:
@@ -2004,6 +2109,15 @@ definitions:
       updatedAt:
         type: string
     type: object
+  ListAlertsResponseData:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/AlertEventResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/PaginationMeta'
+    type: object
   ListBreachesResult:
     properties:
       breaches:
@@ -2016,6 +2130,15 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  ListItemsResponseData:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/WatchlistItemResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/PaginationMeta'
     type: object
   ListRuleInstancesResult:
     properties:
@@ -2327,6 +2450,15 @@ definitions:
       reason:
         type: string
     type: object
+  PaginationMeta:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
   PermissionsResp:
     properties:
       contracts:
@@ -2337,6 +2469,23 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  PortfolioDescriptor:
+    properties:
+      display_name:
+        type: string
+      fund_code:
+        type: string
+      fund_id:
+        type: string
+      fund_name:
+        type: string
+      portfolio_code:
+        type: string
+      portfolio_id:
+        type: string
+      portfolio_name:
+        type: string
     type: object
   PortfolioListResponse:
     properties:
@@ -2803,6 +2952,31 @@ definitions:
       volume:
         type: integer
     type: object
+  QuoteSnapshot:
+    properties:
+      change_percent:
+        type: string
+      currency:
+        type: string
+      effective_at:
+        type: string
+      fetched_at:
+        type: string
+      market_status:
+        type: string
+      previous_close:
+        type: string
+      price:
+        type: string
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
+    type: object
   RefreshRequest:
     properties:
       refresh_token:
@@ -3240,6 +3414,23 @@ definitions:
       status:
         type: string
     type: object
+  SecurityDescriptor:
+    properties:
+      asset_type:
+        type: string
+      currency:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      ims_symbol:
+        type: string
+      name:
+        type: string
+      security_id:
+        type: string
+    type: object
   SendMessageRequest:
     properties:
       content:
@@ -3649,6 +3840,43 @@ definitions:
       threshold_value:
         type: string
     type: object
+  ThresholdRuleResponse:
+    properties:
+      cooldown_minutes:
+        type: integer
+      created_at:
+        type: string
+      currency:
+        type: string
+      direction:
+        type: string
+      id:
+        type: string
+      last_alerted_at:
+        type: string
+      last_evaluated_at:
+        type: string
+      last_observed_at:
+        type: string
+      last_observed_price:
+        type: string
+      last_quote_stale:
+        type: boolean
+      last_stale_reason:
+        type: string
+      last_state:
+        type: string
+      last_state_changed_at:
+        type: string
+      metric_type:
+        type: string
+      status:
+        type: string
+      threshold_value:
+        type: string
+      updated_at:
+        type: string
+    type: object
   TransactionListResponse:
     properties:
       items:
@@ -3986,9 +4214,7 @@ definitions:
     properties:
       display_name:
         type: string
-      id:
-        type: string
-      username:
+      user_id:
         type: string
     type: object
   UserResponse:
@@ -4079,6 +4305,41 @@ definitions:
       unrealised_pnl:
         type: string
       valuation_ccy:
+        type: string
+    type: object
+  WatchlistItemResponse:
+    properties:
+      created_at:
+        type: string
+      created_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      created_by_user_id:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      owner_user_id:
+        type: string
+      pinned:
+        type: boolean
+      portfolio:
+        $ref: '#/definitions/PortfolioDescriptor'
+      portfolio_id:
+        type: string
+      quote:
+        $ref: '#/definitions/QuoteSnapshot'
+      scope_type:
+        type: string
+      security:
+        $ref: '#/definitions/SecurityDescriptor'
+      status:
+        type: string
+      threshold_rules:
+        items:
+          $ref: '#/definitions/ThresholdRuleResponse'
+        type: array
+      updated_at:
         type: string
     type: object
   WorkflowSettingsResponse:
@@ -10557,7 +10818,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ListItemsResponseData'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -10620,7 +10886,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ListAlertsResponseData'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -10659,7 +10930,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/AlertEventResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -10701,7 +10977,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/EvaluateResponseData'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -10740,7 +11021,12 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/WatchlistItemResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -10813,7 +11099,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/WatchlistItemResponse'
+              type: object
         "400":
           description: Bad Request
           schema:

@@ -1,4 +1,5 @@
 import { zhApprovalMessages } from "./approval";
+import { zhWatchlistMessages } from "./watchlist";
 import { zhChatMessages } from "./chat";
 import { zhCommonMessages } from "./common";
 import { zhComplianceMessages } from "./compliance";
@@ -26,4 +27,5 @@ export const zhMessages = {
   ...zhMarketDataMessages,
   ...zhMyFundsMessages,
   ...zhFundsCreateMessages,
+  ...zhWatchlistMessages,
 } as const;

@@ -70,6 +70,7 @@ export const thCommonMessages = {
     notificationCenter: "การแจ้งเตือนของฉัน",
     emailOperations: "การดำเนินการอีเมล",
     emailOutbox: "กล่องขาออกอีเมล",
+    watchlist: "รายการติดตาม",
   },
   shell: {
     workspaceLabel: "พื้นที่ปฏิบัติงาน",
