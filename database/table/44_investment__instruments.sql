@@ -14,6 +14,8 @@ CREATE TABLE investment__instruments (
     region_id           UUID         REFERENCES investment__regions(id) ON DELETE RESTRICT,
 
     primary_exchange    VARCHAR(20),
+    provider_symbol_alpha_vantage VARCHAR(64),
+    provider_symbol_yahoo         VARCHAR(64),
 
     sector_id           UUID         REFERENCES investment__sectors(id) ON DELETE RESTRICT,
     fund_category_id    UUID         REFERENCES investment__fund_categories(id) ON DELETE RESTRICT,

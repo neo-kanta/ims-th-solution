@@ -18,10 +18,12 @@ CREATE TABLE approval__requests (
     final_decision_by    UUID         REFERENCES iam_users(id),
     final_decision_at    TIMESTAMPTZ,
     rejection_reason     TEXT         NOT NULL DEFAULT '',
+    config_snapshot      JSONB        NOT NULL DEFAULT '[]'::jsonb,
     created_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_approval_request_number UNIQUE (request_number),
     CONSTRAINT chk_approval_request_status CHECK (status IN (
-        'DRAFT','SUBMITTED','PENDING_APPROVAL','APPROVED','REJECTED','CANCELLED','WITHDRAWN'
+        'DRAFT','SUBMITTED','PENDING_APPROVAL','APPROVED','REJECTED','CANCELLED','WITHDRAWN',
+        'REVOKED'
     ))
 );

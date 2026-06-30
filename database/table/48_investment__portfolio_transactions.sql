@@ -16,6 +16,7 @@ CREATE TABLE investment__portfolio_transactions (
     gross_amount             DECIMAL(28,8) NOT NULL,
     fees                     DECIMAL(28,8) NOT NULL DEFAULT 0,
     net_amount               DECIMAL(28,8) NOT NULL,
+    realised_pnl_base        DECIMAL(28,8) NOT NULL DEFAULT 0,
     fx_rate_to_base          DECIMAL(28,12),
 
     business_date            DATE         NOT NULL,

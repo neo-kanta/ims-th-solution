@@ -17,6 +17,8 @@ action VARCHAR(50) NOT NULL,
 actor_id UUID, -- NULL for fully automated actions
 actor_type VARCHAR(10) NOT NULL DEFAULT 'HUMAN',
 actor_username VARCHAR(255) NOT NULL DEFAULT '',
+actor_account_code VARCHAR(255) NOT NULL DEFAULT '',
+is_admin_override BOOLEAN NOT NULL DEFAULT FALSE,
 
 -- Reason (mandatory for cancel/rollback actions; optional otherwise)
 reason TEXT,

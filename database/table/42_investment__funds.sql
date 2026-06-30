@@ -16,7 +16,10 @@ CREATE TABLE investment__funds (
     benchmark           VARCHAR(120),
     risk_profile        VARCHAR(20),
     has_units           BOOLEAN      NOT NULL DEFAULT false,
+    require_pretrade_preview BOOLEAN NOT NULL DEFAULT false,
+    require_research_report_for_decision BOOLEAN NOT NULL DEFAULT false,
     external_pam_ref    VARCHAR(80),
+    contract_code       VARCHAR(40),
 
     status              VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
     version             INTEGER      NOT NULL DEFAULT 1,
@@ -28,7 +31,14 @@ CREATE TABLE investment__funds (
     deleted_at          TIMESTAMPTZ,
 
     CONSTRAINT chk_inv_funds_status
-        CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CLOSED')),
+        CHECK (status IN (
+            'DRAFT',
+            'PENDING_APPROVAL',
+            'ACTIVE',
+            'SUSPENDED',
+            'CLOSED',
+            'REJECTED'
+        )),
 
     CONSTRAINT chk_inv_funds_risk_profile
         CHECK (risk_profile IS NULL OR risk_profile IN ('LOW','MEDIUM','HIGH','SPECULATIVE')),

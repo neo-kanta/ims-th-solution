@@ -31,6 +31,9 @@ CREATE TABLE investment__research_reports (
 
     report_status           VARCHAR(20)  NOT NULL DEFAULT 'DRAFT',
     review_status           VARCHAR(20)  NOT NULL DEFAULT 'NOT_SUBMITTED',
+    invalidated_at          TIMESTAMPTZ,
+    invalidated_by          UUID,
+    invalidation_reason     TEXT         NOT NULL DEFAULT '',
 
     created_at              TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_by              UUID,
@@ -42,14 +45,26 @@ CREATE TABLE investment__research_reports (
         CHECK (recommendation IN ('BUY', 'SELL', 'HOLD')),
 
     CONSTRAINT chk_inv_research_report_status
-        CHECK (report_status IN ('DRAFT', 'ACTIVE', 'EXPIRED', 'REJECTED')),
+        CHECK (report_status IN ('DRAFT', 'ACTIVE', 'EXPIRED', 'REJECTED', 'INVALIDATED')),
 
     CONSTRAINT chk_inv_research_review_status
-        CHECK (review_status IN ('NOT_SUBMITTED', 'SUBMITTED', 'REVIEW_COMPLETED')),
+        CHECK (review_status IN ('NOT_SUBMITTED', 'SUBMITTED', 'REVIEW_COMPLETED', 'INVALIDATED')),
 
     CONSTRAINT chk_inv_research_currency
         CHECK (currency = '' OR currency ~ '^[A-Z]{3}$'),
 
     CONSTRAINT chk_inv_research_investment_analysis_length
-        CHECK (char_length(investment_analysis) >= 25)
+        CHECK (char_length(investment_analysis) >= 25),
+
+    CONSTRAINT chk_inv_research_invalidation_coherent
+        CHECK (
+            (report_status <> 'INVALIDATED' AND review_status <> 'INVALIDATED')
+            OR (
+                report_status = 'INVALIDATED'
+                AND review_status = 'INVALIDATED'
+                AND invalidated_at IS NOT NULL
+                AND invalidated_by IS NOT NULL
+                AND length(trim(invalidation_reason)) >= 20
+            )
+        )
 );

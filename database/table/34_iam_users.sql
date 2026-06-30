@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS iam_users (
     failed_login_attempts INT NOT NULL DEFAULT 0,
     locked_until TIMESTAMPTZ,
     last_login_at TIMESTAMPTZ,
+    password_changed_at TIMESTAMPTZ DEFAULT NOW(),
     version INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

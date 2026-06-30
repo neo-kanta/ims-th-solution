@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     content TEXT NOT NULL,
     provenance_map JSONB NOT NULL DEFAULT '{}'::jsonb,
     raw_provider_payload JSONB,
+    correlation_id VARCHAR(64),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

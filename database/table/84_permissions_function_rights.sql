@@ -7,5 +7,10 @@ CREATE TABLE IF NOT EXISTS permissions_function_rights (
     is_granted BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID REFERENCES iam_users(id),
-    UNIQUE(group_id, permission_code)
+    UNIQUE(group_id, permission_code),
+    CONSTRAINT fk_permissions_function_rights_definition
+        FOREIGN KEY (permission_code)
+        REFERENCES permissions_function_definitions (code)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
 );

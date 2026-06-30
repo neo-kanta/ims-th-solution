@@ -32,7 +32,15 @@ CREATE TABLE investment__portfolios (
     deleted_at          TIMESTAMPTZ,
 
     CONSTRAINT chk_inv_portfolios_status
-        CHECK (status IN ('ACTIVE', 'PAUSED', 'CLOSED')),
+        CHECK (status IN (
+            'DRAFT',
+            'PENDING_APPROVAL',
+            'ACTIVE',
+            'PAUSED',
+            'SUSPENDED',
+            'CLOSED',
+            'REJECTED'
+        )),
 
     CONSTRAINT chk_inv_portfolios_risk_profile
         CHECK (risk_profile IS NULL OR risk_profile IN ('LOW','MEDIUM','HIGH','SPECULATIVE')),

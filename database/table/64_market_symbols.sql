@@ -8,6 +8,7 @@ CREATE TABLE market_symbols (
     currency              CHAR(3),
     alpha_vantage_symbol  VARCHAR(64),
     yahoo_symbol          VARCHAR(64),
+    security_id           UUID         REFERENCES securities_master(id) ON DELETE SET NULL,
     is_active             BOOLEAN      NOT NULL DEFAULT true,
     created_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

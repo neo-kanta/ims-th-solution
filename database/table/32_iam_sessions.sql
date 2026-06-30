@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS iam_sessions (
     user_agent TEXT,
     is_revoked BOOLEAN NOT NULL DEFAULT false,
     expires_at TIMESTAMPTZ NOT NULL,
+    last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    absolute_expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+    device_fingerprint VARCHAR(255),
+    revoke_reason VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     rotated_at TIMESTAMPTZ
 );

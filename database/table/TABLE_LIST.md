@@ -1,6 +1,6 @@
 # Database Tables
 
-Total tables: 98
+Total tables: 114
 
 | No. | Table | Source migration | File |
 | --- | ----- | ---------------- | ---- |
@@ -102,3 +102,19 @@ Total tables: 98
 | 96 | `workflow__scheduler_run_items` | `20260427000001_workflow__add_settings_scheduler_tables.up.sql` | `96_workflow__scheduler_run_items.sql` |
 | 97 | `workflow__scheduler_runs` | `20260427000001_workflow__add_settings_scheduler_tables.up.sql` | `97_workflow__scheduler_runs.sql` |
 | 98 | `workflow__transition_log` | `20260422000001_workflow__create_tables.up.sql` | `98_workflow__transition_log.sql` |
+| 99 | `approval__delegations` | `20260616000002_approval__delegations.up.sql` | `99_approval__delegations.sql` |
+| 100 | `investment__decision_lines` | `20260615000005_investment__create_decision_lines.up.sql` | `100_investment__decision_lines.sql` |
+| 101 | `investment__decisions` | `20260601000001_investment__create_decisions_executions_confirmations.up.sql` | `101_investment__decisions.sql` |
+| 102 | `investment__executions` | `20260601000001_investment__create_decisions_executions_confirmations.up.sql` | `102_investment__executions.sql` |
+| 103 | `investment__fund_status_history` | `20260613000004_investment__create_fund_status_history.up.sql` | `103_investment__fund_status_history.sql` |
+| 104 | `investment__portfolio_permissions` | `20260613000005_investment__create_portfolio_permissions.up.sql` | `104_investment__portfolio_permissions.sql` |
+| 105 | `investment__portfolio_status_history` | `20260613000003_investment__create_portfolio_status_history.up.sql` | `105_investment__portfolio_status_history.sql` |
+| 106 | `investment__trade_confirmation_import_batches` | `20260604093800_investment__trade_confirmation_import_batches.up.sql` | `106_investment__trade_confirmation_import_batches.sql` |
+| 107 | `investment__trade_confirmation_import_items` | `20260604093800_investment__trade_confirmation_import_batches.up.sql` | `107_investment__trade_confirmation_import_items.sql` |
+| 108 | `investment__trade_confirmations` | `20260601000001_investment__create_decisions_executions_confirmations.up.sql` | `108_investment__trade_confirmations.sql` |
+| 109 | `notification__email_outbox` | `20260619000002_notification__email_outbox.up.sql` | `109_notification__email_outbox.sql` |
+| 110 | `notification__notifications` | `20260601000002_notification__create_notifications.up.sql` | `110_notification__notifications.sql` |
+| 111 | `watchlist_alert_events` | `20260624000003_watchlist__create_alert_events.up.sql` | `111_watchlist_alert_events.sql` |
+| 112 | `watchlist_items` | `20260624000001_watchlist__create_items.up.sql` | `112_watchlist_items.sql` |
+| 113 | `watchlist_threshold_rules` | `20260624000002_watchlist__create_threshold_rules.up.sql` | `113_watchlist_threshold_rules.sql` |
+| 114 | `workflow__approval_settings` | `20260615000002_workflow__create_approval_settings.up.sql` | `114_workflow__approval_settings.sql` |

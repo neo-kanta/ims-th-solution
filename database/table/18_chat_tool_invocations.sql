@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS chat_tool_invocations (
     mcp_server VARCHAR(128) NOT NULL,
     arguments JSONB NOT NULL DEFAULT '{}'::jsonb, -- model-supplied args (never contains the auth token)
     raw_result JSONB,                             -- verbatim tool output (provenance source of record)
+    correlation_id VARCHAR(64),
     is_error BOOLEAN NOT NULL DEFAULT FALSE,
     state VARCHAR(32) NOT NULL,                   -- requested | succeeded | failed | denied
     error TEXT,

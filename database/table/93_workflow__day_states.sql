@@ -5,6 +5,8 @@ CREATE TABLE workflow__day_states (
 
 -- Aggregate key
 contract_id UUID, business_date DATE NOT NULL,
+accounting_date DATE,
+prev_accounting_date DATE,
 
 -- State machine position
 current_state VARCHAR(30) NOT NULL DEFAULT 'NOT_STARTED',
@@ -50,6 +52,9 @@ created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_wf_reclose_count
         CHECK (reclose_count >= 0 AND reclose_count <= 10),
+
+    CONSTRAINT chk_wf_accounting_date_after_business_date
+        CHECK (accounting_date IS NULL OR accounting_date >= business_date),
 
     CONSTRAINT chk_wf_version_positive
         CHECK (version >= 1)
