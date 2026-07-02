@@ -72,3 +72,131 @@ jobs:
           NUXT_PUBLIC_API_BASE_URL: http://localhost:8080/api/v1
           NUXT_PUBLIC_APP_NAME: IMS Thailand
         run: npm run build
+
+  e2e-iam:
+    name: IAM E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ims_e2e
+          POSTGRES_USER: ims_app
+          POSTGRES_PASSWORD: ims_e2e_ci_password
+        ports:
+          - 5437:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Same shape as infra/env/.env.e2e.example, adapted for a GitHub
+      # Actions service container instead of docker compose. None of these
+      # are real secrets — this environment only ever holds synthetic E2E
+      # fixture data (see tests/e2e/support/testUsers.ts).
+      APP_ENV: test
+      DB_HOST: localhost
+      DB_PORT: "5437"
+      DB_NAME: ims_e2e
+      DB_USER: ims_app
+      DB_PASSWORD: ims_e2e_ci_password
+      DB_SSL_MODE: disable
+      APP_JWT_SECRET: ci-e2e-jwt-secret-not-a-real-secret
+      MFA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      RATE_LIMIT_BACKEND: memory
+      RATE_LIMIT_LOGIN_PER_USER: "50"
+      ADMIN_IP_ALLOWLIST: ""
+      MARKET_DATA_PROVIDER: mock
+      MARKET_DATA_PRIMARY_PROVIDER: mock
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      NUXT_PUBLIC_API_BASE_URL: http://localhost:8080/api/v1
+      NUXT_API_BASE_URL: http://localhost:8080/api/v1
+      NUXT_PUBLIC_APP_NAME: IMS Thailand (E2E)
+      E2E_USER_PASSWORD: ci-e2e-fixture-password-not-real
+      IMS_TEST_DATABASE_DSN: "host=localhost port=5437 user=ims_app password=ims_e2e_ci_password dbname=ims_e2e sslmode=disable"
+      E2E_BASE_URL: http://localhost:3000
+      E2E_API_BASE_URL: http://localhost:8080/api/v1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Migrate ims_e2e
+        working-directory: backend
+        run: go run cmd/migrate/main.go up
+
+      - name: Seed base catalog + reference data
+        working-directory: backend
+        run: go run ./cmd/seed
+
+      - name: Seed E2E fixtures (e2e_admin, e2e_manager, ...)
+        working-directory: backend
+        run: go run ./cmd/seed-e2e
+
+      - name: Backend Go E2E tests (401/403 proof)
+        working-directory: backend
+        run: go test -tags e2e -count=1 -v -run TestE2E_IAM ./tests/e2e/...
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install E2E test dependencies
+        working-directory: tests/e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        working-directory: backend
+        run: |
+          nohup go run cmd/server/main.go > backend.log 2>&1 &
+          disown
+
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          nohup npm run dev -- --port 3000 > ../frontend.log 2>&1 &
+          disown
+
+      - name: Wait for backend + frontend
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/health >/dev/null 2>&1 && backend_up=1 || backend_up=0
+            curl -sf -o /dev/null http://localhost:3000/ 2>&1 && frontend_up=1 || frontend_up=0
+            if [ "$backend_up" = "1" ] && [ "$frontend_up" = "1" ]; then
+              echo "backend + frontend up after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "backend or frontend failed to start in time"
+          cat backend/backend.log || true
+          cat frontend.log || true
+          exit 1
+
+      - name: Run Playwright IAM E2E specs
+        working-directory: tests/e2e
+        run: npm run test:e2e:ci
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report/
+          retention-days: 7

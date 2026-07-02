@@ -89,6 +89,7 @@ function selectItem(item: SettingsNavigationItem) {
             class="settings-section-nav__item"
             :class="{ 'is-active': activeSection === item.id }"
             type="button"
+            :data-testid="`iam-settings-nav-${item.id}`"
             :disabled="item.disabled"
             :title="item.description"
             :aria-label="itemAriaLabel(item)"

@@ -44,8 +44,9 @@ func (r *PostgresUserRepository) findUser(ctx context.Context, whereClause strin
 	`, whereClause)
 
 	var user entity.User
+	var email *string
 	err := r.pool.QueryRow(ctx, query, arg).Scan(
-		&user.ID, &user.Username, &user.DisplayName, &user.Email, &user.PasswordHash,
+		&user.ID, &user.Username, &user.DisplayName, &email, &user.PasswordHash,
 		&user.IsActive, &user.ForcePasswordChange, &user.FailedLoginAttempts,
 		&user.LockedUntil, &user.LastLoginAt, &user.PasswordChangedAt, &user.Version,
 		&user.CreatedAt, &user.UpdatedAt, &user.CreatedBy, &user.UpdatedBy, &user.DeletedAt,
@@ -55,6 +56,9 @@ func (r *PostgresUserRepository) findUser(ctx context.Context, whereClause strin
 			return nil, nil
 		}
 		return nil, fmt.Errorf("querying user: %w", err)
+	}
+	if email != nil {
+		user.Email = *email
 	}
 
 	groups, err := r.loadUserGroups(ctx, user.ID)
@@ -183,13 +187,17 @@ func (r *PostgresUserRepository) List(ctx context.Context, filter domain.UserFil
 	var users []entity.User
 	for rows.Next() {
 		var u entity.User
+		var email *string
 		if err := rows.Scan(
-			&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.PasswordHash,
+			&u.ID, &u.Username, &u.DisplayName, &email, &u.PasswordHash,
 			&u.IsActive, &u.ForcePasswordChange, &u.FailedLoginAttempts,
 			&u.LockedUntil, &u.LastLoginAt, &u.PasswordChangedAt, &u.Version,
 			&u.CreatedAt, &u.UpdatedAt, &u.CreatedBy, &u.UpdatedBy, &u.DeletedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("scanning user: %w", err)
+		}
+		if email != nil {
+			u.Email = *email
 		}
 		users = append(users, u)
 	}

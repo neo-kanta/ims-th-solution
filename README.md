@@ -118,7 +118,10 @@ make contract-check
 make test
 make test-unit
 make test-integration
+make e2e-db-setup
 make test-e2e
+make test-e2e-ci
+make test-e2e-backend
 make lint
 
 make build
@@ -130,7 +133,7 @@ make api-client
 Notes:
 
 - `make test` runs backend unit and integration targets.
-- `make test-e2e` expects a Playwright project under `tests/e2e`; the current `tests/` directory is a scaffold/reserved area.
+- `make test-e2e` runs the Playwright project under `tests/e2e` (requires backend + frontend running against the dedicated `ims_e2e` database — see [IAM E2E Tests](#iam-e2e-tests) below).
 - `make api-client` regenerates Swagger first and then regenerates the frontend OpenAPI types.
 
 ## Backend Modules
@@ -206,6 +209,45 @@ See [frontend/README.md](frontend/README.md) for frontend-specific conventions.
 - Seeds include workflow settings/contracts, IAM/permission fixtures, approval/notification/watchlist permissions, investment process assignments, investment reference data, and market/reference data fixtures as available.
 
 See [database/migrations/README.md](database/migrations/README.md) and [database/seeds/README.md](database/seeds/README.md) for detailed workflows.
+
+## IAM E2E Tests
+
+End-to-end tests for the IAM module (authentication, RBAC/function permissions, data permissions, audit trail) run against a **dedicated `ims_e2e` database** — never `ims_dev` or production. They prove IAM works from the browser through the API to the database: backend authorization (401/403) is asserted directly against the API, not just inferred from hidden frontend menus.
+
+Two suites cover it:
+
+- **Playwright** (`tests/e2e/specs/iam/*.spec.ts`) — browser-driven UI flows plus direct API assertions.
+- **Go** (`backend/tests/e2e/iam_test.go`, build tag `e2e`) — backend-only proof that authorization is enforced independent of any frontend.
+
+### Local setup
+
+```bash
+cp infra/env/.env.e2e.example infra/env/.env.e2e   # values are synthetic; safe defaults out of the box
+make e2e-db-setup                                   # creates/migrates/seeds a dedicated ims_e2e database (idempotent)
+```
+
+`make e2e-db-setup` creates the `ims_e2e` database on the same local Postgres container used for dev, runs migrations, runs the standard `make seed` (permission catalog + reference/demo data), then runs `backend/cmd/seed-e2e`, which seeds 7 deterministic fixtures: `e2e_admin`, `e2e_manager`, `e2e_trader`, `e2e_auditor`, `e2e_disabled`, `e2e_locked`, `e2e_no_permission` (password: `E2E_USER_PASSWORD` from `infra/env/.env.e2e`). `seed-e2e` refuses to run against anything that isn't clearly the E2E database (`APP_ENV=test` and `DB_NAME` containing `e2e`).
+
+Then, in separate terminals with `infra/env/.env.e2e` sourced into the environment:
+
+```bash
+cd backend && go run cmd/server/main.go     # backend against ims_e2e
+cd frontend && npm run dev                  # frontend, NUXT_PUBLIC_API_BASE_URL pointed at that backend
+```
+
+Run the suites:
+
+```bash
+make test-e2e-backend   # Go, backend-only, no browser needed
+make test-e2e           # Playwright, requires the backend + frontend above to be running
+make test-e2e:ui        # Playwright UI mode, for authoring/debugging (cd tests/e2e && npm run test:e2e:ui)
+```
+
+Coverage, known gaps, and flaky-risk areas are documented in [tests/e2e/COVERAGE.md](tests/e2e/COVERAGE.md).
+
+### CI
+
+The `e2e-iam` job in `.github/workflows/ci.yml` runs on every PR: a `postgres:16-alpine` service container stands in for `ims_e2e`, migrations/seeds run via env vars (no docker compose in CI), the backend and frontend start in the background, then both suites run. A Playwright HTML report is uploaded as a build artifact on every run (pass or fail).
 
 ## Configuration Notes
 

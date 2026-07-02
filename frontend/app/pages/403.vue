@@ -7,7 +7,7 @@ definePageMeta({
 </script>
 
 <template>
-  <div class="forbidden-page">
+  <div class="forbidden-page" data-testid="iam-forbidden-page">
     <div class="forbidden-card">
       <p class="forbidden-code">403</p>
       <h1 class="forbidden-title">{{ t("forbidden.title") }}</h1>

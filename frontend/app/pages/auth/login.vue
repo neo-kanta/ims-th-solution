@@ -185,6 +185,7 @@ async function handleLogin() {
         role="alert"
         aria-live="assertive"
         tabindex="-1"
+        data-testid="iam-login-error"
       >
         <div class="alert-content">
           <div>{{ fieldErrors.submit }}</div>
@@ -316,6 +317,7 @@ async function handleLogin() {
       <button
         type="submit"
         class="btn btn-primary btn-lg"
+        data-testid="iam-login-submit"
         :aria-busy="authStore.isLoading || isSubmitting"
         :disabled="submitDisabled"
       >

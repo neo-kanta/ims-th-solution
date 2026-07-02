@@ -573,6 +573,7 @@ watch(
                   type="button"
                   aria-haspopup="menu"
                   :aria-expanded="showUserMenu"
+                  data-testid="iam-user-menu-toggle"
                   @click="toggleUserMenu"
                   :aria-label="userDisplayName"
                 >
@@ -610,6 +611,7 @@ watch(
                   class="header-dropdown-item user-menu-logout"
                   type="button"
                   role="menuitem"
+                  data-testid="iam-logout-button"
                   @click="handleLogout"
                 >
                   {{ t("auth.logout") }}

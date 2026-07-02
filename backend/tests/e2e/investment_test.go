@@ -26,6 +26,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/iam"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment"
 	marketdata "github.com/neo-kanta/ims-th-solution/backend/internal/market_data"
+	referencedata "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/workflow"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/database"
@@ -95,6 +96,13 @@ func TestE2E_InvestmentOversellEnvelope(t *testing.T) {
 	server, pool := bootTestServer(t, ctx, dsn)
 	defer server.Close()
 	defer pool.Close()
+
+	// A freshly migrated+seeded database has the bootstrap admin's
+	// force_password_change flag set (by design, for real deployments) —
+	// clear it here so this test is runnable against a clean env without a
+	// manual first-login password reset step first.
+	_, err = pool.Exec(ctx, `UPDATE iam_users SET force_password_change = false WHERE username = 'admin'`)
+	require.NoError(t, err, "reset admin force_password_change for test")
 
 	// Login admin → JWT.
 	token := loginAdmin(t, server.URL)
@@ -168,7 +176,8 @@ func bootTestServer(t *testing.T, ctx context.Context, dsn string) (*httptest.Se
 		iamMod,
 		auditMod.Recorder(),
 	)
-	marketDataMod := marketdata.NewModule(pool, cfg, nil /* redis */)
+	referenceDataMod := referencedata.NewModule(pool)
+	marketDataMod := marketdata.NewModule(pool, cfg, nil /* redis */, referenceDataMod.Resolver())
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -257,13 +266,19 @@ func loginAdmin(t *testing.T, baseURL string) string {
 	raw, _ := io.ReadAll(resp.Body)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "login expected 200, got %d body=%s", resp.StatusCode, string(raw))
 
-	var got struct {
-		AccessToken         string `json:"access_token"`
-		ForcePasswordChange bool   `json:"force_password_change"`
-		MFARequired         bool   `json:"mfa_required"`
-		RestrictedSession   bool   `json:"restricted_session"`
+	// Login responses are wrapped in the standard {"data": ...} envelope
+	// (httputil.OK) — decode through it rather than expecting these fields
+	// at the top level.
+	var envelope struct {
+		Data struct {
+			AccessToken         string `json:"access_token"`
+			ForcePasswordChange bool   `json:"force_password_change"`
+			MFARequired         bool   `json:"mfa_required"`
+			RestrictedSession   bool   `json:"restricted_session"`
+		} `json:"data"`
 	}
-	require.NoError(t, json.Unmarshal(raw, &got), "decode login response: %s", string(raw))
+	require.NoError(t, json.Unmarshal(raw, &envelope), "decode login response: %s", string(raw))
+	got := envelope.Data
 	require.False(t, got.ForcePasswordChange, "admin force_password_change is true; reset it before running E2E")
 	require.False(t, got.MFARequired, "admin MFA required; disable for test environment")
 	require.False(t, got.RestrictedSession, "admin returned restricted_session token")
@@ -291,7 +306,7 @@ func seedInvestmentPrereqs(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 		`SELECT id FROM investment__asset_subtypes WHERE asset_class_id = $1 LIMIT 1`, assetClassID,
 	).Scan(&assetSubtypeID), "no asset_subtype under EQUITY")
 	require.NoError(t, pool.QueryRow(ctx,
-		`SELECT id FROM investment__countries WHERE code = 'TH' LIMIT 1`,
+		`SELECT id FROM investment__countries WHERE iso_code = 'TH' LIMIT 1`,
 	).Scan(&countryID), "no TH country seeded")
 
 	fundID = uuid.New()

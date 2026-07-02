@@ -3,7 +3,8 @@ import SettingsControlCenter from "../../features/settings/components/SettingsCo
 
 definePageMeta({
   layout: "dashboard",
-  middleware: ["auth"],
+  middleware: ["auth", "permission"],
+  permission: "IAM_USER_VIEW",
 });
 </script>
 

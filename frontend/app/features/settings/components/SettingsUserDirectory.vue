@@ -161,6 +161,7 @@ function exportVisibleUsersCsv() {
           v-model="search"
           class="input"
           type="search"
+          data-testid="iam-user-search"
           :placeholder="t('settings.searchUsersPlaceholder')"
           autocomplete="off"
         />
@@ -239,6 +240,7 @@ function exportVisibleUsersCsv() {
                   <button
                     type="button"
                     class="settings-user-row__select"
+                    :data-testid="`iam-user-row-${user.username}`"
                     :aria-pressed="selectedUserId === user.id"
                     @click="selectUser(user.id)"
                   >

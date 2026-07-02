@@ -142,6 +142,7 @@ onBeforeUnmount(() => {
           <AppButton
             variant="secondary"
             size="sm"
+            data-testid="iam-confirm-dialog-cancel"
             :disabled="loading"
             @click="emit('cancel')"
           >
@@ -150,6 +151,7 @@ onBeforeUnmount(() => {
           <AppButton
             :variant="tone === 'danger' ? 'danger' : 'primary'"
             size="sm"
+            data-testid="iam-confirm-dialog-confirm"
             :loading="loading"
             @click="emit('confirm')"
           >
