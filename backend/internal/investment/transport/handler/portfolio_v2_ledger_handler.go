@@ -7,9 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/command"
+	invperm "github.com/neo-kanta/ims-th-solution/backend/internal/investment/permission"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
-	invperm "github.com/neo-kanta/ims-th-solution/backend/internal/investment/permission"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 

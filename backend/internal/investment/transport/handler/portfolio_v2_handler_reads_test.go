@@ -40,7 +40,9 @@ type stubCashRepo struct {
 	byPortfolio map[uuid.UUID][]*entity.CashBalance
 }
 
-func (r *stubCashRepo) InsertMovement(context.Context, pgx.Tx, *entity.CashMovement) error { return nil }
+func (r *stubCashRepo) InsertMovement(context.Context, pgx.Tx, *entity.CashMovement) error {
+	return nil
+}
 func (r *stubCashRepo) GetBalanceForUpdate(context.Context, pgx.Tx, uuid.UUID, string) (*entity.CashBalance, error) {
 	return nil, nil
 }
