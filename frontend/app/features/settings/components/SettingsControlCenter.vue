@@ -257,6 +257,7 @@ const usersState = ref<AdminUserListPayload>({
   offset: 0,
   limit: USER_PAGE_LIMIT,
 });
+let userRequestToken = 0;
 // `userMetrics` is owned by useSettingsUserMetrics.
 const auditState = ref<AuditListPayload>({
   events: [],
@@ -1183,14 +1184,24 @@ async function loadUsers(offset = userQuery.offset) {
     return;
   }
 
+  // Guards against out-of-order responses: e.g. a create-user submit kicks
+  // off an unfiltered refresh, then the admin immediately searches — the two
+  // requests race, and without this token the unfiltered response can land
+  // after (and overwrite) the filtered one, hiding the row the search just
+  // matched. Only the response for the most recently *initiated* call is
+  // applied.
+  const requestToken = ++userRequestToken;
+
   usersLoading.value = true;
   usersError.value = null;
   userQuery.offset = Math.max(0, offset);
 
   try {
-    usersState.value = await adminApi.listUsers(
-      buildUserRequest(userQuery.offset),
-    );
+    const result = await adminApi.listUsers(buildUserRequest(userQuery.offset));
+    if (requestToken !== userRequestToken) {
+      return;
+    }
+    usersState.value = result;
 
     const selectedStillVisible = usersState.value.users.some(
       (user) => user.id === selectedUserId.value,
@@ -1205,6 +1216,9 @@ async function loadUsers(offset = userQuery.offset) {
       await loadSessions(selectedUserId.value);
     }
   } catch (error) {
+    if (requestToken !== userRequestToken) {
+      return;
+    }
     usersError.value = getErrorMessage(error, t("settings.errors.loadUsers"));
     usersState.value = {
       users: [],
@@ -1216,7 +1230,9 @@ async function loadUsers(offset = userQuery.offset) {
     sessions.value = [];
     sessionsError.value = null;
   } finally {
-    usersLoading.value = false;
+    if (requestToken === userRequestToken) {
+      usersLoading.value = false;
+    }
   }
 }
 
