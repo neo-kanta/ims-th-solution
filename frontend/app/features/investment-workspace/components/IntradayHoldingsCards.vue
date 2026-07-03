@@ -107,22 +107,22 @@ const lastQuoteDisplay = computed(() => {
 
 <template>
   <section class="ihc">
-    <article class="ihc__card ihc__card--accent-blue">
+    <article class="ihc__card">
       <header class="ihc__label">
-        <span class="ihc__dot ihc__dot--blue" aria-hidden="true" />
         {{ t("holdings.kpis.officialAum", "Official AUM") }}
       </header>
       <div class="ihc__value">{{ officialAumDisplay }}</div>
       <div class="ihc__meta ihc__meta-muted">{{ ccy }} · {{ t("holdings.kpis.accountingClose", "accounting close") }}</div>
     </article>
 
-    <article class="ihc__card ihc__card--accent-green">
+    <article class="ihc__card">
       <header class="ihc__label">
-        <span class="ihc__dot ihc__dot--green" aria-hidden="true" />
         {{ t("holdings.kpis.estimatedAum", "Estimated AUM") }}
       </header>
       <div class="ihc__value">{{ estimatedAumDisplay }}</div>
       <div class="ihc__meta" :class="`tone-${deltaTone}`">
+        <span class="ihc__arrow" v-if="deltaPctValue > 0">▲</span>
+        <span class="ihc__arrow" v-else-if="deltaPctValue < 0">▼</span>
         {{ formatSignedPercent(deltaPctValue) }}
         <span class="ihc__meta-muted">{{ t("holdings.kpis.vsLastClose", "vs. last close") }}</span>
       </div>
@@ -132,7 +132,7 @@ const lastQuoteDisplay = computed(() => {
       <header class="ihc__label">{{ t("holdings.kpis.officialUnitNav", "Official Unit NAV") }}</header>
       <div class="ihc__value">{{ officialNavDisplay }}</div>
       <div class="ihc__meta ihc__meta-muted">
-        {{ valuation?.official_as_of || lastSettledDate || "—" }}
+        {{ !valuation?.has_units ? t("holdings.kpis.notUnitised", "not unitised") : (valuation?.official_as_of || lastSettledDate || "—") }}
       </div>
     </article>
 
@@ -171,21 +171,23 @@ const lastQuoteDisplay = computed(() => {
     </article>
 
     <article
-      class="ihc__card ihc__card--full"
+      class="ihc__card"
       :class="feedHealthy ? 'ihc__card--ok' : 'ihc__card--warning'"
     >
       <header class="ihc__label">
+        {{ t("holdings.kpis.feedTitle", "Data Freshness") }}
+      </header>
+      <div class="ihc__value ihc__value--sm" :class="feedHealthy ? 'tone-positive' : 'tone-warning'">
         <span
           class="ihc__dot"
           :class="feedHealthy ? 'ihc__dot--success' : 'ihc__dot--warning'"
           aria-hidden="true"
         />
-        {{ t("holdings.kpis.feedTitle", "Data Freshness") }}
-      </header>
-      <div class="ihc__value ihc__value--sm">{{ feedLabel }}</div>
+        {{ feedLabel }}
+      </div>
       <div class="ihc__meta ihc__meta-muted">
         <template v-if="providerName">{{ providerName }} · </template>
-        {{ t("holdings.kpis.lastQuote", "last quote") }} {{ lastQuoteDisplay }}
+        {{ t("holdings.kpis.quote", "quote") }} {{ lastQuoteDisplay }}
       </div>
     </article>
   </section>
@@ -195,89 +197,84 @@ const lastQuoteDisplay = computed(() => {
 .ihc {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-2);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .ihc__card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+  gap: 6px;
+  padding: 14px 16px;
+  background: transparent;
   min-width: 0;
+  border-right: 1px solid var(--border-subtle);
 }
 
-.ihc__card--accent-blue {
-  border-left: 3px solid var(--color-primary-500, #2563eb);
-}
-.ihc__card--accent-green {
-  border-left: 3px solid var(--state-success, #12b76a);
-}
-.ihc__card--warning {
-  background: var(--alert-warning-bg);
-  border-color: var(--alert-warning-border);
-}
-.ihc__card--ok {
-  background: var(--alert-success-bg);
-  border-color: var(--alert-success-border);
-}
-.ihc__card--full {
-  grid-column: span 1;
+.ihc__card:last-child {
+  border-right: 0;
 }
 
 .ihc__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
 
 .ihc__dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
-}
-.ihc__dot--blue {
-  background: var(--color-primary-500, #2563eb);
-}
-.ihc__dot--green {
-  background: var(--state-success, #12b76a);
+  margin-right: 6px;
 }
 .ihc__dot--warning {
-  background: var(--color-warning-500, #f59e0b);
+  background: var(--state-warning);
 }
 .ihc__dot--success {
-  background: var(--color-success-500, #12b76a);
+  background: var(--state-success);
 }
 
 .ihc__value {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
-.ihc__value--date,
+
+.ihc__value--date {
+  font-size: 1.15rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .ihc__value--sm {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+}
+
+.ihc__arrow {
+  font-size: 10px;
+  margin-right: 2px;
 }
 
 .ihc__meta {
   font-size: 11px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
+
 .ihc__meta-muted {
   color: var(--text-tertiary);
   font-weight: 400;
@@ -290,12 +287,19 @@ const lastQuoteDisplay = computed(() => {
   color: var(--state-danger);
 }
 .tone-neutral {
-  color: var(--text-primary);
+  color: var(--text-secondary);
+}
+.tone-warning {
+  color: var(--state-warning);
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1420px) {
   .ihc {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .ihc__card {
+    border-right: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
   }
 }
 @media (max-width: 900px) {

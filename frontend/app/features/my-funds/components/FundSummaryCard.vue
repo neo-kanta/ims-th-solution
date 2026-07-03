@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import AppBadge from "~/shared/ui/AppBadge.vue";
 import { useI18n } from "~/composables/useI18n";
 
 import { formatMoneyCompact, formatPercent, relativeTime } from "../lib/format";
 import type { MyFundCard } from "../types";
 
-import ComplianceBadge from "./ComplianceBadge.vue";
-import FundWorkflowBar from "./FundWorkflowBar.vue";
 import RoleActionMenu from "./RoleActionMenu.vue";
 
 interface Props {
@@ -121,108 +118,138 @@ const initials = computed(() => {
   return seed.slice(0, 2).toUpperCase();
 });
 
+const cashBufferHint = computed(() => {
+  if (props.card.valuation.cash_buffer_pct === null) return "—";
+  const cashStr = formatMoneyCompact(Number(props.card.valuation.cash_balance), props.card.valuation.valuation_ccy);
+  return `Cash ${cashStr}`;
+});
+
+const roiValueLabel = computed(() => roiLabel.value);
+const roiTrend = computed(() => {
+  if (!props.card.valuation.roi) return "flat";
+  const n = Number(props.card.valuation.roi);
+  if (n > 0) return "up";
+  if (n < 0) return "down";
+  return "flat";
+});
+
+const complianceBadgeTone = computed(() => {
+  if (props.card.valuation.has_stale_inputs) return "stale";
+  if (props.card.compliance.open_count > 0) return "danger";
+  return "success";
+});
+
+const complianceBadgeLabel = computed(() => {
+  if (props.card.valuation.has_stale_inputs) {
+    return t("myFunds.filters.stale", "Stale NAV");
+  }
+  if (props.card.compliance.open_count > 0) {
+    return t("myFunds.status.breach", "Breached");
+  }
+  return t("myFunds.compliance.clearShort", "Clear");
+});
+
 function onOpen() {
   emit("open", props.card.fund_id);
 }
 </script>
 
 <template>
-  <article class="fund-card" :class="{ 'is-loading': loading, [`fund-card--${card.status.toLowerCase()}`]: true }" @click="onOpen">
+  <article
+    class="fund-card"
+    :class="{
+      'is-loading': loading,
+      [`fund-card--${card.status.toLowerCase()}`]: true,
+      'fund-card--stale': card.valuation.has_stale_inputs
+    }"
+    @click="onOpen"
+  >
     <header class="fund-card__header">
       <div class="fund-card__identity">
-        <span class="fund-card__avatar" :data-status="card.status">{{ initials }}</span>
-        <div class="fund-card__id-block">
-          <div class="fund-card__codes">
-            <span class="fund-card__code">{{ card.code || "—" }}</span>
-            <span class="fund-card__sep">/</span>
-            <span class="fund-card__slug">{{ card.short_name || card.fund_id.slice(0, 8) }}</span>
-          </div>
-          <div class="fund-card__name">{{ card.name || card.short_name || card.code }}</div>
-          <div class="fund-card__chips">
-            <AppBadge size="sm" variant="neutral">{{ t("myFunds.badges.private", "Private") }}</AppBadge>
-            <AppBadge size="sm" :variant="roleVariant">{{ roleLabel }}</AppBadge>
-            <AppBadge v-if="card.base_currency" size="sm" variant="neutral">{{ card.base_currency }}</AppBadge>
-          </div>
+        <div class="fund-card__codes">
+          <span class="fund-card__code">{{ (card.code || "—").toUpperCase() }}</span>
+          <span class="fund-card__sep">/</span>
+          <span class="fund-card__slug">{{ (card.short_name || "").toLowerCase() }}</span>
+        </div>
+        <div class="fund-card__name">{{ card.name || card.short_name || card.code }}</div>
+        <div class="fund-card__chips">
+          <span class="fund-card__badge-outline">{{ t("myFunds.badges.private", "Private") }}</span>
+          <span class="fund-card__badge-outline">{{ roleLabel }}</span>
+          <span v-if="card.base_currency" class="fund-card__badge-outline">{{ card.base_currency }}</span>
         </div>
       </div>
-      <AppBadge size="sm" :variant="statusVariant" :dot="card.status === 'BREACH' || card.status === 'LOCKED'">
-        {{ statusLabel }}
-      </AppBadge>
+      <div class="fund-card__status-badge" :data-status="card.status">
+        <span class="fund-card__status-dot"></span>
+        <span>{{ statusLabel }}</span>
+      </div>
     </header>
 
-    <section class="fund-card__nav-block">
-      <div class="fund-card__nav-row">
-        <div>
-          <div class="fund-card__metric-label">
-            {{ t("myFunds.card.nav", "Net Asset Value") }}
-          </div>
-          <div class="fund-card__nav-value" :title="card.valuation.nav">
-            {{ navLabel }}
-          </div>
-          <div class="fund-card__nav-hint">
-            {{
-              card.valuation.business_date
-                ? t(
-                  "myFunds.card.asOf",
-                  { date: card.valuation.business_date },
-                  `as of ${card.valuation.business_date}`,
-                )
-                : t("myFunds.card.noValuation", "No valuation yet")
-            }}
-          </div>
-        </div>
-        <div class="fund-card__nav-delta" :data-trend="unrealisedTrend">
-          <span class="fund-card__delta-amount">{{ unrealisedLabel }}</span>
-          <span class="fund-card__delta-hint">{{
-            t("myFunds.card.unrealised", "unrealised P&L")
-          }}</span>
+    <section class="fund-card__metrics-grid">
+      <div class="fund-card__grid-col">
+        <div class="fund-card__grid-label">{{ t("myFunds.card.nav", "Net Asset Value") }}</div>
+        <div class="fund-card__grid-value" :title="card.valuation.nav">{{ navLabel }}</div>
+        <div class="fund-card__grid-hint">
+          {{
+            card.valuation.business_date
+              ? t("myFunds.card.asOf", { date: card.valuation.business_date }, `as of ${card.valuation.business_date}`)
+              : t("myFunds.card.noValuation", "No valuation yet")
+          }}
         </div>
       </div>
-      <div v-if="card.valuation.has_stale_inputs || card.valuation.is_indicative" class="fund-card__warn">
-        <span aria-hidden="true">⚠</span>
+
+      <div class="fund-card__grid-col">
+        <div class="fund-card__grid-label">{{ t("myFunds.card.virtualPnl", "Virtual P&L") }}</div>
+        <div class="fund-card__grid-value" :data-trend="unrealisedTrend">{{ unrealisedLabel }}</div>
+        <div class="fund-card__grid-hint">{{ t("myFunds.card.vsYest", "vs yest") }}</div>
+      </div>
+
+      <div class="fund-card__grid-col">
+        <div class="fund-card__grid-label">{{ t("myFunds.card.cashBuffer", "Cash Buffer") }}</div>
+        <div class="fund-card__grid-value">{{ cashBufferLabel }}</div>
+        <div class="fund-card__grid-hint">{{ cashBufferHint }}</div>
+      </div>
+
+      <div class="fund-card__grid-col">
+        <div class="fund-card__grid-label">{{ t("myFunds.card.roi", "ROI") }}</div>
+        <div class="fund-card__grid-value" :data-trend="roiTrend">{{ roiValueLabel }}</div>
+        <div class="fund-card__grid-hint">{{ t("myFunds.card.unadjusted", "unadjusted") }}</div>
+      </div>
+    </section>
+
+    <div v-if="card.valuation.has_stale_inputs || card.valuation.is_indicative" class="fund-card__warn">
+      <span aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </span>
+      <span>
         {{
           card.valuation.has_stale_inputs
-            ? t("myFunds.card.staleInputs", "Stale price inputs detected — values indicative")
+            ? t("myFunds.card.staleInputs", "Stale price inputs — values indicative")
             : t("myFunds.card.indicative", "Indicative valuation — not all inputs confirmed")
         }}
-      </div>
-    </section>
-
-    <section class="fund-card__metrics">
-      <div class="fund-card__metric">
-        <span class="fund-card__metric-label">{{ t("myFunds.card.aum", "AUM") }}</span>
-        <span class="fund-card__metric-value">{{ aumLabel }}</span>
-        <span class="fund-card__metric-hint">{{
-          card.valuation.portfolio_count
-            ? t(
-              "myFunds.card.portfolioCount",
-              { count: card.valuation.portfolio_count },
-              `${card.valuation.portfolio_count} portfolio(s)`,
-            )
-            : t("myFunds.card.noPortfolios", "No portfolios mapped")
-        }}</span>
-      </div>
-      <div class="fund-card__metric">
-        <span class="fund-card__metric-label">{{ t("myFunds.card.cashBuffer", "Cash buffer") }}</span>
-        <span class="fund-card__metric-value">{{ cashBufferLabel }}</span>
-        <span class="fund-card__metric-hint">{{ cashCaption }}</span>
-      </div>
-      <div class="fund-card__metric">
-        <span class="fund-card__metric-label">{{ t("myFunds.card.roi", "ROI") }}</span>
-        <span class="fund-card__metric-value">{{ roiLabel }}</span>
-        <span class="fund-card__metric-hint">{{ t("myFunds.card.roiHint", "Latest valuation snapshot") }}</span>
-      </div>
-    </section>
-
-    <FundWorkflowBar
-      :current-state="card.workflow.current_state"
-      :available="card.workflow.available"
-      :business-date="card.workflow.business_date"
-    />
+      </span>
+    </div>
 
     <footer class="fund-card__footer">
       <div class="fund-card__footer-left">
-        <ComplianceBadge :compliance="card.compliance" />
+        <div class="fund-card__compliance-badge" :data-tone="complianceBadgeTone">
+          <span v-if="complianceBadgeTone === 'success'" class="fund-card__badge-check">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span v-else-if="complianceBadgeTone === 'stale'" class="fund-card__badge-warn">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </span>
+          <span v-else class="fund-card__badge-danger">!</span>
+          <span>{{ complianceBadgeLabel }}</span>
+        </div>
         <span class="fund-card__updated">
           {{ t("myFunds.card.updated", { value: updatedLabel }, `Updated ${updatedLabel}`) }}
         </span>
@@ -241,22 +268,35 @@ function onOpen() {
 <style scoped>
 .fund-card {
   background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-subtle, #d0d7de);
-  border-radius: var(--radius-lg, 8px);
-  padding: var(--space-4) var(--space-4);
-  display: grid;
-  gap: var(--space-3);
+  border: 1px solid #d0d7de;
+  border-top: 4px solid #1a7f37; /* Default green top border */
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   cursor: pointer;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .fund-card:hover {
-  border-color: var(--state-info, #1f6feb);
-  box-shadow: 0 0 0 1px rgba(31, 111, 235, 0.12);
+  border-color: #afb8c1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.fund-card--stale {
+  border-top-color: #f08800; /* Stale orange top border */
 }
 
 .fund-card--breach {
-  border-color: rgba(207, 34, 46, 0.45);
+  border-top-color: #cf222e; /* Breach red top border */
+}
+
+.fund-card--locked,
+.fund-card--closed {
+  border-top-color: #8c959f; /* Locked/closed grey top border */
 }
 
 .fund-card.is-loading {
@@ -268,215 +308,236 @@ function onOpen() {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 .fund-card__identity {
   display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
+  flex-direction: column;
   min-width: 0;
-}
-
-.fund-card__avatar {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: var(--bg-card-muted, #eaeef2);
-  color: var(--text-primary, #1f2328);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.fund-card__avatar[data-status="ACTIVE"] {
-  background: #e6f4ea;
-  color: #1f883d;
-}
-
-.fund-card__avatar[data-status="LOCKED"] {
-  background: #f1f3f5;
-  color: #57606a;
-}
-
-.fund-card__avatar[data-status="BREACH"] {
-  background: #fde6e8;
-  color: #cf222e;
-}
-
-.fund-card__avatar[data-status="CLOSED"] {
-  background: #f1f3f5;
-  color: #6e7781;
-}
-
-.fund-card__id-block {
-  min-width: 0;
+  flex: 1;
 }
 
 .fund-card__codes {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--state-info, #1f6feb);
-  font-weight: 600;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #57606a;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .fund-card__sep {
-  color: var(--text-tertiary, #6e7781);
+  color: #afb8c1;
 }
 
 .fund-card__slug {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
-  color: var(--text-secondary, #57606a);
+  color: #6e7781;
   font-weight: 500;
 }
 
 .fund-card__name {
-  margin-top: 2px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary, #1f2328);
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 
 .fund-card__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-.fund-card__nav-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fund-card__nav-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-3);
-}
-
-.fund-card__nav-value {
-  font-size: 28px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary, #1f2328);
-  line-height: 1.05;
-}
-
-.fund-card__nav-hint {
+/* Badges styling */
+.fund-card__badge-outline {
   font-size: 11px;
-  color: var(--text-tertiary, #6e7781);
-}
-
-.fund-card__nav-delta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-size: 12px;
   font-weight: 600;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 1px 7px;
+  border-radius: 4px;
 }
 
-.fund-card__nav-delta[data-trend="up"] .fund-card__delta-amount {
-  color: var(--state-success, #1f883d);
-}
-
-.fund-card__nav-delta[data-trend="down"] .fund-card__delta-amount {
-  color: var(--state-danger, #cf222e);
-}
-
-.fund-card__nav-delta[data-trend="flat"] .fund-card__delta-amount {
-  color: var(--text-tertiary, #6e7781);
-}
-
-.fund-card__delta-amount {
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
-
-.fund-card__delta-hint {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-tertiary, #6e7781);
-}
-
-.fund-card__warn {
-  font-size: 11px;
-  color: var(--state-warning, #9a6700);
+/* Status badge (top right) */
+.fund-card__status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e6f4ea;
+  color: #137333;
+  flex-shrink: 0;
 }
 
-.fund-card__metrics {
+.fund-card__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #137333;
+}
+
+.fund-card__status-badge[data-status="BREACH"] {
+  background: #fce8e6;
+  color: #c5221f;
+}
+.fund-card__status-badge[data-status="BREACH"] .fund-card__status-dot {
+  background: #c5221f;
+}
+
+.fund-card__status-badge[data-status="LOCKED"],
+.fund-card__status-badge[data-status="CLOSED"] {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+.fund-card__status-badge[data-status="LOCKED"] .fund-card__status-dot,
+.fund-card__status-badge[data-status="CLOSED"] .fund-card__status-dot {
+  background: #5f6368;
+}
+
+/* Metrics 4-column Grid */
+.fund-card__metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+  padding: 12px 0;
 }
 
-.fund-card__metric {
+.fund-card__grid-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
-.fund-card__metric-label {
-  font-size: 10px;
+.fund-card__grid-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary, #6e7781);
-  font-weight: 600;
-}
-
-.fund-card__metric-value {
-  font-size: 15px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary, #1f2328);
-}
-
-.fund-card__metric-hint {
-  font-size: 10px;
-  color: var(--text-tertiary, #6e7781);
+  letter-spacing: 0.05em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.fund-card__grid-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fund-card__grid-value[data-trend="up"] {
+  color: var(--state-success, #1f883d);
+}
+
+.fund-card__grid-value[data-trend="down"] {
+  color: var(--state-danger, #cf222e);
+}
+
+.fund-card__grid-hint {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Warn/Indicative Banner */
+.fund-card__warn {
+  font-size: 11px;
+  font-weight: 500;
+  color: #d97706; /* amber-700 */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+/* Footer layout */
 .fund-card__footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--border-subtle, #d0d7de);
+  gap: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  margin-top: 4px;
 }
 
 .fund-card__footer-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
   min-width: 0;
-  flex-wrap: wrap;
+}
+
+/* Compliance Badge (footer left) */
+.fund-card__compliance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.fund-card__compliance-badge[data-tone="success"] {
+  background: #e2f0d9;
+  color: #385723;
+  border-color: #c5e0b4;
+}
+
+.fund-card__compliance-badge[data-tone="stale"] {
+  background: #fdf6e2;
+  color: #b25e00;
+  border-color: #fce1a6;
+}
+
+.fund-card__compliance-badge[data-tone="danger"] {
+  background: #fce8e6;
+  color: #c5221f;
+  border-color: #f5b4ad;
+}
+
+.fund-card__badge-check,
+.fund-card__badge-warn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fund-card__badge-danger {
+  font-weight: 900;
+  line-height: 1;
 }
 
 .fund-card__updated {
   font-size: 11px;
-  color: var(--text-tertiary, #6e7781);
+  color: #8c959f;
+  font-weight: 500;
 }
 </style>

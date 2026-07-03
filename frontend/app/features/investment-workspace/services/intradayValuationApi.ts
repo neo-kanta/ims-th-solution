@@ -31,16 +31,22 @@ export type MarketDataStatus = components["schemas"]["MarketDataStatusResponse"]
 
 export const intradayValuationApi = {
   /**
-   * Fetches the intraday holdings valuation. Returns null on 404 (e.g. the
-   * fund exists but has no portfolios with positions) so the page can render
-   * its empty state instead of an error banner.
+   * Fetches the mark-to-market holdings valuation as of businessDate (YYYY-MM-DD).
+   * Omitting businessDate defaults the backend to today (UTC). Returns null on
+   * 404 (e.g. the fund exists but has no portfolios with positions) so the
+   * page can render its empty state instead of an error banner.
    */
-  async getFundValuation(fundId: string): Promise<IntradayValuation | null> {
+  async getFundValuation(fundId: string, businessDate?: string): Promise<IntradayValuation | null> {
     const client = useOpenApiClient();
     try {
       const response = await client.GET(
         "/investment/funds/{id}/holdings/valuation",
-        { params: { path: { id: fundId } } },
+        {
+          params: {
+            path: { id: fundId },
+            query: businessDate ? { business_date: businessDate } : undefined,
+          },
+        },
       );
       return unwrapOpenApiResponse<IntradayValuation>(response);
     } catch (err) {

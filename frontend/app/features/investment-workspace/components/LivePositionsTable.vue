@@ -56,12 +56,16 @@ function fmtSignedPct(raw: string | undefined): string {
   return `${sign}${n.toFixed(2)}%`;
 }
 
+const totalCashAmount = computed(() => {
+  return props.cashRows.reduce((sum, c) => sum + parseNum(c.balance), 0);
+});
+
 const totalCostBasis = computed(() =>
-  props.positions.reduce((sum, p) => sum + parseNum(p.cost_basis), 0),
+  props.positions.reduce((sum, p) => sum + parseNum(p.cost_basis), 0) + totalCashAmount.value,
 );
 
 const totalMarketValue = computed(() =>
-  props.positions.reduce((sum, p) => sum + parseNum(p.market_value), 0),
+  props.positions.reduce((sum, p) => sum + parseNum(p.market_value), 0) + totalCashAmount.value,
 );
 
 const totalUnrealisedPnL = computed(() =>
@@ -83,12 +87,30 @@ function pnlTone(raw: string | undefined): string {
   if (n === 0) return "neutral";
   return n > 0 ? "positive" : "negative";
 }
+
+const sourceLabels: Record<string, string> = {
+  live_quote: "Live quote",
+  market_data_snapshot: "Market data",
+  official_price_snapshot: "Official price",
+  cost_carry: "Carried at cost",
+};
+
+function sourceLabel(source: string | undefined): string {
+  if (!source) return "";
+  return sourceLabels[source] ?? source;
+}
 </script>
 
 <template>
   <div class="lp-wrap">
     <table v-if="positions.length || cashRows.length" class="lp-table">
       <thead>
+        <tr class="lp-th-group-row">
+          <th colspan="3" class="lp-th lp-th--group lp-th--left">Instrument</th>
+          <th colspan="3" class="lp-th lp-th--group lp-th--right">Position</th>
+          <th colspan="2" class="lp-th lp-th--group lp-th--right">Valuation</th>
+          <th colspan="2" class="lp-th lp-th--group lp-th-group-last">P&L / Feed</th>
+        </tr>
         <tr>
           <th class="lp-th lp-th--left">{{ t("holdings.positions.ticker", "Ticker") }}</th>
           <th class="lp-th lp-th--left">{{ t("holdings.positions.name", "Name") }}</th>
@@ -104,7 +126,10 @@ function pnlTone(raw: string | undefined): string {
       </thead>
       <tbody>
         <tr v-for="row in positions" :key="row.instrument_id" class="lp-row">
-          <td class="lp-td lp-td--mono">{{ row.ticker || "—" }}</td>
+          <td class="lp-td lp-td--mono">
+            <span class="lp-ticker-text">{{ row.ticker || "—" }}</span>
+            <span v-if="row.ticker && row.ticker !== 'CASH'" class="lp-ticker-badge">SET</span>
+          </td>
           <td class="lp-td">{{ row.name || "—" }}</td>
           <td class="lp-td">
             <span class="lp-chip">{{ row.asset_class_label || "—" }}</span>
@@ -115,7 +140,7 @@ function pnlTone(raw: string | undefined): string {
           <td class="lp-td lp-td--num">{{ fmtMoney(parseNum(row.market_value), 2) }}</td>
           <td class="lp-td lp-td--num">{{ fmtMoney(parseNum(row.cost_basis), 2) }}</td>
           <td class="lp-td lp-td--num" :class="`tone-${pnlTone(row.unrealised_pnl)}`">
-            {{ fmtMoney(parseNum(row.unrealised_pnl), 2) }}
+            <span class="lp-pnl-val">{{ fmtMoney(parseNum(row.unrealised_pnl), 2) }}</span>
             <span v-if="row.unrealised_pnl_pct" class="lp-td__sub">
               {{ fmtSignedPct(row.unrealised_pnl_pct) }}
             </span>
@@ -126,12 +151,15 @@ function pnlTone(raw: string | undefined): string {
               :class="row.is_stale ? 'lp-feed--stale' : 'lp-feed--live'"
               :title="row.stale_reason || row.provider || ''"
             >
+              <span class="lp-feed-dot" />
               {{
                 row.is_stale
                   ? t("holdings.positions.feedStale", "stale")
                   : row.provider || t("holdings.positions.feedLive", "live")
               }}
             </span>
+            <span v-if="sourceLabel(row.source)" class="lp-td__sub">{{ sourceLabel(row.source) }}</span>
+            <span v-if="row.price_effective_date" class="lp-td__sub">{{ row.price_effective_date }}</span>
           </td>
         </tr>
 
@@ -140,8 +168,10 @@ function pnlTone(raw: string | undefined): string {
           :key="`cash-${ccy}`"
           class="lp-row lp-row--cash"
         >
-          <td class="lp-td lp-td--mono">{{ t("holdings.positions.cashLabel", "CASH") }}</td>
-          <td class="lp-td">{{ t("holdings.positions.cashBalance", "Cash balance") }}</td>
+          <td class="lp-td lp-td--mono">
+            <span class="lp-ticker-text">{{ t("holdings.positions.cashLabel", "CASH") }}</span>
+          </td>
+          <td class="lp-td">{{ t("holdings.positions.cashEquivalents", "Cash & equivalents") }}</td>
           <td class="lp-td">
             <span class="lp-chip lp-chip--cash">{{ ccy }}</span>
           </td>
@@ -149,19 +179,25 @@ function pnlTone(raw: string | undefined): string {
           <td class="lp-td lp-td--num">—</td>
           <td class="lp-td lp-td--num">—</td>
           <td class="lp-td lp-td--num">{{ fmtMoney(amount, 2) }}</td>
+          <td class="lp-td lp-td--num">{{ fmtMoney(amount, 2) }}</td>
           <td class="lp-td lp-td--num">—</td>
-          <td class="lp-td lp-td--num">—</td>
-          <td class="lp-td lp-td--center">—</td>
+          <td class="lp-td lp-td--center">
+            <span class="lp-feed lp-feed--live">
+              <span class="lp-feed-dot lp-feed-dot--settled" />
+              {{ t("holdings.positions.settled", "Settled") }}
+            </span>
+          </td>
         </tr>
 
         <tr class="lp-row lp-row--subtotal">
-          <td class="lp-td" colspan="6">
-            {{ t("holdings.positions.subtotal", "Subtotal — cost basis (excludes cash)") }}
+          <td class="lp-td lp-td--mono" colspan="3">
+            {{ t("holdings.positions.totalInclCash", "TOTAL INCL. CASH") }}
           </td>
+          <td class="lp-td lp-td--num" colspan="3"></td>
           <td class="lp-td lp-td--num">{{ fmtMoney(totalMarketValue, 2) }}</td>
           <td class="lp-td lp-td--num">{{ fmtMoney(totalCostBasis, 2) }}</td>
           <td class="lp-td lp-td--num" :class="`tone-${totalUnrealisedPnL >= 0 ? 'positive' : 'negative'}`">
-            {{ fmtMoney(totalUnrealisedPnL, 2) }}
+            {{ totalUnrealisedPnL >= 0 ? '+' : '' }}{{ fmtMoney(totalUnrealisedPnL, 2) }}
           </td>
           <td class="lp-td"></td>
         </tr>
@@ -205,15 +241,31 @@ function pnlTone(raw: string | undefined): string {
   font-variant-numeric: tabular-nums;
 }
 
+.lp-th-group-row {
+  border-bottom: 0;
+}
+
 .lp-th {
   padding: 8px 10px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--text-tertiary);
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-table-header, transparent);
+  background: transparent;
+}
+
+.lp-th--group {
+  padding-bottom: 4px;
+  font-size: 9px;
+  color: var(--text-placeholder);
+  border-bottom: 0;
+}
+
+.lp-th-group-last {
+  text-align: left;
+  padding-left: 20px;
 }
 
 .lp-th--left {
@@ -230,40 +282,76 @@ function pnlTone(raw: string | undefined): string {
   border-bottom: 1px solid var(--border-subtle);
 }
 .lp-row:hover {
-  background: var(--bg-row-hover, var(--surface-1));
+  background: var(--bg-row-hover);
 }
 
 .lp-row--subtotal {
-  background: var(--surface-1);
-  font-weight: 600;
+  background: transparent;
+  font-weight: 700;
+  border-top: 2px solid var(--border-subtle);
+  border-bottom: 2px solid var(--border-subtle);
 }
+
+.lp-row--subtotal .lp-td {
+  color: var(--text-primary);
+  padding: 12px 10px;
+}
+
 .lp-row--cash .lp-td--mono {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
 }
 
 .lp-td {
-  padding: 8px 10px;
+  padding: 10px 10px;
   color: var(--text-primary);
   vertical-align: middle;
 }
+
 .lp-td--mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.lp-ticker-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--bg-sidebar-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
 .lp-td--num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 .lp-td--center {
   text-align: center;
 }
+
+.lp-pnl-val {
+  font-weight: 600;
+}
+
 .lp-td__sub {
   display: block;
   font-size: 10px;
-  color: var(--text-tertiary);
+  font-weight: 500;
+  color: inherit;
+  margin-top: 1px;
 }
 
 .lp-chip {
@@ -271,40 +359,55 @@ function pnlTone(raw: string | undefined): string {
   align-items: center;
   height: 20px;
   padding: 0 8px;
-  background: var(--action-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
+  background: var(--status-executed-bg);
+  border: 1px solid var(--border-focus);
+  border-radius: 4px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--status-executed-text);
   white-space: nowrap;
 }
 .lp-chip--cash {
   background: var(--status-in-review-bg);
-  border-color: var(--alert-info-border);
+  border-color: var(--border-subtle);
   color: var(--status-in-review-text);
 }
 
 .lp-feed {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 600;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
 }
+
+.lp-feed-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 .lp-feed--live {
-  background: var(--alert-success-bg);
   color: var(--state-success);
-  border: 1px solid var(--alert-success-border);
 }
+
+.lp-feed--live .lp-feed-dot {
+  background: var(--state-success);
+}
+
 .lp-feed--stale {
-  background: var(--alert-warning-bg);
-  color: var(--state-warning, var(--color-warning-500, #f59e0b));
-  border: 1px solid var(--alert-warning-border);
+  color: var(--state-warning);
+}
+
+.lp-feed--stale .lp-feed-dot {
+  background: var(--state-warning);
+}
+
+.lp-feed-dot--settled {
+  background: var(--state-success);
 }
 
 .lp-empty {
@@ -334,6 +437,6 @@ function pnlTone(raw: string | undefined): string {
   color: var(--state-danger);
 }
 .tone-neutral {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 </style>

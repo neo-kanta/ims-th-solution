@@ -89,7 +89,10 @@ async function refreshIntradayValuation() {
   if (!fundIdParam.value) return;
   intradayLoading.value = true;
   try {
-    intraday.value = await intradayValuationApi.getFundValuation(fundIdParam.value);
+    intraday.value = await intradayValuationApi.getFundValuation(
+      fundIdParam.value,
+      holdings.asOf.value,
+    );
   } catch {
     intraday.value = null;
   } finally {
@@ -110,7 +113,7 @@ async function refreshAllocation() {
   if (!fundIdParam.value) return;
   allocationLoading.value = true;
   try {
-    allocation.value = await myFundsApi.getFundAllocation(fundIdParam.value);
+    allocation.value = await myFundsApi.getFundAllocation(fundIdParam.value, holdings.asOf.value);
   } catch {
     allocation.value = null;
   } finally {
@@ -194,7 +197,11 @@ function onChangeFund(slug: string) {
 
 async function onChangeAsOf(date: string) {
   await holdings.setAsOf(date);
-  await refreshFundDetail();
+  await Promise.allSettled([
+    refreshFundDetail(),
+    refreshIntradayValuation(),
+    refreshAllocation(),
+  ]);
 }
 
 // Refresh button: POST the live refresh endpoint, then reload every read-side
@@ -352,6 +359,88 @@ async function onExport() {
   );
 }
 
+const subTabCounts = computed(() => {
+  const positions = intraday.value?.positions ?? [];
+  return {
+    overview: positions.length,
+    positions: positions.length,
+    equities: positions.filter(p => p.asset_class_code === "EQUITY" || p.asset_class_label?.toLowerCase() === "equity").length,
+    fixed_income: positions.filter(p => p.asset_class_code === "FIXED_INCOME" || p.asset_class_label?.toLowerCase().includes("fixed") || p.asset_class_label?.toLowerCase().includes("bond")).length,
+    funds: positions.filter(p => p.asset_class_code === "FUND" || p.asset_class_label?.toLowerCase().includes("fund")).length,
+    futures: positions.filter(p => p.asset_class_code === "FUTURE" || p.asset_class_label?.toLowerCase().includes("future")).length,
+    short_notes: positions.filter(p => p.asset_class_code === "SHORT_NOTE" || p.asset_class_label?.toLowerCase().includes("short")).length,
+    repos: positions.filter(p => p.asset_class_code === "REPO" || p.asset_class_label?.toLowerCase().includes("repo")).length,
+    fx_forwards: positions.filter(p => p.asset_class_code === "FX_FORWARD" || p.asset_class_label?.toLowerCase().includes("forward")).length,
+  };
+});
+
+const filteredPositions = computed(() => {
+  const all = intraday.value?.positions ?? [];
+  const tab = holdings.subTab.value;
+  if (tab === "overview" || tab === "positions") {
+    return all;
+  }
+  if (tab === "equities") {
+    return all.filter(p => p.asset_class_code === "EQUITY" || p.asset_class_label?.toLowerCase() === "equity");
+  }
+  if (tab === "fixed_income") {
+    return all.filter(p => p.asset_class_code === "FIXED_INCOME" || p.asset_class_label?.toLowerCase().includes("fixed") || p.asset_class_label?.toLowerCase().includes("bond"));
+  }
+  if (tab === "funds") {
+    return all.filter(p => p.asset_class_code === "FUND" || p.asset_class_label?.toLowerCase().includes("fund"));
+  }
+  if (tab === "futures") {
+    return all.filter(p => p.asset_class_code === "FUTURE" || p.asset_class_label?.toLowerCase().includes("future"));
+  }
+  if (tab === "short_notes") {
+    return all.filter(p => p.asset_class_code === "SHORT_NOTE" || p.asset_class_label?.toLowerCase().includes("short"));
+  }
+  if (tab === "repos") {
+    return all.filter(p => p.asset_class_code === "REPO" || p.asset_class_label?.toLowerCase().includes("repo"));
+  }
+  if (tab === "fx_forwards") {
+    return all.filter(p => p.asset_class_code === "FX_FORWARD" || p.asset_class_label?.toLowerCase().includes("forward"));
+  }
+  return all;
+});
+
+const filteredCashRows = computed(() => {
+  const tab = holdings.subTab.value;
+  if (tab === "overview" || tab === "positions") {
+    return intraday.value?.cash ?? [];
+  }
+  return [];
+});
+
+const positionsMarketValueSum = computed(() => {
+  const all = filteredPositions.value;
+  return all.reduce((sum, p) => sum + Number(p.market_value || 0), 0);
+});
+
+const positionsCostBasisSum = computed(() => {
+  const all = filteredPositions.value;
+  return all.reduce((sum, p) => sum + Number(p.cost_basis || 0), 0);
+});
+
+const positionsUnrealisedPnLSum = computed(() => {
+  const all = filteredPositions.value;
+  return all.reduce((sum, p) => sum + Number(p.unrealised_pnl || 0), 0);
+});
+
+function formatCompactValue(val: number): string {
+  if (!Number.isFinite(val) || val === 0) return "0.00";
+  const abs = Math.abs(val);
+  if (abs >= 1e9) return `${(val / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(val / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(val / 1e3).toFixed(1)}K`;
+  return val.toFixed(2);
+}
+
+function formatSignedCompactValue(val: number): string {
+  const formatted = formatCompactValue(val);
+  return val > 0 ? `+${formatted}` : formatted;
+}
+
 const pageTitle = useState<string>("page-title", () => "");
 watch(
   () => t("holdings.page.title", "Asset positions"),
@@ -364,7 +453,12 @@ watch(
 
 <template>
   <section class="holdings-page">
-    <FundWorkspaceHeader v-if="effectiveSummary" :header="effectiveSummary.fund" />
+    <FundWorkspaceHeader
+      v-if="effectiveSummary"
+      :header="effectiveSummary.fund"
+      @refresh="onRefreshAll"
+      @export="onExport"
+    />
 
     <div v-if="fundDetail.error.value" class="holdings-page__alert" role="alert">
       {{ fundDetail.error.value }}
@@ -408,6 +502,7 @@ watch(
 
     <HoldingsSubTabs
       :active="holdings.subTab.value"
+      :counts="subTabCounts"
       @select="holdings.setSubTab($event)"
     />
 
@@ -425,9 +520,28 @@ watch(
           :title="t('holdings.positions.cardTitle', 'Positions')"
           :subtitle="positionsSubtitle"
         >
+          <template #header-actions>
+            <div class="pos-header-stats" v-if="filteredPositions.length">
+              <div class="pos-h-stat">
+                <span class="pos-h-stat__label">MARKET VALUE</span>
+                <span class="pos-h-stat__val">{{ formatCompactValue(positionsMarketValueSum) }}</span>
+              </div>
+              <div class="pos-h-stat">
+                <span class="pos-h-stat__label">COST BASIS</span>
+                <span class="pos-h-stat__val">{{ formatCompactValue(positionsCostBasisSum) }}</span>
+              </div>
+              <div class="pos-h-stat">
+                <span class="pos-h-stat__label">UNREAL. P&L</span>
+                <span class="pos-h-stat__val" :class="positionsUnrealisedPnLSum >= 0 ? 'tone-positive' : 'tone-negative'">
+                  {{ formatSignedCompactValue(positionsUnrealisedPnLSum) }}
+                </span>
+              </div>
+            </div>
+          </template>
+
           <LivePositionsTable
-            :positions="intraday?.positions ?? []"
-            :cash-rows="intraday?.cash ?? []"
+            :positions="filteredPositions"
+            :cash-rows="filteredCashRows"
             :valuation-ccy="valuationCcy"
             :loading="intradayLoading"
           />
@@ -450,13 +564,18 @@ watch(
           :title="t('holdings.ratios.title', 'Special ratios')"
           :subtitle="t('holdings.ratios.subtitle', 'Policy floors and ceilings')"
         >
-          <div class="holdings-page__placeholder">
-            {{
-              t(
-                "holdings.ratios.placeholder",
-                "Policy-ratio gauges are not configured yet — they will surface once the IRG policy-ratio endpoint is wired up.",
-              )
-            }}
+          <div class="ht-ratios-empty">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ht-ratios-empty__icon">
+              <path d="m16 16 3-8 3 8c-.1.2-.3.3-.6.3h-4.8c-.3 0-.5-.1-.6-.3Z"/>
+              <path d="m2 16 3-8 3 8c-.1.2-.3.3-.6.3H2.6c-.3 0-.5-.1-.6-.3Z"/>
+              <path d="M7 6h10"/>
+              <path d="M12 2v20"/>
+              <path d="M3 22h18"/>
+            </svg>
+            <div class="ht-ratios-empty__title">{{ t("holdings.ratios.notConfigured", "Not configured yet") }}</div>
+            <div class="ht-ratios-empty__desc">
+              {{ t("holdings.ratios.placeholderDesc", "Policy-ratio gauges will appear once the IRG policy-ratio endpoint is connected.") }}
+            </div>
           </div>
         </AppCard>
 
@@ -559,7 +678,7 @@ watch(
 
 .holdings-page__layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(0, 2.1fr) minmax(320px, 1fr);
   gap: var(--space-3);
 }
 
@@ -583,11 +702,69 @@ watch(
   text-align: right;
 }
 
-.holdings-page__placeholder {
-  font-size: 12px;
+.pos-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pos-h-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pos-h-stat__label {
+  font-size: 9px;
+  font-weight: 600;
   color: var(--text-tertiary);
-  line-height: 1.55;
-  padding: 4px 0;
+  letter-spacing: 0.05em;
+}
+
+.pos-h-stat__val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.pos-h-stat__val.tone-positive {
+  color: var(--state-success);
+}
+
+.pos-h-stat__val.tone-negative {
+  color: var(--state-danger);
+}
+
+.ht-ratios-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 16px;
+  border: 1px dashed var(--border-default);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.ht-ratios-empty__icon {
+  color: var(--text-placeholder);
+  margin-bottom: 12px;
+}
+
+.ht-ratios-empty__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ht-ratios-empty__desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 220px;
 }
 
 @media (max-width: 1024px) {

@@ -61,13 +61,36 @@ function onSearch(event: Event) {
         :aria-pressed="filter === f.key"
         @click="emit('update:filter', f.key)"
       >
+        <span v-if="f.key === 'all'" class="toolbar__chip-icon-emoji">🇹🇭</span>
+        <svg v-else-if="f.key === 'managed'" class="toolbar__chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <svg v-else-if="f.key === 'breached'" class="toolbar__chip-icon color-breached" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <svg v-else-if="f.key === 'locked'" class="toolbar__chip-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <svg v-else-if="f.key === 'stale'" class="toolbar__chip-icon color-stale" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
         <span>{{ f.label }}</span>
         <span class="toolbar__chip-count">{{ f.count }}</span>
       </button>
     </div>
     <div class="toolbar__right">
       <label class="toolbar__search">
-        <span class="toolbar__search-icon" aria-hidden="true">⌕</span>
+        <span class="toolbar__search-icon" aria-hidden="true">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
         <input
           type="search"
           :value="search"
@@ -102,7 +125,7 @@ function onSearch(event: Event) {
 
 .toolbar__filters {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -111,55 +134,86 @@ function onSearch(event: Event) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border-subtle, #d0d7de);
+  border: 1px solid #d0d7de;
   background: var(--bg-card, #ffffff);
   color: var(--text-secondary, #57606a);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.12s ease;
 }
 
 .toolbar__chip:hover {
   background: var(--bg-card-muted, #f6f8fa);
+  border-color: #afb8c1;
 }
 
 .toolbar__chip.is-active {
-  background: var(--bg-card-strong, #0d1117);
+  background: #0f172a; /* Slate 900 for dark pill */
   color: #ffffff;
-  border-color: var(--bg-card-strong, #0d1117);
+  border-color: #0f172a;
+}
+
+.toolbar__chip-icon-emoji {
+  font-size: 13px;
+  margin-right: -1px;
+}
+
+.toolbar__chip-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary, #57606a);
+}
+
+.toolbar__chip.is-active .toolbar__chip-icon {
+  color: #ffffff;
+}
+
+.color-breached {
+  color: var(--state-danger, #cf222e);
+}
+.toolbar__chip.is-active .color-breached {
+  color: #ff858d;
+}
+
+.color-stale {
+  color: #f08800;
+}
+.toolbar__chip.is-active .color-stale {
+  color: #ffc470;
 }
 
 .toolbar__chip-count {
   font-size: 11px;
-  background: var(--bg-card-muted, #f6f8fa);
-  color: var(--text-tertiary, #6e7781);
-  padding: 1px 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 1px 7px;
   border-radius: 999px;
-  font-weight: 500;
+  font-weight: 600;
+  margin-left: 2px;
 }
 
 .toolbar__chip.is-active .toolbar__chip-count {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
 .toolbar__right {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
 }
 
 .toolbar__search {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border-subtle, #d0d7de);
-  border-radius: var(--radius-md, 5px);
-  padding: 4px 10px;
+  gap: 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 4px 12px;
   background: var(--bg-card, #ffffff);
-  min-width: 240px;
+  min-width: 260px;
 }
 
 .toolbar__search input {
@@ -174,23 +228,26 @@ function onSearch(event: Event) {
 }
 
 .toolbar__search-icon {
-  color: var(--text-tertiary, #6e7781);
-  font-size: 13px;
+  color: #8c959f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar__sort {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border-subtle, #d0d7de);
-  border-radius: var(--radius-md, 5px);
-  padding: 2px 10px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 4px 12px;
   background: var(--bg-card, #ffffff);
   font-size: 12px;
+  font-weight: 500;
 }
 
 .toolbar__sort-label {
-  color: var(--text-tertiary, #6e7781);
+  color: #6e7781;
 }
 
 .toolbar__sort select {
@@ -201,5 +258,7 @@ function onSearch(event: Event) {
   font-size: 12px;
   color: var(--text-primary, #1f2328);
   cursor: pointer;
+  font-weight: 600;
+  padding-right: 4px;
 }
 </style>

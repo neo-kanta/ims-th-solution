@@ -74,7 +74,12 @@ const pendingLabel = computed(() =>
   <div class="kpi-strip" :class="{ 'is-loading': loading }">
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
-        {{ t("myFunds.kpis.totalAum", "Total AUM") }}
+        <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>{{ t("myFunds.kpis.totalAum", "Total AUM") }}</span>
       </div>
       <div class="kpi-strip__value">{{ totalAum }}</div>
       <div class="kpi-strip__hint">
@@ -82,7 +87,7 @@ const pendingLabel = computed(() =>
           t(
             "myFunds.kpis.totalAumHint",
             { count: kpis.total_count },
-            `Across ${kpis.total_count} accessible fund(s)`,
+            `Across ${kpis.total_count} accessible funds`,
           )
         }}
       </div>
@@ -90,7 +95,11 @@ const pendingLabel = computed(() =>
 
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
-        {{ t("myFunds.kpis.unrealisedPnl", "Unrealised P&L") }}
+        <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </svg>
+        <span>{{ t("myFunds.kpis.unrealisedPnl", "Unrealised P&L") }}</span>
       </div>
       <div class="kpi-strip__value" :data-trend="pnlTrend">{{ totalPnl }}</div>
       <div class="kpi-strip__hint">
@@ -100,20 +109,29 @@ const pendingLabel = computed(() =>
 
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
-        {{ t("myFunds.kpis.activeContracts", "Active Contracts") }}
+        <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+        <span>{{ t("myFunds.kpis.activeContracts", "Active Contracts") }}</span>
       </div>
       <div class="kpi-strip__value">
-        {{ kpis.active_count }}
-        <span class="kpi-strip__sub">/ {{ kpis.total_count }}</span>
+        {{ kpis.active_count }}<span class="kpi-strip__sub">/{{ kpis.total_count }}</span>
       </div>
       <div class="kpi-strip__hint">
-        {{ pendingLabel }}
+        {{ kpis.active_count === kpis.total_count ? t("myFunds.kpis.allActive", "All funds active today") : pendingLabel }}
       </div>
     </div>
 
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
-        {{ t("myFunds.kpis.openBreaches", "Open Breaches") }}
+        <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span>{{ t("myFunds.kpis.openBreaches", "Open Breaches") }}</span>
       </div>
       <div class="kpi-strip__value" :data-variant="breachVariant">
         {{ kpis.open_breach_count }}
@@ -125,13 +143,16 @@ const pendingLabel = computed(() =>
 
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
-        {{ t("myFunds.kpis.dataHealth", "Data Health") }}
+        <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>{{ t("myFunds.kpis.dataHealth", "Data Health") }}</span>
       </div>
-      <div class="kpi-strip__value">
+      <div class="kpi-strip__value" :data-variant="kpis.stale_count ? 'warn' : 'muted'">
         {{ kpis.stale_count ? kpis.stale_count : "—" }}
       </div>
       <div class="kpi-strip__hint">
-        {{ staleLabel }}
+        {{ kpis.stale_count ? t("myFunds.kpis.dataStaleCount", { count: kpis.stale_count }, `${kpis.stale_count} of ${kpis.total_count} fresh stale`) : staleLabel }}
       </div>
     </div>
   </div>
@@ -145,14 +166,15 @@ const pendingLabel = computed(() =>
 }
 
 .kpi-strip__cell {
-  border: 1px solid var(--border-subtle, #d0d7de);
-  border-radius: var(--radius-lg, 6px);
-  padding: var(--space-3) var(--space-4);
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 12px 16px;
   background: var(--bg-card, #ffffff);
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-height: 84px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .kpi-strip.is-loading .kpi-strip__cell {
@@ -160,11 +182,19 @@ const pendingLabel = computed(() =>
 }
 
 .kpi-strip__label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-secondary, #57606a);
+  color: var(--text-tertiary, #6e7781);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kpi-strip__label-icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary, #6e7781);
 }
 
 .kpi-strip__value {
@@ -173,6 +203,7 @@ const pendingLabel = computed(() =>
   font-variant-numeric: tabular-nums;
   color: var(--text-primary, #1f2328);
   line-height: 1.15;
+  margin-top: 2px;
 }
 
 .kpi-strip__value[data-trend="up"] {
@@ -188,7 +219,7 @@ const pendingLabel = computed(() =>
 }
 
 .kpi-strip__value[data-variant="warn"] {
-  color: var(--state-warning, #9a6700);
+  color: #f08800; /* Rich orange color for Data Health / warnings */
 }
 
 .kpi-strip__value[data-variant="info"] {
@@ -204,6 +235,7 @@ const pendingLabel = computed(() =>
 .kpi-strip__hint {
   font-size: 11px;
   color: var(--text-tertiary, #6e7781);
+  margin-top: 1px;
 }
 
 .kpi-strip__hint[data-variant="danger"] {
@@ -211,7 +243,7 @@ const pendingLabel = computed(() =>
 }
 
 .kpi-strip__hint[data-variant="warn"] {
-  color: var(--state-warning, #9a6700);
+  color: #d97706;
 }
 
 .kpi-strip__hint[data-variant="info"] {

@@ -33,9 +33,12 @@ export const enHoldingsMessages = {
       star: "Star",
       subscribe: "Subscribe",
       subscribed: "Subscribed",
+      refresh: "Refresh",
+      export: "Export",
     },
     toolbar: {
       contract: "Contract",
+      fund: "Fund",
       asOf: "As of",
       refresh: "Refresh",
       refreshing: "Refreshing",

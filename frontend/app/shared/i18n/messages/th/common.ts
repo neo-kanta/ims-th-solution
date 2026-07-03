@@ -57,6 +57,8 @@ export const thCommonMessages = {
     personalSettings: "การตั้งค่าส่วนบุคคล",
     investment: "การลงทุน",
     investmentResearch: "บทวิเคราะห์การลงทุน",
+    operatorPage: "หน้าเจ้าหน้าที่ปฏิบัติการ",
+    operations: "การดำเนินการ",
     marketData: "ข้อมูลตลาด",
     marketDataTabs: {
       watchlist: "ข้อมูล",
@@ -133,8 +135,11 @@ export const thCommonMessages = {
       CANCEL_MANAGER_APPROVAL: "ยกเลิกการอนุมัติของผู้จัดการ",
       CLOSE_TRANSACTION: "ปิดการทำรายการ",
       CANCEL_TRANSACTION_CLOSE: "ยกเลิกการปิดทำรายการ",
-      CLOSE_ACCOUNTING: "ปิดบัญชีประจำวัน",
+      CLOSE_ACCOUNTING: "ปิดบัญชี",
       CANCEL_ACCOUNTING_CLOSE: "ยกเลิกการปิดบัญชีประจำวัน",
+      OPEN_DAY: "เริ่มต้นวันลงทุน",
+      APPROVE: "อนุมัติโดยผู้จัดการ",
+      CLOSE_TRANSACTIONS: "ปิดธุรกรรม",
     },
     modules: {
       approval: "โมดูลการอนุมัติ",

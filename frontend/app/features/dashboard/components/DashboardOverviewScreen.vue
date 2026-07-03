@@ -13,6 +13,8 @@ import DashboardActivityPanel from "./DashboardActivityPanel.vue";
 
 import { useDashboardData } from "../composables/useDashboardData";
 import { useDashboardTasks } from "../composables/useDashboardTasks";
+import { useDashboardApprovals } from "../composables/useDashboardApprovals";
+import { useDashboardCounts } from "../composables/useDashboardCounts";
 import { useWorkflowDaily } from "~/features/workflow/composables/useWorkflowDaily";
 import { formatDashboardHeadlineDate, formatDashboardTime } from "../lib/dashboard";
 import type {
@@ -37,6 +39,21 @@ const {
   businessDate: workflowBusinessDate,
   fetchState: refreshWorkflowState,
 } = useWorkflowDaily();
+
+const {
+  items: pendingApprovals,
+  total: approvalsTotal,
+  loading: approvalsLoading,
+  error: approvalsError,
+  fetchApprovals,
+} = useDashboardApprovals();
+
+const {
+  activeContractsCount,
+  pendingApprovalsCount,
+  loading: countsLoading,
+  fetchCounts,
+} = useDashboardCounts();
 
 const isRefreshing = ref(false);
 const toastVisible = ref(false);
@@ -64,62 +81,60 @@ const lastRefreshSource = computed(
 );
 
 const taskSourceLabel = computed(() => {
-  if (tasksLoading.value) return "Tasks: loading integration source";
-  if (tasksError.value) return "Tasks: API source unavailable";
-  if (snapshot.value) return "Tasks: integration API source";
-  return "Tasks: waiting for integration source";
+  if (tasksLoading.value) return t("dashboardOverview.taskSourceLoading", "Tasks: loading integration source");
+  if (tasksError.value) return t("dashboardOverview.taskSourceUnavailable", "Tasks: API source unavailable");
+  if (snapshot.value) return t("dashboardOverview.taskSourceApi", "Tasks: integration API source");
+  return t("dashboardOverview.taskSourceWaiting", "Tasks: waiting for integration source");
 });
 
 const todoTotal = computed(() => snapshot.value?.summary.total ?? 0);
 
-// High-fidelity operational metrics fallback
-const displayMetrics = computed(() => {
-  if (payload.value?.metrics?.length) {
-    return payload.value.metrics;
-  }
-  return [
-    {
-      id: "1",
-      label: "AUM Today",
-      value: "฿14.24B",
-      changeLabel: "+2.4%",
-      changeTone: "success",
-      helperText: "Across 12 contracts",
-      icon: "portfolio",
-      tone: "primary",
-    },
-    {
-      id: "2",
-      label: "Active Contracts",
-      value: "12",
-      changeLabel: "+1",
-      changeTone: "success",
-      helperText: "3 pending decisions",
-      icon: "decision",
-      tone: "info",
-    },
-    {
-      id: "3",
-      label: "Pending Approvals",
-      value: "2",
-      changeLabel: "Due before 16:30",
-      changeTone: "danger",
-      helperText: "2 urgent approvals",
-      icon: "approval",
-      tone: "danger",
-    },
-    {
-      id: "4",
-      label: "Today's P&L",
-      value: "+฿5.82M",
-      changeLabel: "+0.38%",
-      changeTone: "success",
-      helperText: "vs prior close",
-      icon: "analysis",
-      tone: "success",
-    },
-  ];
-});
+const displayMetrics = computed(() => [
+  {
+    id: "aum",
+    loading: false,
+    label: t("dashboardOverview.metricAumLabel", "AUM Today"),
+    value: "—",
+    changeLabel: "",
+    changeTone: "neutral" as const,
+    helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+    icon: "portfolio",
+    tone: "primary" as const,
+  },
+  {
+    id: "contracts",
+    loading: countsLoading.value,
+    label: t("dashboardOverview.metricContractsLabel", "Active Contracts"),
+    value: String(activeContractsCount.value),
+    changeLabel: "",
+    changeTone: "neutral" as const,
+    helperText: t("dashboardOverview.metricContractsHelper", "{count} accessible fund(s)", { count: activeContractsCount.value }),
+    icon: "decision",
+    tone: "info" as const,
+  },
+  {
+    id: "approvals",
+    loading: countsLoading.value,
+    label: t("dashboardOverview.metricApprovalsLabel", "Pending Approvals"),
+    value: String(pendingApprovalsCount.value),
+    changeLabel: pendingApprovalsCount.value > 0 ? t("dashboardOverview.actionRequired", "Action required") : "",
+    changeTone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("neutral" as const),
+    helperText: t("dashboardOverview.metricApprovalsHelper", "{count} item(s) in your inbox", { count: pendingApprovalsCount.value }),
+    icon: "approval",
+    tone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("info" as const),
+  },
+  {
+    id: "pnl",
+    loading: false,
+    label: t("dashboardOverview.metricPnlLabel", "Today's P&L"),
+    value: "—",
+    changeLabel: "",
+    changeTone: "neutral" as const,
+    helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+    icon: "analysis",
+    tone: "success" as const,
+  },
+]);
 
 const workflowTimestamps = computed(() => {
   const ws = workflowState.value;
@@ -146,72 +161,6 @@ const workflowTimestamps = computed(() => {
   return result;
 });
 
-// High-fidelity pending approvals fallback
-const displayPendingApprovals = computed(() => {
-  if (payload.value?.pendingApprovals?.length) {
-    return payload.value.pendingApprovals;
-  }
-  return [
-    {
-      id: "1",
-      contractCode: "KBANK-EQ-001",
-      valueLabel: "฿150M · Buy Order",
-      dueLabel: "20m left",
-      isUrgent: true,
-    },
-    {
-      id: "2",
-      contractCode: "PTT-FI-002",
-      valueLabel: "฿320M · Bond Issue",
-      dueLabel: "1h 45m left",
-      isUrgent: false,
-    },
-    {
-      id: "3",
-      contractCode: "SCC-EQ-004",
-      valueLabel: "฿75M · Sell Order",
-      dueLabel: "2h left",
-      isUrgent: false,
-    },
-  ];
-});
-
-// High-fidelity activity log feed fallback
-const displayActivityFeed = computed(() => {
-  if (payload.value?.activityFeed?.length) {
-    return payload.value.activityFeed;
-  }
-  return [
-    {
-      id: "1",
-      actor: "IRG Ops",
-      message: "cleared overnight controls",
-      timeLabel: "10m ago",
-      tone: "success",
-    },
-    {
-      id: "2",
-      actor: "neo-kanta",
-      message: "approved analysis for KBANK-EQ-001",
-      timeLabel: "25m ago",
-      tone: "info",
-    },
-    {
-      id: "3",
-      actor: "System",
-      message: "auto-escalated PTT-FI-002",
-      timeLabel: "1h ago",
-      tone: "warning",
-    },
-    {
-      id: "4",
-      actor: "admin",
-      message: "executed trade for SCC-EQ-004",
-      timeLabel: "2h ago",
-      tone: "teal",
-    },
-  ];
-});
 
 async function refreshDashboard() {
   if (isRefreshing.value) return;
@@ -222,6 +171,8 @@ async function refreshDashboard() {
       fetchDashboardData(),
       fetchTasks(),
       refreshWorkflowState(),
+      fetchApprovals(),
+      fetchCounts(),
     ]);
   } finally {
     isRefreshing.value = false;
@@ -242,11 +193,11 @@ function onAssistantPreviewSubmit(query: string) {
 
 function onTaskAction(action: DashboardTodoAction, _task: TaskDTO) {
   if (action === "more") {
-    showToast("Task action menu is not connected yet.");
+    showToast(t("dashboardOverview.taskActionMenuNotConnected", "Task action menu is not connected yet."));
     return;
   }
 
-  showToast("Task actions are not connected yet.");
+  showToast(t("dashboardOverview.taskActionsNotConnected", "Task actions are not connected yet."));
 }
 
 onMounted(() => {
@@ -289,7 +240,7 @@ onMounted(() => {
         >
           <AppIcon name="list" size="xs" />
           <span>{{
-            t("dashboardOverview.showLayers" as any, "Task Layers & Contracts")
+            t("dashboardOverview.showLayers", "Task Layers & Contracts")
           }}</span>
         </button>
       </div>
@@ -304,6 +255,7 @@ onMounted(() => {
           v-for="metric in displayMetrics"
           :key="metric.label"
           :metric="metric as any"
+          :loading="metric.loading"
         />
       </section>
 
@@ -321,16 +273,20 @@ onMounted(() => {
     </main>
 
     <aside class="dashboard-layered__rail" aria-label="Dashboard context">
-      <DashboardApprovalPanel :items="displayPendingApprovals as any" />
+      <DashboardApprovalPanel
+        :items="pendingApprovals as any"
+        :loading="approvalsLoading"
+        :error="approvalsError"
+      />
 
-      <DashboardActivityPanel :items="displayActivityFeed as any" />
+      <DashboardActivityPanel :items="[]" :loading="false" />
 
       <section class="dashboard-rail__panel">
-        <h2 class="dashboard-rail__title">System notes</h2>
+        <h2 class="dashboard-rail__title">{{ t("dashboardOverview.systemNotes", "System notes") }}</h2>
         <ul class="dashboard-rail__notes">
           <li>
             <span class="dashboard-rail__note-dot is-preview" />
-            <span>AI assistant: Preview</span>
+            <span>{{ t("dashboardOverview.aiAssistantPreview", "AI assistant: Preview") }}</span>
           </li>
           <li>
             <span class="dashboard-rail__note-dot" />
@@ -338,7 +294,7 @@ onMounted(() => {
           </li>
           <li>
             <span class="dashboard-rail__note-dot is-muted" />
-            <span>{{ todoTotal }} task records in current source</span>
+            <span>{{ t("dashboardOverview.taskRecordsCount", "{count} task records in current source", { count: todoTotal }) }}</span>
           </li>
         </ul>
       </section>

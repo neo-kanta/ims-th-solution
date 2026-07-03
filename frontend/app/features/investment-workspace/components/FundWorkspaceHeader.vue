@@ -11,39 +11,17 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-// Watch/Star/Subscribe currently emit no-op events. They will be wired
-// to a notification module endpoint in a future milestone.
-const localSubscribed = ref(props.header.subscribed);
-const localWatching = ref(false);
-const localStarred = ref(false);
-
-const contractBadge = computed(() =>
-  t("holdings.badges.contract", { code: props.header.contract_code }, `Contract ${props.header.contract_code}`),
-);
-
-function toggleWatch() {
-  localWatching.value = !localWatching.value;
-}
-function toggleStar() {
-  localStarred.value = !localStarred.value;
-}
-function toggleSubscribe() {
-  localSubscribed.value = !localSubscribed.value;
-}
+const emit = defineEmits<{
+  (e: "refresh"): void;
+  (e: "export"): void;
+}>();
 </script>
 
 <template>
   <header class="fw-header">
     <div class="fw-header__breadcrumb">
-      <span class="fw-header__crumb fw-header__crumb--root">{{ header.code }}</span>
-      <span class="fw-header__sep">/</span>
-      <span class="fw-header__crumb fw-header__crumb--active">{{ header.short_name }}</span>
-
       <AppBadge variant="neutral" size="sm" class="fw-header__badge">
         {{ t("holdings.badges.private", "Private") }}
-      </AppBadge>
-      <AppBadge variant="info" size="sm" class="fw-header__badge">
-        {{ contractBadge }}
       </AppBadge>
     </div>
 
@@ -51,34 +29,17 @@ function toggleSubscribe() {
       <button
         type="button"
         class="fw-header__action"
-        :class="{ 'is-active': localWatching }"
-        @click="toggleWatch"
+        @click="emit('refresh')"
       >
-        <span class="fw-header__action-label">{{ t("holdings.headerActions.watch", "Watch") }}</span>
-        <span class="fw-header__action-count">{{ header.watch_count }}</span>
+        <span class="fw-header__action-label">{{ t("holdings.headerActions.refresh", "Refresh") }}</span>
       </button>
 
       <button
         type="button"
         class="fw-header__action"
-        :class="{ 'is-active': localStarred }"
-        @click="toggleStar"
+        @click="emit('export')"
       >
-        <span class="fw-header__action-label">{{ t("holdings.headerActions.star", "Star") }}</span>
-        <span class="fw-header__action-count">{{ header.star_count }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="fw-header__action fw-header__action--primary"
-        :class="{ 'is-active': localSubscribed }"
-        @click="toggleSubscribe"
-      >
-        {{
-          localSubscribed
-            ? t("holdings.headerActions.subscribed", "Subscribed")
-            : t("holdings.headerActions.subscribe", "Subscribe")
-        }}
+        <span class="fw-header__action-label">{{ t("holdings.headerActions.export", "Export") }}</span>
       </button>
     </div>
   </header>

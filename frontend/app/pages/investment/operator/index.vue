@@ -1,0 +1,359 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "~/composables/useI18n";
+import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
+import { todayBangkokIso } from "~/features/my-funds/lib/derive";
+import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
+
+import AppCard from "~/shared/ui/AppCard.vue";
+import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
+import AppBadge from "~/shared/ui/AppBadge.vue";
+import AppButton from "~/shared/ui/AppButton.vue";
+
+definePageMeta({
+  layout: "dashboard",
+  middleware: ["auth", "permission"],
+  permission: "INVESTMENT_VIEW",
+});
+
+const { t } = useI18n();
+const router = useRouter();
+
+// Fund workspace state
+const { funds, activeFund, loading: fundsLoading, error: fundsError, loadFunds, setActiveFund } = useFundWorkspace();
+const activeFundId = ref<string>("");
+const workflowState = ref<any>(null);
+const workflowLoading = ref(false);
+
+const businessDate = computed(() => workflowState.value?.business_date || todayBangkokIso());
+
+// Operations Catalog directory state
+const catalogSearchQuery = ref("");
+const catalogWorkflows = ref([
+  {
+    code: "OP-01",
+    title: "BUY/SELL Single Securities",
+    description: "Place new single security investment decisions for mapped fund portfolios.",
+    status: "Ready",
+    routePath: (fundId: string) => `/investment/funds/${fundId}/operation/new`,
+  },
+  {
+    code: "OP-02",
+    title: "Execution & Approvals",
+    description: "Query API database for pending decisions, inspect rules, and authorize execution in batch.",
+    status: "Ready",
+    routePath: (fundId: string) => `/investment/funds/${fundId}/operation`,
+  },
+  {
+    code: "OP-03",
+    title: "Review & Print Summary",
+    description: "Search and inspect processed decisions, and generate print-ready decision summary reports.",
+    status: "Ready",
+    routePath: (fundId: string) => `/investment/funds/${fundId}/decisions`,
+  },
+]);
+
+const filteredCatalog = computed(() => {
+  const query = catalogSearchQuery.value.toLowerCase().trim();
+  if (!query) return catalogWorkflows.value;
+  return catalogWorkflows.value.filter(
+    (op) =>
+      op.code.toLowerCase().includes(query) ||
+      op.title.toLowerCase().includes(query) ||
+      op.description.toLowerCase().includes(query) ||
+      op.status.toLowerCase().includes(query)
+  );
+});
+
+async function refreshWorkflowState() {
+  if (!activeFundId.value) return;
+  workflowLoading.value = true;
+  try {
+    workflowState.value = await myFundsApi.getWorkflowState(activeFundId.value, todayBangkokIso());
+  } catch (err) {
+    workflowState.value = null;
+  } finally {
+    workflowLoading.value = false;
+  }
+}
+
+function onFundChange(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  if (target?.value) {
+    activeFundId.value = target.value;
+    setActiveFund(target.value);
+  }
+}
+
+function openWorkflow(op: any) {
+  if (op.status !== "Ready" || !activeFundId.value) return;
+  const path = op.routePath(activeFundId.value);
+  void router.push(path);
+}
+
+// Watchers
+watch(activeFundId, async (newId) => {
+  if (!newId) return;
+  await refreshWorkflowState();
+});
+
+// Lifecycle hooks
+onMounted(async () => {
+  await loadFunds();
+  if (funds.value.length > 0) {
+    activeFundId.value = funds.value[0]?.fund_id || "";
+    setActiveFund(activeFundId.value);
+  }
+});
+</script>
+
+<template>
+  <section class="operator-page">
+    <AppPageHeader
+      :title="t('navigation.operatorPage', 'Operator page')"
+      :description="t('operator.page.description', 'Operations Directory catalog for active fund workflows.')"
+    />
+
+    <!-- Top Fund Selector Control Card -->
+    <div class="operator-header">
+      <div v-if="activeFund" class="operator-header__info">
+        <div class="operator-header__metric">
+          <span class="operator-header__metric-label">Business Date</span>
+          <span class="operator-header__metric-value">{{ businessDate }}</span>
+        </div>
+        <div class="operator-header__metric">
+          <span class="operator-header__metric-label">Fund Status</span>
+          <span class="operator-header__metric-value">
+            <AppBadge :variant="activeFund.status === 'ACTIVE' ? 'success' : 'neutral'">
+              {{ activeFund.status }}
+            </AppBadge>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operations Directory Catalog Table -->
+    <div class="catalog-card mt">
+      <AppCard title="Operations Directory" subtitle="Filter and run active workflows in the catalog">
+        <div class="controls-row">
+          <div class="control-group search-group">
+            <label class="control-label">Filter workflows</label>
+            <input
+              v-model="catalogSearchQuery"
+              type="text"
+              placeholder="Search workflows (e.g. BUY, Execution, Close)..."
+              class="control-input"
+            />
+          </div>
+        </div>
+
+        <div class="table-container mt">
+          <table class="operator-table">
+            <thead>
+              <tr>
+                <th width="80">Code</th>
+                <th>Workflow / Function</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th width="100" class="center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="op in filteredCatalog"
+                :key="op.code"
+                class="clickable-row"
+                @click="openWorkflow(op)"
+              >
+                <td class="mono bold">{{ op.code }}</td>
+                <td class="bold">{{ op.title }}</td>
+                <td class="text-secondary">{{ op.description }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    :class="{
+                      'status-pill--ready': op.status === 'Ready',
+                      'status-pill--next': op.status === 'Coming Next',
+                      'status-pill--scheduled': op.status === 'Scheduled'
+                    }"
+                  >
+                    {{ op.status }}
+                  </span>
+                </td>
+                <td class="center" @click.stop>
+                  <AppButton
+                    v-if="op.status === 'Ready'"
+                    variant="secondary"
+                    size="xs"
+                    @click="openWorkflow(op)"
+                  >
+                    Open
+                  </AppButton>
+                  <span v-else class="text-tertiary">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </AppCard>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.operator-page {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 100%;
+}
+
+/* Fund Selector Header Card */
+.operator-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+
+.operator-header__info {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.operator-header__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 110px;
+}
+
+.operator-header__metric-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.operator-header__metric-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Operations directory table card */
+.catalog-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.controls-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.control-input {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.search-group {
+  flex-grow: 1;
+  max-width: 320px;
+}
+
+.control-input {
+  width: 100%;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.status-pill--ready {
+  background: rgba(26, 127, 55, 0.15);
+  color: var(--state-success, #1a7f37);
+}
+
+/* Table styling */
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+}
+
+.operator-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.operator-table th,
+.operator-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.operator-table th {
+  background: var(--bg-card-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.operator-table td.center,
+.operator-table th.center {
+  text-align: center;
+}
+
+.operator-table td.bold {
+  font-weight: 600;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.clickable-row:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Helpers */
+.bold { font-weight: 600; }
+.mono { font-family: monospace; }
+.mt { margin-top: 12px; }
+</style>

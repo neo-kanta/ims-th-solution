@@ -67,6 +67,18 @@ export function buildDashboardNavigation(
       ],
     },
     {
+      label: t("navigation.operations", "Operations"),
+      icon: "decision",
+      items: [
+        {
+          label: t("navigation.operatorPage", "Operator page"),
+          to: "/investment/operator",
+          icon: "decision",
+          requiredPermissions: ["INVESTMENT_VIEW"],
+        },
+      ],
+    },
+    {
       label: t("compliance.nav.section", "Compliance"),
       icon: "compliance",
       items: [

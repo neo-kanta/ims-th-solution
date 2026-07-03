@@ -12,11 +12,11 @@ const { t } = useI18n();
 
 const query = ref("");
 
-const actionPills = [
-  { label: "Create task", icon: "plus" },
-  { label: "Summarize alerts", icon: "warning" },
-  { label: "Draft review note", icon: "review" },
-] as const;
+const actionPills = computed(() => [
+  { label: t("dashboard.aiBar.pills.createTask", "Create task"), icon: "plus" },
+  { label: t("dashboard.aiBar.pills.summarizeAlerts", "Summarize alerts"), icon: "warning" },
+  { label: t("dashboard.aiBar.pills.draftReviewNote", "Draft review note"), icon: "review" },
+] as const);
 
 const canSend = computed(() => query.value.trim().length > 0);
 
@@ -42,13 +42,13 @@ function handleSubmit() {
       <div class="ai-panel__status">
         <h2 id="dashboard-ai-title" class="ai-panel__status-title">
           <AppIcon name="system" size="xs" />
-          <span>IMS Assistant</span>
+          <span>{{ t("dashboard.aiBar.assistant", "IMS Assistant") }}</span>
         </h2>
-        <span class="ai-panel__preview">Preview</span>
+        <span class="ai-panel__preview">{{ t("dashboard.aiBar.preview", "Preview") }}</span>
       </div>
 
       <label class="ai-panel__sr-only" for="dashboard-ai-query">
-        Dashboard assistant prompt
+        {{ t("dashboard.aiBar.srPrompt", "Dashboard assistant prompt") }}
       </label>
       <textarea
         id="dashboard-ai-query"
@@ -65,15 +65,15 @@ function handleSubmit() {
       />
 
       <div class="ai-panel__footer">
-        <div class="ai-panel__actions" aria-label="Assistant command presets">
+        <div class="ai-panel__actions" :aria-label="t('dashboard.aiBar.srPresets', 'Assistant command presets')">
           <button class="ai-panel__pill" type="button">
             <AppIcon name="chat" size="xs" />
-            <span>Ask</span>
+            <span>{{ t("dashboard.aiBar.ask", "Ask") }}</span>
             <AppIcon name="chevron-down" size="xs" />
           </button>
           <button class="ai-panel__pill" type="button">
             <AppIcon name="portfolio" size="xs" />
-            <span>All portfolios</span>
+            <span>{{ t("dashboard.aiBar.allPortfolios", "All portfolios") }}</span>
             <AppIcon name="chevron-down" size="xs" />
           </button>
           <button
@@ -88,8 +88,8 @@ function handleSubmit() {
         </div>
 
         <div class="ai-panel__controls">
-          <div class="ai-panel__model" aria-label="Assistant model">
-            <span>IMS Assistant</span>
+          <div class="ai-panel__model" :aria-label="t('dashboard.aiBar.srModel', 'Assistant model')">
+            <span>{{ t("dashboard.aiBar.assistant", "IMS Assistant") }}</span>
             <AppIcon name="chevron-down" size="xs" />
           </div>
 
@@ -97,7 +97,7 @@ function handleSubmit() {
             class="ai-panel__send"
             type="button"
             :disabled="!canSend"
-            aria-label="Send assistant prompt"
+            :aria-label="t('dashboard.aiBar.srSend', 'Send assistant prompt')"
             @click="handleSubmit"
           >
             <AppIcon name="send" size="xs" />

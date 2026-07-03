@@ -33,9 +33,12 @@ export const thHoldingsMessages = {
       star: "ติดดาว",
       subscribe: "สมัครรับ",
       subscribed: "สมัครรับแล้ว",
+      refresh: "รีเฟรช",
+      export: "ส่งออก",
     },
     toolbar: {
       contract: "สัญญา",
+      fund: "กองทุน",
       asOf: "ณ วันที่",
       refresh: "รีเฟรช",
       refreshing: "กำลังรีเฟรช",

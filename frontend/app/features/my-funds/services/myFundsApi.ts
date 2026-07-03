@@ -223,15 +223,20 @@ export const myFundsApi = {
 
   /**
    * Fund-level allocation breakdowns — by asset class, sector, country and
-   * currency — computed from positions × latest prices server-side. 404
-   * (returned when the fund has no positions or valuations) is mapped to
-   * null so the UI can render an empty-state card.
+   * currency — computed from the same per-instrument mark-to-market values as
+   * the holdings valuation (same business_date, same price-selection tier),
+   * so the two pages never disagree. 404 (returned when the fund has no
+   * positions or valuations) is mapped to null so the UI can render an
+   * empty-state card.
    */
-  async getFundAllocation(fundId: string): Promise<FundAllocation | null> {
+  async getFundAllocation(fundId: string, businessDate?: string): Promise<FundAllocation | null> {
     const client = useOpenApiClient();
     try {
       const response = await client.GET("/investment/funds/{id}/allocation", {
-        params: { path: { id: fundId } },
+        params: {
+          path: { id: fundId },
+          query: businessDate ? { business_date: businessDate } : undefined,
+        },
       });
       return unwrapOpenApiResponse<FundAllocation>(response);
     } catch (err) {

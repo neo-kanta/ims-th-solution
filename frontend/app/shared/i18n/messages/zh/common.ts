@@ -57,6 +57,8 @@ export const zhCommonMessages = {
     personalSettings: "个人设置",
     investment: "投资",
     investmentResearch: "投资研究",
+    operatorPage: "操作员页面",
+    operations: "运营",
     marketData: "市场数据",
     marketDataTabs: {
       watchlist: "数据",
@@ -133,8 +135,11 @@ export const zhCommonMessages = {
       CANCEL_MANAGER_APPROVAL: "撤销经理审批",
       CLOSE_TRANSACTION: "关闭交易",
       CANCEL_TRANSACTION_CLOSE: "撤销交易关闭",
-      CLOSE_ACCOUNTING: "会计结账",
+      CLOSE_ACCOUNTING: "会计结算",
       CANCEL_ACCOUNTING_CLOSE: "撤销会计结账",
+      OPEN_DAY: "投资日开始",
+      APPROVE: "经理审批",
+      CLOSE_TRANSACTIONS: "交易结算",
     },
     modules: {
       approval: "审批模块",

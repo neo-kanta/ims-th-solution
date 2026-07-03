@@ -57,9 +57,9 @@ const tabs = computed<Spec[]>(() => [
 .ht-subtabs {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 4px;
   padding: 4px;
-  background: var(--bg-card);
+  background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   overflow-x: auto;
@@ -69,25 +69,26 @@ const tabs = computed<Spec[]>(() => [
 .ht-subtabs__item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 6px 14px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.15s ease;
 }
 
 .ht-subtabs__item:hover {
   background: var(--bg-row-hover);
+  color: var(--text-primary);
 }
 
 .ht-subtabs__item.is-active {
   background: var(--status-executed-bg);
-  border-color: var(--border-focus);
   color: var(--status-executed-text);
 }
 
@@ -95,12 +96,20 @@ const tabs = computed<Spec[]>(() => [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 16px;
+  min-width: 20px;
+  height: 18px;
   padding: 0 6px;
-  background: var(--border-subtle);
-  border-radius: 8px;
-  font-size: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 600;
+}
+
+.ht-subtabs__item.is-active .ht-subtabs__count {
+  background: var(--action-primary);
+  color: var(--text-on-primary);
+  border-color: transparent;
 }
 </style>

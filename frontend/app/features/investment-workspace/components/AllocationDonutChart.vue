@@ -220,48 +220,46 @@ function fmtPct(n: number): string {
     </p>
 
     <template v-else>
-      <div class="adonut__chart-wrap">
-        <svg
-          class="adonut__svg"
-          viewBox="0 0 120 120"
-          role="img"
-          :aria-label="t('holdings.allocation.donutAria', 'Asset allocation donut chart')"
-        >
-          <g transform="rotate(-90 60 60)">
-            <circle
-              v-for="arc in arcs"
-              :key="arc.key"
-              class="adonut__arc"
-              cx="60"
-              cy="60"
-              :r="RADIUS"
-              fill="none"
-              :stroke="arc.color"
-              stroke-width="14"
-              :stroke-dasharray="arc.dash"
-              :stroke-dashoffset="arc.offset"
-            />
-          </g>
-        </svg>
+      <div class="adonut__content">
+        <div class="adonut__chart-wrap">
+          <svg
+            class="adonut__svg"
+            viewBox="0 0 120 120"
+            role="img"
+            :aria-label="t('holdings.allocation.donutAria', 'Asset allocation donut chart')"
+          >
+            <g transform="rotate(-90 60 60)">
+              <circle
+                v-for="arc in arcs"
+                :key="arc.key"
+                class="adonut__arc"
+                cx="60"
+                cy="60"
+                :r="RADIUS"
+                fill="none"
+                :stroke="arc.color"
+                stroke-width="14"
+                :stroke-dasharray="arc.dash"
+                :stroke-dashoffset="arc.offset"
+              />
+            </g>
+          </svg>
 
-        <div class="adonut__centre">
-          <span class="adonut__centre-label">{{ t("holdings.allocation.centreAum", "Est. AUM") }}</span>
-          <span class="adonut__centre-value">{{ centreAum }}</span>
-          <span class="adonut__centre-ccy">{{ ccy }}</span>
-          <div class="adonut__centre-sub">
-            <span>{{ t("holdings.allocation.centreNav", "Est. NAV") }} {{ centreNav }}</span>
-            <span>{{ t("holdings.allocation.centreUnits", "Units") }} {{ centreUnits }}</span>
+          <div class="adonut__centre">
+            <span class="adonut__centre-label">{{ t("holdings.allocation.centreAum", "Est. AUM") }}</span>
+            <span class="adonut__centre-value">{{ centreAum }}</span>
+            <span class="adonut__centre-ccy">{{ ccy }}</span>
           </div>
         </div>
-      </div>
 
-      <ul class="adonut__legend">
-        <li v-for="s in slices" :key="s.key" class="adonut__legend-row">
-          <span class="adonut__swatch" :style="{ background: s.color }" aria-hidden="true" />
-          <span class="adonut__legend-label">{{ s.label }}</span>
-          <span class="adonut__legend-pct">{{ fmtPct(s.pct) }}</span>
-        </li>
-      </ul>
+        <ul class="adonut__legend">
+          <li v-for="s in slices" :key="s.key" class="adonut__legend-row">
+            <span class="adonut__swatch" :style="{ background: s.color }" aria-hidden="true" />
+            <span class="adonut__legend-label">{{ s.label }}</span>
+            <span class="adonut__legend-pct">{{ fmtPct(s.pct) }}</span>
+          </li>
+        </ul>
+      </div>
     </template>
   </div>
 </template>
@@ -269,14 +267,14 @@ function fmtPct(n: number): string {
 <style scoped>
 .adonut {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .adonut__tabs {
   display: inline-flex;
   align-items: center;
-  background: var(--surface-1);
-  border: 1px solid var(--border-default);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 2px;
   width: max-content;
@@ -285,28 +283,34 @@ function fmtPct(n: number): string {
 .adonut__tab {
   padding: 4px 10px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-tertiary);
   background: transparent;
   border: 0;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .adonut__tab:hover {
   color: var(--text-primary);
 }
 .adonut__tab.is-active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: var(--status-executed-bg);
+  color: var(--status-executed-text);
+}
+
+.adonut__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .adonut__chart-wrap {
   position: relative;
-  width: 100%;
-  max-width: 220px;
-  margin: 0 auto;
-  aspect-ratio: 1 / 1;
+  width: 130px;
+  height: 130px;
+  flex-shrink: 0;
 }
 
 .adonut__svg {
@@ -329,76 +333,73 @@ function fmtPct(n: number): string {
   gap: 1px;
   text-align: center;
   pointer-events: none;
-  padding: 0 18%;
+  padding: 0 10%;
 }
 
 .adonut__centre-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
 
 .adonut__centre-value {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .adonut__centre-ccy {
-  font-size: 10px;
+  font-size: 9px;
+  font-weight: 600;
   color: var(--text-tertiary);
-}
-
-.adonut__centre-sub {
-  margin-top: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: 10px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
 }
 
 .adonut__legend {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+  min-width: 0;
 }
 
 .adonut__legend-row {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
 }
 
 .adonut__swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .adonut__legend-label {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .adonut__legend-pct {
   font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-  font-weight: 500;
-  text-align: right;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .adonut__empty {
@@ -406,8 +407,5 @@ function fmtPct(n: number): string {
   font-size: 12px;
   color: var(--text-tertiary);
   padding: 8px 0;
-}
-.adonut__empty--loading {
-  color: var(--text-secondary);
 }
 </style>

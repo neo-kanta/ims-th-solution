@@ -32,10 +32,10 @@ function onChangeAsOf(event: Event) {
 </script>
 
 <template>
-  <div class="ht-toolbar">
+  <div class="ht-toolbar-flat">
     <div class="ht-toolbar__field">
       <label class="ht-toolbar__label" for="ht-contract">
-        {{ t("holdings.toolbar.contract", "CONTRACT") }}
+        {{ t("holdings.toolbar.fund", "FUND") }}
       </label>
       <select
         id="ht-contract"
@@ -44,7 +44,7 @@ function onChangeAsOf(event: Event) {
         @change="onChangeFund"
       >
         <option v-for="f in funds" :key="f.fund_id" :value="f.fund_id">
-          {{ f.contract_code }} · {{ f.short_name }}
+          {{ f.code }} · {{ f.short_name }}
         </option>
       </select>
     </div>
@@ -88,14 +88,10 @@ function onChangeAsOf(event: Event) {
 </template>
 
 <style scoped>
-.ht-toolbar {
+.ht-toolbar-flat {
   display: flex;
   align-items: end;
   gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
   flex-wrap: wrap;
 }
 

@@ -7,6 +7,7 @@ import { useDashboardHeaderTabs } from "~/features/shell/composables/useDashboar
 import AppTabs from "~/shared/ui/AppTabs.vue";
 import AppSearch from "~/shared/ui/AppSearch.vue";
 import NotificationBell from "~/features/notifications/components/NotificationBell.vue";
+import { myFundsApi } from "~/features/my-funds";
 
 
 const config = useRuntimeConfig();
@@ -26,10 +27,55 @@ watch(() => route.path, () => { pageTitle.value = ""; });
 
 const isComplianceRoute = computed(() => route.path.startsWith("/compliance"));
 
-const breadcrumbOwner = computed(() => authStore.user?.username || "neo-kanta");
+const fundIdParam = computed(() => String(route.params.fundId ?? ""));
+const activeFundInfo = ref<{ code: string; shortName: string } | null>(null);
+
+watch(
+  fundIdParam,
+  async (nextFundId) => {
+    if (!nextFundId) {
+      activeFundInfo.value = null;
+      return;
+    }
+    try {
+      const funds = await myFundsApi.listMyFunds(200);
+      const found = funds.find((f) => f.id === nextFundId);
+      if (found) {
+        activeFundInfo.value = {
+          code: found.code ?? "",
+          shortName: found.short_name ?? found.name ?? found.code ?? "",
+        };
+      } else {
+        activeFundInfo.value = {
+          code: nextFundId,
+          shortName: nextFundId,
+        };
+      }
+    } catch {
+      activeFundInfo.value = {
+        code: nextFundId,
+        shortName: nextFundId,
+      };
+    }
+  },
+  { immediate: true },
+);
+
+const breadcrumbOwner = computed(() => {
+  if (route.path.startsWith("/investment") && route.params.fundId) {
+    return activeFundInfo.value?.code || String(route.params.fundId);
+  }
+  return authStore.user?.username || "neo-kanta";
+});
+
 const breadcrumbRepo = computed(() => {
   if (isComplianceRoute.value) return "compliance";
-  if (route.path.startsWith("/investment")) return "investment";
+  if (route.path.startsWith("/investment")) {
+    if (route.params.fundId) {
+      return activeFundInfo.value?.shortName || String(route.params.fundId);
+    }
+    return "investment";
+  }
   return appName.toLowerCase().replace(/\s+/g, "-");
 });
 

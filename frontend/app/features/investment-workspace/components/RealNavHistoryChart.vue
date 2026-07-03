@@ -156,6 +156,19 @@ function fmtVal(v: string | undefined, isUnit: boolean): string {
   });
 }
 
+const latestValueDisplay = computed(() => {
+  const latestStr = props.payload?.latest;
+  if (!latestStr) return "—";
+  const n = Number(latestStr);
+  if (!Number.isFinite(n) || n === 0) return "—";
+  if (valueIsUnit.value) {
+    return n.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  }
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+});
+
 const seriesLabel = computed(() =>
   props.payload?.has_units
     ? t("holdings.navHistory.unitNavLabel", "NAV / unit")
@@ -177,39 +190,28 @@ function onRange(r: FundNavHistoryRange) {
   <div class="rnav">
     <header class="rnav__header">
       <div class="rnav__title-block">
-        <span class="rnav__series">{{ seriesLabel }}</span>
-        <span class="rnav__delta" :class="`tone-${trendTone}`">{{ deltaLabel }}</span>
+        <span class="rnav__latest">{{ latestValueDisplay }}</span>
+        <span class="rnav__delta" :class="`tone-${trendTone}`">
+          <span v-if="trendTone === 'positive'">▲</span>
+          <span v-else-if="trendTone === 'negative'">▼</span>
+          {{ deltaLabel }}
+        </span>
+        <span class="rnav__current-range">{{ range }}</span>
       </div>
-      <div class="rnav__header-actions">
-        <div class="rnav__ranges" role="tablist">
-          <button
-            v-for="r in ranges"
-            :key="r"
-            type="button"
-            role="tab"
-            :aria-selected="range === r"
-            class="rnav__range"
-            :class="{ 'is-active': range === r }"
-            @click="onRange(r)"
-          >
-            {{ r }}
-          </button>
-        </div>
-        <button
-          type="button"
-          class="rnav__expand"
-          :aria-label="t('holdings.navHistory.expandAria', 'Expand chart to fullscreen')"
-          :title="t('holdings.navHistory.expandTitle', 'Expand')"
-          @click="openFullscreen"
-        >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path
-              d="M2 2h5v1.5H4.06l3.97 3.97-1.06 1.06L3 4.56V7.5H1.5V2zM9 2h5v5.5h-1.5V4.56l-3.97 3.97-1.06-1.06L11.44 3.5H8.5V2zM3.5 8.5l3.97 3.97V9.53H9v5.47H3.5v-1.5h2.94L2.47 9.56 3.5 8.5zm5.97 0L13.44 12.5H10.5V14h5.5V8.5h-1.5v2.94l-3.97-3.97-1.06 1.03z"
-              fill="currentColor"
-            />
-          </svg>
-        </button>
-      </div>
+      <button
+        type="button"
+        class="rnav__expand"
+        :aria-label="t('holdings.navHistory.expandAria', 'Expand chart to fullscreen')"
+        :title="t('holdings.navHistory.expandTitle', 'Expand')"
+        @click="openFullscreen"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path
+            d="M2 2h5v1.5H4.06l3.97 3.97-1.06 1.06L3 4.56V7.5H1.5V2zM9 2h5v5.5h-1.5V4.56l-3.97 3.97-1.06-1.06L11.44 3.5H8.5V2zM3.5 8.5l3.97 3.97V9.53H9v5.47H3.5v-1.5h2.94L2.47 9.56 3.5 8.5zm5.97 0L13.44 12.5H10.5V14h5.5V8.5h-1.5v2.94l-3.97-3.97-1.06 1.03z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
     </header>
 
     <AppLoadingState v-if="loading" :message="t('holdings.navHistory.loading', 'Loading NAV history…')" />
@@ -235,18 +237,20 @@ function onRange(r: FundNavHistoryRange) {
       <path :d="linePath" class="rnav__line" />
     </svg>
 
-    <div v-if="!isEmpty" class="rnav__tiles">
-      <div class="rnav__tile">
-        <span class="rnav__tile-label">{{ t("holdings.navHistory.high", "High") }}</span>
-        <span class="rnav__tile-value">{{ fmtVal(payload?.high, valueIsUnit) }}</span>
-      </div>
-      <div class="rnav__tile">
-        <span class="rnav__tile-label">{{ t("holdings.navHistory.low", "Low") }}</span>
-        <span class="rnav__tile-value">{{ fmtVal(payload?.low, valueIsUnit) }}</span>
-      </div>
-      <div class="rnav__tile">
-        <span class="rnav__tile-label">{{ t("holdings.navHistory.latest", "Latest") }}</span>
-        <span class="rnav__tile-value">{{ fmtVal(payload?.latest, valueIsUnit) }}</span>
+    <div v-if="!isEmpty" class="rnav__footer">
+      <div class="rnav__ranges" role="tablist">
+        <button
+          v-for="r in ranges"
+          :key="r"
+          type="button"
+          role="tab"
+          :aria-selected="range === r"
+          class="rnav__range"
+          :class="{ 'is-active': range === r }"
+          @click="onRange(r)"
+        >
+          {{ r }}
+        </button>
       </div>
     </div>
 
@@ -265,7 +269,11 @@ function onRange(r: FundNavHistoryRange) {
             <div class="rnav-fs__title-block">
               <h2 class="rnav-fs__title">{{ t("holdings.navHistory.title", "Unit NAV history") }}</h2>
               <span class="rnav-fs__series">{{ seriesLabel }}</span>
-              <span class="rnav-fs__delta" :class="`tone-${trendTone}`">{{ deltaLabel }}</span>
+              <span class="rnav-fs__delta" :class="`tone-${trendTone}`">
+                <span v-if="trendTone === 'positive'">▲</span>
+                <span v-else-if="trendTone === 'negative'">▼</span>
+                {{ deltaLabel }}
+              </span>
             </div>
             <div class="rnav-fs__header-actions">
               <div class="rnav-fs__ranges" role="tablist">
@@ -356,7 +364,7 @@ function onRange(r: FundNavHistoryRange) {
 <style scoped>
 .rnav {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
 .rnav__header {
@@ -372,46 +380,32 @@ function onRange(r: FundNavHistoryRange) {
   gap: 8px;
 }
 
-.rnav__series {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary);
-  font-weight: 600;
+.rnav__latest {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .rnav__delta {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
-.rnav__delta.tone-positive { color: var(--state-success, #1a7f37); }
-.rnav__delta.tone-negative { color: var(--state-danger, #cf222e); }
+.rnav__delta.tone-positive { color: var(--state-success); }
+.rnav__delta.tone-negative { color: var(--state-danger); }
 .rnav__delta.tone-neutral  { color: var(--text-secondary); }
 
-.rnav__ranges {
-  display: inline-flex;
-  background: var(--surface-1);
-  border: 1px solid var(--border-default);
-  border-radius: 6px;
-  padding: 2px;
-}
-
-.rnav__range {
-  padding: 2px 8px;
+.rnav__current-range {
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.rnav__range:hover { color: var(--text-primary); }
-.rnav__range.is-active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
 }
 
 .rnav__chart {
@@ -421,44 +415,49 @@ function onRange(r: FundNavHistoryRange) {
 }
 
 .rnav__area {
-  fill: var(--color-primary-500, #1f6feb);
+  fill: var(--state-success);
   fill-opacity: 0.08;
   stroke: none;
 }
 
 .rnav__line {
   fill: none;
-  stroke: var(--color-primary-500, #1f6feb);
-  stroke-width: 1.6;
+  stroke: var(--state-success);
+  stroke-width: 1.8;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
-.rnav__tiles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.rnav__footer {
+  display: flex;
+  align-items: center;
   border-top: 1px solid var(--border-subtle);
   padding-top: 8px;
 }
 
-.rnav__tile {
-  display: grid;
-  gap: 2px;
+.rnav__ranges {
+  display: inline-flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px;
 }
 
-.rnav__tile-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary);
-}
-
-.rnav__tile-value {
-  font-size: 13px;
+.rnav__range {
+  padding: 2px 8px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.rnav__range:hover { color: var(--text-primary); }
+.rnav__range.is-active {
+  background: var(--status-executed-bg);
+  color: var(--status-executed-text);
 }
 
 .rnav__empty {
@@ -467,7 +466,6 @@ function onRange(r: FundNavHistoryRange) {
   color: var(--text-tertiary);
   padding: 8px 0;
 }
-.rnav__empty--loading { color: var(--text-secondary); }
 
 .rnav__header-actions {
   display: inline-flex;
@@ -482,29 +480,28 @@ function onRange(r: FundNavHistoryRange) {
   width: 24px;
   height: 24px;
   padding: 0;
-  background: var(--surface-1);
-  border: 1px solid var(--border-default);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 .rnav__expand:hover {
-  background: var(--action-secondary-hover, var(--surface-2, var(--surface-1)));
+  background: var(--bg-row-hover);
   color: var(--text-primary);
-  border-color: var(--border-strong, var(--border-default));
 }
 
 /* ─── Fullscreen overlay ────────────────────────────────────────────── */
 .rnav-fs {
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 21, 0.55);
+  background: var(--bg-overlay);
   z-index: 9999;
   display: grid;
   place-items: center;
   padding: 24px;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
 }
 
 .rnav-fs__panel {
@@ -512,12 +509,12 @@ function onRange(r: FundNavHistoryRange) {
   max-height: calc(100vh - 48px);
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 12px;
+  gap: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: 10px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
-  padding: 18px 22px;
+  padding: 20px 24px;
 }
 
 .rnav-fs__header {
@@ -556,9 +553,10 @@ function onRange(r: FundNavHistoryRange) {
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
-.rnav-fs__delta.tone-positive { color: var(--state-success, #1a7f37); }
-.rnav-fs__delta.tone-negative { color: var(--state-danger, #cf222e); }
+.rnav-fs__delta.tone-positive { color: var(--state-success); }
+.rnav-fs__delta.tone-negative { color: var(--state-danger); }
 .rnav-fs__delta.tone-neutral  { color: var(--text-secondary); }
 
 .rnav-fs__header-actions {
@@ -569,8 +567,8 @@ function onRange(r: FundNavHistoryRange) {
 
 .rnav-fs__ranges {
   display: inline-flex;
-  background: var(--surface-1);
-  border: 1px solid var(--border-default);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 2px;
 }
@@ -578,18 +576,18 @@ function onRange(r: FundNavHistoryRange) {
 .rnav-fs__range {
   padding: 4px 10px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: var(--text-tertiary);
   background: transparent;
   border: 0;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .rnav-fs__range:hover { color: var(--text-primary); }
 .rnav-fs__range.is-active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: var(--status-executed-bg);
+  color: var(--status-executed-text);
 }
 
 .rnav-fs__close {
@@ -599,14 +597,15 @@ function onRange(r: FundNavHistoryRange) {
   width: 28px;
   height: 28px;
   padding: 0;
-  background: var(--surface-1);
-  border: 1px solid var(--border-default);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   color: var(--text-secondary);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .rnav-fs__close:hover {
-  background: var(--action-secondary-hover, var(--surface-2, var(--surface-1)));
+  background: var(--bg-row-hover);
   color: var(--text-primary);
 }
 
@@ -650,6 +649,7 @@ function onRange(r: FundNavHistoryRange) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @media (max-width: 720px) {

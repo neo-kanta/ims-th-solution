@@ -150,28 +150,29 @@ function writeResearch(fundId: string) {
 
 .my-funds-page__date {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  background: var(--bg-card-muted, #f6f8fa);
-  border: 1px solid var(--border-subtle, #d0d7de);
-  border-radius: var(--radius-md, 5px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
   padding: 4px 10px;
-  color: var(--text-secondary, #57606a);
+  line-height: 1.2;
 }
 
 .my-funds-page__date-label {
-  font-weight: 500;
-  color: var(--text-tertiary, #6e7781);
-  font-size: 11px;
+  font-weight: 700;
+  color: #8c959f;
+  font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .my-funds-page__date-value {
   font-variant-numeric: tabular-nums;
-  color: var(--text-primary, #1f2328);
-  font-weight: 600;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .my-funds-page__notice,
