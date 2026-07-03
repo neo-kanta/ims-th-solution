@@ -464,6 +464,14 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodePortfolioView))
 			r.Get("/{portfolioCode}", h.GetPortfolioByCode)
+			r.Get("/{portfolioCode}/holdings", h.GetHoldingsByCode)
+			r.Get("/{portfolioCode}/cash", h.GetCashByCode)
+			r.Get("/{portfolioCode}/transactions", h.ListTransactionsByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationView))
+			r.Get("/{portfolioCode}/valuations", h.ListValuationsByCode)
+			r.Get("/{portfolioCode}/valuations/latest", h.GetLatestValuationByCode)
 		})
 	})
 }
