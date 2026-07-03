@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
@@ -39,12 +41,13 @@ func (h *IntradayValuationHandler) SetService(svc *service.IntradayValuationServ
 }
 
 // GetFundHoldingsValuation handles GET /investment/funds/{id}/holdings/valuation.
-// @Summary Get Intraday Holdings Valuation
-// @Description Compute estimated NAV / AUM and per-position unrealised P&L from live market data, alongside the official accounting NAV.
+// @Summary Get Mark-to-Market Holdings Valuation
+// @Description Compute holdings mark-to-market valuation (market value, unrealised P&L, ROI) as of business_date, alongside the official accounting NAV. business_date defaults to today (UTC) and accepts YYYY-MM-DD.
 // @Tags Investment - Intraday
 // @Security BearerAuth
 // @Produce json
 // @Param id path string true "Fund UUID"
+// @Param business_date query string false "Valuation date, YYYY-MM-DD. Defaults to today (UTC)."
 // @Success 200 {object} response.IntradayValuationResponse
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
@@ -62,7 +65,17 @@ func (h *IntradayValuationHandler) GetFundHoldingsValuation(w http.ResponseWrite
 		httputil.BadRequest(w, "invalid fund id")
 		return
 	}
-	result, err := h.svc.ComputeFundValuation(r.Context(), fundID)
+
+	var businessDate time.Time
+	if raw := strings.TrimSpace(r.URL.Query().Get("business_date")); raw != "" {
+		businessDate, err = parseDate(raw)
+		if err != nil {
+			httputil.BadRequest(w, "invalid business_date: expected YYYY-MM-DD")
+			return
+		}
+	}
+
+	result, err := h.svc.ComputeFundValuation(r.Context(), fundID, businessDate)
 	if err != nil {
 		writeDomainError(w, err)
 		return

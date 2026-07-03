@@ -200,6 +200,10 @@ func (r *stubRepository) ListDailyPrices(ctx context.Context, symbol string, lim
 	return nil, nil
 }
 
+func (r *stubRepository) GetSnapshotAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	return r.GetLatestQuote(ctx, symbol)
+}
+
 func (r *stubRepository) LogProviderRequest(ctx context.Context, log domain.ProviderRequestLog) error {
 	return nil
 }

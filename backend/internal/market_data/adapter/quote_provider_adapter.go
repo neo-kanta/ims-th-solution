@@ -48,6 +48,14 @@ func (a *QuoteProviderAdapter) GetLatestQuote(ctx context.Context, providerSymbo
 	if q == nil {
 		return nil, contract.ErrMarketDataUnavailable
 	}
+	// A stale result here means the live provider call failed and the service
+	// fell back to the last cached snapshot row — that is NOT a live quote,
+	// so it must be labeled as a snapshot source or callers (and the frontend
+	// stale badge) will show a provider outage as fresh, live data.
+	source := contract.QuoteSourceLive
+	if q.Stale {
+		source = contract.QuoteSourceMarketDataSnapshot
+	}
 	return &contract.MarketQuote{
 		Symbol:        q.Symbol,
 		Provider:      q.Provider,
@@ -60,6 +68,58 @@ func (a *QuoteProviderAdapter) GetLatestQuote(ctx context.Context, providerSymbo
 		MarketStatus:  marketStatusFromQuote(q),
 		Stale:         q.Stale,
 		StaleReason:   q.StaleReason,
+		Source:        source,
+		SnapshotID:    q.SnapshotID,
+	}, nil
+}
+
+// GetQuoteAsOf resolves the latest normalized market-data snapshot dated on
+// or before businessDate. It never performs a live provider call, so a
+// historical business_date never triggers a provider request. Staleness is
+// derived by comparing the snapshot's own date to the requested businessDate
+// — a snapshot dated earlier than requested is still a valid "latest known
+// as of" mark, but is flagged stale so callers can label it as carried
+// forward rather than an exact match.
+func (a *QuoteProviderAdapter) GetQuoteAsOf(ctx context.Context, providerSymbol string, businessDate time.Time) (*contract.MarketQuote, error) {
+	if a == nil || a.service == nil {
+		return nil, contract.ErrMarketDataUnavailable
+	}
+	providerSymbol = strings.TrimSpace(providerSymbol)
+	if providerSymbol == "" {
+		return nil, contract.ErrSymbolNotMapped
+	}
+
+	q, err := a.service.GetQuoteAsOf(ctx, providerSymbol, businessDate)
+	if err != nil {
+		return nil, translateError(err)
+	}
+	if q == nil {
+		return nil, contract.ErrMarketDataUnavailable
+	}
+
+	stale := q.AsOf.IsZero() || !sameCalendarDate(q.AsOf, businessDate)
+	reason := ""
+	if stale {
+		reason = fmt.Sprintf(
+			"no market-data snapshot dated %s; carried forward from %s",
+			businessDate.Format("2006-01-02"), q.AsOf.Format("2006-01-02"),
+		)
+	}
+
+	return &contract.MarketQuote{
+		Symbol:        q.Symbol,
+		Provider:      q.Provider,
+		Price:         q.Price,
+		Currency:      q.Currency,
+		PreviousClose: q.PreviousClose,
+		ChangePercent: q.ChangePercent,
+		EffectiveAt:   q.AsOf,
+		FetchedAt:     timeOr(q.CapturedAt, q.AsOf),
+		MarketStatus:  "SNAPSHOT",
+		Stale:         stale,
+		StaleReason:   reason,
+		Source:        contract.QuoteSourceMarketDataSnapshot,
+		SnapshotID:    q.SnapshotID,
 	}, nil
 }
 
@@ -138,6 +198,12 @@ func timeOr(t, fallback time.Time) time.Time {
 		return fallback
 	}
 	return t
+}
+
+func sameCalendarDate(a, b time.Time) bool {
+	ay, am, ad := a.UTC().Date()
+	by, bm, bd := b.UTC().Date()
+	return ay == by && am == bm && ad == bd
 }
 
 var _ contract.MarketQuoteProvider = (*QuoteProviderAdapter)(nil)

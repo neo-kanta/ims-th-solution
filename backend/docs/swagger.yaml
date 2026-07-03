@@ -1993,9 +1993,18 @@ definitions:
         type: string
       average_cost:
         type: string
+      cost_amount:
+        description: |-
+          Mark-to-market contract fields (additive — see docs/investment-module.md
+          holdings valuation section). CostAmount duplicates CostBasis under the
+          contract's field name; ROI is a ratio (unrealised_pnl / cost_amount),
+          not a percentage.
+        type: string
       cost_basis:
         type: string
       currency:
+        type: string
+      fetched_at:
         type: string
       instrument_id:
         type: string
@@ -2003,15 +2012,25 @@ definitions:
         type: boolean
       latest_price:
         type: string
+      market_data_snapshot_id:
+        type: string
       market_value:
         type: string
       name:
         type: string
       price_at:
         type: string
+      price_effective_date:
+        type: string
+      price_snapshot_id:
+        type: string
       provider:
         type: string
       quantity:
+        type: string
+      roi:
+        type: string
+      source:
         type: string
       stale_reason:
         type: string
@@ -2020,6 +2039,30 @@ definitions:
       unrealised_pnl:
         type: string
       unrealised_pnl_pct:
+        type: string
+      unrealized_pnl:
+        description: |-
+          UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases
+          of UnrealisedPnL/UnrealisedPnLPct — the totals object below already
+          used the American spelling, so callers reading unrealized_* off both
+          positions and totals get a consistent contract.
+        type: string
+      unrealized_pnl_pct:
+        type: string
+    type: object
+  IntradayTotalsResponse:
+    properties:
+      cash_balance:
+        type: string
+      cost_amount:
+        type: string
+      estimated_aum:
+        type: string
+      market_value:
+        type: string
+      roi:
+        type: string
+      unrealized_pnl:
         type: string
     type: object
   IntradayValuationResponse:
@@ -2054,6 +2097,15 @@ definitions:
         type: boolean
       has_units:
         type: boolean
+      holdings_as_of_confirmed:
+        description: |-
+          HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are
+          confirmed as of BusinessDate. Always true for today; false for a
+          historical BusinessDate, since only prices are resolved as of that
+          date — see HoldingsAsOfNote.
+        type: boolean
+      holdings_as_of_note:
+        type: string
       is_stale:
         type: boolean
       official_as_of:
@@ -2076,6 +2128,8 @@ definitions:
         type: array
       stale_reason:
         type: string
+      totals:
+        $ref: '#/definitions/IntradayTotalsResponse'
       units_indicative:
         type: boolean
       units_outstanding:
@@ -2087,6 +2141,12 @@ definitions:
       unrealised_pnl:
         type: string
       valuation_ccy:
+        type: string
+      valuation_currency:
+        description: |-
+          ValuationCurrency duplicates ValuationCcy under the mark-to-market
+          contract's field name (additive, kept alongside valuation_ccy for
+          backward compatibility with the official/estimated dual-view UI).
         type: string
     type: object
   InvalidateResearchReportRequest:
@@ -2906,6 +2966,12 @@ definitions:
         type: number
       provider:
         type: string
+      snapshot_id:
+        description: |-
+          SnapshotID is the market_data_snapshots row id, populated only by
+          snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+          by a freshly fetched live provider quote.
+        type: string
       stale:
         type: boolean
       stale_reason:
@@ -2942,6 +3008,12 @@ definitions:
       price:
         type: number
       provider:
+        type: string
+      snapshot_id:
+        description: |-
+          SnapshotID is the market_data_snapshots row id, populated only by
+          snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+          by a freshly fetched live provider quote.
         type: string
       stale:
         type: boolean
@@ -7964,6 +8036,11 @@ paths:
         name: id
         required: true
         type: string
+      - description: Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match
+          the holdings valuation's business_date to guarantee identical figures.
+        in: query
+        name: business_date
+        type: string
       produces:
       - application/json
       responses:
@@ -8060,13 +8137,18 @@ paths:
       - Investment - Valuation
   /investment/funds/{id}/holdings/valuation:
     get:
-      description: Compute estimated NAV / AUM and per-position unrealised P&L from
-        live market data, alongside the official accounting NAV.
+      description: Compute holdings mark-to-market valuation (market value, unrealised
+        P&L, ROI) as of business_date, alongside the official accounting NAV. business_date
+        defaults to today (UTC) and accepts YYYY-MM-DD.
       parameters:
       - description: Fund UUID
         in: path
         name: id
         required: true
+        type: string
+      - description: Valuation date, YYYY-MM-DD. Defaults to today (UTC).
+        in: query
+        name: business_date
         type: string
       produces:
       - application/json
@@ -8097,7 +8179,7 @@ paths:
             $ref: '#/definitions/ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get Intraday Holdings Valuation
+      summary: Get Mark-to-Market Holdings Valuation
       tags:
       - Investment - Intraday
   /investment/funds/{id}/market-data/refresh:

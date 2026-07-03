@@ -26,10 +26,28 @@ type IntradayPositionResponse struct {
 	MarketValue      string    `json:"market_value"`
 	UnrealisedPnL    string    `json:"unrealised_pnl"`
 	UnrealisedPnLPct string    `json:"unrealised_pnl_pct,omitempty"`
-	Provider         string    `json:"provider,omitempty"`
-	PriceAt          string    `json:"price_at,omitempty"`
-	IsStale          bool      `json:"is_stale"`
-	StaleReason      string    `json:"stale_reason,omitempty"`
+	// UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases
+	// of UnrealisedPnL/UnrealisedPnLPct — the totals object below already
+	// used the American spelling, so callers reading unrealized_* off both
+	// positions and totals get a consistent contract.
+	UnrealizedPnL    string `json:"unrealized_pnl,omitempty"`
+	UnrealizedPnLPct string `json:"unrealized_pnl_pct,omitempty"`
+	Provider         string `json:"provider,omitempty"`
+	PriceAt          string `json:"price_at,omitempty"`
+	IsStale          bool   `json:"is_stale"`
+	StaleReason      string `json:"stale_reason,omitempty"`
+
+	// Mark-to-market contract fields (additive — see docs/investment-module.md
+	// holdings valuation section). CostAmount duplicates CostBasis under the
+	// contract's field name; ROI is a ratio (unrealised_pnl / cost_amount),
+	// not a percentage.
+	CostAmount           string `json:"cost_amount"`
+	ROI                  string `json:"roi,omitempty"`
+	Source               string `json:"source,omitempty"`
+	PriceEffectiveDate   string `json:"price_effective_date,omitempty"`
+	FetchedAt            string `json:"fetched_at,omitempty"`
+	PriceSnapshotID      string `json:"price_snapshot_id,omitempty"`
+	MarketDataSnapshotID string `json:"market_data_snapshot_id,omitempty"`
 }
 
 // IntradayCashRowResponse is one cash row in the live positions table.
@@ -46,15 +64,32 @@ type IntradayAllocationBucketResponse struct {
 	PctOfTotal  string `json:"pct_of_total"`
 }
 
+// IntradayTotalsResponse is the fund-level mark-to-market summary. It
+// mirrors the per-position sums so a caller can render KPI totals without
+// re-summing the positions array.
+type IntradayTotalsResponse struct {
+	CostAmount    string `json:"cost_amount"`
+	MarketValue   string `json:"market_value"`
+	UnrealizedPnL string `json:"unrealized_pnl"`
+	ROI           string `json:"roi,omitempty"`
+	CashBalance   string `json:"cash_balance"`
+	EstimatedAUM  string `json:"estimated_aum"`
+}
+
 // IntradayValuationResponse is the body returned by
 // GET /investment/funds/{id}/holdings/valuation.
 type IntradayValuationResponse struct {
-	FundID         uuid.UUID `json:"fund_id"`
-	FundCode       string    `json:"fund_code,omitempty"`
-	ValuationCcy   string    `json:"valuation_ccy"`
-	AsOf           time.Time `json:"as_of"`
-	BusinessDate   string    `json:"business_date,omitempty"`
-	PortfolioCount int       `json:"portfolio_count"`
+	FundID       uuid.UUID `json:"fund_id"`
+	FundCode     string    `json:"fund_code,omitempty"`
+	ValuationCcy string    `json:"valuation_ccy"`
+	// ValuationCurrency duplicates ValuationCcy under the mark-to-market
+	// contract's field name (additive, kept alongside valuation_ccy for
+	// backward compatibility with the official/estimated dual-view UI).
+	ValuationCurrency string                 `json:"valuation_currency"`
+	AsOf              time.Time              `json:"as_of"`
+	BusinessDate      string                 `json:"business_date,omitempty"`
+	Totals            IntradayTotalsResponse `json:"totals"`
+	PortfolioCount    int                    `json:"portfolio_count"`
 
 	OfficialAUM        string `json:"official_aum"`
 	OfficialNAVPerUnit string `json:"official_nav_per_unit,omitempty"`
@@ -72,6 +107,13 @@ type IntradayValuationResponse struct {
 	HasLivePrices   bool `json:"has_live_prices"`
 	UnitsIndicative bool `json:"units_indicative"`
 	IsStale         bool `json:"is_stale"`
+
+	// HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are
+	// confirmed as of BusinessDate. Always true for today; false for a
+	// historical BusinessDate, since only prices are resolved as of that
+	// date — see HoldingsAsOfNote.
+	HoldingsAsOfConfirmed bool   `json:"holdings_as_of_confirmed"`
+	HoldingsAsOfNote      string `json:"holdings_as_of_note,omitempty"`
 
 	StaleReason     string   `json:"stale_reason,omitempty"`
 	PrimaryProvider string   `json:"primary_provider,omitempty"`
@@ -119,25 +161,38 @@ func FromIntradayValuation(in *service.IntradayValuationResult) IntradayValuatio
 		return IntradayValuationResponse{}
 	}
 	out := IntradayValuationResponse{
-		FundID:              in.FundID,
-		FundCode:            in.FundCode,
-		ValuationCcy:        in.ValuationCcy,
-		AsOf:                in.AsOf,
-		PortfolioCount:      in.PortfolioCount,
-		OfficialAUM:         in.OfficialAUM.String(),
-		EstimatedAUM:        in.EstimatedAUM.String(),
-		DeltaPctVsLastClose: in.DeltaPctVsLastClose.String(),
-		UnrealisedPnL:       in.UnrealisedPnL.String(),
-		CashBalance:         in.CashBalance.String(),
-		HasUnits:            in.HasUnits,
-		HasOfficial:         in.HasOfficial,
-		HasLivePrices:       in.HasLivePrices,
-		UnitsIndicative:     in.UnitsIndicative,
-		IsStale:             in.IsStale,
-		StaleReason:         in.StaleReason,
-		PrimaryProvider:     in.PrimaryProvider,
-		ProvidersUsed:       in.ProvidersUsed,
-		UnmappedSymbols:     in.UnmappedSymbols,
+		FundID:                in.FundID,
+		FundCode:              in.FundCode,
+		ValuationCcy:          in.ValuationCcy,
+		ValuationCurrency:     in.ValuationCcy,
+		AsOf:                  in.AsOf,
+		PortfolioCount:        in.PortfolioCount,
+		OfficialAUM:           in.OfficialAUM.String(),
+		EstimatedAUM:          in.EstimatedAUM.String(),
+		DeltaPctVsLastClose:   in.DeltaPctVsLastClose.String(),
+		UnrealisedPnL:         in.UnrealisedPnL.String(),
+		CashBalance:           in.CashBalance.String(),
+		HasUnits:              in.HasUnits,
+		HasOfficial:           in.HasOfficial,
+		HasLivePrices:         in.HasLivePrices,
+		UnitsIndicative:       in.UnitsIndicative,
+		IsStale:               in.IsStale,
+		HoldingsAsOfConfirmed: in.HoldingsAsOfConfirmed,
+		HoldingsAsOfNote:      in.HoldingsAsOfNote,
+		StaleReason:           in.StaleReason,
+		PrimaryProvider:       in.PrimaryProvider,
+		ProvidersUsed:         in.ProvidersUsed,
+		UnmappedSymbols:       in.UnmappedSymbols,
+		Totals: IntradayTotalsResponse{
+			CostAmount:    in.CostBasis.String(),
+			MarketValue:   in.MarketValue.String(),
+			UnrealizedPnL: in.UnrealisedPnL.String(),
+			CashBalance:   in.CashBalance.String(),
+			EstimatedAUM:  in.EstimatedAUM.String(),
+		},
+	}
+	if in.ROI != nil {
+		out.Totals.ROI = in.ROI.String()
 	}
 	if !in.BusinessDate.IsZero() {
 		out.BusinessDate = in.BusinessDate.Format("2006-01-02")
@@ -158,27 +213,42 @@ func FromIntradayValuation(in *service.IntradayValuationResult) IntradayValuatio
 	out.Positions = make([]IntradayPositionResponse, 0, len(in.Positions))
 	for _, p := range in.Positions {
 		row := IntradayPositionResponse{
-			InstrumentID:    p.InstrumentID,
-			Ticker:          p.Ticker,
-			Name:            p.Name,
-			AssetClassCode:  p.AssetClassCode,
-			AssetClassLabel: p.AssetClassName,
-			Currency:        p.Currency,
-			Quantity:        p.Quantity.String(),
-			AverageCost:     p.AverageCost.String(),
-			CostBasis:       p.CostBasis.String(),
-			LatestPrice:     p.LatestPrice.String(),
-			MarketValue:     p.MarketValue.String(),
-			UnrealisedPnL:   p.UnrealisedPnL.String(),
-			Provider:        p.Provider,
-			IsStale:         p.IsStale,
-			StaleReason:     p.StaleReason,
+			InstrumentID:         p.InstrumentID,
+			Ticker:               p.Ticker,
+			Name:                 p.Name,
+			AssetClassCode:       p.AssetClassCode,
+			AssetClassLabel:      p.AssetClassName,
+			Currency:             p.Currency,
+			Quantity:             p.Quantity.String(),
+			AverageCost:          p.AverageCost.String(),
+			CostBasis:            p.CostBasis.String(),
+			CostAmount:           p.CostBasis.String(),
+			LatestPrice:          p.LatestPrice.String(),
+			MarketValue:          p.MarketValue.String(),
+			UnrealisedPnL:        p.UnrealisedPnL.String(),
+			UnrealizedPnL:        p.UnrealisedPnL.String(),
+			Provider:             p.Provider,
+			IsStale:              p.IsStale,
+			StaleReason:          p.StaleReason,
+			Source:               p.Source,
+			PriceSnapshotID:      p.PriceSnapshotID,
+			MarketDataSnapshotID: p.MarketDataSnapshotID,
 		}
 		if p.UnrealisedPnLPct != nil {
 			row.UnrealisedPnLPct = p.UnrealisedPnLPct.String()
+			row.UnrealizedPnLPct = p.UnrealisedPnLPct.String()
+		}
+		if p.ROI != nil {
+			row.ROI = p.ROI.String()
 		}
 		if !p.PriceAt.IsZero() {
 			row.PriceAt = p.PriceAt.Format(time.RFC3339)
+		}
+		if !p.PriceEffectiveDate.IsZero() {
+			row.PriceEffectiveDate = p.PriceEffectiveDate.Format("2006-01-02")
+		}
+		if !p.FetchedAt.IsZero() {
+			row.FetchedAt = p.FetchedAt.Format(time.RFC3339)
 		}
 		out.Positions = append(out.Positions, row)
 	}

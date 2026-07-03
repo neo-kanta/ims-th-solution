@@ -41,6 +41,10 @@ type Quote struct {
 	Stale         bool            `json:"stale"`
 	StaleReason   string          `json:"stale_reason,omitempty"`
 	Cached        bool            `json:"cached,omitempty"`
+	// SnapshotID is the market_data_snapshots row id, populated only by
+	// snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+	// by a freshly fetched live provider quote.
+	SnapshotID string `json:"snapshot_id,omitempty"`
 }
 
 type PriceBar struct {
@@ -108,6 +112,11 @@ type SnapshotRepository interface {
 	SaveDailyPrices(ctx context.Context, symbol string, provider string, bars []PriceBar) error
 	GetLatestQuote(ctx context.Context, symbol string) (*Quote, error)
 	ListDailyPrices(ctx context.Context, symbol string, limit int) ([]PriceBar, error)
+
+	// GetSnapshotAsOf returns the most recent persisted snapshot (QUOTE or
+	// DAILY) for symbol dated on or before businessDate, or (nil, nil) when
+	// none exists. It never triggers a live provider call.
+	GetSnapshotAsOf(ctx context.Context, symbol string, businessDate time.Time) (*Quote, error)
 }
 
 type ProviderRequestLogger interface {

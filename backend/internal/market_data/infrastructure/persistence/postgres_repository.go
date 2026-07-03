@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
@@ -227,7 +228,7 @@ func (r *PostgresRepository) GetLatestQuote(ctx context.Context, symbol string) 
 		return nil, nil
 	}
 	row := r.pool.QueryRow(ctx, `
-		SELECT s.symbol, d.provider_name, s.asset_type,
+		SELECT s.symbol, d.provider_name, s.asset_type, d.id,
 		       d.price, COALESCE(d.open_price, 0), COALESCE(d.high_price, 0), COALESCE(d.low_price, 0),
 		       COALESCE(d.previous_close, 0), COALESCE(d.change_amount, 0), COALESCE(d.change_percent, 0),
 		       COALESCE(d.volume, 0), COALESCE(d.currency, ''), d.as_of, d.captured_at
@@ -240,8 +241,9 @@ func (r *PostgresRepository) GetLatestQuote(ctx context.Context, symbol string) 
 	)
 	var q domain.Quote
 	var assetType string
+	var snapshotID uuid.UUID
 	err := row.Scan(
-		&q.Symbol, &q.Provider, &assetType,
+		&q.Symbol, &q.Provider, &assetType, &snapshotID,
 		&q.Price, &q.Open, &q.High, &q.Low,
 		&q.PreviousClose, &q.Change, &q.ChangePercent,
 		&q.Volume, &q.Currency, &q.AsOf, &q.CapturedAt,
@@ -253,6 +255,47 @@ func (r *PostgresRepository) GetLatestQuote(ctx context.Context, symbol string) 
 		return nil, fmt.Errorf("loading latest market quote snapshot: %w", err)
 	}
 	q.AssetType = domain.AssetType(assetType)
+	q.SnapshotID = snapshotID.String()
+	return &q, nil
+}
+
+// GetSnapshotAsOf returns the most recent QUOTE or DAILY snapshot for symbol
+// dated on or before businessDate. Ties on price_date prefer DAILY (an
+// end-of-day close is a cleaner mark than an intraday quote captured earlier
+// that day). Never issues a live provider call.
+func (r *PostgresRepository) GetSnapshotAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	if r == nil || r.pool == nil {
+		return nil, nil
+	}
+	row := r.pool.QueryRow(ctx, `
+		SELECT s.symbol, d.provider_name, s.asset_type, d.id,
+		       d.price, COALESCE(d.open_price, 0), COALESCE(d.high_price, 0), COALESCE(d.low_price, 0),
+		       COALESCE(d.previous_close, 0), COALESCE(d.change_amount, 0), COALESCE(d.change_percent, 0),
+		       COALESCE(d.volume, 0), COALESCE(d.currency, ''), d.as_of, d.captured_at
+		  FROM market_data_snapshots d
+		  JOIN market_symbols s ON s.id = d.symbol_id
+		 WHERE s.symbol = $1 AND d.price_date <= $2
+		 ORDER BY d.price_date DESC, (d.data_type = 'DAILY') DESC, d.captured_at DESC
+		 LIMIT 1`,
+		normalizeSymbol(symbol), businessDate,
+	)
+	var q domain.Quote
+	var assetType string
+	var snapshotID uuid.UUID
+	err := row.Scan(
+		&q.Symbol, &q.Provider, &assetType, &snapshotID,
+		&q.Price, &q.Open, &q.High, &q.Low,
+		&q.PreviousClose, &q.Change, &q.ChangePercent,
+		&q.Volume, &q.Currency, &q.AsOf, &q.CapturedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("loading market snapshot as of date: %w", err)
+	}
+	q.AssetType = domain.AssetType(assetType)
+	q.SnapshotID = snapshotID.String()
 	return &q, nil
 }
 

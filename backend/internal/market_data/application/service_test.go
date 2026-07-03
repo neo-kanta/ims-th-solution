@@ -154,6 +154,40 @@ func TestGetQuoteRejectsInvalidSymbol(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid characters")
 }
 
+// GetQuoteAsOf must never call a live provider — it is the historical /
+// mark-to-market read path and has to work even when every provider is down
+// or unconfigured, so it only reads from the snapshot repository.
+func TestGetQuoteAsOfNeverCallsLiveProvider(t *testing.T) {
+	primary := &fakeProvider{name: domain.ProviderAlphaVantage, quoteErr: fmt.Errorf("must not be called")}
+	repo := &fakeRepository{
+		snapshotAsOf: &domain.Quote{
+			Symbol: "AOT.BK", Provider: "alpha_vantage",
+			Price: decimal.RequireFromString("65.25"), Currency: "THB",
+			AsOf: time.Date(2026, 6, 28, 0, 0, 0, 0, time.UTC),
+		},
+	}
+	service := NewService(Config{
+		PrimaryProvider: domain.ProviderAlphaVantage,
+		HTTPTimeout:     time.Second,
+		CacheTTL:        time.Minute,
+	}, []domain.MarketDataProvider{primary}, repo, repo, nil)
+
+	q, err := service.GetQuoteAsOf(context.Background(), "aot.bk", time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.NotNil(t, q)
+	require.True(t, q.Price.Equal(decimal.RequireFromString("65.25")))
+	require.Equal(t, 0, primary.quoteCalls, "GetQuoteAsOf must not trigger a live provider call")
+}
+
+func TestGetQuoteAsOfReturnsNilWhenNoSnapshotExists(t *testing.T) {
+	repo := &fakeRepository{}
+	service := NewService(Config{PrimaryProvider: domain.ProviderAlphaVantage}, nil, repo, repo, nil)
+
+	q, err := service.GetQuoteAsOf(context.Background(), "TH-LB30DA", time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	require.Nil(t, q, "no snapshot on or before the date must return (nil, nil), not an error")
+}
+
 func TestImportMarketDataImportsQuoteAndHistoryFromSelectedProvider(t *testing.T) {
 	yahoo := &fakeProvider{
 		name: domain.ProviderYahoo,
@@ -307,6 +341,7 @@ func (p *fakeProvider) ProviderName() string {
 
 type fakeRepository struct {
 	latestQuote     *domain.Quote
+	snapshotAsOf    *domain.Quote
 	savedQuote      *domain.Quote
 	savedQuoteCalls int
 	dailyBars       []domain.PriceBar
@@ -352,6 +387,14 @@ func (r *fakeRepository) ListDailyPrices(ctx context.Context, symbol string, lim
 		out = out[:limit]
 	}
 	return out, nil
+}
+
+func (r *fakeRepository) GetSnapshotAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	if r.snapshotAsOf == nil {
+		return nil, nil
+	}
+	q := *r.snapshotAsOf
+	return &q, nil
 }
 
 func (r *fakeRepository) LogProviderRequest(ctx context.Context, log domain.ProviderRequestLog) error {

@@ -5086,6 +5086,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures.",
+                        "name": "business_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5229,14 +5235,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Compute estimated NAV / AUM and per-position unrealised P\u0026L from live market data, alongside the official accounting NAV.",
+                "description": "Compute holdings mark-to-market valuation (market value, unrealised P\u0026L, ROI) as of business_date, alongside the official accounting NAV. business_date defaults to today (UTC) and accepts YYYY-MM-DD.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Investment - Intraday"
                 ],
-                "summary": "Get Intraday Holdings Valuation",
+                "summary": "Get Mark-to-Market Holdings Valuation",
                 "parameters": [
                     {
                         "type": "string",
@@ -5244,6 +5250,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Valuation date, YYYY-MM-DD. Defaults to today (UTC).",
+                        "name": "business_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -13473,10 +13485,17 @@ const docTemplate = `{
                 "average_cost": {
                     "type": "string"
                 },
+                "cost_amount": {
+                    "description": "Mark-to-market contract fields (additive — see docs/investment-module.md\nholdings valuation section). CostAmount duplicates CostBasis under the\ncontract's field name; ROI is a ratio (unrealised_pnl / cost_amount),\nnot a percentage.",
+                    "type": "string"
+                },
                 "cost_basis": {
                     "type": "string"
                 },
                 "currency": {
+                    "type": "string"
+                },
+                "fetched_at": {
                     "type": "string"
                 },
                 "instrument_id": {
@@ -13488,6 +13507,9 @@ const docTemplate = `{
                 "latest_price": {
                     "type": "string"
                 },
+                "market_data_snapshot_id": {
+                    "type": "string"
+                },
                 "market_value": {
                     "type": "string"
                 },
@@ -13497,10 +13519,22 @@ const docTemplate = `{
                 "price_at": {
                     "type": "string"
                 },
+                "price_effective_date": {
+                    "type": "string"
+                },
+                "price_snapshot_id": {
+                    "type": "string"
+                },
                 "provider": {
                     "type": "string"
                 },
                 "quantity": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "source": {
                     "type": "string"
                 },
                 "stale_reason": {
@@ -13513,6 +13547,36 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "unrealised_pnl_pct": {
+                    "type": "string"
+                },
+                "unrealized_pnl": {
+                    "description": "UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases\nof UnrealisedPnL/UnrealisedPnLPct — the totals object below already\nused the American spelling, so callers reading unrealized_* off both\npositions and totals get a consistent contract.",
+                    "type": "string"
+                },
+                "unrealized_pnl_pct": {
+                    "type": "string"
+                }
+            }
+        },
+        "IntradayTotalsResponse": {
+            "type": "object",
+            "properties": {
+                "cash_balance": {
+                    "type": "string"
+                },
+                "cost_amount": {
+                    "type": "string"
+                },
+                "estimated_aum": {
+                    "type": "string"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "unrealized_pnl": {
                     "type": "string"
                 }
             }
@@ -13565,6 +13629,13 @@ const docTemplate = `{
                 "has_units": {
                     "type": "boolean"
                 },
+                "holdings_as_of_confirmed": {
+                    "description": "HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are\nconfirmed as of BusinessDate. Always true for today; false for a\nhistorical BusinessDate, since only prices are resolved as of that\ndate — see HoldingsAsOfNote.",
+                    "type": "boolean"
+                },
+                "holdings_as_of_note": {
+                    "type": "string"
+                },
                 "is_stale": {
                     "type": "boolean"
                 },
@@ -13598,6 +13669,9 @@ const docTemplate = `{
                 "stale_reason": {
                     "type": "string"
                 },
+                "totals": {
+                    "$ref": "#/definitions/IntradayTotalsResponse"
+                },
                 "units_indicative": {
                     "type": "boolean"
                 },
@@ -13614,6 +13688,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                },
+                "valuation_currency": {
+                    "description": "ValuationCurrency duplicates ValuationCcy under the mark-to-market\ncontract's field name (additive, kept alongside valuation_ccy for\nbackward compatibility with the official/estimated dual-view UI).",
                     "type": "string"
                 }
             }
@@ -14857,6 +14935,10 @@ const docTemplate = `{
                 "provider": {
                     "type": "string"
                 },
+                "snapshot_id": {
+                    "description": "SnapshotID is the market_data_snapshots row id, populated only by\nsnapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not\nby a freshly fetched live provider quote.",
+                    "type": "string"
+                },
                 "stale": {
                     "type": "boolean"
                 },
@@ -14911,6 +14993,10 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "provider": {
+                    "type": "string"
+                },
+                "snapshot_id": {
+                    "description": "SnapshotID is the market_data_snapshots row id, populated only by\nsnapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not\nby a freshly fetched live provider quote.",
                     "type": "string"
                 },
                 "stale": {

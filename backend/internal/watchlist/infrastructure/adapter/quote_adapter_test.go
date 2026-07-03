@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 
@@ -18,6 +19,9 @@ type fakeProvider struct {
 }
 
 func (f *fakeProvider) GetLatestQuote(_ context.Context, _ string) (*contract.MarketQuote, error) {
+	return f.quote, f.err
+}
+func (f *fakeProvider) GetQuoteAsOf(_ context.Context, _ string, _ time.Time) (*contract.MarketQuote, error) {
 	return f.quote, f.err
 }
 func (f *fakeProvider) PrimaryProviderName() string      { return "fake" }

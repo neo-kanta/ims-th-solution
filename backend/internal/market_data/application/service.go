@@ -161,6 +161,26 @@ func (s *Service) GetQuote(ctx context.Context, symbol string) (*domain.Quote, e
 	return nil, fmt.Errorf("market data quote unavailable for %s: %s", symbol, strings.Join(failures, "; "))
 }
 
+// GetQuoteAsOf resolves the latest normalized snapshot for symbol dated on
+// or before businessDate directly from the snapshot repository. It never
+// makes a live provider call, so it is safe to use for historical dates and
+// never blocks on a provider outage. Returns (nil, nil) when no snapshot
+// exists on or before businessDate.
+func (s *Service) GetQuoteAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	symbol, err := normalizeSymbol(symbol)
+	if err != nil {
+		return nil, err
+	}
+	if s.repo == nil {
+		return nil, nil
+	}
+	q, err := s.repo.GetSnapshotAsOf(ctx, symbol, businessDate)
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
+}
+
 func (s *Service) GetQuoteFromProvider(ctx context.Context, symbol, providerName string) (*domain.Quote, error) {
 	symbol, err := normalizeSymbol(symbol)
 	if err != nil {

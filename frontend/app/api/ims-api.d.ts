@@ -5873,7 +5873,10 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures. */
+                    business_date?: string;
+                };
                 header?: never;
                 path: {
                     /** @description Fund UUID */
@@ -6074,12 +6077,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Intraday Holdings Valuation
-         * @description Compute estimated NAV / AUM and per-position unrealised P&L from live market data, alongside the official accounting NAV.
+         * Get Mark-to-Market Holdings Valuation
+         * @description Compute holdings mark-to-market valuation (market value, unrealised P&L, ROI) as of business_date, alongside the official accounting NAV. business_date defaults to today (UTC) and accepts YYYY-MM-DD.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Valuation date, YYYY-MM-DD. Defaults to today (UTC). */
+                    business_date?: string;
+                };
                 header?: never;
                 path: {
                     /** @description Fund UUID */
@@ -13494,20 +13500,49 @@ export interface components {
             asset_class_code?: string;
             asset_class_label?: string;
             average_cost?: string;
+            /**
+             * @description Mark-to-market contract fields (additive — see docs/investment-module.md
+             *     holdings valuation section). CostAmount duplicates CostBasis under the
+             *     contract's field name; ROI is a ratio (unrealised_pnl / cost_amount),
+             *     not a percentage.
+             */
+            cost_amount?: string;
             cost_basis?: string;
             currency?: string;
+            fetched_at?: string;
             instrument_id?: string;
             is_stale?: boolean;
             latest_price?: string;
+            market_data_snapshot_id?: string;
             market_value?: string;
             name?: string;
             price_at?: string;
+            price_effective_date?: string;
+            price_snapshot_id?: string;
             provider?: string;
             quantity?: string;
+            roi?: string;
+            source?: string;
             stale_reason?: string;
             ticker?: string;
             unrealised_pnl?: string;
             unrealised_pnl_pct?: string;
+            /**
+             * @description UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases
+             *     of UnrealisedPnL/UnrealisedPnLPct — the totals object below already
+             *     used the American spelling, so callers reading unrealized_* off both
+             *     positions and totals get a consistent contract.
+             */
+            unrealized_pnl?: string;
+            unrealized_pnl_pct?: string;
+        };
+        IntradayTotalsResponse: {
+            cash_balance?: string;
+            cost_amount?: string;
+            estimated_aum?: string;
+            market_value?: string;
+            roi?: string;
+            unrealized_pnl?: string;
         };
         IntradayValuationResponse: {
             allocation?: components["schemas"]["IntradayAllocationBucketResponse"][];
@@ -13523,6 +13558,14 @@ export interface components {
             has_live_prices?: boolean;
             has_official?: boolean;
             has_units?: boolean;
+            /**
+             * @description HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are
+             *     confirmed as of BusinessDate. Always true for today; false for a
+             *     historical BusinessDate, since only prices are resolved as of that
+             *     date — see HoldingsAsOfNote.
+             */
+            holdings_as_of_confirmed?: boolean;
+            holdings_as_of_note?: string;
             is_stale?: boolean;
             official_as_of?: string;
             official_aum?: string;
@@ -13532,11 +13575,18 @@ export interface components {
             primary_provider?: string;
             providers_used?: string[];
             stale_reason?: string;
+            totals?: components["schemas"]["IntradayTotalsResponse"];
             units_indicative?: boolean;
             units_outstanding?: string;
             unmapped_symbols?: string[];
             unrealised_pnl?: string;
             valuation_ccy?: string;
+            /**
+             * @description ValuationCurrency duplicates ValuationCcy under the mark-to-market
+             *     contract's field name (additive, kept alongside valuation_ccy for
+             *     backward compatibility with the official/estimated dual-view UI).
+             */
+            valuation_currency?: string;
         };
         InvalidateResearchReportRequest: {
             reason?: string;
@@ -13945,6 +13995,12 @@ export interface components {
             previous_close?: number;
             price?: number;
             provider?: string;
+            /**
+             * @description SnapshotID is the market_data_snapshots row id, populated only by
+             *     snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+             *     by a freshly fetched live provider quote.
+             */
+            snapshot_id?: string;
             stale?: boolean;
             stale_reason?: string;
             symbol?: string;
@@ -13964,6 +14020,12 @@ export interface components {
             previous_close?: number;
             price?: number;
             provider?: string;
+            /**
+             * @description SnapshotID is the market_data_snapshots row id, populated only by
+             *     snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+             *     by a freshly fetched live provider quote.
+             */
+            snapshot_id?: string;
             stale?: boolean;
             stale_reason?: string;
             symbol?: string;
