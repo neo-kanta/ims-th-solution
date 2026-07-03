@@ -392,11 +392,19 @@ func seedOpeningPosition(t *testing.T, ctx context.Context, pool *pgxpool.Pool, 
 // / instrument so re-runs don't accumulate. Errors are non-fatal — the test
 // has already passed or failed by this point.
 func cleanupInvestmentPrereqs(ctx context.Context, pool *pgxpool.Pool, fundID uuid.UUID) {
-	// Drop child rows first; FKs would block parent removal.
+	// Drop child rows first; FKs would block parent removal. Portfolio
+	// transactions and cash movements must go before portfolios too —
+	// otherwise ON DELETE RESTRICT leaves the portfolio delete a silent
+	// no-op on any run that posted ledger activity (e.g.
+	// TestE2E_PortfolioV2_LedgerWrites).
 	stmts := []string{
 		`DELETE FROM investment__portfolio_positions WHERE portfolio_id IN (
 			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
 		`DELETE FROM investment__cash_balances WHERE portfolio_id IN (
+			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
+		`DELETE FROM investment__cash_movements WHERE portfolio_id IN (
+			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
+		`DELETE FROM investment__portfolio_transactions WHERE portfolio_id IN (
 			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
 		`DELETE FROM investment__portfolios WHERE fund_id = $1`,
 		`DELETE FROM investment__funds WHERE id = $1`,
