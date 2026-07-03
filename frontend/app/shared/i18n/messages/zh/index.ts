@@ -11,6 +11,7 @@ import { zhInvestmentResearchMessages } from "./investmentResearch";
 import { zhMarketDataMessages } from "./marketData";
 import { zhMyFundsMessages } from "./myFunds";
 import { zhPlaceholderMessages } from "./placeholders";
+import { zhPortfolioMessages } from "./portfolio";
 import { zhSettingsMessages } from "./settings";
 
 export const zhMessages = {
@@ -28,4 +29,5 @@ export const zhMessages = {
   ...zhMyFundsMessages,
   ...zhFundsCreateMessages,
   ...zhWatchlistMessages,
+  ...zhPortfolioMessages,
 } as const;

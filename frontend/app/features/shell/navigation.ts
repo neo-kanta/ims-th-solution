@@ -42,6 +42,12 @@ export function buildDashboardNavigation(
       icon: "analysis",
       items: [
         {
+          label: t("portfolio.directory.title"),
+          to: "/portfolios",
+          icon: "portfolio",
+          requiredPermissions: ["INVESTMENT_PORTFOLIO_VIEW"],
+        },
+        {
           label: t("holdings.page.myFunds", "My funds"),
           to: "/investment/funds",
           icon: "analysis",
