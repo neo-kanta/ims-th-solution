@@ -13,7 +13,7 @@ const portfolioCode = String(route.params.portfolioCode ?? "");
 
 onMounted(() => {
   if (portfolioCode) {
-    void router.replace(`/portfolios/${portfolioCode}/overview`);
+    void router.replace(`/portfolios/${encodeURIComponent(portfolioCode)}/overview`);
   }
 });
 </script>

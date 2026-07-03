@@ -7,7 +7,7 @@ export const portfolioWorkspaceDashboardTabs: DashboardTabProvider = {
     route.path.startsWith("/portfolios") && !!route.params.portfolioCode,
   setup({ route, t }) {
     const items = computed(() => {
-      const code = String(route.params.portfolioCode || "");
+      const code = encodeURIComponent(String(route.params.portfolioCode || ""));
       return [
         {
           key: "overview",

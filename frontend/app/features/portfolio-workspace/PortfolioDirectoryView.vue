@@ -12,6 +12,10 @@ const { portfolios, loading, error, load } = usePortfolioDirectory();
 onMounted(() => {
   void load();
 });
+
+function portfolioRoute(code: string): string {
+  return `/portfolios/${encodeURIComponent(code)}/overview`;
+}
 </script>
 
 <template>
@@ -57,7 +61,7 @@ onMounted(() => {
             <td class="portfolio-directory__actions">
               <NuxtLink
                 v-if="p.code"
-                :to="`/portfolios/${p.code}/overview`"
+                :to="portfolioRoute(p.code)"
                 class="portfolio-directory__open"
               >
                 {{ t("portfolio.directory.open") }}
