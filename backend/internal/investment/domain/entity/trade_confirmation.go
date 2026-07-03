@@ -14,27 +14,27 @@ import (
 // gate: an execution without a MATCHED or REVIEWED confirmation blocks
 // transaction closing for the business date.
 type TradeConfirmation struct {
-	ID                 uuid.UUID
-	ExecutionID        uuid.UUID
-	DecisionID         uuid.UUID
-	FundID             uuid.UUID
-	PortfolioID        uuid.UUID
-	ContractID         uuid.UUID
-	BusinessDate       time.Time
-	ConfirmedQuantity  *decimal.Decimal
-	ConfirmedAmount    *decimal.Decimal
-	ConfirmedPrice     *decimal.Decimal
-	Currency           string
-	BrokerReference    string
-	ImportBatchID      *uuid.UUID
-	Status             vo.TradeConfirmationStatus
-	DiscrepancyReason  string
-	ReviewedAt         *time.Time
-	ReviewedBy         *uuid.UUID
-	CreatedAt          time.Time
-	CreatedBy          uuid.UUID
-	UpdatedAt          time.Time
-	UpdatedBy          uuid.UUID
+	ID                uuid.UUID
+	ExecutionID       uuid.UUID
+	DecisionID        uuid.UUID
+	FundID            uuid.UUID
+	PortfolioID       uuid.UUID
+	ContractID        uuid.UUID
+	BusinessDate      time.Time
+	ConfirmedQuantity *decimal.Decimal
+	ConfirmedAmount   *decimal.Decimal
+	ConfirmedPrice    *decimal.Decimal
+	Currency          string
+	BrokerReference   string
+	ImportBatchID     *uuid.UUID
+	Status            vo.TradeConfirmationStatus
+	DiscrepancyReason string
+	ReviewedAt        *time.Time
+	ReviewedBy        *uuid.UUID
+	CreatedAt         time.Time
+	CreatedBy         uuid.UUID
+	UpdatedAt         time.Time
+	UpdatedBy         uuid.UUID
 }
 
 // IsResolved reports whether the confirmation is in a state acceptable to

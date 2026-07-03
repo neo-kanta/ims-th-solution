@@ -11,8 +11,8 @@ import (
 
 // WatchlistItemFilter narrows item list queries.
 type WatchlistItemFilter struct {
-	OwnerUserID     *uuid.UUID
-	PortfolioIDs    []uuid.UUID
+	OwnerUserID  *uuid.UUID
+	PortfolioIDs []uuid.UUID
 	// FundIDs restricts portfolio-scoped items to those whose portfolio belongs
 	// to one of the given fund IDs. Applied via an EXISTS subquery on portfolios.
 	FundIDs         []uuid.UUID

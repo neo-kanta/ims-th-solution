@@ -15,13 +15,13 @@ import (
 
 // TestEmailInput is the request payload for the test email endpoint.
 type TestEmailInput struct {
-	ToUsername    string
-	ToEmail       string
-	Subject       string
-	Body          string
-	AllowRawEmail bool
+	ToUsername     string
+	ToEmail        string
+	Subject        string
+	Body           string
+	AllowRawEmail  bool
 	AllowedDomains []string
-	MaxAttempts   int
+	MaxAttempts    int
 }
 
 // TestEmailResult is returned by SendTestEmailIntent.

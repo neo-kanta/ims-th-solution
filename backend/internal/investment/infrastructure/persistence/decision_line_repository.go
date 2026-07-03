@@ -91,8 +91,8 @@ func insertLine(ctx context.Context, tx pgx.Tx, l *entity.DecisionLine) error {
 func scanLine(row rowScanner) (*entity.DecisionLine, error) {
 	l := &entity.DecisionLine{}
 	var (
-		productType string
-		side        string
+		productType                                string
+		side                                       string
 		quantity, amount, targetWeight, limitPrice *decimal.Decimal
 	)
 	if err := row.Scan(

@@ -545,10 +545,10 @@ func (h *ResearchReportCommandHandler) Invalidate(
 		ResourceType: "INVESTMENT_RESEARCH_REPORT",
 		ResourceID:   r.ID.String(),
 		Details: map[string]any{
-			"reason":        reason,
-			"report_no":     r.ReportNo,
-			"prior_status":  string(r.ReportStatus),
-			"prior_review":  string(r.ReviewStatus),
+			"reason":       reason,
+			"report_no":    r.ReportNo,
+			"prior_status": string(r.ReportStatus),
+			"prior_review": string(r.ReviewStatus),
 		},
 		BusinessDate: now,
 	}); err != nil {

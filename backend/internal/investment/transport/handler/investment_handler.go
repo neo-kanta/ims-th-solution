@@ -43,15 +43,15 @@ type InvestmentHandler struct {
 	valuation   domain.ValuationRepository
 	taxonomy    domain.AssetTaxonomyRepository
 
-	fundCmd       *command.FundCommandHandler
-	portfolioCmd  *command.PortfolioCommandHandler
-	instrumentCmd *command.InstrumentCommandHandler
-	postTxn       *command.PostTransactionHandler
-	reverseTxn    *command.ReverseTransactionHandler
-	postPrice     *command.PostPriceSnapshotHandler
-	fundAUM       *command.ComputeFundAUMHandler
-	valuationRun  *service.ValuationRunner
-	fundNAVQuery  *query.GetLatestFundNAVHandler
+	fundCmd        *command.FundCommandHandler
+	portfolioCmd   *command.PortfolioCommandHandler
+	instrumentCmd  *command.InstrumentCommandHandler
+	postTxn        *command.PostTransactionHandler
+	reverseTxn     *command.ReverseTransactionHandler
+	postPrice      *command.PostPriceSnapshotHandler
+	fundAUM        *command.ComputeFundAUMHandler
+	valuationRun   *service.ValuationRunner
+	fundNAVQuery   *query.GetLatestFundNAVHandler
 	fundAllocQuery *query.GetFundAllocationHandler
 	fundNAVHistory *query.GetFundNAVHistoryHandler
 }
@@ -87,11 +87,11 @@ func NewInvestmentHandler(
 		prices: prices, valuation: valuation, taxonomy: taxonomy,
 		fundCmd: fundCmd, portfolioCmd: portfolioCmd, instrumentCmd: instrumentCmd,
 		postTxn: postTxn, reverseTxn: reverseTxn, postPrice: postPrice,
-		fundAUM:         fundAUM,
-		valuationRun:    valuationRun,
-		fundNAVQuery:    fundNAVQuery,
-		fundAllocQuery:  fundAllocQuery,
-		fundNAVHistory:  fundNAVHistory,
+		fundAUM:        fundAUM,
+		valuationRun:   valuationRun,
+		fundNAVQuery:   fundNAVQuery,
+		fundAllocQuery: fundAllocQuery,
+		fundNAVHistory: fundNAVHistory,
 	}
 }
 
@@ -1583,6 +1583,7 @@ func (h *InvestmentHandler) GetLatestFundNAV(w http.ResponseWriter, r *http.Requ
 // @Failure 403 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 500 {object} httputil.ErrorResponse
+// @Param business_date query string false "Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures."
 // @Router /investment/funds/{id}/allocation [get]
 func (h *InvestmentHandler) GetFundAllocation(w http.ResponseWriter, r *http.Request) {
 	if h.fundAllocQuery == nil {
@@ -1598,7 +1599,17 @@ func (h *InvestmentHandler) GetFundAllocation(w http.ResponseWriter, r *http.Req
 		httputil.Forbidden(w, "no access to this fund")
 		return
 	}
-	result, err := h.fundAllocQuery.Handle(r.Context(), query.GetFundAllocationRequest{FundID: fundID})
+
+	var businessDate time.Time
+	if raw := strings.TrimSpace(r.URL.Query().Get("business_date")); raw != "" {
+		businessDate, err = parseDate(raw)
+		if err != nil {
+			httputil.BadRequest(w, "invalid business_date: expected YYYY-MM-DD")
+			return
+		}
+	}
+
+	result, err := h.fundAllocQuery.Handle(r.Context(), query.GetFundAllocationRequest{FundID: fundID, BusinessDate: businessDate})
 	if err != nil {
 		writeDomainError(w, err)
 		return

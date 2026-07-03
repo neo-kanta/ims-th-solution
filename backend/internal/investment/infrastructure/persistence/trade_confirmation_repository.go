@@ -155,13 +155,13 @@ func (r *PostgresTradeConfirmationRepository) GetByBrokerReference(ctx context.C
 func scanConfirmation(row rowScanner) (*entity.TradeConfirmation, error) {
 	c := &entity.TradeConfirmation{}
 	var (
-		status string
+		status                      string
 		confQty, confAmt, confPrice *decimal.Decimal
-		broker string
-		batch *uuid.UUID
-		discrepancy string
-		reviewedAt *time.Time
-		reviewedBy *uuid.UUID
+		broker                      string
+		batch                       *uuid.UUID
+		discrepancy                 string
+		reviewedAt                  *time.Time
+		reviewedBy                  *uuid.UUID
 	)
 	if err := row.Scan(
 		&c.ID, &c.ExecutionID, &c.DecisionID, &c.FundID, &c.PortfolioID, &c.ContractID, &c.BusinessDate,

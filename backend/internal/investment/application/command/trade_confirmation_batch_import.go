@@ -192,11 +192,11 @@ func (h *ConfirmationBatchImportHandler) Handle(ctx context.Context, req ImportC
 		ResourceType: "INVESTMENT_TRADE_CONFIRMATION_IMPORT_BATCH",
 		ResourceID:   batch.ID.String(),
 		Details: map[string]any{
-			"source_filename":  batch.SourceFilename,
-			"total":            batch.TotalRecords,
-			"accepted":         batch.AcceptedRecords,
-			"rejected":         batch.RejectedRecords,
-			"status":           string(batch.Status),
+			"source_filename": batch.SourceFilename,
+			"total":           batch.TotalRecords,
+			"accepted":        batch.AcceptedRecords,
+			"rejected":        batch.RejectedRecords,
+			"status":          string(batch.Status),
 		},
 		BusinessDate: now,
 	}); err != nil {

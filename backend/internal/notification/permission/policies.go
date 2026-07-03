@@ -8,12 +8,12 @@ const ModuleName = "notification"
 
 // Permission codes owned by the notification module.
 const (
-	CodeConfig  = "NOTIFICATION_CONFIG"
-	CodeView    = "NOTIFICATION_VIEW"
-	CodeEdit    = "NOTIFICATION_EDIT"
-	CodeRetry   = "NOTIFICATION_RETRY"
-	CodeTest    = "NOTIFICATION_TEST"
-	CodeHealth  = "NOTIFICATION_HEALTH"
+	CodeConfig = "NOTIFICATION_CONFIG"
+	CodeView   = "NOTIFICATION_VIEW"
+	CodeEdit   = "NOTIFICATION_EDIT"
+	CodeRetry  = "NOTIFICATION_RETRY"
+	CodeTest   = "NOTIFICATION_TEST"
+	CodeHealth = "NOTIFICATION_HEALTH"
 )
 
 // Provider implements contract.PermissionCatalog for the notification module.

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	vo "github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/valueobject"
 	"github.com/google/uuid"
+	vo "github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/valueobject"
 )
 
 func singleUserStage(n int, isFinal bool) StageInput {

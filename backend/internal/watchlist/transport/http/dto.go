@@ -113,23 +113,23 @@ func quoteSnapshotFromInfo(q *watchlistdomain.QuoteInfo) *QuoteSnapshot {
 
 // ThresholdRuleResponse is one threshold rule in item responses.
 type ThresholdRuleResponse struct {
-	ID                string  `json:"id"`
-	MetricType        string  `json:"metric_type"`
-	Direction         string  `json:"direction"`
-	ThresholdValue    string  `json:"threshold_value"`
-	Currency          *string `json:"currency"`
-	CooldownMinutes   int     `json:"cooldown_minutes"`
-	Status            string  `json:"status"`
-	LastState         string  `json:"last_state"`
-	LastObservedPrice *string `json:"last_observed_price"`
-	LastObservedAt    *string `json:"last_observed_at"`
-	LastEvaluatedAt   *string `json:"last_evaluated_at"`
+	ID                 string  `json:"id"`
+	MetricType         string  `json:"metric_type"`
+	Direction          string  `json:"direction"`
+	ThresholdValue     string  `json:"threshold_value"`
+	Currency           *string `json:"currency"`
+	CooldownMinutes    int     `json:"cooldown_minutes"`
+	Status             string  `json:"status"`
+	LastState          string  `json:"last_state"`
+	LastObservedPrice  *string `json:"last_observed_price"`
+	LastObservedAt     *string `json:"last_observed_at"`
+	LastEvaluatedAt    *string `json:"last_evaluated_at"`
 	LastStateChangedAt *string `json:"last_state_changed_at"`
-	LastAlertedAt     *string `json:"last_alerted_at"`
-	LastQuoteStale    bool    `json:"last_quote_stale"`
-	LastStaleReason   *string `json:"last_stale_reason"`
-	CreatedAt         string  `json:"created_at"`
-	UpdatedAt         string  `json:"updated_at"`
+	LastAlertedAt      *string `json:"last_alerted_at"`
+	LastQuoteStale     bool    `json:"last_quote_stale"`
+	LastStaleReason    *string `json:"last_stale_reason"`
+	CreatedAt          string  `json:"created_at"`
+	UpdatedAt          string  `json:"updated_at"`
 }
 
 func thresholdRuleResponse(r *entity.ThresholdRule) ThresholdRuleResponse {
@@ -341,12 +341,12 @@ type ThresholdRuleRequest struct {
 
 // CreateItemRequest is the POST /watchlists/items body.
 type CreateItemRequest struct {
-	ScopeType       string                 `json:"scope_type"`
-	PortfolioID     *string                `json:"portfolio_id"`
-	SecurityID      string                 `json:"security_id"`
-	Pinned          *bool                  `json:"pinned"`
-	Note            *string                `json:"note"`
-	ThresholdRules  []ThresholdRuleRequest `json:"threshold_rules"`
+	ScopeType      string                 `json:"scope_type"`
+	PortfolioID    *string                `json:"portfolio_id"`
+	SecurityID     string                 `json:"security_id"`
+	Pinned         *bool                  `json:"pinned"`
+	Note           *string                `json:"note"`
+	ThresholdRules []ThresholdRuleRequest `json:"threshold_rules"`
 }
 
 // UpdateItemRequest is the PATCH /watchlists/items/{id} body.

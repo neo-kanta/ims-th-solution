@@ -19,4 +19,3 @@ type SendMessageRequest struct {
 	// Provider is the LLM provider ID. Optional.
 	Provider string `json:"provider,omitempty" example:"anthropic"`
 }
-

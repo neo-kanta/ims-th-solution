@@ -33,8 +33,8 @@ type Fund struct {
 	// policy gate independent of the pre-trade simulation UX flag above.
 	RequireResearchReportForDecision bool
 	ExternalPAMRef                   string
-	Status                 vo.FundStatus
-	Version                int
+	Status                           vo.FundStatus
+	Version                          int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -6,11 +6,11 @@ package valueobject
 type DecisionLifecycleStatus string
 
 const (
-	DecisionLifecycleDraft              DecisionLifecycleStatus = "DRAFT"
-	DecisionLifecyclePendingApproval    DecisionLifecycleStatus = "PENDING_APPROVAL"
-	DecisionLifecycleApproved           DecisionLifecycleStatus = "APPROVED"
-	DecisionLifecycleRejected           DecisionLifecycleStatus = "REJECTED"
-	DecisionLifecycleCancelled          DecisionLifecycleStatus = "CANCELLED"
+	DecisionLifecycleDraft                    DecisionLifecycleStatus = "DRAFT"
+	DecisionLifecyclePendingApproval          DecisionLifecycleStatus = "PENDING_APPROVAL"
+	DecisionLifecycleApproved                 DecisionLifecycleStatus = "APPROVED"
+	DecisionLifecycleRejected                 DecisionLifecycleStatus = "REJECTED"
+	DecisionLifecycleCancelled                DecisionLifecycleStatus = "CANCELLED"
 	DecisionLifecycleReadyForExecution        DecisionLifecycleStatus = "READY_FOR_EXECUTION"
 	DecisionLifecycleExecuted                 DecisionLifecycleStatus = "EXECUTED"
 	DecisionLifecyclePendingComplianceRelease DecisionLifecycleStatus = "PENDING_COMPLIANCE_RELEASE"
@@ -43,10 +43,10 @@ func (s DecisionLifecycleStatus) IsTerminal() bool {
 type ExecutionStatus string
 
 const (
-	ExecutionStatusPending             ExecutionStatus = "PENDING"
-	ExecutionStatusExecuted            ExecutionStatus = "EXECUTED"
-	ExecutionStatusPartiallyExecuted   ExecutionStatus = "PARTIALLY_EXECUTED"
-	ExecutionStatusCancelled           ExecutionStatus = "CANCELLED"
+	ExecutionStatusPending           ExecutionStatus = "PENDING"
+	ExecutionStatusExecuted          ExecutionStatus = "EXECUTED"
+	ExecutionStatusPartiallyExecuted ExecutionStatus = "PARTIALLY_EXECUTED"
+	ExecutionStatusCancelled         ExecutionStatus = "CANCELLED"
 )
 
 // IsValid reports whether the execution status is one of the accepted values.

@@ -39,28 +39,28 @@ const (
 
 // ThresholdRule is a price alert rule attached to a watchlist item.
 type ThresholdRule struct {
-	ID              uuid.UUID
-	WatchlistItemID uuid.UUID
-	MetricType      MetricType
-	Direction       Direction
-	ThresholdValue  decimal.Decimal
-	Currency        *string
-	CooldownMinutes int
-	Status          RuleStatus
-	LastState       RuleState
-	LastObservedPrice   *decimal.Decimal
-	LastObservedAt      *time.Time
-	LastEvaluatedAt     *time.Time
-	LastStateChangedAt  *time.Time
-	LastAlertedAt       *time.Time
-	LastQuoteStale      bool
-	LastStaleReason     *string
-	CreatedBy       uuid.UUID
-	UpdatedBy       *uuid.UUID
-	DeletedBy       *uuid.UUID
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       *time.Time
+	ID                 uuid.UUID
+	WatchlistItemID    uuid.UUID
+	MetricType         MetricType
+	Direction          Direction
+	ThresholdValue     decimal.Decimal
+	Currency           *string
+	CooldownMinutes    int
+	Status             RuleStatus
+	LastState          RuleState
+	LastObservedPrice  *decimal.Decimal
+	LastObservedAt     *time.Time
+	LastEvaluatedAt    *time.Time
+	LastStateChangedAt *time.Time
+	LastAlertedAt      *time.Time
+	LastQuoteStale     bool
+	LastStaleReason    *string
+	CreatedBy          uuid.UUID
+	UpdatedBy          *uuid.UUID
+	DeletedBy          *uuid.UUID
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeletedAt          *time.Time
 }
 
 func (r *ThresholdRule) IsEligible() bool {

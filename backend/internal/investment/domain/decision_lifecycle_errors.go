@@ -141,8 +141,10 @@ type ErrConfirmationMismatchReasonRequired struct {
 func (e *ErrConfirmationMismatchReasonRequired) Error() string {
 	return "discrepancy_reason is required when marking a confirmation MISMATCHED or REVIEWED"
 }
-func (*ErrConfirmationMismatchReasonRequired) ErrorCode() string { return errcode.CodeConfirmationMismatch }
-func (*ErrConfirmationMismatchReasonRequired) HTTPStatus() int   { return http.StatusUnprocessableEntity }
+func (*ErrConfirmationMismatchReasonRequired) ErrorCode() string {
+	return errcode.CodeConfirmationMismatch
+}
+func (*ErrConfirmationMismatchReasonRequired) HTTPStatus() int { return http.StatusUnprocessableEntity }
 func (e *ErrConfirmationMismatchReasonRequired) ErrorDetails() map[string]any {
 	return map[string]any{"confirmation_id": e.ConfirmationID}
 }
@@ -166,9 +168,9 @@ func (*ErrClosePendingConfirmations) ErrorCode() string { return errcode.CodeClo
 func (*ErrClosePendingConfirmations) HTTPStatus() int   { return http.StatusUnprocessableEntity }
 func (e *ErrClosePendingConfirmations) ErrorDetails() map[string]any {
 	return map[string]any{
-		"contract_id":     e.ContractID,
-		"business_date":   e.BusinessDate,
-		"pending_count":   e.PendingCount,
+		"contract_id":      e.ContractID,
+		"business_date":    e.BusinessDate,
+		"pending_count":    e.PendingCount,
 		"unresolved_count": e.UnresolvedCount,
 	}
 }

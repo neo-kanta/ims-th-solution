@@ -476,7 +476,7 @@ var financialUnitWords = map[string]bool{
 	// Thai
 	"หน่วย": true,
 	"หุ้น":  true,
-	"กอง":  true,
+	"กอง":   true,
 }
 
 // countNouns following a number mark it as a plain count, not a figure.
@@ -495,24 +495,24 @@ var countNouns = map[string]bool{
 
 	// Thai
 	"ขั้นตอน":     true,
-	"แถว":        true,
-	"กองทุน":     true,
-	"พอร์ต":      true,
+	"แถว":         true,
+	"กองทุน":      true,
+	"พอร์ต":       true,
 	"พอร์ตโฟลิโอ": true,
-	"รายการ":     true,
+	"รายการ":      true,
 	"ผลลัพธ์":     true,
-	"หน้า":       true,
+	"หน้า":        true,
 	"คอลัมน์":     true,
-	"บัญชี":      true,
+	"บัญชี":       true,
 	"ตัวเลือก":    true,
-	"ธุรกรรม":    true,
-	"วัน":        true,
-	"เดือน":      true,
-	"ปี":         true,
-	"สัปดาห์":    true,
+	"ธุรกรรม":     true,
+	"วัน":         true,
+	"เดือน":       true,
+	"ปี":          true,
+	"สัปดาห์":     true,
 	"ชั่วโมง":     true,
-	"นาที":       true,
-	"วินาที":     true,
+	"นาที":        true,
+	"วินาที":      true,
 }
 
 // nextWord returns the next alphabetic word after position end (skipping

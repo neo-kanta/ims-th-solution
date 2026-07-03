@@ -30,29 +30,29 @@ func NewEmailOutboxHandler(emailSvc *service.EmailOutboxService, cfg *config.App
 // --- response types ---
 
 type outboxItemResponse struct {
-	OutboxID           uuid.UUID           `json:"outbox_id"`
-	NotificationID     *uuid.UUID          `json:"notification_id,omitempty"`
-	Recipient          userSummaryResponse `json:"recipient"`
-	ToEmail            string              `json:"to_email"`
-	ToName             string              `json:"to_name"`
-	Event              eventResponse       `json:"event"`
-	Context            contextResponse     `json:"context"`
-	Subject            string              `json:"subject"`
-	Status             string              `json:"status"`
-	Attempts           int                 `json:"attempts"`
-	MaxAttempts        int                 `json:"max_attempts"`
-	NextAttemptAt      *string             `json:"next_attempt_at,omitempty"`
-	LastError          string              `json:"last_error,omitempty"`
-	ProviderMessageID  string              `json:"provider_message_id,omitempty"`
-	CreatedAt          string              `json:"created_at"`
-	SentAt             *string             `json:"sent_at,omitempty"`
+	OutboxID          uuid.UUID           `json:"outbox_id"`
+	NotificationID    *uuid.UUID          `json:"notification_id,omitempty"`
+	Recipient         userSummaryResponse `json:"recipient"`
+	ToEmail           string              `json:"to_email"`
+	ToName            string              `json:"to_name"`
+	Event             eventResponse       `json:"event"`
+	Context           contextResponse     `json:"context"`
+	Subject           string              `json:"subject"`
+	Status            string              `json:"status"`
+	Attempts          int                 `json:"attempts"`
+	MaxAttempts       int                 `json:"max_attempts"`
+	NextAttemptAt     *string             `json:"next_attempt_at,omitempty"`
+	LastError         string              `json:"last_error,omitempty"`
+	ProviderMessageID string              `json:"provider_message_id,omitempty"`
+	CreatedAt         string              `json:"created_at"`
+	SentAt            *string             `json:"sent_at,omitempty"`
 }
 
 type outboxDetailResponse struct {
 	outboxItemResponse
-	BodyText  string  `json:"body_text"`
-	BodyHTML  string  `json:"body_html,omitempty"`
-	UpdatedAt string  `json:"updated_at"`
+	BodyText  string `json:"body_text"`
+	BodyHTML  string `json:"body_html,omitempty"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type outboxListResponse struct {
@@ -86,22 +86,22 @@ type testEmailResponse struct {
 }
 
 type healthResponse struct {
-	Enabled              bool     `json:"enabled"`
-	WorkerEnabled        bool     `json:"worker_enabled"`
-	SMTPHost             string   `json:"smtp_host"`
-	SMTPPort             int      `json:"smtp_port"`
-	SMTPTLSMode          string   `json:"smtp_tls_mode"`
-	FromAddress          string   `json:"from_address"`
-	FromName             string   `json:"from_name"`
-	SendRealEmail        bool     `json:"send_real_email"`
-	TestEndpointEnabled  bool     `json:"test_endpoint_enabled"`
-	WorkerInterval       string   `json:"worker_interval"`
-	WorkerBatchSize      int      `json:"worker_batch_size"`
-	StaleSendingTimeout  string   `json:"stale_sending_timeout"`
-	RetryPolicy          []string `json:"retry_policy"`
-	PendingCount         int      `json:"pending_count"`
-	FailedCount          int      `json:"failed_count"`
-	DeadCount            int      `json:"dead_count"`
+	Enabled             bool     `json:"enabled"`
+	WorkerEnabled       bool     `json:"worker_enabled"`
+	SMTPHost            string   `json:"smtp_host"`
+	SMTPPort            int      `json:"smtp_port"`
+	SMTPTLSMode         string   `json:"smtp_tls_mode"`
+	FromAddress         string   `json:"from_address"`
+	FromName            string   `json:"from_name"`
+	SendRealEmail       bool     `json:"send_real_email"`
+	TestEndpointEnabled bool     `json:"test_endpoint_enabled"`
+	WorkerInterval      string   `json:"worker_interval"`
+	WorkerBatchSize     int      `json:"worker_batch_size"`
+	StaleSendingTimeout string   `json:"stale_sending_timeout"`
+	RetryPolicy         []string `json:"retry_policy"`
+	PendingCount        int      `json:"pending_count"`
+	FailedCount         int      `json:"failed_count"`
+	DeadCount           int      `json:"dead_count"`
 }
 
 // ListOutbox handles GET /notifications/email-outbox
@@ -425,4 +425,3 @@ func toOutboxDetail(o *entity.EmailOutbox) outboxDetailResponse {
 		UpdatedAt:          o.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
-

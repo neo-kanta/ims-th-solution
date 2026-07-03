@@ -24,16 +24,16 @@ import (
 
 // Module wires the notification module dependencies.
 type Module struct {
-	repo             *persistence.PostgresNotificationRepository
-	svc              *service.Service
-	emailSvc         *service.EmailOutboxService
-	handler          *handler.Handler
-	emailHandler     *handler.EmailOutboxHandler
-	notifier              *adapter.ApprovalNotifier
-	stuckDayNotifier      *adapter.WorkflowStuckDayNotifier
+	repo                   *persistence.PostgresNotificationRepository
+	svc                    *service.Service
+	emailSvc               *service.EmailOutboxService
+	handler                *handler.Handler
+	emailHandler           *handler.EmailOutboxHandler
+	notifier               *adapter.ApprovalNotifier
+	stuckDayNotifier       *adapter.WorkflowStuckDayNotifier
 	watchlistAlertNotifier *adapter.WatchlistAlertNotifier
-	worker           *jobs.EmailOutboxWorker
-	checker          middleware.PermissionChecker
+	worker                 *jobs.EmailOutboxWorker
+	checker                middleware.PermissionChecker
 }
 
 // NewModule creates the notification module. cfg and checker may both be nil for
@@ -44,13 +44,13 @@ func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig, checker middleware.Per
 	repo := persistence.NewPostgresNotificationRepository(pool)
 	svc := service.NewService(repo)
 	m := &Module{
-		repo:             repo,
-		svc:              svc,
-		handler:          handler.NewHandler(svc),
+		repo:                   repo,
+		svc:                    svc,
+		handler:                handler.NewHandler(svc),
 		notifier:               adapter.NewApprovalNotifier(svc),
 		stuckDayNotifier:       adapter.NewWorkflowStuckDayNotifier(svc),
 		watchlistAlertNotifier: adapter.NewWatchlistAlertNotifier(svc),
-		checker:          checker,
+		checker:                checker,
 	}
 
 	if cfg == nil || !cfg.EmailEnabled {

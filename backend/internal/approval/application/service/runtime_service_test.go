@@ -502,7 +502,7 @@ func TestApprove_SubjectAccessDenied(t *testing.T) {
 		ProcessType: vo.ProcessInvestmentAnalysisReport, SubjectType: vo.SubjectResearchReport,
 		SubjectID: uuid.New(), SubmitterID: submitter,
 		ProcessConfigID: &cfg.ID,
-		Status: vo.RequestStatusPendingApproval, CurrentStageNumber: 1,
+		Status:          vo.RequestStatusPendingApproval, CurrentStageNumber: 1,
 	}
 	taskID := uuid.New()
 	repo.tasks[taskID] = &entity.ApprovalTask{
@@ -773,7 +773,7 @@ func TestGetSubjectApprovalStatus_AccessDenied(t *testing.T) {
 		ID: reqID, RequestNumber: "APR-000001",
 		ProcessType: vo.ProcessInvestmentAnalysisReport, SubjectType: vo.SubjectResearchReport,
 		SubjectID: subjectID, SubmitterID: uuid.New(),
-		Status: vo.RequestStatusPendingApproval,
+		Status:             vo.RequestStatusPendingApproval,
 		CurrentStageNumber: 1, CreatedAt: time.Now(),
 	}
 
@@ -1248,4 +1248,3 @@ type alwaysErrorDirectory struct{}
 func (alwaysErrorDirectory) GetUser(_ context.Context, _ uuid.UUID) (*domain.UserInfo, error) {
 	return nil, errors.New("directory unavailable")
 }
-

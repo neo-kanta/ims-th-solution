@@ -38,19 +38,19 @@ const (
 	CodeDecisionNotDraft = "DECISION_NOT_DRAFT"
 
 	// ─── Decision lifecycle ──────────────────────────────────────────────
-	CodeDecisionLifecycle   = "DECISION_LIFECYCLE_INVALID"
+	CodeDecisionLifecycle    = "DECISION_LIFECYCLE_INVALID"
 	CodeDecisionReferenceBad = "DECISION_REPORT_REFERENCE_INVALID"
 
 	// ─── Research report lifecycle ───────────────────────────────────────
 	CodeResearchReportInvalidateBlocked = "RESEARCH_REPORT_INVALIDATE_BLOCKED"
 
 	// ─── Execution / confirmation ────────────────────────────────────────
-	CodeExecutionNotFound      = "EXECUTION_NOT_FOUND"
-	CodeExecutionLifecycle     = "EXECUTION_LIFECYCLE_INVALID"
-	CodeConfirmationNotFound   = "TRADE_CONFIRMATION_NOT_FOUND"
-	CodeConfirmationLifecycle  = "TRADE_CONFIRMATION_LIFECYCLE_INVALID"
-	CodeConfirmationMismatch   = "TRADE_CONFIRMATION_MISMATCH"
-	CodeClosePendingConfirm    = "CLOSE_PENDING_CONFIRMATIONS"
+	CodeExecutionNotFound     = "EXECUTION_NOT_FOUND"
+	CodeExecutionLifecycle    = "EXECUTION_LIFECYCLE_INVALID"
+	CodeConfirmationNotFound  = "TRADE_CONFIRMATION_NOT_FOUND"
+	CodeConfirmationLifecycle = "TRADE_CONFIRMATION_LIFECYCLE_INVALID"
+	CodeConfirmationMismatch  = "TRADE_CONFIRMATION_MISMATCH"
+	CodeClosePendingConfirm   = "CLOSE_PENDING_CONFIRMATIONS"
 
 	// ─── Position / posting violations ───────────────────────────────────
 	CodeOversell                = "OVERSELL"

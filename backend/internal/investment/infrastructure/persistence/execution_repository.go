@@ -133,15 +133,15 @@ func (r *PostgresExecutionRepository) ListByContractDate(ctx context.Context, co
 func scanExecution(row rowScanner) (*entity.Execution, error) {
 	e := &entity.Execution{}
 	var (
-		side, status string
-		instrument *uuid.UUID
+		side, status                                string
+		instrument                                  *uuid.UUID
 		ordQty, ordAmt, execQty, execAmt, execPrice *decimal.Decimal
-		trader *uuid.UUID
-		broker string
-		executedAt *time.Time
-		cancelledAt *time.Time
-		cancelledBy *uuid.UUID
-		cancellationReason string
+		trader                                      *uuid.UUID
+		broker                                      string
+		executedAt                                  *time.Time
+		cancelledAt                                 *time.Time
+		cancelledBy                                 *uuid.UUID
+		cancellationReason                          string
 	)
 	if err := row.Scan(
 		&e.ID, &e.DecisionID, &e.FundID, &e.PortfolioID, &e.ContractID,

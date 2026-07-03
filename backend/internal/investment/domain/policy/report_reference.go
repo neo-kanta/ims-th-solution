@@ -15,13 +15,13 @@ import (
 type ReportReferenceViolation string
 
 const (
-	ViolationReportMissing             ReportReferenceViolation = "report_missing"
-	ViolationReportDeleted             ReportReferenceViolation = "report_deleted"
-	ViolationReportInvalidated         ReportReferenceViolation = "report_invalidated"
-	ViolationReportNotApproved         ReportReferenceViolation = "report_not_approved"
-	ViolationReportRejected            ReportReferenceViolation = "report_rejected"
-	ViolationReportExpired             ReportReferenceViolation = "report_expired"
-	ViolationReportContractMismatch    ReportReferenceViolation = "report_contract_mismatch"
+	ViolationReportMissing                ReportReferenceViolation = "report_missing"
+	ViolationReportDeleted                ReportReferenceViolation = "report_deleted"
+	ViolationReportInvalidated            ReportReferenceViolation = "report_invalidated"
+	ViolationReportNotApproved            ReportReferenceViolation = "report_not_approved"
+	ViolationReportRejected               ReportReferenceViolation = "report_rejected"
+	ViolationReportExpired                ReportReferenceViolation = "report_expired"
+	ViolationReportContractMismatch       ReportReferenceViolation = "report_contract_mismatch"
 	ViolationReportRecommendationMismatch ReportReferenceViolation = "report_recommendation_mismatch"
 )
 
@@ -34,9 +34,9 @@ const (
 // fund/contract in scope of the caller (further data-permission checks happen
 // at the application/repository layer, not the policy).
 type ReportReferenceInput struct {
-	Report     *entity.ResearchReport
-	ContractID uuid.UUID
-	Side       vo.OrderSide
+	Report       *entity.ResearchReport
+	ContractID   uuid.UUID
+	Side         vo.OrderSide
 	BusinessDate time.Time
 }
 
@@ -45,12 +45,12 @@ type ReportReferenceInput struct {
 //
 // Rules enforced (configuration-driven extensions are deliberately TODO):
 //
-//   * Report must exist (non-nil) and not be soft-deleted.
-//   * Report must be ACTIVE (review completed → approved by approval engine).
+//   - Report must exist (non-nil) and not be soft-deleted.
+//   - Report must be ACTIVE (review completed → approved by approval engine).
 //     Reports in DRAFT/EXPIRED/REJECTED state are unacceptable.
-//   * Report must be valid on the business date — past effective_date when set.
-//   * Report's contract scope (when set) must match the decision contract.
-//   * Recommendation must match the proposed side (BUY decision needs a
+//   - Report must be valid on the business date — past effective_date when set.
+//   - Report's contract scope (when set) must match the decision contract.
+//   - Recommendation must match the proposed side (BUY decision needs a
 //     BUY/HOLD report; SELL decision needs a SELL/HOLD report). The HOLD
 //     recommendation is permissive because it does not advocate direction.
 //

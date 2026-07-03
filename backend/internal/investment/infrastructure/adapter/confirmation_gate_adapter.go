@@ -17,9 +17,9 @@ import (
 // and business date.
 //
 // Blocking conditions:
-//   * any execution for the day in PENDING or PARTIALLY_EXECUTED state without
+//   - any execution for the day in PENDING or PARTIALLY_EXECUTED state without
 //     a MATCHED/REVIEWED confirmation,
-//   * any confirmation in PENDING_REVIEW or MISMATCHED-without-reason state.
+//   - any confirmation in PENDING_REVIEW or MISMATCHED-without-reason state.
 //
 // Cancelled executions are skipped — they aren't on the books.
 type ConfirmationGateAdapter struct {

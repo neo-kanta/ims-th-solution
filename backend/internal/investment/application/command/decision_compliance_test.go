@@ -158,7 +158,7 @@ func TestSubmit_FundRequiresReport_NoReport_Rejected(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, newFakeResearchReportRepo(), nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                   d.FundID,
+		ID:                               d.FundID,
 		RequireResearchReportForDecision: true,
 	}})
 
@@ -186,7 +186,7 @@ func TestSubmit_FundRequiresReport_ReportLinked_Proceeds(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, repRepo, nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                   d.FundID,
+		ID:                               d.FundID,
 		RequireResearchReportForDecision: true,
 	}})
 	h.SetApprovalSubmitter(submitter)
@@ -207,7 +207,7 @@ func TestSubmit_FundNotRequireReport_NoReport_Proceeds(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, newFakeResearchReportRepo(), nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                   d.FundID,
+		ID:                               d.FundID,
 		RequireResearchReportForDecision: false,
 	}})
 	h.SetApprovalSubmitter(submitter)

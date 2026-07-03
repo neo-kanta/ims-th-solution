@@ -23,11 +23,11 @@ import (
 // AND explaining the exception in the chat module's package doc.
 func TestChatModuleBoundary(t *testing.T) {
 	const (
-		repoModule       = "github.com/neo-kanta/ims-th-solution/backend"
-		chatPkgPrefix    = repoModule + "/internal/chat"
-		internalPkgGlob  = repoModule + "/internal/"
-		platformPkgGlob  = repoModule + "/platform/"
-		contractPkgGlob  = repoModule + "/pkg/"
+		repoModule      = "github.com/neo-kanta/ims-th-solution/backend"
+		chatPkgPrefix   = repoModule + "/internal/chat"
+		internalPkgGlob = repoModule + "/internal/"
+		platformPkgGlob = repoModule + "/platform/"
+		contractPkgGlob = repoModule + "/pkg/"
 	)
 
 	allowedInternal := map[string]bool{

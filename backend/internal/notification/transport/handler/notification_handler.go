@@ -56,17 +56,17 @@ type actionResponse struct {
 }
 
 type notificationResponse struct {
-	NotificationID uuid.UUID            `json:"notification_id"`
-	ID             uuid.UUID            `json:"id"` // backward-compat alias
-	Recipient      userSummaryResponse  `json:"recipient"`
-	Event          eventResponse        `json:"event"`
-	Title          string               `json:"title"`
-	Body           string               `json:"body,omitempty"`
-	Context        contextResponse      `json:"context"`
-	Action         actionResponse       `json:"action,omitempty"`
-	IsRead         bool                 `json:"is_read"`
-	ReadAt         *string              `json:"read_at,omitempty"`
-	CreatedAt      string               `json:"created_at"`
+	NotificationID uuid.UUID           `json:"notification_id"`
+	ID             uuid.UUID           `json:"id"` // backward-compat alias
+	Recipient      userSummaryResponse `json:"recipient"`
+	Event          eventResponse       `json:"event"`
+	Title          string              `json:"title"`
+	Body           string              `json:"body,omitempty"`
+	Context        contextResponse     `json:"context"`
+	Action         actionResponse      `json:"action,omitempty"`
+	IsRead         bool                `json:"is_read"`
+	ReadAt         *string             `json:"read_at,omitempty"`
+	CreatedAt      string              `json:"created_at"`
 }
 
 type listResponse struct {

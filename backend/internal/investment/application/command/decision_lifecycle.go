@@ -322,8 +322,9 @@ func (h *DecisionCommandHandler) Update(ctx context.Context, req UpdateDecisionR
 }
 
 // Submit moves the decision from DRAFT to PENDING_APPROVAL after enforcing:
-//   * workflow day is open / not locked,
-//   * report reference policy passes when a report is linked.
+//   - workflow day is open / not locked,
+//   - report reference policy passes when a report is linked.
+//
 // When the approval engine is wired, a real approval request is created and
 // the decision is transitioned only on success.
 func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID uuid.UUID) (*entity.Decision, error) {

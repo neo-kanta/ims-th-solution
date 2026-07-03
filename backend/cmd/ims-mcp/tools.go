@@ -137,14 +137,14 @@ func (d *toolDeps) resolveFundID(ctx context.Context, req *mcp.CallToolRequest, 
 	if err := json.Unmarshal(resp.Body, &pageRes); err != nil {
 		return "", fmt.Errorf("invalid response from IMS: %w", err)
 	}
-	
+
 	// 1. Exact match on Code or Name (case-insensitive)
 	for _, f := range pageRes.Items {
 		if strings.EqualFold(f.Code, input) || strings.EqualFold(f.Name, input) {
 			return f.ID, nil
 		}
 	}
-	
+
 	// 2. Substring matching (input contains code/name, or name contains input)
 	cleanInput := strings.ToLower(strings.TrimSpace(input))
 	for _, f := range pageRes.Items {
@@ -157,14 +157,14 @@ func (d *toolDeps) resolveFundID(ctx context.Context, req *mcp.CallToolRequest, 
 			return f.ID, nil
 		}
 	}
-	
+
 	for _, f := range pageRes.Items {
 		n := strings.ToLower(f.Name)
 		if n != "" && strings.Contains(n, cleanInput) {
 			return f.ID, nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("fund identifier %q not found or not accessible", input)
 }
 
@@ -193,14 +193,14 @@ func (d *toolDeps) resolvePortfolioID(ctx context.Context, req *mcp.CallToolRequ
 	if err := json.Unmarshal(resp.Body, &pageRes); err != nil {
 		return "", fmt.Errorf("invalid response from IMS: %w", err)
 	}
-	
+
 	// 1. Exact match on Code or Name (case-insensitive)
 	for _, p := range pageRes.Items {
 		if strings.EqualFold(p.Code, input) || strings.EqualFold(p.Name, input) {
 			return p.ID, nil
 		}
 	}
-	
+
 	// 2. Substring matching (input contains code/name, or name contains input)
 	cleanInput := strings.ToLower(strings.TrimSpace(input))
 	for _, p := range pageRes.Items {
@@ -213,14 +213,14 @@ func (d *toolDeps) resolvePortfolioID(ctx context.Context, req *mcp.CallToolRequ
 			return p.ID, nil
 		}
 	}
-	
+
 	for _, p := range pageRes.Items {
 		n := strings.ToLower(p.Name)
 		if n != "" && strings.Contains(n, cleanInput) {
 			return p.ID, nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("portfolio identifier %q not found or not accessible", input)
 }
 

@@ -15,11 +15,11 @@ import (
 type EvalOutcome int
 
 const (
-	OutcomeStateSeeded       EvalOutcome = iota // UNKNOWN → any state; no alert
-	OutcomeNoChange                             // state unchanged; no alert
-	OutcomeReArmed                              // BREACHED → NON_BREACHED; no alert
-	OutcomeAlertCreated                         // NON_BREACHED → BREACHED; alert emitted
-	OutcomeCooldownSuppressed                   // NON_BREACHED → BREACHED inside cooldown; no notification
+	OutcomeStateSeeded        EvalOutcome = iota // UNKNOWN → any state; no alert
+	OutcomeNoChange                              // state unchanged; no alert
+	OutcomeReArmed                               // BREACHED → NON_BREACHED; no alert
+	OutcomeAlertCreated                          // NON_BREACHED → BREACHED; alert emitted
+	OutcomeCooldownSuppressed                    // NON_BREACHED → BREACHED inside cooldown; no notification
 )
 
 // EvalResult is the output of evaluating one threshold rule against a quote.

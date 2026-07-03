@@ -235,11 +235,11 @@ func writeConfirmationError(w http.ResponseWriter, err error) {
 		return
 	}
 	var (
-		invalid   *domain.ErrInvalidDecisionRequest
-		execNot   *domain.ErrExecutionNotFound
-		execLife  *domain.ErrExecutionLifecycle
-		confNot   *domain.ErrConfirmationNotFound
-		confLife  *domain.ErrConfirmationLifecycle
+		invalid    *domain.ErrInvalidDecisionRequest
+		execNot    *domain.ErrExecutionNotFound
+		execLife   *domain.ErrExecutionLifecycle
+		confNot    *domain.ErrConfirmationNotFound
+		confLife   *domain.ErrConfirmationLifecycle
 		confReason *domain.ErrConfirmationMismatchReasonRequired
 	)
 	switch {

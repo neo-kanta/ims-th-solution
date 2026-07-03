@@ -36,20 +36,20 @@ func (n *WatchlistAlertNotifier) NotifyThresholdBreached(ctx context.Context, in
 	)
 	title := fmt.Sprintf("Watchlist alert: %s %s", input.SecuritySymbol, input.Direction)
 	return n.svc.Create(ctx, service.CreateInput{
-		RecipientUserID:   input.RecipientUserID,
-		Category:          string(enum.NotificationEventAlertThresholdBreached),
-		EventType:         string(enum.NotificationEventAlertThresholdBreached),
-		IdempotencyKey:    input.IdempotencyKey,
-		Title:             title,
-		Body:              body,
-		SourceModule:      "watchlist",
-		SourceType:        "watchlist_alert_event",
-		SourceID:          &alertID,
-		BusinessType:      "WATCHLIST_ALERT",
-		BusinessLabel:     "Watchlist alert",
-		BusinessID:        &alertID,
-		ActionLabel:       "View alert",
-		ActionURL:         fmt.Sprintf("/watchlists/alerts/%s", input.AlertEventID.String()),
+		RecipientUserID: input.RecipientUserID,
+		Category:        string(enum.NotificationEventAlertThresholdBreached),
+		EventType:       string(enum.NotificationEventAlertThresholdBreached),
+		IdempotencyKey:  input.IdempotencyKey,
+		Title:           title,
+		Body:            body,
+		SourceModule:    "watchlist",
+		SourceType:      "watchlist_alert_event",
+		SourceID:        &alertID,
+		BusinessType:    "WATCHLIST_ALERT",
+		BusinessLabel:   "Watchlist alert",
+		BusinessID:      &alertID,
+		ActionLabel:     "View alert",
+		ActionURL:       fmt.Sprintf("/watchlists/alerts/%s", input.AlertEventID.String()),
 	})
 }
 

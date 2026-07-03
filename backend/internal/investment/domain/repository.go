@@ -24,23 +24,23 @@ type DecisionSubjectRef struct {
 // DecisionListFilter is a thin filter for the decision list endpoint. Empty
 // fields are ignored — implementations should build the WHERE clause defensively.
 type DecisionListFilter struct {
-	FundID         *uuid.UUID
-	PortfolioID    *uuid.UUID
-	ContractID     *uuid.UUID
-	BusinessDate   *time.Time
+	FundID           *uuid.UUID
+	PortfolioID      *uuid.UUID
+	ContractID       *uuid.UUID
+	BusinessDate     *time.Time
 	BusinessDateFrom *time.Time
 	BusinessDateTo   *time.Time
-	Status         *vo.DecisionLifecycleStatus
-	InstrumentCode string
-	Search         string
-	Page           int
-	Limit          int
+	Status           *vo.DecisionLifecycleStatus
+	InstrumentCode   string
+	Search           string
+	Page             int
+	Limit            int
 
 	// Extended filters for the batch-approval screen.
-	DecisionNumber  string
-	DecisionType    string
-	ProcessType     string
-	ProductType     string
+	DecisionNumber   string
+	DecisionType     string
+	ProcessType      string
+	ProductType      string
 	ResearchReportNo string
 }
 

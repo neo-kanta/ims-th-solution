@@ -43,17 +43,17 @@ type NAVHistoryPoint struct {
 // GetFundNAVHistoryResult holds the series plus convenience aggregates the
 // UI needs (high/low/latest/delta) so the frontend doesn't redo arithmetic.
 type GetFundNAVHistoryResult struct {
-	FundID    uuid.UUID
-	Range     NAVHistoryRange
-	HasUnits  bool
-	Series    []NAVHistoryPoint
-	High      decimal.Decimal // max value across the series (NAV per unit or AUM)
-	Low       decimal.Decimal // min value
-	Latest    decimal.Decimal // last point
-	DeltaPct  decimal.Decimal // signed (latest - first) / first * 100
-	From      time.Time
-	To        time.Time
-	IsEmpty   bool // true when the fund has no history at all
+	FundID   uuid.UUID
+	Range    NAVHistoryRange
+	HasUnits bool
+	Series   []NAVHistoryPoint
+	High     decimal.Decimal // max value across the series (NAV per unit or AUM)
+	Low      decimal.Decimal // min value
+	Latest   decimal.Decimal // last point
+	DeltaPct decimal.Decimal // signed (latest - first) / first * 100
+	From     time.Time
+	To       time.Time
+	IsEmpty  bool // true when the fund has no history at all
 }
 
 // GetFundNAVHistoryHandler reads the per-day NAV (unitised funds) or AUM

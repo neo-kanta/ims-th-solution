@@ -43,12 +43,12 @@ const (
 	CodeResearchCancelSubmit = "INVESTMENT_RESEARCH_CANCEL_SUBMIT"
 	CodeResearchInvalidate   = "INVESTMENT_RESEARCH_INVALIDATE"
 
-	CodeDecisionView               = "INVESTMENT_DECISION_VIEW"
-	CodeDecisionManage             = "INVESTMENT_DECISION_MANAGE"
-	CodeDecisionSubmit             = "INVESTMENT_DECISION_SUBMIT"
-	CodeDecisionCancel             = "INVESTMENT_DECISION_CANCEL"
-	CodeDecisionApprove            = "INVESTMENT_DECISION_APPROVE"
-	CodeComplianceReleaseApprove   = "INVESTMENT_COMPLIANCE_RELEASE_APPROVE"
+	CodeDecisionView             = "INVESTMENT_DECISION_VIEW"
+	CodeDecisionManage           = "INVESTMENT_DECISION_MANAGE"
+	CodeDecisionSubmit           = "INVESTMENT_DECISION_SUBMIT"
+	CodeDecisionCancel           = "INVESTMENT_DECISION_CANCEL"
+	CodeDecisionApprove          = "INVESTMENT_DECISION_APPROVE"
+	CodeComplianceReleaseApprove = "INVESTMENT_COMPLIANCE_RELEASE_APPROVE"
 
 	CodeExecutionView   = "INVESTMENT_EXECUTION_VIEW"
 	CodeExecutionManage = "INVESTMENT_EXECUTION_MANAGE"

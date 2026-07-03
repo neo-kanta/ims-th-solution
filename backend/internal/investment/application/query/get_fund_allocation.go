@@ -11,13 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 )
 
 // GetFundAllocationRequest names the fund to break down.
+//
+// BusinessDate scopes the price-selection tier to the same as-of date used by
+// the holdings mark-to-market valuation. A zero value defaults to today.
 type GetFundAllocationRequest struct {
-	FundID uuid.UUID
+	FundID       uuid.UUID
+	BusinessDate time.Time
 }
 
 // AllocationBucket is one entry in a breakdown — e.g. "EQUITY" / "ENERGY" / "TH".
@@ -65,6 +70,28 @@ type GetFundAllocationHandler struct {
 	valuation  domain.ValuationRepository
 	cash       domain.CashLedgerRepository
 	pool       *pgxpool.Pool
+
+	// intraday is wired after construction (see SetIntradayService) because
+	// it depends on the market_data quote provider, which is constructed
+	// after this handler in module.go. When set, its per-instrument market
+	// values REPLACE the SQL-only price CTE below so allocation always
+	// agrees with the holdings mark-to-market view — same live quote /
+	// market-data snapshot / official price / cost-carry tier per
+	// instrument, not a second independent price lookup. When nil (e.g.
+	// market_data not wired, or unit tests), the SQL CTE — now bounded by
+	// business_date — is used as a still-correct but live-quote-blind
+	// fallback.
+	intraday *service.IntradayValuationService
+}
+
+// SetIntradayService wires the holdings valuation service so allocation
+// reuses its exact resolved market values instead of re-deriving prices
+// independently. Nil-safe; idempotent.
+func (h *GetFundAllocationHandler) SetIntradayService(intraday *service.IntradayValuationService) {
+	if h == nil {
+		return
+	}
+	h.intraday = intraday
 }
 
 func NewGetFundAllocationHandler(
@@ -87,14 +114,15 @@ func NewGetFundAllocationHandler(
 // the taxonomy level (Asset class / sector / country names) so we don't leak
 // UUIDs to the API surface.
 type rawAllocationRow struct {
-	assetClassCode  string
-	assetClassName  string
-	sectorCode      *string
-	sectorName      *string
-	countryCode     string
-	countryName     string
-	instrumentCcy   string
-	marketValue     decimal.Decimal
+	instrumentID   uuid.UUID
+	assetClassCode string
+	assetClassName string
+	sectorCode     *string
+	sectorName     *string
+	countryCode    string
+	countryName    string
+	instrumentCcy  string
+	marketValue    decimal.Decimal
 }
 
 const fundAllocationSQL = `
@@ -102,12 +130,17 @@ WITH portfolio_set AS (
     SELECT id FROM investment__portfolios
     WHERE fund_id = $1 AND deleted_at IS NULL
 ),
+-- Bounded by business_date so a historical allocation query agrees with the
+-- same-date holdings mark-to-market valuation (never the unconditional
+-- latest-ever snapshot).
 latest_price AS (
     SELECT DISTINCT ON (ps.instrument_id) ps.instrument_id, ps.price
     FROM investment__price_snapshots ps
+    WHERE ps.business_date <= $2
     ORDER BY ps.instrument_id, ps.business_date DESC, ps.captured_at DESC
 )
 SELECT
+    inst.id                                            AS instrument_id,
     ac.code                                            AS asset_class_code,
     ac.name                                            AS asset_class_name,
     sec.code                                           AS sector_code,
@@ -197,21 +230,39 @@ func (h *GetFundAllocationHandler) Handle(
 		return res, nil
 	}
 
+	businessDate := req.BusinessDate
+	if businessDate.IsZero() {
+		businessDate = time.Now().UTC()
+	}
+
+	// Reuse the exact same per-instrument market values the holdings
+	// mark-to-market view resolved (live quote / market-data snapshot /
+	// official price / cost-carry), so allocation cannot silently disagree
+	// with the holdings page for the same fund and business_date. Best
+	// effort: an error here still leaves the SQL-only price CTE below as a
+	// (business_date-bounded) fallback rather than failing the whole request.
+	var mtmMarketValue map[uuid.UUID]decimal.Decimal
+	if h.intraday != nil {
+		if mtm, mtmErr := h.intraday.ComputeFundValuation(ctx, req.FundID, businessDate); mtmErr == nil && mtm != nil {
+			mtmMarketValue = make(map[uuid.UUID]decimal.Decimal, len(mtm.Positions))
+			for _, p := range mtm.Positions {
+				mtmMarketValue[p.InstrumentID] = mtmMarketValue[p.InstrumentID].Add(p.MarketValue)
+			}
+		}
+	}
+
 	// Aggregate per (asset_class, sector, country, currency) from raw rows.
-	rows, err := h.pool.Query(ctx, fundAllocationSQL, req.FundID)
+	rows, err := h.pool.Query(ctx, fundAllocationSQL, req.FundID, businessDate)
 	if err != nil {
 		return nil, fmt.Errorf("aggregating allocation: %w", err)
 	}
 	defer rows.Close()
 
-	byClass := map[string]*AllocationBucket{}
-	bySector := map[string]*AllocationBucket{}
-	byCountry := map[string]*AllocationBucket{}
-	byCurrency := map[string]*AllocationBucket{}
-
+	var allocRows []rawAllocationRow
 	for rows.Next() {
 		var r rawAllocationRow
 		if scanErr := rows.Scan(
+			&r.instrumentID,
 			&r.assetClassCode,
 			&r.assetClassName,
 			&r.sectorCode,
@@ -223,7 +274,20 @@ func (h *GetFundAllocationHandler) Handle(
 		); scanErr != nil {
 			return nil, fmt.Errorf("scanning allocation row: %w", scanErr)
 		}
+		allocRows = append(allocRows, r)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("iterating allocation rows: %w", rows.Err())
+	}
+	allocRows = applyMarketValueOverride(allocRows, mtmMarketValue)
+	pctDenominator := allocationPctDenominator(res.TotalNAV, sumCash, allocRows, mtmMarketValue)
 
+	byClass := map[string]*AllocationBucket{}
+	bySector := map[string]*AllocationBucket{}
+	byCountry := map[string]*AllocationBucket{}
+	byCurrency := map[string]*AllocationBucket{}
+
+	for _, r := range allocRows {
 		// Asset class
 		ackey := r.assetClassCode
 		if b, ok := byClass[ackey]; ok {
@@ -265,9 +329,6 @@ func (h *GetFundAllocationHandler) Handle(
 			byCurrency[ccy] = &AllocationBucket{Key: ccy, Label: ccy, MarketValue: r.marketValue}
 		}
 	}
-	if rows.Err() != nil {
-		return nil, fmt.Errorf("iterating allocation rows: %w", rows.Err())
-	}
 
 	// Add cash buckets to the relevant breakdowns. Cash contributes to
 	// asset-class "Cash" and to its native currency, but not to sector
@@ -289,12 +350,61 @@ func (h *GetFundAllocationHandler) Handle(
 
 	// Materialise each map → slice in descending market-value order with
 	// pct-of-NAV computed against the fund AUM (preserves a clean ≤ 100% total).
-	res.ByAssetClass = materialise(byClass, res.TotalNAV)
-	res.BySector = materialise(bySector, res.TotalNAV)
-	res.ByCountry = materialise(byCountry, res.TotalNAV)
-	res.ByCurrency = materialise(byCurrency, res.TotalNAV)
+	res.ByAssetClass = materialise(byClass, pctDenominator)
+	res.BySector = materialise(bySector, pctDenominator)
+	res.ByCountry = materialise(byCountry, pctDenominator)
+	res.ByCurrency = materialise(byCurrency, pctDenominator)
 
 	return res, nil
+}
+
+// applyMarketValueOverride replaces each row's SQL-derived market value with
+// the holdings mark-to-market value for the same instrument, when available.
+// This is the mechanism that guarantees allocation cannot silently disagree
+// with the holdings valuation for the same fund/business_date: both read the
+// exact same resolved price per instrument (live quote / market-data
+// snapshot / official price / cost-carry) — allocation just re-buckets it by
+// taxonomy dimension instead of by instrument. Rows for instruments the
+// mark-to-market view didn't resolve (or when it is unavailable entirely)
+// keep their SQL-computed, business_date-bounded value untouched.
+func applyMarketValueOverride(rows []rawAllocationRow, mtmMarketValue map[uuid.UUID]decimal.Decimal) []rawAllocationRow {
+	if len(mtmMarketValue) == 0 {
+		return rows
+	}
+	for i := range rows {
+		if mv, ok := mtmMarketValue[rows[i].instrumentID]; ok {
+			rows[i].marketValue = mv
+		}
+	}
+	return rows
+}
+
+// allocationPctDenominator picks the total that bucket percentages are
+// computed against. Percentages must be computed against the same total the
+// bucket values were drawn from: when MTM overrides were applied, the
+// buckets no longer sum to the official accounting NAV (officialTotalNAV) —
+// they sum to the mark-to-market book value instead — so the denominator has
+// to switch to that same MTM total (allocation rows + cash), or allocation
+// would show market values from one view (MTM) divided by a total from a
+// different view (official), producing percentages that don't foot to the
+// displayed figures or agree with the holdings valuation's own totals.
+func allocationPctDenominator(
+	officialTotalNAV decimal.Decimal,
+	sumCash decimal.Decimal,
+	allocRows []rawAllocationRow,
+	mtmMarketValue map[uuid.UUID]decimal.Decimal,
+) decimal.Decimal {
+	if len(mtmMarketValue) == 0 {
+		return officialTotalNAV
+	}
+	mtmTotal := sumCash
+	for _, r := range allocRows {
+		mtmTotal = mtmTotal.Add(r.marketValue)
+	}
+	if mtmTotal.Sign() > 0 {
+		return mtmTotal
+	}
+	return officialTotalNAV
 }
 
 // materialise turns a bucket map into a stable, sorted slice with pct filled in.

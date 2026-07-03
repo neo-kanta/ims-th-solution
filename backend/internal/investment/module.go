@@ -27,22 +27,22 @@ type Module struct {
 	pool *pgxpool.Pool
 
 	// Repositories
-	funds                *persistence.PostgresFundRepository
-	portfolios           *persistence.PostgresPortfolioRepository
+	funds                  *persistence.PostgresFundRepository
+	portfolios             *persistence.PostgresPortfolioRepository
 	portfolioStatusHistory *persistence.PostgresPortfolioStatusHistoryRepository
-	instruments *persistence.PostgresInstrumentRepository
-	positions   *persistence.PostgresPositionRepository
-	cash        *persistence.PostgresCashLedgerRepository
-	txns        *persistence.PostgresTransactionRepository
-	prices      *persistence.PostgresPriceRepository
-	valuation   *persistence.PostgresValuationRepository
-	taxonomy    *persistence.PostgresTaxonomyRepository
-	research    *persistence.PostgresResearchReportRepository
-	decisions             *persistence.PostgresDecisionRepository
-	decisionLines         *persistence.PostgresDecisionLineRepository
-	executions            *persistence.PostgresExecutionRepository
-	confirmations         *persistence.PostgresTradeConfirmationRepository
-	confirmationImports   *persistence.PostgresTradeConfirmationImportRepository
+	instruments            *persistence.PostgresInstrumentRepository
+	positions              *persistence.PostgresPositionRepository
+	cash                   *persistence.PostgresCashLedgerRepository
+	txns                   *persistence.PostgresTransactionRepository
+	prices                 *persistence.PostgresPriceRepository
+	valuation              *persistence.PostgresValuationRepository
+	taxonomy               *persistence.PostgresTaxonomyRepository
+	research               *persistence.PostgresResearchReportRepository
+	decisions              *persistence.PostgresDecisionRepository
+	decisionLines          *persistence.PostgresDecisionLineRepository
+	executions             *persistence.PostgresExecutionRepository
+	confirmations          *persistence.PostgresTradeConfirmationRepository
+	confirmationImports    *persistence.PostgresTradeConfirmationImportRepository
 
 	// Cross-module adapters
 	permissionAdapter *adapter.PermissionCheckerAdapter
@@ -67,12 +67,12 @@ type Module struct {
 	fundAllocQuery *query.GetFundAllocationHandler
 	fundNAVHistory *query.GetFundNAVHistoryHandler
 
-	submitDecision    *command.SubmitDecisionForExecutionHandler
-	researchCmd       *command.ResearchReportCommandHandler
-	decisionCmd       *command.DecisionCommandHandler
-	decisionBatchCmd  *command.DecisionBatchApprovalHandler
-	executionCmd      *command.ExecutionCommandHandler
-	confirmationCmd   *command.TradeConfirmationCommandHandler
+	submitDecision        *command.SubmitDecisionForExecutionHandler
+	researchCmd           *command.ResearchReportCommandHandler
+	decisionCmd           *command.DecisionCommandHandler
+	decisionBatchCmd      *command.DecisionBatchApprovalHandler
+	executionCmd          *command.ExecutionCommandHandler
+	confirmationCmd       *command.TradeConfirmationCommandHandler
 	confirmationImportCmd *command.ConfirmationBatchImportHandler
 
 	// Transport
@@ -612,6 +612,12 @@ func (m *Module) SetMarketQuoteProvider(quotes contract.MarketQuoteProvider, cfg
 	)
 	m.intraday = svc
 	m.intradayHandler.SetService(svc)
+	// Allocation reuses the same resolved market values as the holdings
+	// mark-to-market view so the two pages never disagree for the same
+	// fund/business_date (see GetFundAllocationHandler.SetIntradayService).
+	if m.fundAllocQuery != nil {
+		m.fundAllocQuery.SetIntradayService(svc)
+	}
 }
 
 // TradeConfirmationGate returns the adapter the workflow CloseTransactions

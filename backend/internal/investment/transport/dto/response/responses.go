@@ -13,16 +13,16 @@ import (
 
 // FundResponse mirrors entity.Fund for HTTP transport.
 type FundResponse struct {
-	ID             uuid.UUID  `json:"id"`
-	Code           string     `json:"code"`
-	Name           string     `json:"name"`
-	ShortName      string     `json:"short_name,omitempty"`
-	FundCategoryID uuid.UUID  `json:"fund_category_id"`
-	BaseCurrency   string     `json:"base_currency"`
-	InceptionDate  string     `json:"inception_date"`
-	ManagerUserID  *uuid.UUID `json:"manager_user_id,omitempty"`
-	Benchmark      string     `json:"benchmark,omitempty"`
-	RiskProfile    string     `json:"risk_profile,omitempty"`
+	ID                     uuid.UUID  `json:"id"`
+	Code                   string     `json:"code"`
+	Name                   string     `json:"name"`
+	ShortName              string     `json:"short_name,omitempty"`
+	FundCategoryID         uuid.UUID  `json:"fund_category_id"`
+	BaseCurrency           string     `json:"base_currency"`
+	InceptionDate          string     `json:"inception_date"`
+	ManagerUserID          *uuid.UUID `json:"manager_user_id,omitempty"`
+	Benchmark              string     `json:"benchmark,omitempty"`
+	RiskProfile            string     `json:"risk_profile,omitempty"`
 	HasUnits               bool       `json:"has_units"`
 	RequirePretradePreview bool       `json:"require_pretrade_preview"`
 	ExternalPAMRef         string     `json:"external_pam_ref,omitempty"`
@@ -308,29 +308,29 @@ type ComputeFundAUMResponse struct {
 // for one or more portfolios under the same fund. Decimal fields are emitted
 // as strings to preserve precision.
 type FundNAVResponse struct {
-	FundID         string  `json:"fund_id"`
-	BusinessDate   string  `json:"business_date"`
-	ValuationCcy   string  `json:"valuation_ccy"`
-	MarketValue    string  `json:"market_value"`
-	AUM            string  `json:"aum"`
-	CashBalance    string  `json:"cash_balance"`
-	UnrealisedPnL  string  `json:"unrealised_pnl"`
-	RealisedPnL    string  `json:"realised_pnl"`
-	ROI            string  `json:"roi,omitempty"`
-	TotalUnits     string  `json:"total_units,omitempty"`
-	NAVPerUnit     string  `json:"nav_per_unit,omitempty"`
-	HasStaleInputs bool    `json:"has_stale_inputs"`
-	IsIndicative   bool    `json:"is_indicative"`
-	PortfolioCount int     `json:"portfolio_count"`
+	FundID         string `json:"fund_id"`
+	BusinessDate   string `json:"business_date"`
+	ValuationCcy   string `json:"valuation_ccy"`
+	MarketValue    string `json:"market_value"`
+	AUM            string `json:"aum"`
+	CashBalance    string `json:"cash_balance"`
+	UnrealisedPnL  string `json:"unrealised_pnl"`
+	RealisedPnL    string `json:"realised_pnl"`
+	ROI            string `json:"roi,omitempty"`
+	TotalUnits     string `json:"total_units,omitempty"`
+	NAVPerUnit     string `json:"nav_per_unit,omitempty"`
+	HasStaleInputs bool   `json:"has_stale_inputs"`
+	IsIndicative   bool   `json:"is_indicative"`
+	PortfolioCount int    `json:"portfolio_count"`
 }
 
 // AllocationBucketResponse is one entry in a breakdown — e.g. an
 // asset-class, sector, country, or currency contribution to the fund's NAV.
 type AllocationBucketResponse struct {
-	Key         string `json:"key"`           // stable machine key
-	Label       string `json:"label"`         // human label
-	MarketValue string `json:"market_value"`  // decimal string in valuation_ccy
-	PctOfNAV    string `json:"pct_of_nav"`    // 0..100, two-decimal precision
+	Key         string `json:"key"`          // stable machine key
+	Label       string `json:"label"`        // human label
+	MarketValue string `json:"market_value"` // decimal string in valuation_ccy
+	PctOfNAV    string `json:"pct_of_nav"`   // 0..100, two-decimal precision
 }
 
 // FundAllocationResponse breaks a fund's market value across four orthogonal
@@ -460,49 +460,49 @@ func FormatDatePtr(t *time.Time) *string {
 
 // DecisionResponse mirrors entity.Decision for HTTP transport.
 type DecisionResponse struct {
-	ID                     uuid.UUID  `json:"id"`
-	DecisionNumber         string     `json:"decision_number"`
-	FundID                 uuid.UUID  `json:"fund_id"`
-	PortfolioID            uuid.UUID  `json:"portfolio_id"`
-	ContractID             uuid.UUID  `json:"contract_id"`
-	InstrumentID           *uuid.UUID `json:"instrument_id,omitempty"`
-	InstrumentCode         string     `json:"instrument_code,omitempty"`
-	BusinessDate           string     `json:"business_date"`
-	Side                   string     `json:"side,omitempty"`
-	Quantity               string     `json:"quantity,omitempty"`
-	Amount                 string     `json:"amount,omitempty"`
-	LimitPrice             string     `json:"limit_price,omitempty"`
-	Currency               string     `json:"currency"`
-	Exchange               string     `json:"exchange,omitempty"`
-	DecisionType           string     `json:"decision_type"`
-	ProcessType            string     `json:"process_type"`
-	ProductType            string     `json:"product_type"`
-	StrategyCode           string     `json:"strategy_code,omitempty"`
-	AmendmentNo            int        `json:"amendment_no"`
-	ResearchReportID       *uuid.UUID `json:"research_report_id,omitempty"`
-	ResearchReportNo       string     `json:"research_report_no,omitempty"`
-	Rationale              string     `json:"rationale,omitempty"`
-	Status                 string     `json:"status"`
-	ApprovalRequestID                    *uuid.UUID `json:"approval_request_id,omitempty"`
-	ComplianceReleaseApprovalRequestID   *uuid.UUID `json:"compliance_release_approval_request_id,omitempty"`
-	ApprovalStatus         string     `json:"approval_status,omitempty"`
-	ComplianceCheckGroupID *uuid.UUID `json:"compliance_check_group_id,omitempty"`
-	SubmitterUserID        uuid.UUID  `json:"submitter_user_id"`
-	SubmittedAt            *time.Time `json:"submitted_at,omitempty"`
-	CancelledAt            *time.Time `json:"cancelled_at,omitempty"`
-	CancellationReason     string     `json:"cancellation_reason,omitempty"`
-	ReadyForExecutionAt    *time.Time `json:"ready_for_execution_at,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"`
-	UpdatedAt              time.Time  `json:"updated_at"`
+	ID                                 uuid.UUID  `json:"id"`
+	DecisionNumber                     string     `json:"decision_number"`
+	FundID                             uuid.UUID  `json:"fund_id"`
+	PortfolioID                        uuid.UUID  `json:"portfolio_id"`
+	ContractID                         uuid.UUID  `json:"contract_id"`
+	InstrumentID                       *uuid.UUID `json:"instrument_id,omitempty"`
+	InstrumentCode                     string     `json:"instrument_code,omitempty"`
+	BusinessDate                       string     `json:"business_date"`
+	Side                               string     `json:"side,omitempty"`
+	Quantity                           string     `json:"quantity,omitempty"`
+	Amount                             string     `json:"amount,omitempty"`
+	LimitPrice                         string     `json:"limit_price,omitempty"`
+	Currency                           string     `json:"currency"`
+	Exchange                           string     `json:"exchange,omitempty"`
+	DecisionType                       string     `json:"decision_type"`
+	ProcessType                        string     `json:"process_type"`
+	ProductType                        string     `json:"product_type"`
+	StrategyCode                       string     `json:"strategy_code,omitempty"`
+	AmendmentNo                        int        `json:"amendment_no"`
+	ResearchReportID                   *uuid.UUID `json:"research_report_id,omitempty"`
+	ResearchReportNo                   string     `json:"research_report_no,omitempty"`
+	Rationale                          string     `json:"rationale,omitempty"`
+	Status                             string     `json:"status"`
+	ApprovalRequestID                  *uuid.UUID `json:"approval_request_id,omitempty"`
+	ComplianceReleaseApprovalRequestID *uuid.UUID `json:"compliance_release_approval_request_id,omitempty"`
+	ApprovalStatus                     string     `json:"approval_status,omitempty"`
+	ComplianceCheckGroupID             *uuid.UUID `json:"compliance_check_group_id,omitempty"`
+	SubmitterUserID                    uuid.UUID  `json:"submitter_user_id"`
+	SubmittedAt                        *time.Time `json:"submitted_at,omitempty"`
+	CancelledAt                        *time.Time `json:"cancelled_at,omitempty"`
+	CancellationReason                 string     `json:"cancellation_reason,omitempty"`
+	ReadyForExecutionAt                *time.Time `json:"ready_for_execution_at,omitempty"`
+	CreatedAt                          time.Time  `json:"created_at"`
+	UpdatedAt                          time.Time  `json:"updated_at"`
 
 	// Lines are included when the decision has basket/rebalance/switch lines.
 	Lines []DecisionLineResponse `json:"lines,omitempty"`
 
 	// Approval enrichment — populated by the approval-items endpoint.
-	ApprovalStage      int      `json:"approval_stage,omitempty"`
-	ApprovalTotalStages int     `json:"approval_total_stages,omitempty"`
-	CurrentApprovers   []string `json:"current_approvers,omitempty"`
-	PreviousApprovers  []string `json:"previous_approvers,omitempty"`
+	ApprovalStage       int      `json:"approval_stage,omitempty"`
+	ApprovalTotalStages int      `json:"approval_total_stages,omitempty"`
+	CurrentApprovers    []string `json:"current_approvers,omitempty"`
+	PreviousApprovers   []string `json:"previous_approvers,omitempty"`
 }
 
 // DecisionLineResponse mirrors entity.DecisionLine for HTTP transport.

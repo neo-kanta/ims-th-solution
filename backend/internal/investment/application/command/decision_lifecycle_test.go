@@ -219,17 +219,17 @@ func TestSubmitDecision_NoReport_Skips_ReferenceCheck(t *testing.T) {
 // terminated alongside the decision lifecycle transition.
 func TestCancel_CancelsActiveApproval(t *testing.T) {
 	d := &entity.Decision{
-		ID:             uuid.New(),
-		FundID:         uuid.New(),
-		PortfolioID:    uuid.New(),
-		ContractID:     uuid.New(),
-		InstrumentCode: "PTT",
-		Side:           vo.OrderSideBuy,
-		Status:         vo.DecisionLifecyclePendingApproval,
-		BusinessDate:   time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC),
-		CreatedBy:      uuid.New(),
+		ID:              uuid.New(),
+		FundID:          uuid.New(),
+		PortfolioID:     uuid.New(),
+		ContractID:      uuid.New(),
+		InstrumentCode:  "PTT",
+		Side:            vo.OrderSideBuy,
+		Status:          vo.DecisionLifecyclePendingApproval,
+		BusinessDate:    time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC),
+		CreatedBy:       uuid.New(),
 		SubmitterUserID: uuid.New(),
-		CreatedAt:      time.Now().UTC(),
+		CreatedAt:       time.Now().UTC(),
 	}
 	decRepo := newFakeDecisionRepo(d)
 	audit := &recordingAudit{}

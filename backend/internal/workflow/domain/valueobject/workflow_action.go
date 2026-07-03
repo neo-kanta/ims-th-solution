@@ -20,14 +20,14 @@ const (
 // These are the canonical names exposed to the frontend; mapped internally to
 // the action constants above by ParseAPIOperationType.
 const (
-	APIOpStartInvestmentDay    = "START_INVESTMENT_DAY"
-	APIOpCancelInvestmentDay   = "CANCEL_INVESTMENT_DAY"
-	APIOpManagerApprove        = "MANAGER_APPROVE"
-	APIOpCancelManagerApproval = "CANCEL_MANAGER_APPROVAL"
-	APIOpCloseTransaction      = "CLOSE_TRANSACTION"
+	APIOpStartInvestmentDay     = "START_INVESTMENT_DAY"
+	APIOpCancelInvestmentDay    = "CANCEL_INVESTMENT_DAY"
+	APIOpManagerApprove         = "MANAGER_APPROVE"
+	APIOpCancelManagerApproval  = "CANCEL_MANAGER_APPROVAL"
+	APIOpCloseTransaction       = "CLOSE_TRANSACTION"
 	APIOpCancelTransactionClose = "CANCEL_TRANSACTION_CLOSE"
-	APIOpCloseAccounting       = "CLOSE_ACCOUNTING"
-	APIOpCancelAccountingClose = "CANCEL_ACCOUNTING_CLOSE"
+	APIOpCloseAccounting        = "CLOSE_ACCOUNTING"
+	APIOpCancelAccountingClose  = "CANCEL_ACCOUNTING_CLOSE"
 )
 
 // ParseAPIOperationType maps an API-facing operationType string to the internal

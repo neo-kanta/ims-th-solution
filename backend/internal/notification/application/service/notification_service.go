@@ -48,8 +48,8 @@ type Service struct {
 
 // EmailConfig holds the email-related flags the service needs.
 type EmailConfig struct {
-	Enabled      bool
-	MaxAttempts  int
+	Enabled        bool
+	MaxAttempts    int
 	AllowedDomains []string
 }
 

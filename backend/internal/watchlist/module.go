@@ -15,6 +15,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
+	refdatadomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/application/command"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/application/query"
 	appsvc "github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/application/service"
@@ -22,8 +24,6 @@ import (
 	wladapter "github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/infrastructure/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/infrastructure/persistence"
 	wlhttp "github.com/neo-kanta/ims-th-solution/backend/internal/watchlist/transport/http"
-	auditdomain "github.com/neo-kanta/ims-th-solution/backend/internal/audit/domain"
-	refdatadomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )

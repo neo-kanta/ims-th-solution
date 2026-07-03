@@ -11,7 +11,7 @@ type EmailOutbox struct {
 	ID             uuid.UUID
 	IdempotencyKey string
 
-	NotificationID *uuid.UUID
+	NotificationID  *uuid.UUID
 	RecipientUserID *uuid.UUID
 
 	RecipientUsername    string
@@ -44,8 +44,8 @@ type EmailOutbox struct {
 	MaxAttempts   int
 	NextAttemptAt time.Time
 
-	LockedAt  *time.Time
-	LockedBy  string
+	LockedAt *time.Time
+	LockedBy string
 
 	SentAt            *time.Time
 	LastError         string

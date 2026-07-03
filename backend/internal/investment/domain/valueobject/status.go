@@ -25,7 +25,7 @@ const (
 	PortfolioStatusDraft           PortfolioStatus = "DRAFT"
 	PortfolioStatusPendingApproval PortfolioStatus = "PENDING_APPROVAL"
 	PortfolioStatusActive          PortfolioStatus = "ACTIVE"
-	PortfolioStatusPaused          PortfolioStatus = "PAUSED"  // Phase 1 compat alias for SUSPENDED
+	PortfolioStatusPaused          PortfolioStatus = "PAUSED" // Phase 1 compat alias for SUSPENDED
 	PortfolioStatusSuspended       PortfolioStatus = "SUSPENDED"
 	PortfolioStatusRejected        PortfolioStatus = "REJECTED"
 	PortfolioStatusClosed          PortfolioStatus = "CLOSED"

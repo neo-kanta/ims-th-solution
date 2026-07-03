@@ -38,7 +38,9 @@ type stubIAM struct {
 	err error
 }
 
-func (s stubIAM) HasFunctionPermission(_ context.Context, _, _ string) (bool, error) { return true, nil }
+func (s stubIAM) HasFunctionPermission(_ context.Context, _, _ string) (bool, error) {
+	return true, nil
+}
 func (s stubIAM) GetAccessibleContracts(_ context.Context, _ string) ([]string, error) {
 	return nil, nil
 }

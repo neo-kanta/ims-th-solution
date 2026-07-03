@@ -145,24 +145,24 @@ type RequestResponse struct {
 
 // TaskResponse is an approval task.
 type TaskResponse struct {
-	ID                  string     `json:"id"`
-	ApprovalRequestID   string     `json:"approval_request_id"`
-	StageNumber         int        `json:"stage_number"`
-	AssignedUserID      string     `json:"assigned_user_id,omitempty"`
-	AssignedUserName    string     `json:"assigned_user_name,omitempty"`
+	ID                  string          `json:"id"`
+	ApprovalRequestID   string          `json:"approval_request_id"`
+	StageNumber         int             `json:"stage_number"`
+	AssignedUserID      string          `json:"assigned_user_id,omitempty"`
+	AssignedUserName    string          `json:"assigned_user_name,omitempty"`
 	AssignedUser        *UserDescriptor `json:"assigned_user,omitempty"`
-	AssignedGroupID     string     `json:"assigned_group_id,omitempty"`
-	AssignedTeamID      string     `json:"assigned_team_id,omitempty"`
-	DelegatedFromUserID string     `json:"delegated_from_user_id,omitempty"`
+	AssignedGroupID     string          `json:"assigned_group_id,omitempty"`
+	AssignedTeamID      string          `json:"assigned_team_id,omitempty"`
+	DelegatedFromUserID string          `json:"delegated_from_user_id,omitempty"`
 	DelegatedFrom       *UserDescriptor `json:"delegated_from,omitempty"`
-	Status              string     `json:"status"`
-	ActedBy             string     `json:"acted_by,omitempty"`
+	Status              string          `json:"status"`
+	ActedBy             string          `json:"acted_by,omitempty"`
 	Actor               *UserDescriptor `json:"actor,omitempty"`
-	ActedAt             *time.Time `json:"acted_at,omitempty"`
-	ActionComment       string     `json:"action_comment,omitempty"`
-	IsDelegatedAction   bool       `json:"is_delegated_action"`
-	DueAt               *time.Time `json:"due_at,omitempty"`
-	CreatedAt           time.Time  `json:"created_at"`
+	ActedAt             *time.Time      `json:"acted_at,omitempty"`
+	ActionComment       string          `json:"action_comment,omitempty"`
+	IsDelegatedAction   bool            `json:"is_delegated_action"`
+	DueAt               *time.Time      `json:"due_at,omitempty"`
+	CreatedAt           time.Time       `json:"created_at"`
 }
 
 // EventResponse is an immutable approval timeline event.
@@ -197,12 +197,12 @@ type SignatureResponse struct {
 
 // RequestDetailResponse bundles a request with tasks, timeline and signatures.
 type RequestDetailResponse struct {
-	Request        RequestResponse    `json:"request"`
-	Tasks          []TaskResponse     `json:"tasks"`
-	Timeline       []EventResponse    `json:"timeline"`
+	Request        RequestResponse     `json:"request"`
+	Tasks          []TaskResponse      `json:"tasks"`
+	Timeline       []EventResponse     `json:"timeline"`
 	Signatures     []SignatureResponse `json:"signatures"`
-	ViewerTask     *TaskResponse      `json:"viewer_task,omitempty"`
-	AllowedActions []string           `json:"allowed_actions"`
+	ViewerTask     *TaskResponse       `json:"viewer_task,omitempty"`
+	AllowedActions []string            `json:"allowed_actions"`
 }
 
 // InboxItemResponse is a single approver work item joined with its request.
@@ -398,10 +398,10 @@ func FromRequest(r *entity.ApprovalRequest) RequestResponse {
 			DisplayLabel: subjectLabel,
 		},
 		SubmitterID: r.SubmitterID.String(), SubmitterName: r.SubmitterName,
-		Submitter:          UserDescriptor{ID: r.SubmitterID.String(), Username: submitterName, DisplayName: submitterName},
-		SubmittedAt:        r.SubmittedAt, CurrentStageNumber: r.CurrentStageNumber, Status: string(r.Status),
-		FinalDecisionAt:    r.FinalDecisionAt, RejectionReason: r.RejectionReason,
-		CreatedAt:          r.CreatedAt, UpdatedAt: r.UpdatedAt,
+		Submitter:   UserDescriptor{ID: r.SubmitterID.String(), Username: submitterName, DisplayName: submitterName},
+		SubmittedAt: r.SubmittedAt, CurrentStageNumber: r.CurrentStageNumber, Status: string(r.Status),
+		FinalDecisionAt: r.FinalDecisionAt, RejectionReason: r.RejectionReason,
+		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 	}
 	if r.ProcessConfigID != nil {
 		resp.ProcessConfigID = r.ProcessConfigID.String()

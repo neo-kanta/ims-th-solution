@@ -14,32 +14,32 @@ import (
 // with a real OMS, so the broker-side bookkeeping is the responsibility of the
 // downstream trade confirmation aggregate.
 type Execution struct {
-	ID                  uuid.UUID
-	DecisionID          uuid.UUID
-	FundID              uuid.UUID
-	PortfolioID         uuid.UUID
-	ContractID          uuid.UUID
-	InstrumentID        *uuid.UUID
-	InstrumentCode      string
-	BusinessDate        time.Time
-	Side                vo.OrderSide
-	OrderedQuantity     *decimal.Decimal
-	OrderedAmount       *decimal.Decimal
-	ExecutedQuantity    *decimal.Decimal
-	ExecutedAmount      *decimal.Decimal
-	ExecutionPrice      *decimal.Decimal
-	Currency            string
-	Status              vo.ExecutionStatus
-	TraderUserID        *uuid.UUID
-	BrokerReference     string
-	ExecutedAt          *time.Time
-	CancelledAt         *time.Time
-	CancelledBy         *uuid.UUID
-	CancellationReason  string
-	CreatedAt           time.Time
-	CreatedBy           uuid.UUID
-	UpdatedAt           time.Time
-	UpdatedBy           uuid.UUID
+	ID                 uuid.UUID
+	DecisionID         uuid.UUID
+	FundID             uuid.UUID
+	PortfolioID        uuid.UUID
+	ContractID         uuid.UUID
+	InstrumentID       *uuid.UUID
+	InstrumentCode     string
+	BusinessDate       time.Time
+	Side               vo.OrderSide
+	OrderedQuantity    *decimal.Decimal
+	OrderedAmount      *decimal.Decimal
+	ExecutedQuantity   *decimal.Decimal
+	ExecutedAmount     *decimal.Decimal
+	ExecutionPrice     *decimal.Decimal
+	Currency           string
+	Status             vo.ExecutionStatus
+	TraderUserID       *uuid.UUID
+	BrokerReference    string
+	ExecutedAt         *time.Time
+	CancelledAt        *time.Time
+	CancelledBy        *uuid.UUID
+	CancellationReason string
+	CreatedAt          time.Time
+	CreatedBy          uuid.UUID
+	UpdatedAt          time.Time
+	UpdatedBy          uuid.UUID
 }
 
 // CanUpdate reports whether the execution may receive new fills / status

@@ -3,8 +3,8 @@ package transport
 import (
 	"github.com/go-chi/chi/v5"
 
-	"github.com/neo-kanta/ims-th-solution/backend/internal/notification/transport/handler"
 	notifperm "github.com/neo-kanta/ims-th-solution/backend/internal/notification/permission"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/notification/transport/handler"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )
 
