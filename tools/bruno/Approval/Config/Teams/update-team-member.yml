@@ -1,0 +1,33 @@
+info:
+  name: update-team-member
+  type: http
+  seq: 8
+
+http:
+  method: PUT
+  url: "{{approval-config-base-url}}/teams/:teamId/members/:memberId"
+  params:
+    - name: teamId
+      value: "{{approval-team-id}}"
+      type: path
+    - name: memberId
+      value: "{{approval-team-member-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "user_id": "{{user_id}}",
+        "member_type": "CO_MANAGER",
+        "priority_order": 1,
+        "is_active": true
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1166,6 +1166,115 @@ server.tool(
   },
 );
 
+// ===========================
+// TOOL: calc_sum
+// ===========================
+server.tool(
+  "calc_sum",
+  "Sums a list of numbers deterministically. Use this tool instead of performing mathematical additions in the LLM.",
+  {
+    values: z.array(z.number()).describe("Array of numbers to sum"),
+  },
+  async ({ values }) => {
+    const sum = values.reduce((a, b) => a + b, 0);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ sum, count: values.length }, null, 2),
+        },
+      ],
+    };
+  },
+);
+
+// ===========================
+// TOOL: calc_weighted_average
+// ===========================
+server.tool(
+  "calc_weighted_average",
+  "Calculates the weighted average of values given their weights. Use this tool instead of performing weighted calculations in the LLM.",
+  {
+    values: z.array(z.number()).describe("Array of values to average"),
+    weights: z.array(z.number()).describe("Array of weights corresponding to the values"),
+  },
+  async ({ values, weights }) => {
+    if (values.length !== weights.length || values.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ error: "values and weights arrays must have the same non-zero length" }),
+          },
+        ],
+        isError: true,
+      };
+    }
+    let totalWeight = 0;
+    let sumProduct = 0;
+    for (let i = 0; i < values.length; i++) {
+      totalWeight += weights[i];
+      sumProduct += values[i] * weights[i];
+    }
+    const weighted_average = totalWeight !== 0 ? sumProduct / totalWeight : 0;
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ weighted_average, total_weight: totalWeight }, null, 2),
+        },
+      ],
+    };
+  },
+);
+
+// ===========================
+// TOOL: calc_pnl
+// ===========================
+server.tool(
+  "calc_pnl",
+  "Calculates absolute and percentage Profit and Loss (PnL) given market value and cost basis. Use this tool instead of performing PnL calculations in the LLM.",
+  {
+    market_value: z.number().describe("Total current market value"),
+    cost_basis: z.number().describe("Total cost basis/investment"),
+  },
+  async ({ market_value, cost_basis }) => {
+    const abs_pnl = market_value - cost_basis;
+    const pct_pnl = cost_basis !== 0 ? (abs_pnl / cost_basis) * 100 : 0;
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ market_value, cost_basis, abs_pnl, pct_pnl }, null, 2),
+        },
+      ],
+    };
+  },
+);
+
+// ===========================
+// TOOL: calc_percentage
+// ===========================
+server.tool(
+  "calc_percentage",
+  "Calculates the percentage of a value relative to a total. Use this tool instead of performing division/percentage math in the LLM.",
+  {
+    value: z.number().describe("The numerator value"),
+    total: z.number().describe("The denominator total value"),
+  },
+  async ({ value, total }) => {
+    const percentage = total !== 0 ? (value / total) * 100 : 0;
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ value, total, percentage }, null, 2),
+        },
+      ],
+    };
+  },
+);
+
 // ---------------------------------------------------------------------------
 // Resources: Expose key project files as MCP resources
 // ---------------------------------------------------------------------------

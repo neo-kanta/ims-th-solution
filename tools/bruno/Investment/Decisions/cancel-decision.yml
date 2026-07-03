@@ -1,0 +1,27 @@
+info:
+  name: cancel-decision
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/decisions/:id/cancel"
+  params:
+    - name: id
+      value: "{{investment-decision-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "{{investment-decision-cancel-reason}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

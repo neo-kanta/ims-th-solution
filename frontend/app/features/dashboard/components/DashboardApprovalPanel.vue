@@ -74,7 +74,7 @@ defineProps<{
   height: 1.75rem;
   padding: 0 var(--space-2);
   border-radius: 999px;
-  background: var(--color-danger-50);
+  background: var(--alert-danger-bg);
   color: var(--state-danger);
   font-size: 11px;
   font-weight: var(--font-weight-semibold);

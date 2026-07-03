@@ -761,6 +761,2105 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approval-config/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List approval groups */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Only active groups */
+                    active_only?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create an approval group */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["GroupRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an approval group */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["GroupRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List approval group members */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add an approval group member */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["GroupMemberRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}/members/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder approval group members */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Ordered member ids */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReorderRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an approval group member */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                    /** @description Member UUID */
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["GroupMemberRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}/members/{memberId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve an approval group member */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                    /** @description Member UUID */
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/groups/{id}/members/{memberId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke an approval group member */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Group UUID */
+                    id: string;
+                    /** @description Member UUID */
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupMemberResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/processes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List approval process configs */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Process type filter */
+                    process_type?: string;
+                    /** @description Only active configs */
+                    active_only?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create an approval process config */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["ProcessConfigRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/processes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an approval process config */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Process config UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /** Update an approval process config */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Process config UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["ProcessConfigRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/processes/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate an approval process config */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Process config UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/processes/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate an approval process config */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Process config UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProcessConfigResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List approval teams */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create an approval team */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["TeamRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an approval team */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["TeamRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/teams/{id}/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a team's contract assignments */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamContractResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Assign a contract/fund to an approval team */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Contract assignment */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TeamContractRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamContractResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/teams/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List approval team members */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamMemberResponse"][];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add an approval team member */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["TeamMemberRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamMemberResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-config/teams/{id}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update an approval team member */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                    /** @description Member UUID */
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["TeamMemberRequest"];
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TeamMemberResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Remove an approval team member */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Team UUID */
+                    id: string;
+                    /** @description Member UUID */
+                    memberId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my approval inbox
+         * @description Returns the authenticated user's pending approval tasks joined with their requests.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Task status filter (default PENDING) */
+                    status?: string;
+                    /** @description Page number */
+                    page?: number;
+                    /** @description Page size */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InboxListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List approval requests
+         * @description Lists approval requests with optional filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Request status */
+                    status?: string;
+                    /** @description Process type */
+                    process_type?: string;
+                    /** @description Page number */
+                    page?: number;
+                    /** @description Page size */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get approval request detail
+         * @description Returns a request with its tasks, immutable timeline and signature records.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestDetailResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests/{requestId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an approval request
+         * @description Cancels an in-flight approval request (privileged).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests/{requestId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an approved request
+         * @description Revokes a previously approved request, returning the subject to an un-approved state. Requires a reason.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Revocation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ActionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests/{requestId}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get approval timeline
+         * @description Returns the immutable, ordered approval timeline for a request.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["EventResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/requests/{requestId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw an approval request
+         * @description The submitter withdraws their own active approval request.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval request UUID */
+                    requestId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/subjects/{subjectType}/{subjectId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get subject approval status
+         * @description Returns the latest approval request for a business object (subject), if any.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Subject type */
+                    subjectType: string;
+                    /** @description Subject UUID */
+                    subjectId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SubjectStatusResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a subject for approval
+         * @description Creates an approval request and the first stage tasks for a business object.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Submit payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SubmitRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/tasks/{taskId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve an approval task
+         * @description Records an approval on an assigned task and advances the request.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval task UUID */
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Optional comment */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ActionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/tasks/{taskId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject an approval task
+         * @description Records a rejection (reason required); one rejection stops the request.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Approval task UUID */
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Rejection reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ActionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/change-password": {
         parameters: {
             query?: never;
@@ -1553,6 +3652,284 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a chat message and stream the response
+         * @description Streams text/event-stream. Each frame's `data:` payload is a ChatStreamEvent (see response model). Frames have event names: session_started, text, done, error. Use fetch() + ReadableStream on the client — EventSource cannot carry an Authorization header.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Chat message */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SendMessageRequest"];
+                };
+            };
+            responses: {
+                /** @description One example frame payload; the response is a stream of these */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ChatStreamEvent"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List chat sessions
+         * @description Lists the caller's chat sessions. Auditors (IAM_AUDIT_VIEW) may pass user_id to list another user's sessions; such access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page (default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    limit?: number;
+                    /** @description Auditor-only: list this user's sessions (requires IAM_AUDIT_VIEW) */
+                    user_id?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a chat session
+         * @description Returns one session's metadata. Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Session UUID */
+                    session_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionSummaryResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions/{session_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List chat session messages
+         * @description Returns a session's messages with safe provenance (no raw provider payload). Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page (default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Session UUID */
+                    session_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionMessagesResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compliance/breaches": {
         parameters: {
             query?: never;
@@ -2180,6 +4557,883 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integration/dashboard/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal dashboard snapshot
+         * @description Returns the caller's full dashboard read model: tasks, workflow states, and aggregate counts.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["DashboardSnapshotDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration/tasks/my": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal task list
+         * @description Returns the caller's task feed, optionally filtered by module, priority, or status.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by module (investment|workflow|compliance) */
+                    module?: string;
+                    /** @description Filter by priority (HIGH|MEDIUM|LOW|INFO) */
+                    priority?: string;
+                    /** @description Filter by status (PENDING|IN_PROGRESS|COMPLETED) */
+                    status?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["TaskListDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration/tasks/my/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personal task summary
+         * @description Returns aggregate task counts for the caller without the full task list.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["TaskSummaryDTO"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Investment Decisions
+         * @description Returns a paginated list of investment decisions with optional filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Filter by fund UUID */
+                    fund_id?: string;
+                    /** @description Filter by portfolio UUID */
+                    portfolio_id?: string;
+                    /** @description Filter by contract UUID */
+                    contract_id?: string;
+                    /** @description Filter by business date YYYY-MM-DD */
+                    business_date?: string;
+                    /** @description Filter by lifecycle status */
+                    status?: string;
+                    /** @description Filter by instrument code */
+                    instrument_code?: string;
+                    /** @description Substring search on decision_no / instrument_code */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionListResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create Investment Decision
+         * @description Creates a new investment decision in DRAFT status.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Decision fields */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateDecisionRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/approval-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Investment Decision Approval Items
+         * @description Returns decisions pending approval (default status=PENDING_APPROVAL), enriched with current and previous approver names and stage numbers.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Filter by portfolio UUID */
+                    portfolio_id?: string;
+                    /** @description Filter by fund UUID */
+                    fund_id?: string;
+                    /** @description Inclusive lower bound YYYY-MM-DD */
+                    business_date_from?: string;
+                    /** @description Inclusive upper bound YYYY-MM-DD */
+                    business_date_to?: string;
+                    /** @description Filter by exact decision number */
+                    decision_no?: string;
+                    /** @description INVESTMENT_DECISION | ORDER_CANCEL | ORDER_AMEND */
+                    process_type?: string;
+                    /** @description MUTUAL_FUND | ETF | STOCK | BOND | CASH */
+                    product_type?: string;
+                    /** @description Filter by research report number */
+                    research_no?: string;
+                    /** @description Decision lifecycle status (default PENDING_APPROVAL) */
+                    status?: string;
+                    /** @description Substring search on decision_no / instrument_code / research_report_no */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/batch-approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Approve Investment Decisions
+         * @description Approves multiple investment decision headers in a single call. Each decision must be PENDING_APPROVAL and have a pending approval task assigned to the authenticated user. Returns per-decision results — partial failures are reported without aborting the rest.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Decision numbers and optional comment */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BatchApprovalRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BatchApprovalResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/batch-reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch Reject Investment Decisions
+         * @description Rejects multiple investment decision headers in a single call. A rejection reason is required and applied to all selected decisions. Returns per-decision results.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Decision numbers and required reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BatchRejectionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BatchApprovalResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Investment Decision
+         * @description Cancels a DRAFT or SUBMITTED decision. A cancellation reason is required.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Decision UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Cancellation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CancelDecisionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/{id}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Investment Decision With Lines
+         * @description Returns a decision header with all child decision lines (for basket/rebalance/switch decisions) and approval stage info.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Decision UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/decisions/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Investment Decision
+         * @description Submits a DRAFT decision for approval. Transitions status to SUBMITTED.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Decision UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DecisionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/funds": {
         parameters: {
             query?: never;
@@ -2606,6 +5860,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/funds/{id}/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fund Allocation
+         * @description Compute asset-class, sector, country and currency breakdowns for a fund (read-only).
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures. */
+                    business_date?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundAllocationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/funds/{id}/aum/compute": {
         parameters: {
             query?: never;
@@ -2719,6 +6063,447 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/holdings/valuation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Mark-to-Market Holdings Valuation
+         * @description Compute holdings mark-to-market valuation (market value, unrealised P&L, ROI) as of business_date, alongside the official accounting NAV. business_date defaults to today (UTC) and accepts YYYY-MM-DD.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Valuation date, YYYY-MM-DD. Defaults to today (UTC). */
+                    business_date?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["IntradayValuationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/market-data/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Fund Market Data
+         * @description Trigger a provider fetch for every instrument held by the fund. Records an audit event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MarketDataRefreshResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/market-data/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fund Market Data Status
+         * @description Report provider health and the number of stale positions for a fund.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MarketDataStatusResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/nav-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fund NAV History
+         * @description Time series of NAV-per-unit (unitised funds) or AUM (non-unitised) over a range.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M) */
+                    range?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundNAVHistoryResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/funds/{id}/nav/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Latest Fund NAV
+         * @description Aggregate latest per-portfolio valuations into a fund-level NAV view (read-only; no side effects).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Fund UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FundNAVResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3942,6 +7727,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/portfolios/{id}/transactions/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate Portfolio Transaction
+         * @description Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Transaction simulation payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PostTransactionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TransactionSimulationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/investment/portfolios/{id}/transactions/{txnId}/reverse": {
         parameters: {
             query?: never;
@@ -4803,6 +8698,655 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/investment/research-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Investment Research Reports
+         * @description Paginated list of research reports with optional filters.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description DRAFT | ACTIVE | EXPIRED | REJECTED */
+                    report_status?: string;
+                    /** @description NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED */
+                    review_status?: string;
+                    /** @description BUY | SELL | HOLD */
+                    recommendation?: string;
+                    /** @description Exact instrument code filter */
+                    instrument_code?: string;
+                    /** @description Owner user UUID */
+                    owner_user_id?: string;
+                    /** @description Inclusive lower bound YYYY-MM-DD */
+                    report_date_from?: string;
+                    /** @description Inclusive upper bound YYYY-MM-DD */
+                    report_date_to?: string;
+                    /** @description Substring search on report_no/instrument_code/report_title */
+                    search?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create Investment Research Report
+         * @description Create a new DRAFT research report.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Research report create payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Investment Research Report
+         * @description Retrieve one research report by ID.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update Investment Research Report
+         * @description Apply partial updates to a research report. Refused when the report has been deleted or its review is completed.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Research report update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Delete Investment Research Report
+         * @description Soft-delete a research report. Only allowed while review_status = NOT_SUBMITTED.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}/cancel-submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Submission Of Investment Research Report
+         * @description Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused once review has been completed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}/invalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invalidate Investment Research Report
+         * @description One-way transition to INVALIDATED. An invalidated report cannot be referenced by a decision, edited, submitted, cancelled, or soft-deleted. The reason (≥20 characters) is stored and audited.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Invalidation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["InvalidateResearchReportRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/research-reports/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Investment Research Report
+         * @description Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval workflow is invoked.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Research report UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ResearchReportResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/market-data/history": {
         parameters: {
             query?: never;
@@ -4965,6 +9509,266 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/market-data/import-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Market Data Import Batch
+         * @description Create a chunked market data import batch for the given symbols.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Import batch payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateImportBatchRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateImportBatchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Market Data Import Batch
+         * @description Returns batch status with chunk summary and error rows.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportBatchStatusResponseDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Market Data Import Batch Errors
+         * @description Returns rejected/failed/warning items for the batch.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ImportChunkItem"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/import-batches/{batch_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Market Data Import Batch
+         * @description Runs all chunks for the batch synchronously.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Import batch id */
+                    batch_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RunImportBatchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Bad Gateway */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/market-data/provider-health": {
         parameters: {
             query?: never;
@@ -5094,6 +9898,2028 @@ export interface paths {
                 };
                 /** @description Bad Gateway */
                 502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/screen/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Data screen — search
+         * @description Search canonical securities with latest snapshot data and add-to-watchlist hint.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Free-text query */
+                    query?: string;
+                    /** @description Maximum rows (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScreenSearchResponseDTO"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market-data/screen/watchlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Market Data screen — watchlist
+         * @description Canonical securities joined with their latest snapshot data. Frontend-safe DTO.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Maximum rows (default 100, max 500) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ScreenWatchlistResponseDTO"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my in-app notifications
+         * @description Returns the authenticated user's in-app notification center list joined with IAM user data.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Return only unread notifications */
+                    unread_only?: boolean;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                    /** @description Offset for paging */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["listResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/email-outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List email outbox
+         * @description Returns paged email delivery records for admin/operator use.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by status (PENDING, SENDING, SENT, FAILED, DEAD) */
+                    status?: string;
+                    /** @description Filter by recipient username */
+                    recipient_username?: string;
+                    /** @description Filter by recipient email */
+                    recipient_email?: string;
+                    /** @description Filter by event type */
+                    event_type?: string;
+                    /** @description Filter by event category */
+                    event_category?: string;
+                    /** @description Filter by business type */
+                    business_type?: string;
+                    /** @description Filter by business reference */
+                    business_reference?: string;
+                    /** @description Filter created_at >= (RFC3339) */
+                    created_from?: string;
+                    /** @description Filter created_at <= (RFC3339) */
+                    created_to?: string;
+                    /** @description Page size (default 50) */
+                    limit?: number;
+                    /** @description Offset for paging */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["outboxListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/email-outbox/{outbox_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get email outbox detail
+         * @description Returns one email outbox record with full body for troubleshooting.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Outbox record UUID */
+                    outbox_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["outboxDetailResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/email-outbox/{outbox_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry failed email
+         * @description Moves a FAILED or DEAD outbox row back to PENDING for another send attempt.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Outbox record UUID */
+                    outbox_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["retryResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/email/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Email health
+         * @description Returns email configuration and queue health without exposing secrets.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["healthResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/email/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send test email
+         * @description Creates a test email outbox row for SMTP verification. The background worker delivers it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Test email request */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["testEmailRequest"];
+                };
+            };
+            responses: {
+                /** @description Accepted */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["testEmailResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark all notifications as read
+         * @description Marks every unread in-app notification for the authenticated user as read.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["markAllReadResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one notification as read
+         * @description Marks a single in-app notification as read for the authenticated user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Notification ID (UUID) */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["markReadResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create canonical security
+         * @description Register a new canonical IMS security.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Security payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateSecurityRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search canonical securities
+         * @description Search canonical securities by query, asset type, provider, and status.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Free-text query against ims_symbol/display_symbol/name/isin */
+                    query?: string;
+                    /** @description Filter by AssetType (EQUITY, BOND, FX, ...) */
+                    asset_type?: string;
+                    /** @description Only securities with an ACTIVE mapping for this provider_code */
+                    provider?: string;
+                    /** @description Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED) */
+                    status?: string;
+                    /** @description Result limit (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SearchResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get canonical security */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch canonical security */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Patch payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateSecurityRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SecurityDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}/mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List provider mappings for a security */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MappingsResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Add provider mapping to a security */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Provider mapping payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddProviderMappingRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProviderMappingDTO"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/securities/{security_id}/mappings/{mapping_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a provider mapping
+         * @description Marks the mapping as INACTIVE rather than removing it physically.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Security id */
+                    security_id: string;
+                    /** @description Mapping id */
+                    mapping_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List unmapped provider symbol candidates */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filter by candidate_status */
+                    status?: string;
+                    /** @description Filter by provider_code */
+                    provider?: string;
+                    /** @description Filter by import batch id */
+                    batch_id?: string;
+                    /** @description Result limit (default 100, max 500) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CandidatesResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates/{candidate_id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Map a candidate to an existing security */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Candidate id */
+                    candidate_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Security id to map to */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MapCandidateRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference-data/unmapped-candidates/{candidate_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject an unmapped candidate */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Candidate id */
+                    candidate_id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Rejection reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RejectCandidateRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List watchlist items */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description PERSONAL or PORTFOLIO */
+                    scope_type?: string;
+                    /** @description Portfolio UUID (PORTFOLIO scope only) */
+                    portfolio_id?: string;
+                    /** @description Canonical security UUID */
+                    security_id?: string;
+                    /** @description Include disabled items (default false) */
+                    include_disabled?: boolean;
+                    /** @description Include threshold rules (default true) */
+                    include_thresholds?: boolean;
+                    /** @description Include live quote (default true) */
+                    include_quote?: boolean;
+                    /** @description Page size (1-200, default 50) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListItemsResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List alert events */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description PERSONAL or PORTFOLIO */
+                    scope_type?: string;
+                    /** @description Portfolio UUID */
+                    portfolio_id?: string;
+                    /** @description Canonical security UUID */
+                    security_id?: string;
+                    /** @description Threshold rule UUID */
+                    rule_id?: string;
+                    /** @description Filter by acknowledgement state */
+                    acknowledged?: boolean;
+                    /** @description RFC3339 inclusive lower bound */
+                    created_from?: string;
+                    /** @description RFC3339 inclusive upper bound */
+                    created_to?: string;
+                    /** @description Page size (1-200, default 50) */
+                    limit?: number;
+                    /** @description Page offset (default 0) */
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListAlertsResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/alerts/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge an alert event */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Alert event UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Acknowledgement payload */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["AcknowledgeAlertRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["AlertEventResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually trigger rule evaluation */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Evaluation filter */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["EvaluateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["EvaluateResponseData"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a watchlist item */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Create payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateItemRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["WatchlistItemResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watchlists/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a watchlist item */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Item UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a watchlist item */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Item UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Update payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateItemRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["WatchlistItemResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/workflow/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Workflow State
+         * @description Returns aggregated global workflow state for a business date.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Business date (YYYY-MM-DD) */
+                    businessDate: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DailyWorkflowResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/daily/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Daily Workflow Transition
+         * @description Execute a workflow transition using business-readable identifiers and canonical operation types.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Execute payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DailyExecuteRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DailyWorkflowResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/daily/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Transition History
+         * @description Returns paginated global workflow transition history.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Business date (YYYY-MM-DD) */
+                    businessDate: string;
+                    /** @description Page number (1-based, default 1) */
+                    page?: number;
+                    /** @description Page size (default 20, max 100) */
+                    pageSize?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DailyTransitionsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5442,6 +12268,175 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflow/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Approval Settings
+         * @description Returns the configured approvers for each workflow operation type.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkflowSettingsResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update Workflow Approval Settings
+         * @description Replace the configured approvers for a workflow operation type. Admin only. Note: approver account codes are stored without IAM validation (no cross-module IAM lookup interface exists).
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Settings payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DailySettingsUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkflowSettingsResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/transition-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Workflow Transition Rules
+         * @description Returns the full state machine topology as a list of valid from→operation→to transitions.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TransitionRulesResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5455,6 +12450,23 @@ export interface components {
             scope_type?: string;
             source?: string;
             valuation_ccy?: string;
+        };
+        AcknowledgeAlertRequest: {
+            note?: string;
+        };
+        ActionRequest: {
+            comment?: string;
+            reason?: string;
+        };
+        AddProviderMappingRequest: {
+            confidence_score?: string;
+            is_primary?: boolean;
+            priority?: number;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_symbol?: string;
         };
         AdminResetPasswordRequest: {
             new_password: string;
@@ -5479,6 +12491,54 @@ export interface components {
             locked_until?: string;
             password_changed_at?: string;
             updated_at?: string;
+            username?: string;
+        };
+        AlertEventResponse: {
+            acknowledged_at?: string;
+            acknowledged_by?: string;
+            acknowledged_by_user?: components["schemas"]["UserDescriptor"];
+            acknowledgement_note?: string;
+            acknowledgement_state?: string;
+            created_at?: string;
+            created_by_user?: components["schemas"]["UserDescriptor"];
+            created_by_user_id?: string;
+            currency?: string;
+            current_state?: string;
+            direction?: string;
+            evaluated_at?: string;
+            id?: string;
+            notification_status?: string;
+            observed_at?: string;
+            observed_price?: string;
+            owner_user_id?: string;
+            portfolio?: components["schemas"]["PortfolioDescriptor"];
+            portfolio_id?: string;
+            previous_state?: string;
+            quote_provider?: string;
+            scope_type?: string;
+            security?: components["schemas"]["SecurityDescriptor"];
+            stale?: boolean;
+            stale_reason?: string;
+            threshold_rule_id?: string;
+            threshold_value?: string;
+            watchlist_item_id?: string;
+        };
+        AllocationBucketResponse: {
+            /** @description stable machine key */
+            key?: string;
+            /** @description human label */
+            label?: string;
+            /** @description decimal string in valuation_ccy */
+            market_value?: string;
+            /** @description 0..100, two-decimal precision */
+            pct_of_nav?: string;
+        };
+        ApproverInput: {
+            /** @description AccountCode is the approver's account code. Required. */
+            accountCode?: string;
+            /** @description Role is a descriptive label (e.g. "FundManager"). Optional. */
+            role?: string;
+            /** @description Username is a snapshot of the approver's display name. Optional. */
             username?: string;
         };
         AssetClass: {
@@ -5523,6 +12583,24 @@ export interface components {
             offset?: number;
             total?: number;
         };
+        BatchApprovalRequest: {
+            comment?: string;
+            decision_nos: string[];
+        };
+        BatchApprovalResponse: {
+            failed?: number;
+            results?: components["schemas"]["BatchApprovalResultResponse"][];
+            succeeded?: number;
+        };
+        BatchApprovalResultResponse: {
+            decision_no?: string;
+            error?: string;
+            ok?: boolean;
+        };
+        BatchRejectionRequest: {
+            decision_nos: string[];
+            reason: string;
+        };
         BlockingReason: {
             code?: string;
             message?: string;
@@ -5553,15 +12631,113 @@ export interface components {
             severity?: string;
             verdict?: string;
         };
+        CancelDecisionRequest: {
+            reason: string;
+        };
+        CandidatesResponse: {
+            items?: components["schemas"]["UnmappedCandidateDTO"][];
+        };
         CashBalanceResponse: {
             balance?: string;
             currency?: string;
             last_business_date?: string;
             version?: number;
         };
+        CashProjectionResponse: {
+            cash_impact?: string;
+            currency?: string;
+            current_balance?: string;
+            projected_balance?: string;
+        };
         ChangePasswordRequest: {
             new_password: string;
             old_password: string;
+        };
+        ChatFigureBinding: {
+            /** @example 10.25 */
+            figure?: string;
+            /** @example tool_raw */
+            source?: string;
+            /** @example get_fund_nav */
+            tool_name?: string;
+        };
+        ChatMessageResponse: {
+            content?: string;
+            created_at?: string;
+            id?: string;
+            provenance?: Record<string, never>;
+            /** @example assistant */
+            role?: string;
+        };
+        ChatSourceRef: {
+            /** @example 2026-06-07T08:30:00Z */
+            as_of?: string;
+            /** @example ims */
+            server?: string;
+            /** @example succeeded */
+            state?: string;
+            /** @example get_fund_nav */
+            tool_name?: string;
+        };
+        ChatStreamEvent: {
+            /**
+             * @description Bindings links cited figures to the tool that produced them. Present only
+             *     on kind=sources, and only when the answer passed numeric validation.
+             */
+            bindings?: components["schemas"]["ChatFigureBinding"][];
+            /**
+             * @description Error is a safe, user-facing error message. Present only on kind=error.
+             * @example the assistant could not complete this turn
+             */
+            error?: string;
+            /**
+             * @description Kind is the SSE event name. One of: session_started, text, done, error.
+             * @example text
+             */
+            kind?: string;
+            /**
+             * @description MessageID is the user message id on session_started, or the assistant
+             *     message id on done.
+             * @example 123e4567-e89b-12d3-a456-426614174001
+             */
+            message_id?: string;
+            /**
+             * @description SessionID is the conversation id. Present on session_started, done, and error.
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            session_id?: string;
+            /**
+             * @description Sources lists the turn-level provenance (which tools ran). Present only on
+             *     kind=sources.
+             */
+            sources?: components["schemas"]["ChatSourceRef"][];
+            /**
+             * @description StopReason is the canonical termination reason. Present only on kind=done.
+             *     One of: end_turn, tool_use, max_tokens, stop_sequence, error, unknown.
+             * @example end_turn
+             */
+            stop_reason?: string;
+            /**
+             * @description Text is an incremental token. Present only on kind=text.
+             * @example Hello
+             */
+            text?: string;
+            /**
+             * @description ToolName is the MCP tool being called. Present only on kind=tool_call.
+             * @example get_portfolio_holdings
+             */
+            tool_name?: string;
+            /**
+             * @description ToolStatus is the tool-call lifecycle marker. Present only on
+             *     kind=tool_call. One of: running, ok, error, denied.
+             * @example running
+             */
+            tool_status?: string;
+            /**
+             * @description Unverified lists the figures that failed numeric validation. Present only
+             *     on kind=validation with tool_status=blocked.
+             */
+            unverified?: string[];
         };
         CheckGroupResult: {
             breaches?: components["schemas"]["Breach"][];
@@ -5603,6 +12779,20 @@ export interface components {
             /** @description raw verdict from rule */
             verdict?: string;
         };
+        ComplianceBreachPreviewResponse: {
+            breach_id?: string;
+            message?: string;
+            overridable?: boolean;
+            rule_type_id?: string;
+            severity?: string;
+            verdict?: string;
+        };
+        CompliancePreviewResponse: {
+            breaches?: components["schemas"]["ComplianceBreachPreviewResponse"][];
+            check_group_id?: string;
+            rules_evaluated?: number;
+            verdict?: string;
+        };
         ComputeFundAUMRequest: {
             business_date: string;
         };
@@ -5620,6 +12810,23 @@ export interface components {
             regionID?: string;
             updatedAt?: string;
         };
+        CreateDecisionRequest: {
+            amount?: string;
+            business_date: string;
+            contract_id: string;
+            currency: string;
+            exchange?: string;
+            fund_id: string;
+            instrument_code: string;
+            instrument_id?: string;
+            limit_price?: string;
+            portfolio_id: string;
+            quantity?: string;
+            rationale?: string;
+            research_report_id?: string;
+            /** @enum {string} */
+            side: "BUY" | "SELL";
+        };
         CreateFundRequest: {
             base_currency: string;
             benchmark?: string;
@@ -5630,8 +12837,31 @@ export interface components {
             inception_date: string;
             manager_user_id?: string;
             name: string;
+            /**
+             * @description RequirePretradePreview controls the trade-ticket UX on the Operation tab.
+             *     When true the UI must run a pre-trade simulation before allowing a post;
+             *     when false it posts directly (server still enforces gates).
+             */
+            require_pretrade_preview?: boolean;
             risk_profile?: string;
             short_name?: string;
+        };
+        CreateImportBatchRequest: {
+            chunk_size?: number;
+            history_limit?: number;
+            idempotency_key?: string;
+            import_type?: string;
+            include_history?: boolean;
+            include_quote?: boolean;
+            provider?: string;
+            symbols?: string[];
+        };
+        CreateImportBatchResponse: {
+            batch_id?: string;
+            reused?: boolean;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
         };
         CreateInstrumentRequest: {
             asset_class_id: string;
@@ -5650,6 +12880,14 @@ export interface components {
             sector_id?: string;
             tick_size?: string;
         };
+        CreateItemRequest: {
+            note?: string;
+            pinned?: boolean;
+            portfolio_id?: string;
+            scope_type?: string;
+            security_id?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleRequest"][];
+        };
         CreatePortfolioRequest: {
             base_currency: string;
             benchmark?: string;
@@ -5665,6 +12903,27 @@ export interface components {
             style_id?: string;
             tax_lot_method?: string;
             valuation_currency: string;
+        };
+        CreateResearchReportRequest: {
+            applicable_contract_id?: string;
+            author_user_id: string;
+            company_outlook?: string;
+            company_overview?: string;
+            currency?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            instrument_code: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            investment_analysis: string;
+            market?: string;
+            owner_user_id: string;
+            /** @enum {string} */
+            recommendation: "BUY" | "SELL" | "HOLD";
+            report_date: string;
+            report_no: string;
+            report_title?: string;
         };
         CreateRuleInstanceRequest: {
             /** @description "initial creation" if blank */
@@ -5684,11 +12943,212 @@ export interface components {
             instance?: components["schemas"]["RuleInstance"];
             version?: components["schemas"]["RuleInstanceVersion"];
         };
+        CreateSecurityRequest: {
+            asset_type?: string;
+            auto_build_ims_symbol?: boolean;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            ims_symbol?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            status?: string;
+        };
         CreateUserRequest: {
             display_name: string;
             email: string;
             password: string;
             username: string;
+        };
+        DailyApproverEntry: {
+            accountCode?: string;
+            role?: string;
+            username?: string;
+        };
+        DailyAuditSummary: {
+            lastTransitionAt?: string;
+            lastTransitionBy?: string;
+            totalTransitions?: number;
+        };
+        DailyBlockingReason: {
+            code?: string;
+            message?: string;
+        };
+        DailyExecuteRequest: {
+            /**
+             * @description AccountingDate applies to CLOSE_ACCOUNTING. Format YYYY-MM-DD.
+             *     When omitted, defaults to BusinessDate.
+             */
+            accountingDate?: string;
+            /** @description AttestationReason is required when ZeroTransactionAttestation is true (min 30 chars). */
+            attestationReason?: string;
+            /** @description BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar). */
+            businessDate?: string;
+            /** @description Notes is an optional free-text remark for MANAGER_APPROVE. */
+            notes?: string;
+            /**
+             * @description OperationType is the canonical API operation name.
+             *     Valid values: START_INVESTMENT_DAY, CANCEL_INVESTMENT_DAY,
+             *       MANAGER_APPROVE, CANCEL_MANAGER_APPROVAL,
+             *       CLOSE_TRANSACTION, CANCEL_TRANSACTION_CLOSE,
+             *       CLOSE_ACCOUNTING, CANCEL_ACCOUNTING_CLOSE
+             */
+            operationType?: string;
+            /** @description Reason is mandatory for cancel/rollback operations (min 20 chars). */
+            reason?: string;
+            /**
+             * @description Remark is optional free text from the operator. For cancel/rollback
+             *     operations it is accepted as an alias for reason.
+             */
+            remark?: string;
+            /**
+             * @description ZeroTransactionAttestation must be true when approving a day with no
+             *     investment transactions. Applies to MANAGER_APPROVE only.
+             */
+            zeroTransactionAttestation?: boolean;
+        };
+        DailyModuleStatus: {
+            ready?: boolean;
+            reason?: string;
+        };
+        DailyOperationSetting: {
+            approvalMode?: string;
+            approvers?: components["schemas"]["DailyApproverEntry"][];
+        };
+        DailySettingsUpdateRequest: {
+            /**
+             * @description Approvers replaces the entire active approver list for this operation type.
+             *     Pass an empty array to remove all approvers.
+             */
+            approvers?: components["schemas"]["ApproverInput"][];
+            /** @description OperationType is the operation type to configure approvers for. */
+            operationType?: string;
+        };
+        DailyTimelineEntry: {
+            executedAt?: string;
+            executedByAccountCode?: string;
+            executedByUsername?: string;
+            fromState?: string;
+            isAdminOverride?: boolean;
+            /** @description canonical API name */
+            operationType?: string;
+            reason?: string;
+            toState?: string;
+            transitionId?: string;
+        };
+        DailyTransitionsResponse: {
+            businessDate?: string;
+            page?: number;
+            pageSize?: number;
+            total?: number;
+            transitions?: components["schemas"]["DailyTimelineEntry"][];
+        };
+        /** @description Aggregated workflow state for one contract on one business date. */
+        DailyWorkflowResponse: {
+            /** @description AllowedOperations lists operation types the caller may attempt (API names). */
+            allowedOperations?: string[];
+            /** @description Approvers maps operationType → configured approver list. */
+            approvers?: {
+                [key: string]: components["schemas"]["DailyApproverEntry"][];
+            };
+            auditSummary?: components["schemas"]["DailyAuditSummary"];
+            blockedOperations?: string[];
+            blockedReasons?: components["schemas"]["DailyBlockingReason"][];
+            /** @description YYYY-MM-DD */
+            businessDate?: string;
+            /**
+             * @description CurrentState is one of: NOT_STARTED, INVESTMENT_DAY_STARTED,
+             *     MANAGER_APPROVED, TRANSACTION_CLOSED, ACCOUNTING_CLOSED
+             */
+            currentState?: string;
+            isToday?: boolean;
+            moduleReadiness?: {
+                [key: string]: components["schemas"]["DailyModuleStatus"];
+            };
+            persisted?: boolean;
+            /** @description Settings maps operationType → approval configuration. */
+            settings?: {
+                [key: string]: components["schemas"]["DailyOperationSetting"];
+            };
+            settingsSummary?: {
+                [key: string]: components["schemas"]["DailyOperationSetting"];
+            };
+            stateLabel?: string;
+            timeline?: components["schemas"]["DailyTimelineEntry"][];
+            transitionRules?: components["schemas"]["TransitionRule"][];
+        };
+        DashboardSnapshotDTO: {
+            lastRefreshed?: string;
+            summary?: components["schemas"]["TaskSummaryDTO"];
+            tasks?: components["schemas"]["TaskDTO"][];
+            workflowStates?: components["schemas"]["WorkflowStateDTO"][];
+        };
+        DecisionLineResponse: {
+            amount?: string;
+            currency?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_id?: string;
+            limit_price?: string;
+            line_number?: number;
+            notes?: string;
+            product_type?: string;
+            quantity?: string;
+            side?: string;
+            target_weight?: string;
+        };
+        DecisionListResponse: {
+            items?: components["schemas"]["DecisionResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        DecisionResponse: {
+            amendment_no?: number;
+            amount?: string;
+            approval_request_id?: string;
+            /** @description Approval enrichment — populated by the approval-items endpoint. */
+            approval_stage?: number;
+            approval_status?: string;
+            approval_total_stages?: number;
+            business_date?: string;
+            cancellation_reason?: string;
+            cancelled_at?: string;
+            compliance_check_group_id?: string;
+            compliance_release_approval_request_id?: string;
+            contract_id?: string;
+            created_at?: string;
+            currency?: string;
+            current_approvers?: string[];
+            decision_number?: string;
+            decision_type?: string;
+            exchange?: string;
+            fund_id?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_id?: string;
+            limit_price?: string;
+            /** @description Lines are included when the decision has basket/rebalance/switch lines. */
+            lines?: components["schemas"]["DecisionLineResponse"][];
+            portfolio_id?: string;
+            previous_approvers?: string[];
+            process_type?: string;
+            product_type?: string;
+            quantity?: string;
+            rationale?: string;
+            ready_for_execution_at?: string;
+            research_report_id?: string;
+            research_report_no?: string;
+            side?: string;
+            status?: string;
+            strategy_code?: string;
+            submitted_at?: string;
+            submitter_user_id?: string;
+            updated_at?: string;
         };
         DeleteFundRequest: {
             expected_version: number;
@@ -5701,7 +13161,59 @@ export interface components {
             details?: unknown;
             error?: string;
         };
+        EvaluateRequest: {
+            dry_run?: boolean;
+            item_id?: string;
+            portfolio_id?: string;
+            rule_id?: string;
+            scope_type?: string;
+            security_id?: string;
+        };
+        EvaluateResponseData: {
+            alerts_created?: number;
+            alerts_suppressed?: number;
+            dry_run?: boolean;
+            provider_failures?: number;
+            results?: components["schemas"]["EvaluateRuleResultResponse"][];
+            rules_evaluated?: number;
+            rules_skipped?: number;
+        };
+        EvaluateRuleResultResponse: {
+            computed_state?: string;
+            notification_status?: string;
+            observed_price?: string;
+            previous_state?: string;
+            quote_status?: string;
+            rule_id?: string;
+            security_id?: string;
+            stale?: boolean;
+            stale_reason?: string;
+            threshold_value?: string;
+            watchlist_item_id?: string;
+            would_create_alert?: boolean;
+        };
+        EventResponse: {
+            actor?: components["schemas"]["UserDescriptor"];
+            actor_name?: string;
+            actor_user_id?: string;
+            comment?: string;
+            created_at?: string;
+            delegated_from?: components["schemas"]["UserDescriptor"];
+            delegated_from_user_id?: string;
+            event_type?: string;
+            id?: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            stage_number?: number;
+        };
         ExecuteTransitionRequest: {
+            /**
+             * @description AccountingDate is the NAV / accounting posting date for
+             *     CLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to
+             *     BusinessDate. Must not precede BusinessDate. Ignored by other actions.
+             */
+            accountingDate?: string;
             /**
              * @description Action identifies the transition to execute.
              *     Valid values: OPEN_DAY, APPROVE, CANCEL_DAY_START, CANCEL_APPROVAL,
@@ -5738,6 +13250,18 @@ export interface components {
              */
             zeroTransactionAttestation?: boolean;
         };
+        FundAllocationResponse: {
+            as_of?: string;
+            by_asset_class?: components["schemas"]["AllocationBucketResponse"][];
+            by_country?: components["schemas"]["AllocationBucketResponse"][];
+            by_currency?: components["schemas"]["AllocationBucketResponse"][];
+            by_sector?: components["schemas"]["AllocationBucketResponse"][];
+            fund_id?: string;
+            portfolio_count?: number;
+            total_cash?: string;
+            total_nav?: string;
+            valuation_ccy?: string;
+        };
         FundCategory: {
             assetClassID?: string;
             code?: string;
@@ -5754,6 +13278,35 @@ export interface components {
             page?: number;
             total?: number;
         };
+        FundNAVHistoryResponse: {
+            delta_pct?: string;
+            from?: string;
+            fund_id?: string;
+            has_units?: boolean;
+            high?: string;
+            is_empty?: boolean;
+            latest?: string;
+            low?: string;
+            range?: string;
+            series?: components["schemas"]["NAVHistoryPointResponse"][];
+            to?: string;
+        };
+        FundNAVResponse: {
+            aum?: string;
+            business_date?: string;
+            cash_balance?: string;
+            fund_id?: string;
+            has_stale_inputs?: boolean;
+            is_indicative?: boolean;
+            market_value?: string;
+            nav_per_unit?: string;
+            portfolio_count?: number;
+            realised_pnl?: string;
+            roi?: string;
+            total_units?: string;
+            unrealised_pnl?: string;
+            valuation_ccy?: string;
+        };
         FundResponse: {
             base_currency?: string;
             benchmark?: string;
@@ -5766,13 +13319,57 @@ export interface components {
             inception_date?: string;
             manager_user_id?: string;
             name?: string;
+            require_pretrade_preview?: boolean;
             risk_profile?: string;
             short_name?: string;
             status?: string;
             updated_at?: string;
             version?: number;
         };
+        GroupMemberRequest: {
+            is_active?: boolean;
+            member_type?: string;
+            priority_order?: number;
+            status?: string;
+            user_id?: string;
+        };
+        GroupMemberResponse: {
+            created_at?: string;
+            display_name?: string;
+            group_id?: string;
+            id?: string;
+            is_active?: boolean;
+            member_type?: string;
+            priority_order?: number;
+            status?: string;
+            updated_at?: string;
+            user_id?: string;
+        };
+        GroupRequest: {
+            group_code?: string;
+            group_name?: string;
+            is_active?: boolean;
+            remarks?: string;
+        };
+        GroupResponse: {
+            created_at?: string;
+            group_code?: string;
+            group_name?: string;
+            id?: string;
+            is_active?: boolean;
+            remarks?: string;
+            updated_at?: string;
+        };
+        Health: {
+            /** @description the chat module is mounted */
+            enabled?: boolean;
+            /** @description at least one MCP server connected */
+            mcp_connected?: boolean;
+            /** @description allowlisted tools available */
+            tool_count?: number;
+        };
         HealthResponse: {
+            chat?: components["schemas"]["Health"];
             database?: string;
             redis?: string;
             status?: string;
@@ -5791,6 +13388,49 @@ export interface components {
             quantity?: string;
             version?: number;
         };
+        ImportBatch: {
+            accepted_records?: number;
+            batch_id?: string;
+            completed_at?: string;
+            created_at?: string;
+            created_by?: string;
+            error_message?: string;
+            idempotency_key?: string;
+            import_type?: string;
+            provider?: string;
+            rejected_records?: number;
+            started_at?: string;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
+            warning_records?: number;
+        };
+        ImportBatchStatusResponseDTO: {
+            batch?: components["schemas"]["ImportBatch"];
+            chunks?: components["schemas"]["ImportChunkSummary"][];
+            errors?: components["schemas"]["ImportChunkItem"][];
+        };
+        ImportChunkItem: {
+            chunk_id?: string;
+            created_at?: string;
+            error_code?: string;
+            error_message?: string;
+            item_id?: string;
+            provider_symbol?: string;
+            security_id?: string;
+            status?: string;
+            symbol?: string;
+        };
+        ImportChunkSummary: {
+            accepted_records?: number;
+            chunk_id?: string;
+            chunk_index?: number;
+            error_message?: string;
+            rejected_records?: number;
+            status?: string;
+            total_records?: number;
+            warning_records?: number;
+        };
         ImportMarketDataRequest: {
             history_limit?: number;
             include_history?: boolean;
@@ -5807,6 +13447,16 @@ export interface components {
             quote_provider?: string;
             requested_provider?: string;
             symbol?: string;
+        };
+        InboxItemResponse: {
+            request?: components["schemas"]["RequestResponse"];
+            task?: components["schemas"]["TaskResponse"];
+        };
+        InboxListResponse: {
+            items?: components["schemas"]["InboxItemResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
         };
         InstrumentListResponse: {
             items?: components["schemas"]["InstrumentResponse"][];
@@ -5836,6 +13486,111 @@ export interface components {
             tick_size?: string;
             updated_at?: string;
         };
+        IntradayAllocationBucketResponse: {
+            key?: string;
+            label?: string;
+            market_value?: string;
+            pct_of_total?: string;
+        };
+        IntradayCashRowResponse: {
+            balance?: string;
+            currency?: string;
+        };
+        IntradayPositionResponse: {
+            asset_class_code?: string;
+            asset_class_label?: string;
+            average_cost?: string;
+            /**
+             * @description Mark-to-market contract fields (additive — see docs/investment-module.md
+             *     holdings valuation section). CostAmount duplicates CostBasis under the
+             *     contract's field name; ROI is a ratio (unrealised_pnl / cost_amount),
+             *     not a percentage.
+             */
+            cost_amount?: string;
+            cost_basis?: string;
+            currency?: string;
+            fetched_at?: string;
+            instrument_id?: string;
+            is_stale?: boolean;
+            latest_price?: string;
+            market_data_snapshot_id?: string;
+            market_value?: string;
+            name?: string;
+            price_at?: string;
+            price_effective_date?: string;
+            price_snapshot_id?: string;
+            provider?: string;
+            quantity?: string;
+            roi?: string;
+            source?: string;
+            stale_reason?: string;
+            ticker?: string;
+            unrealised_pnl?: string;
+            unrealised_pnl_pct?: string;
+            /**
+             * @description UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases
+             *     of UnrealisedPnL/UnrealisedPnLPct — the totals object below already
+             *     used the American spelling, so callers reading unrealized_* off both
+             *     positions and totals get a consistent contract.
+             */
+            unrealized_pnl?: string;
+            unrealized_pnl_pct?: string;
+        };
+        IntradayTotalsResponse: {
+            cash_balance?: string;
+            cost_amount?: string;
+            estimated_aum?: string;
+            market_value?: string;
+            roi?: string;
+            unrealized_pnl?: string;
+        };
+        IntradayValuationResponse: {
+            allocation?: components["schemas"]["IntradayAllocationBucketResponse"][];
+            as_of?: string;
+            business_date?: string;
+            cash?: components["schemas"]["IntradayCashRowResponse"][];
+            cash_balance?: string;
+            delta_pct_vs_last_close?: string;
+            estimated_aum?: string;
+            estimated_nav_per_unit?: string;
+            fund_code?: string;
+            fund_id?: string;
+            has_live_prices?: boolean;
+            has_official?: boolean;
+            has_units?: boolean;
+            /**
+             * @description HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are
+             *     confirmed as of BusinessDate. Always true for today; false for a
+             *     historical BusinessDate, since only prices are resolved as of that
+             *     date — see HoldingsAsOfNote.
+             */
+            holdings_as_of_confirmed?: boolean;
+            holdings_as_of_note?: string;
+            is_stale?: boolean;
+            official_as_of?: string;
+            official_aum?: string;
+            official_nav_per_unit?: string;
+            portfolio_count?: number;
+            positions?: components["schemas"]["IntradayPositionResponse"][];
+            primary_provider?: string;
+            providers_used?: string[];
+            stale_reason?: string;
+            totals?: components["schemas"]["IntradayTotalsResponse"];
+            units_indicative?: boolean;
+            units_outstanding?: string;
+            unmapped_symbols?: string[];
+            unrealised_pnl?: string;
+            valuation_ccy?: string;
+            /**
+             * @description ValuationCurrency duplicates ValuationCcy under the mark-to-market
+             *     contract's field name (additive, kept alongside valuation_ccy for
+             *     backward compatibility with the official/estimated dual-view UI).
+             */
+            valuation_currency?: string;
+        };
+        InvalidateResearchReportRequest: {
+            reason?: string;
+        };
         InvestmentStyle: {
             code?: string;
             createdAt?: string;
@@ -5844,11 +13599,19 @@ export interface components {
             name?: string;
             updatedAt?: string;
         };
+        ListAlertsResponseData: {
+            items?: components["schemas"]["AlertEventResponse"][];
+            pagination?: components["schemas"]["PaginationMeta"];
+        };
         ListBreachesResult: {
             breaches?: components["schemas"]["Breach"][];
             limit?: number;
             offset?: number;
             total?: number;
+        };
+        ListItemsResponseData: {
+            items?: components["schemas"]["WatchlistItemResponse"][];
+            pagination?: components["schemas"]["PaginationMeta"];
         };
         ListRuleInstancesResult: {
             instances?: components["schemas"]["RuleInstanceDetail"][];
@@ -5901,9 +13664,92 @@ export interface components {
         MFAVerifyRequest: {
             totp_code: string;
         };
+        MapCandidateRequest: {
+            security_id?: string;
+        };
+        MappingsResponse: {
+            items?: components["schemas"]["ProviderMappingDTO"][];
+        };
+        MarketDataRefreshResponse: {
+            completed_at?: string;
+            errors?: string[];
+            failed_symbols?: number;
+            fund_id?: string;
+            requested_symbols?: number;
+            stale_symbols?: number;
+            started_at?: string;
+            success_symbols?: number;
+            unmapped_symbols?: string[];
+            used_provider?: string;
+        };
+        MarketDataScreenRowDTO: {
+            asset_type?: string;
+            change_amount?: string;
+            change_percent?: string;
+            currency?: string;
+            data_quality_status?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            freshness_status?: string;
+            ims_symbol?: string;
+            last_price?: string;
+            last_update_at?: string;
+            mapping_status?: string;
+            name?: string;
+            pinned?: boolean;
+            provider_badges?: components["schemas"]["ProviderBadgeDTO"][];
+            security_id?: string;
+            volume?: number;
+            watching?: boolean;
+            yield_to_maturity?: string;
+        };
+        MarketDataScreenSearchItemDTO: {
+            action_hint?: string;
+            asset_type?: string;
+            change_amount?: string;
+            change_percent?: string;
+            currency?: string;
+            data_quality_status?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            freshness_status?: string;
+            has_active_mapping?: boolean;
+            ims_symbol?: string;
+            last_price?: string;
+            last_update_at?: string;
+            mapping_status?: string;
+            name?: string;
+            pinned?: boolean;
+            provider_badges?: components["schemas"]["ProviderBadgeDTO"][];
+            security_id?: string;
+            volume?: number;
+            watching?: boolean;
+            yield_to_maturity?: string;
+        };
+        MarketDataStatusResponse: {
+            fund_id?: string;
+            healthy?: boolean;
+            last_quote_at?: string;
+            note?: string;
+            primary_provider?: string;
+            stale_after_seconds?: number;
+            stale_positions?: number;
+            total_positions?: number;
+            unmapped_symbols?: string[];
+        };
         MeResponse: {
             permissions?: components["schemas"]["PermissionsResp"];
             user?: components["schemas"]["UserResponse"];
+        };
+        NAVHistoryPointResponse: {
+            aum?: string;
+            business_date?: string;
+            nav_per_unit?: string;
+        };
+        OperationSettingEntry: {
+            approvalMode?: string;
+            approvers?: components["schemas"]["DailyApproverEntry"][];
+            operationType?: string;
         };
         Override: {
             /** @description second-level approval if required */
@@ -5919,12 +13765,25 @@ export interface components {
             reason?: string;
         };
         OverrideRequest: {
-            approved_by?: string;
             reason?: string;
+        };
+        PaginationMeta: {
+            limit?: number;
+            offset?: number;
+            total?: number;
         };
         PermissionsResp: {
             contracts?: string[];
             functions?: string[];
+        };
+        PortfolioDescriptor: {
+            display_name?: string;
+            fund_code?: string;
+            fund_id?: string;
+            fund_name?: string;
+            portfolio_code?: string;
+            portfolio_id?: string;
+            portfolio_name?: string;
         };
         PortfolioListResponse: {
             items?: components["schemas"]["PortfolioResponse"][];
@@ -5952,6 +13811,15 @@ export interface components {
             updated_at?: string;
             valuation_currency?: string;
             version?: number;
+        };
+        PositionProjectionResponse: {
+            current_average_cost?: string;
+            current_cost_basis?: string;
+            current_quantity?: string;
+            instrument_id?: string;
+            projected_average_cost?: string;
+            projected_cost_basis?: string;
+            projected_quantity?: string;
         };
         PostPriceSnapshotRequest: {
             business_date: string;
@@ -6006,6 +13874,7 @@ export interface components {
             contract_id?: string;
             currency?: string;
             exchange?: string;
+            fees?: string;
             order_id?: string;
             portfolio_id?: string;
             price?: string;
@@ -6058,6 +13927,37 @@ export interface components {
             price_source?: string;
             provider_ref?: string;
         };
+        ProcessConfigRequest: {
+            contract_id?: string;
+            contract_type?: string;
+            effective_date?: string;
+            group_approval_enabled?: boolean;
+            is_active?: boolean;
+            process_code?: string;
+            process_name?: string;
+            process_type?: string;
+            require_team_approval?: boolean;
+            stages?: components["schemas"]["StageRequest"][];
+        };
+        ProcessConfigResponse: {
+            contract_id?: string;
+            contract_type?: string;
+            created_at?: string;
+            effective_date?: string;
+            group_approval_enabled?: boolean;
+            id?: string;
+            is_active?: boolean;
+            process_code?: string;
+            process_name?: string;
+            process_type?: string;
+            require_team_approval?: boolean;
+            stages?: components["schemas"]["StageResponse"][];
+            updated_at?: string;
+        };
+        ProviderBadgeDTO: {
+            label?: string;
+            provider_code?: string;
+        };
         ProviderHealthResponse: {
             configured?: boolean;
             healthy?: boolean;
@@ -6067,6 +13967,19 @@ export interface components {
             official?: boolean;
             provider_name?: string;
             role?: string;
+        };
+        ProviderMappingDTO: {
+            confidence_score?: string;
+            is_primary?: boolean;
+            mapping_id?: string;
+            mapping_status?: string;
+            priority?: number;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_symbol?: string;
+            security_id?: string;
         };
         Quote: {
             as_of?: string;
@@ -6082,6 +13995,12 @@ export interface components {
             previous_close?: number;
             price?: number;
             provider?: string;
+            /**
+             * @description SnapshotID is the market_data_snapshots row id, populated only by
+             *     snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+             *     by a freshly fetched live provider quote.
+             */
+            snapshot_id?: string;
             stale?: boolean;
             stale_reason?: string;
             symbol?: string;
@@ -6101,10 +14020,29 @@ export interface components {
             previous_close?: number;
             price?: number;
             provider?: string;
+            /**
+             * @description SnapshotID is the market_data_snapshots row id, populated only by
+             *     snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+             *     by a freshly fetched live provider quote.
+             */
+            snapshot_id?: string;
             stale?: boolean;
             stale_reason?: string;
             symbol?: string;
             volume?: number;
+        };
+        QuoteSnapshot: {
+            change_percent?: string;
+            currency?: string;
+            effective_at?: string;
+            fetched_at?: string;
+            market_status?: string;
+            previous_close?: string;
+            price?: string;
+            provider?: string;
+            stale?: boolean;
+            stale_reason?: string;
+            symbol?: string;
         };
         RefreshRequest: {
             refresh_token: string;
@@ -6122,6 +14060,100 @@ export interface components {
             isActive?: boolean;
             name?: string;
             updatedAt?: string;
+        };
+        RejectCandidateRequest: {
+            reason?: string;
+        };
+        ReorderRequest: {
+            member_ids?: string[];
+        };
+        RequestDetailResponse: {
+            allowed_actions?: string[];
+            request?: components["schemas"]["RequestResponse"];
+            signatures?: components["schemas"]["SignatureResponse"][];
+            tasks?: components["schemas"]["TaskResponse"][];
+            timeline?: components["schemas"]["EventResponse"][];
+            viewer_task?: components["schemas"]["TaskResponse"];
+        };
+        RequestListResponse: {
+            items?: components["schemas"]["RequestResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        RequestResponse: {
+            contract_id?: string;
+            created_at?: string;
+            current_stage_number?: number;
+            final_decision_at?: string;
+            final_decision_by?: string;
+            id?: string;
+            portfolio_id?: string;
+            process_config_id?: string;
+            process_type?: string;
+            rejection_reason?: string;
+            request_number?: string;
+            status?: string;
+            subject?: components["schemas"]["SubjectDescriptor"];
+            subject_id?: string;
+            subject_reference?: string;
+            subject_title?: string;
+            subject_type?: string;
+            submitted_at?: string;
+            submitter?: components["schemas"]["UserDescriptor"];
+            submitter_id?: string;
+            submitter_name?: string;
+            updated_at?: string;
+        };
+        ResearchReportListResponse: {
+            items?: components["schemas"]["ResearchReportResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        ResearchReportResponse: {
+            applicable_contract_id?: string;
+            author_user_id?: string;
+            company_outlook?: string;
+            company_overview?: string;
+            created_at?: string;
+            created_by?: string;
+            currency?: string;
+            /**
+             * @description Multi-level review badge derived from the approval engine. Empty when
+             *     the report has not been submitted; "PENDING_LEVEL_<N>" while the
+             *     approval is in progress; "REVIEW_COMPLETED" / "REJECTED" / "INVALIDATED"
+             *     at terminal states. Backend remains the source of truth; UI uses this
+             *     field for display only.
+             */
+            derived_review_stage?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            /**
+             * @description Invalidation metadata. Populated together when the report is in
+             *     INVALIDATED state; omitted otherwise.
+             */
+            invalidated_at?: string;
+            invalidated_by?: string;
+            invalidation_reason?: string;
+            investment_analysis?: string;
+            market?: string;
+            owner_user_id?: string;
+            post_submission_note?: string;
+            recommendation?: string;
+            rejection_reason?: string;
+            report_date?: string;
+            report_no?: string;
+            report_status?: string;
+            report_title?: string;
+            review_status?: string;
+            updated_at?: string;
+            updated_by?: string;
         };
         ReverseTransactionRequest: {
             business_date: string;
@@ -6182,12 +14214,32 @@ export interface components {
             type_id?: string;
             version?: string;
         };
+        RunImportBatchResponse: {
+            accepted_records?: number;
+            batch_id?: string;
+            chunks?: components["schemas"]["ImportChunkSummary"][];
+            errors?: components["schemas"]["ImportChunkItem"][];
+            rejected_records?: number;
+            status?: string;
+            total_chunks?: number;
+            total_symbols?: number;
+            warning_records?: number;
+        };
         RunValuationRequest: {
             business_date: string;
             fx_rates?: {
                 [key: string]: string;
             };
             total_units?: string;
+        };
+        ScreenSearchResponseDTO: {
+            items?: components["schemas"]["MarketDataScreenSearchItemDTO"][];
+        };
+        ScreenWatchlistResponseDTO: {
+            items?: components["schemas"]["MarketDataScreenRowDTO"][];
+        };
+        SearchResponse: {
+            items?: components["schemas"]["SecurityDTO"][];
         };
         Sector: {
             code?: string;
@@ -6199,6 +14251,72 @@ export interface components {
             parentID?: string;
             updatedAt?: string;
         };
+        SecurityDTO: {
+            asset_type?: string;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            ims_symbol?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            provider_mappings?: components["schemas"]["ProviderMappingDTO"][];
+            security_id?: string;
+            status?: string;
+        };
+        SecurityDescriptor: {
+            asset_type?: string;
+            currency?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            ims_symbol?: string;
+            name?: string;
+            security_id?: string;
+        };
+        SendMessageRequest: {
+            /**
+             * @description Content is the user's message. Required.
+             * @example Summarize last quarter's NAV trend for Fund A.
+             */
+            content: string;
+            /**
+             * @description Model is the specific LLM model ID. Optional.
+             * @example claude-haiku-4-5-20251001
+             */
+            model?: string;
+            /**
+             * @description Provider is the LLM provider ID. Optional.
+             * @example anthropic
+             */
+            provider?: string;
+            /**
+             * @description SessionID is the existing session UUID. Empty starts a new session.
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            session_id?: string;
+        };
+        SessionListResponse: {
+            items?: components["schemas"]["SessionSummaryResponse"][];
+            /** @example 20 */
+            limit?: number;
+            /** @example 1 */
+            page?: number;
+            /** @example 42 */
+            total?: number;
+            /** @example 3 */
+            total_pages?: number;
+        };
+        SessionMessagesResponse: {
+            items?: components["schemas"]["ChatMessageResponse"][];
+            limit?: number;
+            page?: number;
+            session_id?: string;
+            total?: number;
+            total_pages?: number;
+        };
         SessionResponse: {
             created_at?: string;
             expires_at?: string;
@@ -6206,6 +14324,203 @@ export interface components {
             ip_address?: string;
             last_activity_at?: string;
             user_agent?: string;
+        };
+        SessionSummaryResponse: {
+            created_at?: string;
+            /** @example 123e4567-e89b-12d3-a456-426614174000 */
+            id?: string;
+            /** @example claude-haiku-4-5-20251001 */
+            model?: string;
+            /** @example anthropic */
+            provider?: string;
+            updated_at?: string;
+        };
+        SignatureResponse: {
+            id?: string;
+            is_proxy_signature?: boolean;
+            proxy_for?: components["schemas"]["UserDescriptor"];
+            proxy_for_user_id?: string;
+            signature_label?: string;
+            signed_at?: string;
+            signer?: components["schemas"]["UserDescriptor"];
+            signer_display_name?: string;
+            signer_title?: string;
+            signer_user_id?: string;
+            stage_number?: number;
+        };
+        StageRequest: {
+            approval_group_id?: string;
+            approver_mode?: string;
+            approver_user_id?: string;
+            is_final_stage?: boolean;
+            required_approval_count?: number;
+            stage_name?: string;
+            stage_number?: number;
+        };
+        StageResponse: {
+            approval_group_id?: string;
+            approver_mode?: string;
+            approver_user_id?: string;
+            id?: string;
+            is_final_stage?: boolean;
+            reject_policy?: string;
+            required_approval_count?: number;
+            stage_name?: string;
+            stage_number?: number;
+        };
+        SubjectDescriptor: {
+            display_label?: string;
+            id?: string;
+            type?: string;
+        };
+        SubjectStatusResponse: {
+            allowed_actions?: string[];
+            has_request?: boolean;
+            request?: components["schemas"]["RequestResponse"];
+        };
+        SubmitRequest: {
+            contract_id?: string;
+            contract_type?: string;
+            portfolio_id?: string;
+            process_type?: string;
+            subject_id?: string;
+            subject_reference?: string;
+            subject_title?: string;
+            subject_type?: string;
+        };
+        SuccessResponse: {
+            data?: unknown;
+            message?: string;
+        };
+        TaskDTO: {
+            actionUrl?: string;
+            allowedActions?: string[];
+            businessDate?: string;
+            canAct?: boolean;
+            contractId?: string;
+            createdAt?: string;
+            description?: string;
+            module?: string;
+            priority?: string;
+            reason?: string;
+            severity?: string;
+            sourceRecordId?: string;
+            sourceType?: string;
+            status?: string;
+            subject?: string;
+            taskId?: string;
+            title?: string;
+            type?: string;
+            updatedAt?: string;
+        };
+        TaskListDTO: {
+            summary?: components["schemas"]["TaskSummaryDTO"];
+            tasks?: components["schemas"]["TaskDTO"][];
+        };
+        TaskResponse: {
+            acted_at?: string;
+            acted_by?: string;
+            action_comment?: string;
+            actor?: components["schemas"]["UserDescriptor"];
+            approval_request_id?: string;
+            assigned_group_id?: string;
+            assigned_team_id?: string;
+            assigned_user?: components["schemas"]["UserDescriptor"];
+            assigned_user_id?: string;
+            assigned_user_name?: string;
+            created_at?: string;
+            delegated_from?: components["schemas"]["UserDescriptor"];
+            delegated_from_user_id?: string;
+            due_at?: string;
+            id?: string;
+            is_delegated_action?: boolean;
+            stage_number?: number;
+            status?: string;
+        };
+        TaskSummaryDTO: {
+            byModule?: {
+                [key: string]: number;
+            };
+            byPriority?: {
+                [key: string]: number;
+            };
+            highPriority?: number;
+            total?: number;
+        };
+        TeamContractRequest: {
+            contract_id?: string;
+            effective_date?: string;
+        };
+        TeamContractResponse: {
+            contract_id?: string;
+            effective_date?: string;
+            id?: string;
+            is_active?: boolean;
+            team_id?: string;
+        };
+        TeamMemberRequest: {
+            is_active?: boolean;
+            member_type?: string;
+            priority_order?: number;
+            user_id?: string;
+        };
+        TeamMemberResponse: {
+            display_name?: string;
+            id?: string;
+            is_active?: boolean;
+            member_type?: string;
+            priority_order?: number;
+            team_id?: string;
+            user_id?: string;
+        };
+        TeamRequest: {
+            has_co_manager?: boolean;
+            is_active?: boolean;
+            max_allowed_stamps?: number;
+            min_required_stamps?: number;
+            remarks?: string;
+            team_code?: string;
+            team_name?: string;
+        };
+        TeamResponse: {
+            created_at?: string;
+            has_co_manager?: boolean;
+            id?: string;
+            is_active?: boolean;
+            max_allowed_stamps?: number;
+            min_required_stamps?: number;
+            remarks?: string;
+            team_code?: string;
+            team_name?: string;
+            updated_at?: string;
+        };
+        ThresholdRuleRequest: {
+            cooldown_minutes?: number;
+            currency?: string;
+            direction?: string;
+            id?: string;
+            metric_type?: string;
+            status?: string;
+            threshold_value?: string;
+        };
+        ThresholdRuleResponse: {
+            cooldown_minutes?: number;
+            created_at?: string;
+            currency?: string;
+            direction?: string;
+            id?: string;
+            last_alerted_at?: string;
+            last_evaluated_at?: string;
+            last_observed_at?: string;
+            last_observed_price?: string;
+            last_quote_stale?: boolean;
+            last_stale_reason?: string;
+            last_state?: string;
+            last_state_changed_at?: string;
+            metric_type?: string;
+            status?: string;
+            threshold_value?: string;
+            updated_at?: string;
         };
         TransactionListResponse: {
             items?: components["schemas"]["TransactionResponse"][];
@@ -6237,6 +14552,16 @@ export interface components {
             status?: string;
             transaction_type?: string;
         };
+        TransactionSimulationResponse: {
+            cash?: components["schemas"]["CashProjectionResponse"];
+            compliance?: components["schemas"]["CompliancePreviewResponse"];
+            gross_amount?: string;
+            instrument_id?: string;
+            net_amount?: string;
+            portfolio_id?: string;
+            position?: components["schemas"]["PositionProjectionResponse"];
+            transaction_type?: string;
+        };
         TransitionEntry: {
             action?: string;
             actorId?: string;
@@ -6250,6 +14575,12 @@ export interface components {
             toState?: string;
         };
         TransitionResponse: {
+            /**
+             * @description AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format
+             *     YYYY-MM-DD; distinct from BusinessDate because operators can backdate
+             *     or delay accounting cycles.
+             */
+            accountingDate?: string;
             /** @description ApprovalID is set when the transition was an APPROVE action. */
             approvalId?: string;
             businessDate?: string;
@@ -6263,6 +14594,32 @@ export interface components {
             transitionId?: string;
             workflowDayId?: string;
         };
+        TransitionRule: {
+            fromState?: string;
+            operationType?: string;
+            requiresReason?: boolean;
+            toState?: string;
+        };
+        TransitionRulesResponse: {
+            rules?: components["schemas"]["TransitionRule"][];
+        };
+        UnmappedCandidateDTO: {
+            batch_id?: string;
+            candidate_id?: string;
+            candidate_status?: string;
+            confidence_score?: string;
+            created_at?: string;
+            isin?: string;
+            provider_asset_type?: string;
+            provider_code?: string;
+            provider_currency?: string;
+            provider_exchange?: string;
+            provider_name?: string;
+            provider_symbol?: string;
+            rejected_reason?: string;
+            resolved_at?: string;
+            suggested_security_id?: string;
+        };
         UpdateFundRequest: {
             benchmark?: string;
             expected_version: number;
@@ -6270,6 +14627,7 @@ export interface components {
             fund_category_id?: string;
             manager_user_id?: string;
             name?: string;
+            require_pretrade_preview?: boolean;
             risk_profile?: string;
             short_name?: string;
             status?: string;
@@ -6287,6 +14645,12 @@ export interface components {
             status?: string;
             tick_size?: string;
         };
+        UpdateItemRequest: {
+            note?: string;
+            pinned?: boolean;
+            status?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleRequest"][];
+        };
         UpdatePortfolioRequest: {
             benchmark?: string;
             description?: string;
@@ -6297,6 +14661,43 @@ export interface components {
             status?: string;
             strategy_code?: string;
             style_id?: string;
+        };
+        UpdateResearchReportRequest: {
+            applicable_contract_id?: string;
+            author_user_id?: string;
+            company_outlook?: string;
+            company_overview?: string;
+            currency?: string;
+            effective_date?: string;
+            esg_comment?: string;
+            financial_status?: string;
+            instrument_code?: string;
+            instrument_name?: string;
+            instrument_type?: string;
+            investment_analysis?: string;
+            market?: string;
+            owner_user_id?: string;
+            post_submission_note?: string;
+            recommendation?: string;
+            report_date?: string;
+            report_title?: string;
+        };
+        UpdateSecurityRequest: {
+            asset_type?: string;
+            country_code?: string;
+            currency?: string;
+            cusip?: string;
+            display_symbol?: string;
+            exchange_mic?: string;
+            figi?: string;
+            isin?: string;
+            name?: string;
+            primary_identifier?: string;
+            status?: string;
+        };
+        UserDescriptor: {
+            display_name?: string;
+            user_id?: string;
         };
         UserResponse: {
             display_name?: string;
@@ -6342,8 +14743,39 @@ export interface components {
             unrealised_pnl?: string;
             valuation_ccy?: string;
         };
+        WatchlistItemResponse: {
+            created_at?: string;
+            created_by_user?: components["schemas"]["UserDescriptor"];
+            created_by_user_id?: string;
+            id?: string;
+            note?: string;
+            owner_user_id?: string;
+            pinned?: boolean;
+            portfolio?: components["schemas"]["PortfolioDescriptor"];
+            portfolio_id?: string;
+            quote?: components["schemas"]["QuoteSnapshot"];
+            scope_type?: string;
+            security?: components["schemas"]["SecurityDescriptor"];
+            status?: string;
+            threshold_rules?: components["schemas"]["ThresholdRuleResponse"][];
+            updated_at?: string;
+        };
+        WorkflowSettingsResponse: {
+            settings?: components["schemas"]["OperationSettingEntry"][];
+        };
+        WorkflowStateDTO: {
+            businessDate?: string;
+            contractId?: string;
+            currentState?: string;
+            updatedAt?: string;
+        };
         WorkflowStateResponse: {
             accountingClosedAt?: string;
+            /**
+             * @description AccountingDate / PrevAccountingDate surface the NAV cycle date and
+             *     the prior cycle stashed during a rollback. Format YYYY-MM-DD.
+             */
+            accountingDate?: string;
             /**
              * @description AllowedActions is computed server-side from the current state.
              *     The UI must use this list to decide which buttons to enable.
@@ -6374,6 +14806,7 @@ export interface components {
              *     a cancelled/never-started synthetic NOT_STARTED response.
              */
             persisted?: boolean;
+            prevAccountingDate?: string;
             /**
              * @description PreviousDay is populated only when Persisted=false (NOT_STARTED).
              *     It lets the UI display the previous-day status before the operator
@@ -6390,10 +14823,176 @@ export interface components {
              */
             version?: number;
         };
+        actionResponse: {
+            label?: string;
+            url?: string;
+        };
+        contextResponse: {
+            business_id?: string;
+            business_label?: string;
+            business_reference?: string;
+            business_title?: string;
+            business_type?: string;
+        };
+        eventResponse: {
+            category?: string;
+            label?: string;
+            severity?: string;
+            type?: string;
+        };
+        healthResponse: {
+            dead_count?: number;
+            enabled?: boolean;
+            failed_count?: number;
+            from_address?: string;
+            from_name?: string;
+            pending_count?: number;
+            retry_policy?: string[];
+            send_real_email?: boolean;
+            smtp_host?: string;
+            smtp_port?: number;
+            smtp_tls_mode?: string;
+            stale_sending_timeout?: string;
+            test_endpoint_enabled?: boolean;
+            worker_batch_size?: number;
+            worker_enabled?: boolean;
+            worker_interval?: string;
+        };
+        listResponse: {
+            items?: components["schemas"]["notificationResponse"][];
+            total?: number;
+            unread?: number;
+        };
+        markAllReadResponse: {
+            recipient?: components["schemas"]["userSummaryResponse"];
+            updated?: number;
+        };
+        markReadResponse: {
+            notification_id?: string;
+            read_at?: string;
+            recipient?: components["schemas"]["userSummaryResponse"];
+            status?: string;
+        };
+        notificationResponse: {
+            action?: components["schemas"]["actionResponse"];
+            body?: string;
+            context?: components["schemas"]["contextResponse"];
+            created_at?: string;
+            event?: components["schemas"]["eventResponse"];
+            /** @description backward-compat alias */
+            id?: string;
+            is_read?: boolean;
+            notification_id?: string;
+            read_at?: string;
+            recipient?: components["schemas"]["userSummaryResponse"];
+            title?: string;
+        };
+        outboxDetailResponse: {
+            attempts?: number;
+            body_html?: string;
+            body_text?: string;
+            context?: components["schemas"]["contextResponse"];
+            created_at?: string;
+            event?: components["schemas"]["eventResponse"];
+            last_error?: string;
+            max_attempts?: number;
+            next_attempt_at?: string;
+            notification_id?: string;
+            outbox_id?: string;
+            provider_message_id?: string;
+            recipient?: components["schemas"]["userSummaryResponse"];
+            sent_at?: string;
+            status?: string;
+            subject?: string;
+            to_email?: string;
+            to_name?: string;
+            updated_at?: string;
+        };
+        outboxItemResponse: {
+            attempts?: number;
+            context?: components["schemas"]["contextResponse"];
+            created_at?: string;
+            event?: components["schemas"]["eventResponse"];
+            last_error?: string;
+            max_attempts?: number;
+            next_attempt_at?: string;
+            notification_id?: string;
+            outbox_id?: string;
+            provider_message_id?: string;
+            recipient?: components["schemas"]["userSummaryResponse"];
+            sent_at?: string;
+            status?: string;
+            subject?: string;
+            to_email?: string;
+            to_name?: string;
+        };
+        outboxListResponse: {
+            items?: components["schemas"]["outboxItemResponse"][];
+            total?: number;
+        };
+        retryResponse: {
+            attempts?: number;
+            business_reference?: string;
+            event_type?: string;
+            max_attempts?: number;
+            next_attempt_at?: string;
+            outbox_id?: string;
+            recipient_username?: string;
+            status?: string;
+        };
+        testEmailRequest: {
+            body?: string;
+            subject?: string;
+            to_email?: string;
+            to_username?: string;
+        };
+        testEmailResponse: {
+            event?: components["schemas"]["eventResponse"];
+            outbox_id?: string;
+            recipient?: components["schemas"]["userSummaryResponse"];
+            status?: string;
+        };
+        userSummaryResponse: {
+            display_name?: string;
+            email?: string;
+            id?: string;
+            username?: string;
+        };
     };
     responses: never;
     parameters: never;
-    requestBodies: never;
+    requestBodies: {
+        /** @description Team payload */
+        TeamRequest: {
+            content: {
+                "application/json": components["schemas"]["TeamRequest"];
+            };
+        };
+        /** @description Process config payload */
+        ProcessConfigRequest: {
+            content: {
+                "application/json": components["schemas"]["ProcessConfigRequest"];
+            };
+        };
+        /** @description Member payload */
+        GroupMemberRequest: {
+            content: {
+                "application/json": components["schemas"]["GroupMemberRequest"];
+            };
+        };
+        /** @description Group payload */
+        GroupRequest: {
+            content: {
+                "application/json": components["schemas"]["GroupRequest"];
+            };
+        };
+        /** @description Member payload */
+        TeamMemberRequest: {
+            content: {
+                "application/json": components["schemas"]["TeamMemberRequest"];
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }

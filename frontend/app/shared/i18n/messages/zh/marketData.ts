@@ -1,0 +1,55 @@
+import { enMarketDataMessages } from "../en/marketData";
+
+export const zhMarketDataMessages = {
+  marketData: {
+    ...enMarketDataMessages.marketData,
+    tabs: {
+      ...enMarketDataMessages.marketData.tabs,
+      provider: "数据商",
+      market: "市场",
+      watchlist: "自选股",
+      stage: "符号映射状态",
+      settings: "设置",
+    },
+    descriptions: {
+      ...enMarketDataMessages.marketData.descriptions,
+      market: "已导入的标准证券。搜索目录、添加新证券，或打开以查看其详细信息。",
+      watchlist: "您追踪的所有自选股的实时报价。从 Yahoo Finance 和 Alpha Vantage 导入数据。",
+      stage: "导入器无法解析的数据商符号。将它们映射到现有证券，或予以拒绝。",
+      settings: "配置 Yahoo Finance 和 Alpha Vantage API 集成参数。",
+    },
+    actions: {
+      ...enMarketDataMessages.marketData.actions,
+      syncAll: "同步全部",
+      syncing: "同步中...",
+      live: "实时",
+      apiKeys: "API 密钥",
+      addSecurity: "添加证券",
+      saveConfigurations: "保存配置",
+      retry: "重试",
+    },
+    labels: {
+      ...enMarketDataMessages.marketData.labels,
+      search: "搜索",
+      assetType: "资产类型",
+      status: "状态",
+      createSecurity: "创建标准证券",
+      providerConfig: "市场数据商配置",
+      apiKey: "API 密钥",
+      apiKeyHelp: "您的 API 密钥用于在 Alpha Vantage 服务中进行身份验证。",
+      baseUrl: "接口地址",
+      providerStatus: "商户状态",
+      enabled: "已启用",
+      disabled: "已禁用",
+    },
+    messages: {
+      ...enMarketDataMessages.marketData.messages,
+      providerHealthError: "数据商健康状态接口不可用: {error}",
+      failedLoadWatchlist: "加载自选股失败: {error}",
+      failedLoadSecurities: "加载证券目录失败: {error}",
+      failedLoadCandidates: "加载待映射符号失败: {error}",
+      saveSuccess: "市场数据商配置保存成功。",
+      footerBanner: "报价、历史数据以及分片批量导入已上线。导入流程通过 Yahoo Finance 和 Alpha Vantage 进行；未解析的符号将进入“符号映射状态”页面以供审核。ThaiBMA 债券上传仅限 UI 展示 - 后端接口待挂接。",
+    },
+  },
+} as const;

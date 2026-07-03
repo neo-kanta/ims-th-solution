@@ -71,6 +71,24 @@ export function assertOpenApiResponse(result: OpenApiResult<unknown>): void {
   }
 }
 
+/**
+ * Defensive envelope unwrap for endpoints whose Swagger annotations describe
+ * the *inner* shape, but whose runtime response is wrapped by
+ * `platform/httputil.OK` as `{data, message?}`. openapi-typescript honours
+ * the annotation, so `client.GET(...)` returns the inner shape's type while
+ * the JSON body is actually the envelope. Use this when you cannot trust the
+ * Swagger to match the wire envelope.
+ *
+ * Shared with the workflow store and the dashboard tasks composable so the
+ * "swallow the envelope" rule lives in exactly one place.
+ */
+export function unwrapEnvelope<T>(payload: unknown): T | undefined {
+  if (payload !== null && isApiEnvelope<T>(payload)) {
+    return payload.data;
+  }
+  return payload as T | undefined;
+}
+
 export function unwrapOpenApiResponse<T>(result: OpenApiResult<T>): T {
   assertOpenApiResponse(result);
 

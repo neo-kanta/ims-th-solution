@@ -17,8 +17,11 @@ export const enPlaceholderMessages = {
       description: "Investment decision tools are coming soon.",
     },
     executionOrders: {
-      title: "Execution Orders",
-      description: "Execution order tools are coming soon.",
+      title: "Execution & orders",
+      description: "Record trades and review execution status.",
+      notConfiguredTitle: "Execution is handled inside each fund",
+      notConfiguredCopy:
+        "There is no global order-management endpoint in the backend yet. To post a real BUY or SELL transaction, open the target fund and use its Operation tab. The backend re-runs the pre-trade compliance check inside the post handler — a successful response means the trade was both compliant and recorded on the ledger.",
     },
     investmentReview: {
       title: "Investment Review",

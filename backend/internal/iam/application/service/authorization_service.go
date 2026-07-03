@@ -34,13 +34,19 @@ func (s *AuthorizationService) HasFunctionPermission(ctx context.Context, userID
 }
 
 // HasDataPermission evaluates whether a user has access to a specific contract/fund scope.
+//
+// A scope value of "*" is treated as a wildcard granting access to every
+// contract/fund — this mirrors the convention used by accessibleFundIDs in
+// the investment module, where "*" means "no per-fund filter". Without
+// honoring the wildcard here, callers with global data scope would be
+// blocked from per-portfolio reads even though they can list every fund.
 func (s *AuthorizationService) HasDataPermission(ctx context.Context, userID uuid.UUID, scopeID string) (bool, error) {
 	scopes, err := s.permsFetcher.GetUserDataPermissions(ctx, userID)
 	if err != nil {
 		return false, fmt.Errorf("fetching data permissions: %w", err)
 	}
 	for _, scope := range scopes {
-		if scope == scopeID {
+		if scope == "*" || scope == scopeID {
 			return true, nil
 		}
 	}

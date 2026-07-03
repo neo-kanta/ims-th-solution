@@ -1,0 +1,43 @@
+# MCP server declarations for the chat module.
+#
+# Point CHAT_MCP_SERVERS_CONFIG at a copy of this file to override the built-in
+# default (a single bundled IMS stdio server). Each server is connected at
+# startup; a server that fails to connect is skipped and the chat degrades to
+# fewer/no tools rather than failing.
+#
+# Tool exposure is governed by allow/deny glob patterns (deny wins). Read-only
+# enforcement lives here as defense-in-depth, independent of what a server
+# chooses to expose.
+
+servers:
+  # The bundled IMS server: read-only wrappers over the IMS REST API. Each
+  # tool calls those endpoints with the end user's JWT (forwarded via MCP
+  # _meta), so numbers are authoritative and permission-scoped.
+  - name: ims
+    transport: stdio
+    command: /app/ims-mcp # path to the ims-mcp binary (ships beside the server)
+    env:
+      IMS_API_BASE_URL: http://localhost:8080/api/v1
+    allow:
+      - "list_*"
+      - "get_*"
+      - "calc_*" # deterministic, read-only calculation tools
+    deny:
+      - "*create*"
+      - "*update*"
+      - "*delete*"
+      - "*post*"
+      - "*submit*"
+      - "*approve*"
+      - "*reverse*"
+      - "*cancel*"
+      - "*transfer*"
+      - "*write*"
+      - "*set_*"
+
+  # Example: a remote HTTPS MCP server (Streamable HTTP). Transport wiring is
+  # structured but not enabled in this slice — included to show the shape.
+  # - name: market-data-remote
+  #   transport: http
+  #   url: https://mcp.example.com/sse
+  #   allow: ["get_*", "search_*"]

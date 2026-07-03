@@ -1,0 +1,28 @@
+info:
+  name: evaluate-watchlists
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{watchlist-base-url}}/evaluate"
+  body:
+    type: json
+    data: |-
+      {
+        "dry_run": {{watchlist-dry-run}},
+        "item_id": "{{watchlist-item-id}}",
+        "portfolio_id": "{{investment-portfolio-id}}",
+        "rule_id": "{{watchlist-rule-id}}",
+        "scope_type": "{{watchlist-scope-type}}",
+        "security_id": "{{reference-data-security-id}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

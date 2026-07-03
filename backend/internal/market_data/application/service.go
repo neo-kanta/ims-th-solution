@@ -29,12 +29,14 @@ type Config struct {
 }
 
 type Service struct {
-	providers map[string]domain.MarketDataProvider
-	repo      domain.SnapshotRepository
-	logger    domain.ProviderRequestLogger
-	cache     domain.QuoteCache
-	cfg       Config
-	now       func() time.Time
+	providers        map[string]domain.MarketDataProvider
+	repo             domain.SnapshotRepository
+	logger           domain.ProviderRequestLogger
+	cache            domain.QuoteCache
+	batchRepo        domain.ImportBatchRepository
+	securityResolver SecurityResolver
+	cfg              Config
+	now              func() time.Time
 }
 
 type ImportMarketDataRequest struct {
@@ -99,6 +101,28 @@ func NewService(
 	}
 }
 
+// SetImportBatchRepository wires the import batch repository used by
+// CreateImportBatch / RunImportBatch / GetImportBatch endpoints. It is
+// kept separate from NewService to avoid breaking the existing test
+// constructors that don't need the batch table.
+func (s *Service) SetImportBatchRepository(repo domain.ImportBatchRepository) {
+	if s == nil {
+		return
+	}
+	s.batchRepo = repo
+}
+
+// SetSecurityResolver wires the reference_data resolver used by batch import
+// to translate input symbols into canonical IMS securities and provider
+// symbols. nil-safe; when unset, market_data falls back to the legacy
+// market_symbols path.
+func (s *Service) SetSecurityResolver(resolver SecurityResolver) {
+	if s == nil {
+		return
+	}
+	s.securityResolver = resolver
+}
+
 func (s *Service) GetQuote(ctx context.Context, symbol string) (*domain.Quote, error) {
 	var err error
 	symbol, err = normalizeSymbol(symbol)
@@ -135,6 +159,26 @@ func (s *Service) GetQuote(ctx context.Context, symbol string) (*domain.Quote, e
 	}
 
 	return nil, fmt.Errorf("market data quote unavailable for %s: %s", symbol, strings.Join(failures, "; "))
+}
+
+// GetQuoteAsOf resolves the latest normalized snapshot for symbol dated on
+// or before businessDate directly from the snapshot repository. It never
+// makes a live provider call, so it is safe to use for historical dates and
+// never blocks on a provider outage. Returns (nil, nil) when no snapshot
+// exists on or before businessDate.
+func (s *Service) GetQuoteAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	symbol, err := normalizeSymbol(symbol)
+	if err != nil {
+		return nil, err
+	}
+	if s.repo == nil {
+		return nil, nil
+	}
+	q, err := s.repo.GetSnapshotAsOf(ctx, symbol, businessDate)
+	if err != nil {
+		return nil, err
+	}
+	return q, nil
 }
 
 func (s *Service) GetQuoteFromProvider(ctx context.Context, symbol, providerName string) (*domain.Quote, error) {

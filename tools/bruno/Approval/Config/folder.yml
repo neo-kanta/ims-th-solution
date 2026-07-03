@@ -1,0 +1,6 @@
+info:
+  name: Config
+  type: folder
+
+request:
+  auth: inherit

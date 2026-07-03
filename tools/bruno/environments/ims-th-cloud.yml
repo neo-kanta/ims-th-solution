@@ -1,284 +1,503 @@
 name: ims-th-cloud
 variables:
-  - name: server-base-url
-    value: ""
-  - name: integration-etl
-    value: "{{base-url}}etl"
-  - secret: true
-    name: token
-  - secret: true
-    name: mfa_token
-  - name: iam-admin
-    value: "{{base-url}}admin"
-  - name: iam-auth
-    value: "{{base-url}}auth"
-  - name: iam-audit
-    value: "{{base-url}}admin"
-  - secret: true
-    name: refresh_token
-  - name: iam-mfa
-    value: "{{base-url}}auth/mfa"
-  - secret: true
-    name: totp_code
-  - name: session_id
-    value: ""
-  - name: etl_job_id
-    value: ""
-  - name: feed_id
-    value: ""
-  - name: etl_business_date
-    value: 2026-04-17
-  - name: import_file_path
-    value: ""
-  - name: user_id
-    value: ""
-  - secret: true
-    name: user_password
-  - secret: true
-    name: admin_id
-  - secret: true
-    name: base-url
-  - name: mfa-provisioning-uri
-    value: ""
-  - name: mfa-recovery-codes-left
-    value: ""
-  - name: mfa-enrolled
-    value: ""
-  - name: mfa-enabled
-    value: ""
-  - name: investment-base-url
-    value: "{{base-url}}investment"
-  - name: market-data-base-url
-    value: "{{base-url}}market-data"
-  - name: market-data-symbol
-    value: AAPL
-  - name: market-data-provider
-    value: alpha_vantage
-  - name: market-data-history-limit
-    value: "30"
-  - name: market-data-last-symbol
-    value: ""
-  - name: market-data-last-provider
-    value: ""
-  - name: market-data-last-price
-    value: ""
-  - name: market-data-last-close
-    value: ""
-  - name: investment-page
-    value: "1"
-  - name: investment-limit
-    value: "50"
-  - name: investment-fund-id
-    value: ""
-  - name: investment-fund-version
-    value: "1"
-  - name: investment-portfolio-id
-    value: ""
-  - name: investment-portfolio-version
-    value: "1"
-  - name: investment-instrument-id
-    value: ""
-  - name: investment-transaction-id
-    value: ""
-  - name: investment-reversal-transaction-id
-    value: ""
-  - name: investment-price-id
-    value: ""
-  - name: investment-valuation-id
-    value: ""
-  - name: investment-fund-aum-id
-    value: ""
-  - name: investment-asset-class-id
-    value: ""
-  - name: investment-asset-subtype-id
-    value: ""
-  - name: investment-sector-id
-    value: ""
-  - name: investment-fund-category-id
-    value: ""
-  - name: investment-region-id
-    value: ""
-  - name: investment-country-id
-    value: ""
-  - name: investment-style-id
-    value: ""
-  - name: investment-fund-code
-    value: BRUNO-FUND-001
-  - name: investment-fund-name
-    value: Bruno Sample Fund
-  - name: investment-fund-short-name
-    value: Bruno Fund
-  - name: investment-fund-status
-    value: ACTIVE
-  - name: investment-portfolio-code
-    value: BRUNO-PORT-001
-  - name: investment-portfolio-name
-    value: Bruno Sample Portfolio
-  - name: investment-portfolio-description
-    value: Created from Bruno for investment module testing.
-  - name: investment-portfolio-status
-    value: ACTIVE
-  - name: investment-instrument-ticker
-    value: BRUNO
-  - name: investment-instrument-name
-    value: Bruno Sample Instrument
-  - name: investment-instrument-status
-    value: ACTIVE
-  - name: investment-base-currency
-    value: THB
-  - name: investment-valuation-currency
-    value: THB
-  - name: investment-instrument-currency
-    value: THB
-  - name: investment-primary-exchange
-    value: SET
-  - name: investment-benchmark
-    value: SET TRI
-  - name: investment-risk-profile
-    value: MEDIUM
-  - name: investment-has-units
-    value: "true"
-  - name: investment-external-pam-ref
-    value: BRUNO-PAM-001
-  - name: investment-strategy-code
-    value: TH-EQ
-  - name: investment-tax-lot-method
-    value: AVERAGE
-  - name: investment-lot-size
-    value: "100"
-  - name: investment-tick-size
-    value: "0.01"
-  - name: investment-is-tradable
-    value: "true"
-  - name: investment-business-date
-    value: 2026-04-24
-  - name: investment-inception-date
-    value: 2026-04-24
-  - name: investment-settlement-date
-    value: 2026-04-26
-  - name: investment-from-date
-    value: 2026-01-01
-  - name: investment-to-date
-    value: 2026-12-31
-  - name: investment-price
-    value: "32.50"
-  - name: investment-price-source
-    value: BRUNO
-  - name: investment-provider-ref
-    value: bruno-price-001
-  - name: investment-is-stale
-    value: "false"
-  - name: investment-stale-reason
-    value: ""
-  - name: investment-transaction-type
-    value: BUY
-  - name: investment-side
-    value: BUY
-  - name: investment-quantity
-    value: "100"
-  - name: investment-fees
-    value: "0.00"
-  - name: investment-gross-amount
-    value: "3250.00"
-  - name: investment-net-amount
-    value: "3250.00"
-  - name: investment-fx-rate-to-base
-    value: "1"
-  - name: investment-external-ref
-    value: bruno-txn-001
-  - name: investment-transaction-reason
-    value: Bruno investment module test transaction.
-  - name: investment-reversal-reason
-    value: Bruno reversal test.
-  - name: investment-force-post
-    value: "false"
-  - name: investment-fx-rates
-    value: '{"THB":"1","USD":"36.50"}'
-  - name: investment-total-units
-    value: "1000"
-  - name: compliance-base-url
-    value: "{{base-url}}compliance"
-  - name: compliance-portfolio-id
-    value: ""
-  - name: compliance-contract-id
-    value: ""
-  - name: compliance-order-id
-    value: ""
-  - name: compliance-check-group-id
-    value: ""
-  - name: compliance-breach-id
-    value: ""
-  - name: compliance-rule-name
-    value: Sample Compliance Rule
-  - name: compliance-rule-description
-    value: Created from Bruno for testing the compliance rule admin API.
-  - name: compliance-business-date
-    value: 2026-04-23
-  - name: compliance-effective-from
-    value: 2026-04-24
-  - name: compliance-effective-to
-    value: ""
-  - name: compliance-rule-type-id
-    value: ""
-  - name: compliance-change-reason
-    value: initial creation from Bruno
-  - name: compliance-rule-parameters
-    value: '{"max_pct":10,"exempt_government":true}'
-  - name: compliance-status
-    value: OPEN
-  - name: compliance-is-active
-    value: ""
-  - name: compliance-offset
-    value: "0"
-  - name: compliance-limit
-    value: "50"
-  - name: compliance-ticker
-    value: PTT
-  - name: compliance-side
-    value: BUY
-  - name: compliance-quantity
-    value: "100"
-  - name: compliance-price
-    value: "32.50"
-  - name: compliance-currency
-    value: THB
-  - name: compliance-exchange
-    value: SET
-  - name: compliance-override-reason
-    value: Approved by compliance officer after manual review.
-  - name: compliance-approved-by
-    value: ""
-  - name: workflow-base-url
-    value: "{{base-url}}workflow/day-states"
-  - name: workflow-scheduler-base-url
-    value: "{{base-url}}workflow/scheduler"
-  - name: workflow-scheduler-run-id
-    value: ""
-  - name: workflow-scheduler-run-status
-    value: ""
-  - name: workflow-contract-id
-    value: c0000000-0000-0000-0000-000000000001
-  - name: workflow-seed-day-open-contract-id
-    value: c0000000-0000-0000-0000-000000000001
-  - name: workflow-seed-manager-approved-contract-id
-    value: c0000000-0000-0000-0000-000000000002
-  - name: workflow-seed-transaction-closed-contract-id
-    value: c0000000-0000-0000-0000-000000000003
-  - name: workflow-seed-accounting-closed-contract-id
-    value: c0000000-0000-0000-0000-000000000004
-  - name: workflow-seed-note
-    value: "Seeded workflow contracts: DAY_OPEN=...001, MANAGER_APPROVED=...002, TRANSACTION_CLOSED=...003, ACCOUNTING_CLOSED=...004"
-  - name: workflow-business-date
-    value: 2026-04-24
-  - name: workflow-action
-    value: APPROVE
-  - name: workflow-reason
-    value: Rollback requested with documented operational justification.
-  - name: workflow-zero-transaction-attestation
-    value: "false"
-  - name: workflow-attestation-reason
-    value: No transactions were recorded for this contract on the selected business date.
-  - name: workflow-notes
-    value: Triggered from Bruno.
-  - name: workflow-idempotency-key
-    value: ""
+- name: server-base-url
+  value: ''
+- name: integration-etl
+  value: '{{base-url}}etl'
+- secret: true
+  name: token
+- secret: true
+  name: mfa_token
+- name: iam-admin
+  value: '{{base-url}}admin'
+- name: iam-auth
+  value: '{{base-url}}auth'
+- name: iam-audit
+  value: '{{base-url}}admin'
+- secret: true
+  name: refresh_token
+- name: iam-mfa
+  value: '{{base-url}}auth/mfa'
+- secret: true
+  name: totp_code
+- name: session_id
+  value: ''
+- name: etl_job_id
+  value: ''
+- name: feed_id
+  value: ''
+- name: etl_business_date
+  value: 2026-04-17
+- name: import_file_path
+  value: ''
+- name: user_id
+  value: ''
+- secret: true
+  name: user_password
+- secret: true
+  name: admin_id
+- secret: true
+  name: base-url
+- name: mfa-provisioning-uri
+  value: ''
+- name: mfa-recovery-codes-left
+  value: ''
+- name: mfa-enrolled
+  value: ''
+- name: mfa-enabled
+  value: ''
+- name: investment-base-url
+  value: '{{base-url}}investment'
+- name: market-data-base-url
+  value: '{{base-url}}market-data'
+- name: market-data-symbol
+  value: AAPL
+- name: market-data-provider
+  value: alpha_vantage
+- name: market-data-history-limit
+  value: '30'
+- name: market-data-last-symbol
+  value: ''
+- name: market-data-last-provider
+  value: ''
+- name: market-data-last-price
+  value: ''
+- name: market-data-last-close
+  value: ''
+- name: investment-page
+  value: '1'
+- name: investment-limit
+  value: '50'
+- name: investment-fund-id
+  value: ''
+- name: investment-fund-version
+  value: '1'
+- name: investment-portfolio-id
+  value: ''
+- name: investment-portfolio-version
+  value: '1'
+- name: investment-instrument-id
+  value: ''
+- name: investment-transaction-id
+  value: ''
+- name: investment-reversal-transaction-id
+  value: ''
+- name: investment-price-id
+  value: ''
+- name: investment-valuation-id
+  value: ''
+- name: investment-fund-aum-id
+  value: ''
+- name: investment-asset-class-id
+  value: ''
+- name: investment-asset-subtype-id
+  value: ''
+- name: investment-sector-id
+  value: ''
+- name: investment-fund-category-id
+  value: ''
+- name: investment-region-id
+  value: ''
+- name: investment-country-id
+  value: ''
+- name: investment-style-id
+  value: ''
+- name: investment-fund-code
+  value: BRUNO-FUND-001
+- name: investment-fund-name
+  value: Bruno Sample Fund
+- name: investment-fund-short-name
+  value: Bruno Fund
+- name: investment-fund-status
+  value: ACTIVE
+- name: investment-portfolio-code
+  value: BRUNO-PORT-001
+- name: investment-portfolio-name
+  value: Bruno Sample Portfolio
+- name: investment-portfolio-description
+  value: Created from Bruno for investment module testing.
+- name: investment-portfolio-status
+  value: ACTIVE
+- name: investment-instrument-ticker
+  value: BRUNO
+- name: investment-instrument-name
+  value: Bruno Sample Instrument
+- name: investment-instrument-status
+  value: ACTIVE
+- name: investment-base-currency
+  value: THB
+- name: investment-valuation-currency
+  value: THB
+- name: investment-instrument-currency
+  value: THB
+- name: investment-primary-exchange
+  value: SET
+- name: investment-benchmark
+  value: SET TRI
+- name: investment-risk-profile
+  value: MEDIUM
+- name: investment-has-units
+  value: 'true'
+- name: investment-external-pam-ref
+  value: BRUNO-PAM-001
+- name: investment-strategy-code
+  value: TH-EQ
+- name: investment-tax-lot-method
+  value: AVERAGE
+- name: investment-lot-size
+  value: '100'
+- name: investment-tick-size
+  value: '0.01'
+- name: investment-is-tradable
+  value: 'true'
+- name: investment-business-date
+  value: 2026-04-24
+- name: investment-inception-date
+  value: 2026-04-24
+- name: investment-settlement-date
+  value: 2026-04-26
+- name: investment-from-date
+  value: 2026-01-01
+- name: investment-to-date
+  value: 2026-12-31
+- name: investment-price
+  value: '32.50'
+- name: investment-price-source
+  value: BRUNO
+- name: investment-provider-ref
+  value: bruno-price-001
+- name: investment-is-stale
+  value: 'false'
+- name: investment-stale-reason
+  value: ''
+- name: investment-transaction-type
+  value: BUY
+- name: investment-side
+  value: BUY
+- name: investment-quantity
+  value: '100'
+- name: investment-fees
+  value: '0.00'
+- name: investment-gross-amount
+  value: '3250.00'
+- name: investment-net-amount
+  value: '3250.00'
+- name: investment-fx-rate-to-base
+  value: '1'
+- name: investment-external-ref
+  value: bruno-txn-001
+- name: investment-transaction-reason
+  value: Bruno investment module test transaction.
+- name: investment-reversal-reason
+  value: Bruno reversal test.
+- name: investment-force-post
+  value: 'false'
+- name: investment-fx-rates
+  value: '{"THB":"1","USD":"36.50"}'
+- name: investment-total-units
+  value: '1000'
+- name: investment-research-report-id
+  value: ''
+- name: investment-research-report-no
+  value: BRUNO-RPT-001
+- name: investment-research-report-title
+  value: Bruno Sample Research Report
+- name: investment-research-report-status
+  value: DRAFT
+- name: investment-research-review-status
+  value: NOT_SUBMITTED
+- name: investment-research-recommendation
+  value: BUY
+- name: investment-research-instrument-type
+  value: EQUITY
+- name: investment-research-instrument-code
+  value: BRUNO
+- name: investment-research-instrument-name
+  value: Bruno Sample Instrument
+- name: investment-research-market
+  value: SET
+- name: investment-research-company-overview
+  value: Sample company overview from Bruno.
+- name: investment-research-company-outlook
+  value: Stable outlook with monitored catalysts.
+- name: investment-research-esg-comment
+  value: No material ESG concern identified in this sample.
+- name: investment-research-financial-status
+  value: Healthy balance sheet and consistent cash generation.
+- name: investment-research-investment-analysis
+  value: Bruno sample analysis contains enough detail to satisfy validation and exercise
+    the research report API.
+- name: investment-research-rejection-reason
+  value: ''
+- name: investment-research-post-submission-note
+  value: Submitted from Bruno for workflow testing.
+- name: investment-decision-id
+  value: ''
+- name: investment-decision-no
+  value: ''
+- name: investment-decision-status
+  value: PENDING_APPROVAL
+- name: investment-decision-approval-status
+  value: PENDING_APPROVAL
+- name: investment-decision-comment
+  value: Approved from Bruno batch action.
+- name: investment-decision-search
+  value: BRUNO
+- name: investment-decision-process-type
+  value: INVESTMENT_DECISION
+- name: investment-decision-product-type
+  value: STOCK
+- name: investment-decision-research-no
+  value: '{{investment-research-report-no}}'
+- name: investment-decision-rationale
+  value: Bruno sample investment decision rationale.
+- name: investment-decision-cancel-reason
+  value: Cancelled from Bruno after validation test.
+- name: investment-decision-reject-reason
+  value: Rejected from Bruno batch action after validation test.
+- name: compliance-base-url
+  value: '{{base-url}}compliance'
+- name: compliance-portfolio-id
+  value: ''
+- name: compliance-contract-id
+  value: ''
+- name: compliance-order-id
+  value: ''
+- name: compliance-check-group-id
+  value: ''
+- name: compliance-breach-id
+  value: ''
+- name: compliance-rule-name
+  value: Sample Compliance Rule
+- name: compliance-rule-description
+  value: Created from Bruno for testing the compliance rule admin API.
+- name: compliance-business-date
+  value: 2026-04-23
+- name: compliance-effective-from
+  value: 2026-04-24
+- name: compliance-effective-to
+  value: ''
+- name: compliance-rule-type-id
+  value: ''
+- name: compliance-change-reason
+  value: initial creation from Bruno
+- name: compliance-rule-parameters
+  value: '{"max_pct":10,"exempt_government":true}'
+- name: compliance-status
+  value: OPEN
+- name: compliance-is-active
+  value: ''
+- name: compliance-offset
+  value: '0'
+- name: compliance-limit
+  value: '50'
+- name: compliance-ticker
+  value: PTT
+- name: compliance-side
+  value: BUY
+- name: compliance-quantity
+  value: '100'
+- name: compliance-price
+  value: '32.50'
+- name: compliance-currency
+  value: THB
+- name: compliance-exchange
+  value: SET
+- name: compliance-override-reason
+  value: Approved by compliance officer after manual review.
+- name: compliance-approved-by
+  value: ''
+- name: workflow-base-url
+  value: '{{base-url}}workflow/day-states'
+- name: workflow-scheduler-base-url
+  value: '{{base-url}}workflow/scheduler'
+- name: workflow-scheduler-run-id
+  value: ''
+- name: workflow-scheduler-run-status
+  value: ''
+- name: workflow-contract-id
+  value: c0000000-0000-0000-0000-000000000001
+- name: workflow-seed-day-open-contract-id
+  value: c0000000-0000-0000-0000-000000000001
+- name: workflow-seed-manager-approved-contract-id
+  value: c0000000-0000-0000-0000-000000000002
+- name: workflow-seed-transaction-closed-contract-id
+  value: c0000000-0000-0000-0000-000000000003
+- name: workflow-seed-accounting-closed-contract-id
+  value: c0000000-0000-0000-0000-000000000004
+- name: workflow-seed-note
+  value: 'Seeded workflow contracts: DAY_OPEN=...001, MANAGER_APPROVED=...002, TRANSACTION_CLOSED=...003,
+    ACCOUNTING_CLOSED=...004'
+- name: workflow-business-date
+  value: 2026-04-24
+- name: workflow-action
+  value: APPROVE
+- name: workflow-reason
+  value: Rollback requested with documented operational justification.
+- name: workflow-zero-transaction-attestation
+  value: 'false'
+- name: workflow-attestation-reason
+  value: No transactions were recorded for this contract on the selected business
+    date.
+- name: workflow-notes
+  value: Triggered from Bruno.
+- name: workflow-idempotency-key
+  value: ''
+- name: approval-config-base-url
+  value: '{{base-url}}approval-config'
+- name: approval-base-url
+  value: '{{base-url}}approvals'
+- name: approval-group-id
+  value: ''
+- name: approval-group-member-id
+  value: ''
+- name: approval-process-id
+  value: ''
+- name: approval-team-id
+  value: ''
+- name: approval-team-member-id
+  value: ''
+- name: approval-request-id
+  value: ''
+- name: approval-task-id
+  value: ''
+- name: approval-page
+  value: '1'
+- name: approval-limit
+  value: '20'
+- name: approval-status
+  value: PENDING
+- name: approval-active-only
+  value: 'true'
+- name: approval-process-type
+  value: PORTFOLIO_ONBOARDING
+- name: approval-comment
+  value: Approved from Bruno.
+- name: approval-reason
+  value: Revoked from Bruno for rework.
+- name: chat-base-url
+  value: '{{base-url}}chat'
+- name: chat-session-id
+  value: ''
+- name: chat-page
+  value: '1'
+- name: chat-limit
+  value: '20'
+- name: chat-model
+  value: claude-haiku-4-5-20251001
+- name: chat-provider
+  value: anthropic
+- name: chat-message
+  value: Summarize the latest sample portfolio state in one sentence.
+- name: reference-data-base-url
+  value: '{{base-url}}reference-data'
+- name: reference-data-security-id
+  value: ''
+- name: reference-data-mapping-id
+  value: ''
+- name: reference-data-candidate-id
+  value: ''
+- name: reference-data-query
+  value: BRUNO
+- name: reference-data-asset-type
+  value: EQUITY
+- name: reference-data-provider
+  value: bloomberg
+- name: reference-data-status
+  value: ACTIVE
+- name: reference-data-limit
+  value: '20'
+- name: market-data-import-batch-id
+  value: ''
+- name: market-data-import-type
+  value: watchlist
+- name: market-data-chunk-size
+  value: '25'
+- name: market-data-screen-query
+  value: technology
+- name: notification-base-url
+  value: '{{base-url}}notifications'
+- name: notification-id
+  value: ''
+- name: notification-outbox-id
+  value: ''
+- name: notification-unread-only
+  value: 'true'
+- name: notification-limit
+  value: '20'
+- name: notification-offset
+  value: '0'
+- name: notification-email-status
+  value: FAILED
+- name: notification-recipient-username
+  value: ''
+- name: notification-recipient-email
+  value: ''
+- name: notification-event-type
+  value: ''
+- name: notification-event-category
+  value: ''
+- name: notification-business-type
+  value: ''
+- name: notification-business-reference
+  value: ''
+- name: notification-created-from
+  value: ''
+- name: notification-created-to
+  value: ''
+- name: notification-test-to-email
+  value: bruno-notify@test.local
+- name: notification-test-to-username
+  value: bruno.notify
+- name: notification-test-subject
+  value: Bruno notification test
+- name: notification-test-body
+  value: Bruno notification test email body.
+- name: watchlist-base-url
+  value: '{{base-url}}watchlists'
+- name: watchlist-item-id
+  value: ''
+- name: watchlist-alert-id
+  value: ''
+- name: watchlist-rule-id
+  value: ''
+- name: watchlist-scope-type
+  value: PERSONAL
+- name: watchlist-include-disabled
+  value: 'false'
+- name: watchlist-include-thresholds
+  value: 'true'
+- name: watchlist-include-quote
+  value: 'true'
+- name: watchlist-limit
+  value: '20'
+- name: watchlist-offset
+  value: '0'
+- name: watchlist-acknowledged
+  value: 'false'
+- name: watchlist-created-from
+  value: ''
+- name: watchlist-created-to
+  value: ''
+- name: watchlist-note
+  value: Bruno watchlist note.
+- name: watchlist-ack-note
+  value: Acknowledged from Bruno.
+- name: watchlist-pinned
+  value: 'true'
+- name: watchlist-status
+  value: ACTIVE
+- name: watchlist-metric-type
+  value: PRICE
+- name: watchlist-direction
+  value: ABOVE
+- name: watchlist-threshold-value
+  value: '35.00'
+- name: watchlist-cooldown-minutes
+  value: '60'
+- name: watchlist-dry-run
+  value: 'true'
+- name: workflow-contract-code
+  value: IMS-DEMO-001
+- name: workflow-operation-type
+  value: START_INVESTMENT_DAY

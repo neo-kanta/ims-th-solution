@@ -19,6 +19,7 @@ import (
 	platformmw "github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 
 	// Self-registering rule packages — must be blank-imported to run init().
+	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/amount"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/cash"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/concentration"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/credit"
@@ -36,9 +37,8 @@ type Module struct {
 	contractAdapter   *transport.ComplianceContractAdapter
 }
 
-// NewModule constructs the full compliance module with Postgres-backed repositories
-// and Nop port adapters suitable for the PoC. Swap the Nop adapters for real
-// implementations (backed by market_data / integration modules) in production.
+// NewModule constructs the full compliance module with Postgres-backed
+// repositories and investment-backed data adapters for pre-trade checks.
 func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Module {
 	// Repositories
 	instanceRepo := persistence.NewPostgresRuleInstanceRepository(pool)
@@ -47,16 +47,17 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 	breachRepo := persistence.NewPostgresBreachRepository(pool)
 	overrideRepo := persistence.NewPostgresOverrideRepository(pool)
 
-	// Port adapters (Nop stubs for PoC)
+	// Port adapters. Pre-trade portfolio checks must read real cash,
+	// position, price, and classification data from investment projections.
 	fetcher := engine.NewFetcher(
-		&adapter.NopPositionSnapshotAdapter{},
-		&adapter.NopMarketDataAdapter{},
-		&adapter.NopInstrumentClassificationAdapter{},
+		adapter.NewInvestmentPositionSnapshotAdapter(pool),
+		adapter.NewInvestmentMarketDataAdapter(pool),
+		adapter.NewInvestmentInstrumentClassificationAdapter(pool),
 		&adapter.NopCreditRatingAdapter{},
 		adapter.NewPostgresRestrictionListAdapter(pool),
 		&adapter.NopTradeHistoryAdapter{},
 		&adapter.NopCalendarAdapter{},
-		&adapter.NopPortfolioMetadataAdapter{},
+		adapter.NewInvestmentPortfolioMetadataAdapter(pool),
 	)
 
 	// Engine

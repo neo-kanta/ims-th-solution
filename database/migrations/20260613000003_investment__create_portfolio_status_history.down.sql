@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS investment__portfolio_status_history;

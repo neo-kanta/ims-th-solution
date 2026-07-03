@@ -93,16 +93,23 @@ func DefaultStatus(code string) int {
 		CodeFundNotFound,
 		CodePortfolioNotFound,
 		CodeTransactionNotFound,
-		CodeDecisionNotFound:
+		CodeDecisionNotFound,
+		CodeExecutionNotFound,
+		CodeConfirmationNotFound,
+		CodeContractNotFound:
 		return http.StatusNotFound
 
 	case CodeVersionMismatch,
 		CodeCodeAlreadyTaken,
 		CodeDecisionNotDraft,
+		CodeDecisionLifecycle,
+		CodeExecutionLifecycle,
+		CodeConfirmationLifecycle,
 		CodeAlreadyReversed,
 		CodeCannotReverseReversal,
 		CodeFundHasActivePortfolios,
-		CodePortfolioHasOpenActivity:
+		CodePortfolioHasOpenActivity,
+		CodeResearchReportInvalidateBlocked:
 		return http.StatusConflict
 
 	case CodeOversell,
@@ -113,7 +120,10 @@ func DefaultStatus(code string) int {
 		CodeInstrumentNotMapped,
 		CodePriceCurrencyMismatch,
 		CodeUnitisedNotSupported,
-		CodeIncompleteFundValuation:
+		CodeIncompleteFundValuation,
+		CodeDecisionReferenceBad,
+		CodeConfirmationMismatch,
+		CodeClosePendingConfirm:
 		return http.StatusUnprocessableEntity
 
 	case CodeForbidden:

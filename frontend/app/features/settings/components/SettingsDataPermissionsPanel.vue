@@ -42,12 +42,18 @@ const groupedRows = computed(() => {
     groups.set(key, [...(groups.get(key) ?? []), grant]);
   }
 
-  return Array.from(groups.entries()).map(([key, grants]) => ({
-    key,
-    label: mode.value === "user" ? grants[0].userLabel : grants[0].contractName,
-    sublabel: mode.value === "user" ? grants[0].user : grants[0].contractId,
-    grants,
-  }));
+  return Array.from(groups.entries()).map(([key, grants]) => {
+    // Each grants array is populated by the loop above before being
+    // returned through the Map, so it always has at least one entry;
+    // `head` narrows the type for the label/sublabel lookups below.
+    const head = grants[0]!;
+    return {
+      key,
+      label: mode.value === "user" ? head.userLabel : head.contractName,
+      sublabel: head.scope,
+      grants,
+    };
+  });
 });
 </script>
 
@@ -62,15 +68,7 @@ const groupedRows = computed(() => {
           {{ t("settings.console.dataPermissions.subtitle") }}
         </p>
       </div>
-      <span class="badge badge-warning">
-        {{ t("settings.console.common.readOnlyScaffold") }}
-      </span>
     </header>
-
-    <div class="alert alert-warning settings-panel__alert" role="note">
-      <strong>{{ t("settings.console.common.sampleDataTitle") }}</strong>
-      <span>{{ t("settings.console.dataPermissions.sampleNotice") }}</span>
-    </div>
 
     <div class="settings-data-permissions__toolbar">
       <div
@@ -133,7 +131,7 @@ const groupedRows = computed(() => {
                 {{ mode === "user" ? grant.contractName : grant.userLabel }}
               </div>
               <div class="settings-record-secondary">
-                {{ mode === "user" ? grant.contractId : grant.user }}
+                {{ mode === "user" ? grant.scope : grant.userLabel }}
               </div>
             </div>
             <span class="badge" :class="grant.source === 'session' ? 'badge-success' : 'badge-warning'">

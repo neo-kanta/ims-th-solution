@@ -1,0 +1,32 @@
+info:
+  name: submit-decision
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/decisions/:id/submit"
+  params:
+    - name: id
+      value: "{{investment-decision-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.approval_request_id) {
+          bru.setEnvVar("approval-request-id", data.approval_request_id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

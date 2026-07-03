@@ -14,7 +14,7 @@ type AuditExportQuery = NonNullable<
 >;
 type AuditListResponse =
   paths["/admin/audit"]["get"]["responses"][200]["content"]["application/json"];
-type AuditEventResponse = AuditListResponse["events"][number];
+type AuditEventResponse = NonNullable<AuditListResponse["events"]>[number];
 
 export function buildAuditQuery(filters: AuditFilters = {}) {
   const query: AuditQuery = {};

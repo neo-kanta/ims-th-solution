@@ -1,0 +1,6 @@
+info:
+  name: Email
+  type: folder
+
+request:
+  auth: inherit

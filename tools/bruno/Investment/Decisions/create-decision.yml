@@ -1,0 +1,56 @@
+info:
+  name: create-decision
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/decisions"
+  body:
+    type: json
+    data: |-
+      {
+        "business_date": "{{investment-business-date}}",
+        "contract_id": "{{workflow-contract-id}}",
+        "currency": "{{investment-instrument-currency}}",
+        "fund_id": "{{investment-fund-id}}",
+        "portfolio_id": "{{investment-portfolio-id}}",
+        "instrument_id": "{{investment-instrument-id}}",
+        "instrument_code": "{{investment-instrument-ticker}}",
+        "side": "{{investment-side}}",
+        "quantity": "{{investment-quantity}}",
+        "amount": "{{investment-gross-amount}}",
+        "limit_price": "{{investment-price}}",
+        "exchange": "{{investment-primary-exchange}}",
+        "research_report_id": "{{investment-research-report-id}}",
+        "rationale": "Bruno sample investment decision."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-decision-id", data.id, { persist: true });
+        }
+        if (data.decision_no) {
+          bru.setEnvVar("investment-decision-no", data.decision_no, { persist: true });
+        }
+        if (data.decision_number) {
+          bru.setEnvVar("investment-decision-no", data.decision_number, { persist: true });
+        }
+        if (data.approval_request_id) {
+          bru.setEnvVar("approval-request-id", data.approval_request_id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

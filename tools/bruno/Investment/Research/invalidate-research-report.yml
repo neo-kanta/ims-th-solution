@@ -1,0 +1,27 @@
+info:
+  name: invalidate-research-report
+  type: http
+  seq: 38
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/research-reports/:reportId/invalidate"
+  params:
+    - name: reportId
+      value: "{{investment-research-report-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "reason": "Bruno sample invalidation for Swagger coverage sync."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

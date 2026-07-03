@@ -1,0 +1,26 @@
+info:
+  name: batch-approve-decisions
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/decisions/batch-approve"
+  body:
+    type: json
+    data: |-
+      {
+        "decision_nos": [
+          "{{investment-decision-no}}"
+        ],
+        "comment": "{{investment-decision-comment}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

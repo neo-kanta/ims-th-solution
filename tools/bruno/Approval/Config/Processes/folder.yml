@@ -1,0 +1,6 @@
+info:
+  name: Processes
+  type: folder
+
+request:
+  auth: inherit

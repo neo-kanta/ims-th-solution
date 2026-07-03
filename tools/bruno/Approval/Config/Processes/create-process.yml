@@ -1,0 +1,53 @@
+info:
+  name: create-process
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/processes"
+  body:
+    type: json
+    data: |-
+      {
+        "process_code": "BRUNO-APPROVAL-001",
+        "process_name": "Bruno Approval Process",
+        "process_type": "{{approval-process-type}}",
+        "contract_id": "{{workflow-contract-id}}",
+        "contract_type": "WORKFLOW_DAY",
+        "effective_date": "{{workflow-business-date}}",
+        "group_approval_enabled": true,
+        "require_team_approval": false,
+        "is_active": true,
+        "stages": [
+          {
+            "stage_number": 1,
+            "stage_name": "Initial Review",
+            "approval_group_id": "{{approval-group-id}}",
+            "approver_mode": "GROUP",
+            "approver_user_id": "{{user_id}}",
+            "required_approval_count": 1,
+            "is_final_stage": true
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-process-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

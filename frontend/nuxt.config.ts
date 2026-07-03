@@ -4,6 +4,11 @@ export default defineNuxtConfig({
   srcDir: "app/",
   modules: ["@pinia/nuxt", "@vueuse/nuxt"],
   css: ["~/assets/css/main.css"],
+  app: {
+    head: {
+      link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+    },
+  },
   runtimeConfig: {
     apiBaseUrl:
       process.env.NUXT_API_BASE_URL ||

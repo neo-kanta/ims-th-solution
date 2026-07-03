@@ -9,14 +9,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
+	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/command"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/query"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/service"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/entity"
@@ -43,14 +43,17 @@ type InvestmentHandler struct {
 	valuation   domain.ValuationRepository
 	taxonomy    domain.AssetTaxonomyRepository
 
-	fundCmd       *command.FundCommandHandler
-	portfolioCmd  *command.PortfolioCommandHandler
-	instrumentCmd *command.InstrumentCommandHandler
-	postTxn       *command.PostTransactionHandler
-	reverseTxn    *command.ReverseTransactionHandler
-	postPrice     *command.PostPriceSnapshotHandler
-	fundAUM       *command.ComputeFundAUMHandler
-	valuationRun  *service.ValuationRunner
+	fundCmd        *command.FundCommandHandler
+	portfolioCmd   *command.PortfolioCommandHandler
+	instrumentCmd  *command.InstrumentCommandHandler
+	postTxn        *command.PostTransactionHandler
+	reverseTxn     *command.ReverseTransactionHandler
+	postPrice      *command.PostPriceSnapshotHandler
+	fundAUM        *command.ComputeFundAUMHandler
+	valuationRun   *service.ValuationRunner
+	fundNAVQuery   *query.GetLatestFundNAVHandler
+	fundAllocQuery *query.GetFundAllocationHandler
+	fundNAVHistory *query.GetFundNAVHistoryHandler
 }
 
 // NewInvestmentHandler wires every command/query for the investment module.
@@ -73,6 +76,9 @@ func NewInvestmentHandler(
 	postPrice *command.PostPriceSnapshotHandler,
 	fundAUM *command.ComputeFundAUMHandler,
 	valuationRun *service.ValuationRunner,
+	fundNAVQuery *query.GetLatestFundNAVHandler,
+	fundAllocQuery *query.GetFundAllocationHandler,
+	fundNAVHistory *query.GetFundNAVHistoryHandler,
 ) *InvestmentHandler {
 	return &InvestmentHandler{
 		pc:    pc,
@@ -81,77 +87,18 @@ func NewInvestmentHandler(
 		prices: prices, valuation: valuation, taxonomy: taxonomy,
 		fundCmd: fundCmd, portfolioCmd: portfolioCmd, instrumentCmd: instrumentCmd,
 		postTxn: postTxn, reverseTxn: reverseTxn, postPrice: postPrice,
-		fundAUM:      fundAUM,
-		valuationRun: valuationRun,
+		fundAUM:        fundAUM,
+		valuationRun:   valuationRun,
+		fundNAVQuery:   fundNAVQuery,
+		fundAllocQuery: fundAllocQuery,
+		fundNAVHistory: fundNAVHistory,
 	}
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
-func actorID(r *http.Request) (uuid.UUID, bool) {
-	claims := middleware.GetUserClaims(r.Context())
-	if claims == nil {
-		return uuid.Nil, false
-	}
-	id, err := uuid.Parse(claims.Subject)
-	if err != nil {
-		return uuid.Nil, false
-	}
-	return id, true
-}
-
-func parseUUIDParam(r *http.Request, key string) (uuid.UUID, error) {
-	v := chi.URLParam(r, key)
-	return uuid.Parse(v)
-}
-
-func parseDate(s string) (time.Time, error) {
-	if s == "" {
-		return time.Time{}, errors.New("empty date")
-	}
-	return time.Parse("2006-01-02", s)
-}
-
-func parseDateOpt(s string) (*time.Time, error) {
-	if s == "" {
-		return nil, nil
-	}
-	t, err := parseDate(s)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
-}
-
-func parseDecimalOpt(s string) (*decimal.Decimal, error) {
-	if s == "" {
-		return nil, nil
-	}
-	d, err := decimal.NewFromString(s)
-	if err != nil {
-		return nil, err
-	}
-	return &d, nil
-}
-
-func parseDecimalRequiredOrZero(s string) (decimal.Decimal, error) {
-	if s == "" {
-		return decimal.Zero, nil
-	}
-	return decimal.NewFromString(s)
-}
-
-func paginationParams(r *http.Request) (page, limit int) {
-	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
-	limit, _ = strconv.Atoi(r.URL.Query().Get("limit"))
-	if page < 1 {
-		page = 1
-	}
-	if limit <= 0 || limit > 200 {
-		limit = 50
-	}
-	return page, limit
-}
+// Shared transport helpers (actorID, parseUUIDParam, parseDate, parseDateOpt,
+// parseDecimalOpt, parseDecimalRequiredOrZero, paginationParams) live in
+// helpers.go so the research-report handler — and any future split handler —
+// can reuse them without an implicit same-file dependency.
 
 // writeDomainError maps domain errors to HTTP statuses uniformly.
 func writeDomainError(w http.ResponseWriter, err error) {
@@ -297,18 +244,19 @@ func (h *InvestmentHandler) CreateFund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f, err := h.fundCmd.Create(r.Context(), command.CreateFundRequest{
-		Code:           req.Code,
-		Name:           req.Name,
-		ShortName:      req.ShortName,
-		FundCategoryID: req.FundCategoryID,
-		BaseCurrency:   req.BaseCurrency,
-		InceptionDate:  inception,
-		ManagerUserID:  req.ManagerUserID,
-		Benchmark:      req.Benchmark,
-		RiskProfile:    vo.RiskProfile(req.RiskProfile),
-		HasUnits:       req.HasUnits,
-		ExternalPAMRef: req.ExternalPAMRef,
-		ActorID:        actor,
+		Code:                   req.Code,
+		Name:                   req.Name,
+		ShortName:              req.ShortName,
+		FundCategoryID:         req.FundCategoryID,
+		BaseCurrency:           req.BaseCurrency,
+		InceptionDate:          inception,
+		ManagerUserID:          req.ManagerUserID,
+		Benchmark:              req.Benchmark,
+		RiskProfile:            vo.RiskProfile(req.RiskProfile),
+		HasUnits:               req.HasUnits,
+		RequirePretradePreview: req.RequirePretradePreview,
+		ExternalPAMRef:         req.ExternalPAMRef,
+		ActorID:                actor,
 	})
 	if err != nil {
 		writeDomainError(w, err)
@@ -356,15 +304,16 @@ func (h *InvestmentHandler) UpdateFund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cmdReq := command.UpdateFundRequest{
-		FundID:          id,
-		ExpectedVersion: req.ExpectedVersion,
-		Name:            req.Name,
-		ShortName:       req.ShortName,
-		FundCategoryID:  req.FundCategoryID,
-		ManagerUserID:   req.ManagerUserID,
-		Benchmark:       req.Benchmark,
-		ExternalPAMRef:  req.ExternalPAMRef,
-		ActorID:         actor,
+		FundID:                 id,
+		ExpectedVersion:        req.ExpectedVersion,
+		Name:                   req.Name,
+		ShortName:              req.ShortName,
+		FundCategoryID:         req.FundCategoryID,
+		ManagerUserID:          req.ManagerUserID,
+		Benchmark:              req.Benchmark,
+		ExternalPAMRef:         req.ExternalPAMRef,
+		RequirePretradePreview: req.RequirePretradePreview,
+		ActorID:                actor,
 	}
 	if req.RiskProfile != nil {
 		rp := vo.RiskProfile(*req.RiskProfile)
@@ -842,59 +791,118 @@ func (h *InvestmentHandler) PostTransaction(w http.ResponseWriter, r *http.Reque
 		httputil.Forbidden(w, "no access to this portfolio")
 		return
 	}
+	cmdReq, ok := h.parsePostTransactionCommand(w, r, id)
+	if !ok {
+		return
+	}
+
+	res, err := h.postTxn.Handle(r.Context(), cmdReq)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	httputil.Created(w, response.FromTransaction(res.Transaction))
+}
+
+// SimulateTransaction handles POST /investment/portfolios/{id}/transactions/simulate.
+// @Summary Simulate Portfolio Transaction
+// @Description Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables.
+// @Tags Investment - Ledger
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Portfolio UUID"
+// @Param request body request.PostTransactionRequest true "Transaction simulation payload"
+// @Success 200 {object} response.TransactionSimulationResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/portfolios/{id}/transactions/simulate [post]
+func (h *InvestmentHandler) SimulateTransaction(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid portfolio id")
+		return
+	}
+	if !checkPortfolioAccess(r.Context(), h.pc, h.portfolios, id) {
+		httputil.Forbidden(w, "no access to this portfolio")
+		return
+	}
+	cmdReq, ok := h.parsePostTransactionCommand(w, r, id)
+	if !ok {
+		return
+	}
+
+	res, err := h.postTxn.Simulate(r.Context(), cmdReq)
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	httputil.OK(w, response.FromSimulation(res))
+}
+
+func (h *InvestmentHandler) parsePostTransactionCommand(
+	w http.ResponseWriter,
+	r *http.Request,
+	portfolioID uuid.UUID,
+) (command.PostTransactionRequest, bool) {
 	var req request.PostTransactionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httputil.BadRequest(w, "invalid JSON body")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	actor, ok := actorID(r)
 	if !ok {
 		httputil.Unauthorized(w, "not authenticated")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	bizDate, err := parseDate(req.BusinessDate)
 	if err != nil {
 		httputil.BadRequest(w, "invalid business_date")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	settlement, err := parseDateOpt(req.SettlementDate)
 	if err != nil {
 		httputil.BadRequest(w, "invalid settlement_date")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	qty, err := parseDecimalOpt(req.Quantity)
 	if err != nil {
 		httputil.BadRequest(w, "invalid quantity")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	price, err := parseDecimalOpt(req.Price)
 	if err != nil {
 		httputil.BadRequest(w, "invalid price")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	gross, err := parseDecimalOpt(req.GrossAmount)
 	if err != nil {
 		httputil.BadRequest(w, "invalid gross_amount")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	net, err := parseDecimalOpt(req.NetAmount)
 	if err != nil {
 		httputil.BadRequest(w, "invalid net_amount")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	fx, err := parseDecimalOpt(req.FxRateToBase)
 	if err != nil {
 		httputil.BadRequest(w, "invalid fx_rate_to_base")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 	fees, err := parseDecimalRequiredOrZero(req.Fees)
 	if err != nil {
 		httputil.BadRequest(w, "invalid fees")
-		return
+		return command.PostTransactionRequest{}, false
 	}
 
 	cmdReq := command.PostTransactionRequest{
-		PortfolioID:       id,
+		PortfolioID:       portfolioID,
 		TransactionType:   vo.TransactionType(req.TransactionType),
 		InstrumentID:      req.InstrumentID,
 		Quantity:          qty,
@@ -917,13 +925,7 @@ func (h *InvestmentHandler) PostTransaction(w http.ResponseWriter, r *http.Reque
 		s := vo.OrderSide(req.Side)
 		cmdReq.Side = &s
 	}
-
-	res, err := h.postTxn.Handle(r.Context(), cmdReq)
-	if err != nil {
-		writeDomainError(w, err)
-		return
-	}
-	httputil.Created(w, response.FromTransaction(res.Transaction))
+	return cmdReq, true
 }
 
 // ReverseTransaction handles POST /investment/portfolios/{id}/transactions/{txnId}/reverse.
@@ -1517,6 +1519,152 @@ func (h *InvestmentHandler) GetLatestValuation(w http.ResponseWriter, r *http.Re
 		return
 	}
 	httputil.OK(w, response.FromValuation(v))
+}
+
+// GetLatestFundNAV handles GET /investment/funds/{id}/nav/latest.
+//
+// Aggregates the latest internal valuation snapshot of every portfolio under
+// the fund into a single fund-level NAV/AUM view. This is the read-only
+// counterpart to POST /investment/funds/{id}/aum/compute — it never writes
+// an AUM/NAV snapshot row, so it is safe to call from cockpit cards.
+// @Summary Get Latest Fund NAV
+// @Description Aggregate latest per-portfolio valuations into a fund-level NAV view (read-only; no side effects).
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Success 200 {object} response.FundNAVResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id}/nav/latest [get]
+func (h *InvestmentHandler) GetLatestFundNAV(w http.ResponseWriter, r *http.Request) {
+	if h.fundNAVQuery == nil {
+		httputil.InternalError(w, "fund nav query not wired")
+		return
+	}
+	fundID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid fund id")
+		return
+	}
+	if !hasFundAccess(r.Context(), h.pc, fundID) {
+		httputil.Forbidden(w, "no access to this fund")
+		return
+	}
+	result, err := h.fundNAVQuery.Handle(r.Context(), query.GetLatestFundNAVRequest{FundID: fundID})
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	if !result.HasAnySnapshot {
+		httputil.NotFound(w, "no valuation snapshots available for this fund")
+		return
+	}
+	httputil.OK(w, response.FromFundNAV(result))
+}
+
+// GetFundAllocation handles GET /investment/funds/{id}/allocation.
+//
+// Aggregates positions × instruments × latest prices into four breakdowns
+// (asset class / sector / country / currency) plus the fund's total NAV
+// and cash. Read-only; no state mutation.
+// @Summary Get Fund Allocation
+// @Description Compute asset-class, sector, country and currency breakdowns for a fund (read-only).
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Success 200 {object} response.FundAllocationResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Param business_date query string false "Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures."
+// @Router /investment/funds/{id}/allocation [get]
+func (h *InvestmentHandler) GetFundAllocation(w http.ResponseWriter, r *http.Request) {
+	if h.fundAllocQuery == nil {
+		httputil.InternalError(w, "fund allocation query not wired")
+		return
+	}
+	fundID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid fund id")
+		return
+	}
+	if !hasFundAccess(r.Context(), h.pc, fundID) {
+		httputil.Forbidden(w, "no access to this fund")
+		return
+	}
+
+	var businessDate time.Time
+	if raw := strings.TrimSpace(r.URL.Query().Get("business_date")); raw != "" {
+		businessDate, err = parseDate(raw)
+		if err != nil {
+			httputil.BadRequest(w, "invalid business_date: expected YYYY-MM-DD")
+			return
+		}
+	}
+
+	result, err := h.fundAllocQuery.Handle(r.Context(), query.GetFundAllocationRequest{FundID: fundID, BusinessDate: businessDate})
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	if !result.HasAnySnapshot {
+		httputil.NotFound(w, "no positions or valuations available for this fund")
+		return
+	}
+	httputil.OK(w, response.FromFundAllocation(result))
+}
+
+// GetFundNAVHistory handles GET /investment/funds/{id}/nav-history?range=1M|3M|6M|1Y|5Y|YTD.
+//
+// For unitised funds, the series carries one NAV-per-unit point per business
+// day. For non-unitised funds, the series carries AUM only. The dominant
+// portfolio (highest current AUM under the fund) drives the trend so the
+// chart stays comparable to the latest NAV KPI.
+// @Summary Get Fund NAV History
+// @Description Time series of NAV-per-unit (unitised funds) or AUM (non-unitised) over a range.
+// @Tags Investment - Valuation
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Fund UUID"
+// @Param range query string false "Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M)"
+// @Success 200 {object} response.FundNAVHistoryResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/funds/{id}/nav-history [get]
+func (h *InvestmentHandler) GetFundNAVHistory(w http.ResponseWriter, r *http.Request) {
+	if h.fundNAVHistory == nil {
+		httputil.InternalError(w, "fund nav history query not wired")
+		return
+	}
+	fundID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid fund id")
+		return
+	}
+	if !hasFundAccess(r.Context(), h.pc, fundID) {
+		httputil.Forbidden(w, "no access to this fund")
+		return
+	}
+	rng := query.NAVHistoryRange(strings.ToUpper(r.URL.Query().Get("range")))
+	result, err := h.fundNAVHistory.Handle(r.Context(), query.GetFundNAVHistoryRequest{
+		FundID: fundID,
+		Range:  rng,
+	})
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	httputil.OK(w, response.FromFundNAVHistory(result))
 }
 
 // ListValuations handles GET /investment/portfolios/{id}/valuations.

@@ -67,6 +67,7 @@ function handleKeydown(event: KeyboardEvent) {
 
   const first = items[0];
   const last = items[items.length - 1];
+  if (!first || !last) return;
   const active = document.activeElement as HTMLElement | null;
 
   if (event.shiftKey && (active === first || !dialogRef.value?.contains(active))) {
@@ -141,6 +142,7 @@ onBeforeUnmount(() => {
           <AppButton
             variant="secondary"
             size="sm"
+            data-testid="iam-confirm-dialog-cancel"
             :disabled="loading"
             @click="emit('cancel')"
           >
@@ -149,6 +151,7 @@ onBeforeUnmount(() => {
           <AppButton
             :variant="tone === 'danger' ? 'danger' : 'primary'"
             size="sm"
+            data-testid="iam-confirm-dialog-confirm"
             :loading="loading"
             @click="emit('confirm')"
           >

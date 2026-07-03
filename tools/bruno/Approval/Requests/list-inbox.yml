@@ -1,0 +1,42 @@
+info:
+  name: list-inbox
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{approval-base-url}}/inbox?status={{approval-status}}&page={{approval-page}}&limit={{approval-limit}}"
+  params:
+    - name: status
+      value: "{{approval-status}}"
+      type: query
+    - name: page
+      value: "{{approval-page}}"
+      type: query
+    - name: limit
+      value: "{{approval-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("approval-task-id", first.id, { persist: true });
+        }
+        if (first.request_id) {
+          bru.setEnvVar("approval-request-id", first.request_id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

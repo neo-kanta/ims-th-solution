@@ -1,0 +1,6 @@
+info:
+  name: UnmappedCandidates
+  type: folder
+
+request:
+  auth: inherit

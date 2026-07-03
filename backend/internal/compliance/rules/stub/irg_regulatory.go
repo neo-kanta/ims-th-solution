@@ -75,15 +75,20 @@ func (r *ThaiSECRule) Evaluate(
 		ticker = input.ProposedOrder.Ticker
 	}
 
+	// Return WARN (not PASS) so the IRG pipeline surfaces this rule as unimplemented
+	// rather than silently allowing the trade. A PASS from an unimplemented stub is a
+	// false negative; WARN flags the gap without hard-blocking trading. When this rule
+	// is fully implemented in Phase 2, replace the body of this method.
 	return spi.EvalResult{
-		Verdict: vo.VerdictPass,
+		Verdict: vo.VerdictWarn,
 		Message: fmt.Sprintf(
-			"regulatory.thai_sec: NOT IMPLEMENTED in PoC — passing '%s' by default (regulation=%s)",
+			"regulatory.thai_sec: STUB — NOT_CONFIGURED; emitting WARN to flag non-enforcement (ticker=%s, regulation=%s)",
 			ticker, p.Regulation,
 		),
 		Evidence: vo.Evidence{
 			Metrics: map[string]string{
-				"status":     "NOT_IMPLEMENTED",
+				"status":     "NOT_CONFIGURED",
+				"stub":       "true",
 				"regulation": p.Regulation,
 			},
 			References: map[string]string{"ticker": ticker},

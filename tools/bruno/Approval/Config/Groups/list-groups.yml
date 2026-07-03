@@ -1,0 +1,33 @@
+info:
+  name: list-groups
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{approval-config-base-url}}/groups?active_only={{approval-active-only}}"
+  params:
+    - name: active_only
+      value: "{{approval-active-only}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("approval-group-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

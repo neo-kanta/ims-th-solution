@@ -204,3 +204,120 @@ export interface DashboardPayload {
   canCreateContract: boolean;
   createContractUrl: string;
 }
+
+// ---------------------------------------------------------------------------
+// Real API types — integration module task feed
+// ---------------------------------------------------------------------------
+
+export type TaskType =
+  | "RESEARCH_REVIEW"
+  | "WORKFLOW_PENDING"
+  | "COMPLIANCE_BREACH";
+
+export type TaskPriority = "HIGH" | "MEDIUM" | "LOW" | "INFO";
+
+export type TaskStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+
+export type ComplianceSeverity =
+  | "BLOCK"
+  | "WARN"
+  | "REQUIRE_APPROVAL"
+  | "MONITOR"
+  | "";
+
+export interface TaskDTO {
+  taskId: string;
+  type: TaskType;
+  module: string;
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  businessDate: string;
+  sourceRecordId: string;
+  sourceType: string;
+  actionUrl: string;
+  reason: string;
+  /** Language-neutral primary identifier for localised title templates. */
+  subject: string;
+  /** Compliance severity code; empty for non-compliance tasks. */
+  severity: ComplianceSeverity;
+  canAct: boolean;
+  allowedActions: string[];
+  contractId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowStateDTO {
+  contractId: string;
+  businessDate: string;
+  currentState: string;
+  updatedAt: string;
+}
+
+export interface TaskSummaryDTO {
+  total: number;
+  byModule: Record<string, number>;
+  byPriority: Record<string, number>;
+  highPriority: number;
+}
+
+export interface DashboardSnapshotDTO {
+  tasks: TaskDTO[];
+  summary: TaskSummaryDTO;
+  workflowStates: WorkflowStateDTO[];
+  lastRefreshed: string;
+}
+
+export interface TaskListDTO {
+  tasks: TaskDTO[];
+  summary: TaskSummaryDTO;
+}
+
+// ---------------------------------------------------------------------------
+// AI command bar — disabled/mock-ready state only in Phase 1
+// ---------------------------------------------------------------------------
+
+export type AIProviderMode = "disabled" | "stub";
+
+export interface AICommandBarState {
+  mode: AIProviderMode;
+  query: string;
+  loading: boolean;
+}
+
+export type DashboardTodoFilter =
+  | "my"
+  | "approvals"
+  | "workflow"
+  | "alerts"
+  | "done";
+
+export type DashboardTodoAction =
+  | "mark-done"
+  | "snooze"
+  | "more";
+
+export type WorkflowStage =
+  | "DAY_OPEN"
+  | "MANAGER_APPROVED"
+  | "TRANSACTION_CLOSED"
+  | "ACCOUNTING_CLOSED";
+
+export const WORKFLOW_STAGES: readonly WorkflowStage[] = [
+  "DAY_OPEN",
+  "MANAGER_APPROVED",
+  "TRANSACTION_CLOSED",
+  "ACCOUNTING_CLOSED",
+];
+
+export const STATE_RANK: Record<string, number> = {
+  NOT_STARTED: 0,
+  DAY_OPEN: 1,
+  INVESTMENT_DAY_STARTED: 1,
+  MANAGER_APPROVED: 2,
+  MANAGER_APPROVED_END_OF_DAY: 2,
+  TRANSACTION_CLOSED: 3,
+  ACCOUNTING_CLOSED: 4,
+};

@@ -1,0 +1,60 @@
+info:
+  name: list-research-reports
+  type: http
+  seq: 31
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/research-reports"
+  params:
+    - name: page
+      value: "{{investment-page}}"
+      type: query
+    - name: limit
+      value: "{{investment-limit}}"
+      type: query
+    - name: report_status
+      value: "{{investment-research-report-status}}"
+      type: query
+    - name: review_status
+      value: "{{investment-research-review-status}}"
+      type: query
+    - name: recommendation
+      value: "{{investment-research-recommendation}}"
+      type: query
+    - name: instrument_code
+      value: "{{investment-research-instrument-code}}"
+      type: query
+    - name: owner_user_id
+      value: "{{user_id}}"
+      type: query
+    - name: report_date_from
+      value: "{{investment-from-date}}"
+      type: query
+    - name: report_date_to
+      value: "{{investment-to-date}}"
+      type: query
+    - name: search
+      value: "{{investment-research-report-no}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const item = body?.data?.items?.[0] || {};
+
+        if (item.id) {
+          bru.setEnvVar("investment-research-report-id", item.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

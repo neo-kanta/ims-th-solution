@@ -19,6 +19,37 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  AcknowledgeAlertRequest:
+    properties:
+      note:
+        type: string
+    type: object
+  ActionRequest:
+    properties:
+      comment:
+        type: string
+      reason:
+        type: string
+    type: object
+  AddProviderMappingRequest:
+    properties:
+      confidence_score:
+        type: string
+      is_primary:
+        type: boolean
+      priority:
+        type: integer
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_symbol:
+        type: string
+    type: object
   AdminResetPasswordRequest:
     properties:
       new_password:
@@ -71,6 +102,92 @@ definitions:
       updated_at:
         type: string
       username:
+        type: string
+    type: object
+  AlertEventResponse:
+    properties:
+      acknowledged_at:
+        type: string
+      acknowledged_by:
+        type: string
+      acknowledged_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      acknowledgement_note:
+        type: string
+      acknowledgement_state:
+        type: string
+      created_at:
+        type: string
+      created_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      created_by_user_id:
+        type: string
+      currency:
+        type: string
+      current_state:
+        type: string
+      direction:
+        type: string
+      evaluated_at:
+        type: string
+      id:
+        type: string
+      notification_status:
+        type: string
+      observed_at:
+        type: string
+      observed_price:
+        type: string
+      owner_user_id:
+        type: string
+      portfolio:
+        $ref: '#/definitions/PortfolioDescriptor'
+      portfolio_id:
+        type: string
+      previous_state:
+        type: string
+      quote_provider:
+        type: string
+      scope_type:
+        type: string
+      security:
+        $ref: '#/definitions/SecurityDescriptor'
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      threshold_rule_id:
+        type: string
+      threshold_value:
+        type: string
+      watchlist_item_id:
+        type: string
+    type: object
+  AllocationBucketResponse:
+    properties:
+      key:
+        description: stable machine key
+        type: string
+      label:
+        description: human label
+        type: string
+      market_value:
+        description: decimal string in valuation_ccy
+        type: string
+      pct_of_nav:
+        description: 0..100, two-decimal precision
+        type: string
+    type: object
+  ApproverInput:
+    properties:
+      accountCode:
+        description: AccountCode is the approver's account code. Required.
+        type: string
+      role:
+        description: Role is a descriptive label (e.g. "FundManager"). Optional.
+        type: string
+      username:
+        description: Username is a snapshot of the approver's display name. Optional.
         type: string
     type: object
   AssetClass:
@@ -160,6 +277,52 @@ definitions:
       total:
         type: integer
     type: object
+  BatchApprovalRequest:
+    properties:
+      comment:
+        type: string
+      decision_nos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - decision_nos
+    type: object
+  BatchApprovalResponse:
+    properties:
+      failed:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/BatchApprovalResultResponse'
+        type: array
+      succeeded:
+        type: integer
+    type: object
+  BatchApprovalResultResponse:
+    properties:
+      decision_no:
+        type: string
+      error:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  BatchRejectionRequest:
+    properties:
+      decision_nos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - decision_nos
+    - reason
+    type: object
   BlockingReason:
     properties:
       code:
@@ -217,6 +380,21 @@ definitions:
       verdict:
         type: string
     type: object
+  CancelDecisionRequest:
+    properties:
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - reason
+    type: object
+  CandidatesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/UnmappedCandidateDTO'
+        type: array
+    type: object
   CashBalanceResponse:
     properties:
       balance:
@@ -228,6 +406,17 @@ definitions:
       version:
         type: integer
     type: object
+  CashProjectionResponse:
+    properties:
+      cash_impact:
+        type: string
+      currency:
+        type: string
+      current_balance:
+        type: string
+      projected_balance:
+        type: string
+    type: object
   ChangePasswordRequest:
     properties:
       new_password:
@@ -237,6 +426,111 @@ definitions:
     required:
     - new_password
     - old_password
+    type: object
+  ChatFigureBinding:
+    properties:
+      figure:
+        example: "10.25"
+        type: string
+      source:
+        example: tool_raw
+        type: string
+      tool_name:
+        example: get_fund_nav
+        type: string
+    type: object
+  ChatMessageResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      provenance:
+        type: object
+      role:
+        example: assistant
+        type: string
+    type: object
+  ChatSourceRef:
+    properties:
+      as_of:
+        example: "2026-06-07T08:30:00Z"
+        type: string
+      server:
+        example: ims
+        type: string
+      state:
+        example: succeeded
+        type: string
+      tool_name:
+        example: get_fund_nav
+        type: string
+    type: object
+  ChatStreamEvent:
+    properties:
+      bindings:
+        description: |-
+          Bindings links cited figures to the tool that produced them. Present only
+          on kind=sources, and only when the answer passed numeric validation.
+        items:
+          $ref: '#/definitions/ChatFigureBinding'
+        type: array
+      error:
+        description: Error is a safe, user-facing error message. Present only on kind=error.
+        example: the assistant could not complete this turn
+        type: string
+      kind:
+        description: 'Kind is the SSE event name. One of: session_started, text, done,
+          error.'
+        example: text
+        type: string
+      message_id:
+        description: |-
+          MessageID is the user message id on session_started, or the assistant
+          message id on done.
+        example: 123e4567-e89b-12d3-a456-426614174001
+        type: string
+      session_id:
+        description: SessionID is the conversation id. Present on session_started,
+          done, and error.
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      sources:
+        description: |-
+          Sources lists the turn-level provenance (which tools ran). Present only on
+          kind=sources.
+        items:
+          $ref: '#/definitions/ChatSourceRef'
+        type: array
+      stop_reason:
+        description: |-
+          StopReason is the canonical termination reason. Present only on kind=done.
+          One of: end_turn, tool_use, max_tokens, stop_sequence, error, unknown.
+        example: end_turn
+        type: string
+      text:
+        description: Text is an incremental token. Present only on kind=text.
+        example: Hello
+        type: string
+      tool_name:
+        description: ToolName is the MCP tool being called. Present only on kind=tool_call.
+        example: get_portfolio_holdings
+        type: string
+      tool_status:
+        description: |-
+          ToolStatus is the tool-call lifecycle marker. Present only on
+          kind=tool_call. One of: running, ok, error, denied.
+        example: running
+        type: string
+      unverified:
+        description: |-
+          Unverified lists the figures that failed numeric validation. Present only
+          on kind=validation with tool_status=blocked.
+        items:
+          type: string
+        type: array
     type: object
   CheckGroupResult:
     properties:
@@ -309,6 +603,34 @@ definitions:
         description: raw verdict from rule
         type: string
     type: object
+  ComplianceBreachPreviewResponse:
+    properties:
+      breach_id:
+        type: string
+      message:
+        type: string
+      overridable:
+        type: boolean
+      rule_type_id:
+        type: string
+      severity:
+        type: string
+      verdict:
+        type: string
+    type: object
+  CompliancePreviewResponse:
+    properties:
+      breaches:
+        items:
+          $ref: '#/definitions/ComplianceBreachPreviewResponse'
+        type: array
+      check_group_id:
+        type: string
+      rules_evaluated:
+        type: integer
+      verdict:
+        type: string
+    type: object
   ComputeFundAUMRequest:
     properties:
       business_date:
@@ -342,6 +664,49 @@ definitions:
       updatedAt:
         type: string
     type: object
+  CreateDecisionRequest:
+    properties:
+      amount:
+        type: string
+      business_date:
+        type: string
+      contract_id:
+        type: string
+      currency:
+        type: string
+      exchange:
+        type: string
+      fund_id:
+        type: string
+      instrument_code:
+        maxLength: 40
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      portfolio_id:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      research_report_id:
+        type: string
+      side:
+        enum:
+        - BUY
+        - SELL
+        type: string
+    required:
+    - business_date
+    - contract_id
+    - currency
+    - fund_id
+    - instrument_code
+    - portfolio_id
+    - side
+    type: object
   CreateFundRequest:
     properties:
       base_currency:
@@ -364,6 +729,12 @@ definitions:
       name:
         maxLength: 255
         type: string
+      require_pretrade_preview:
+        description: |-
+          RequirePretradePreview controls the trade-ticket UX on the Operation tab.
+          When true the UI must run a pre-trade simulation before allowing a post;
+          when false it posts directly (server still enforces gates).
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -375,6 +746,40 @@ definitions:
     - fund_category_id
     - inception_date
     - name
+    type: object
+  CreateImportBatchRequest:
+    properties:
+      chunk_size:
+        type: integer
+      history_limit:
+        type: integer
+      idempotency_key:
+        type: string
+      import_type:
+        type: string
+      include_history:
+        type: boolean
+      include_quote:
+        type: boolean
+      provider:
+        type: string
+      symbols:
+        items:
+          type: string
+        type: array
+    type: object
+  CreateImportBatchResponse:
+    properties:
+      batch_id:
+        type: string
+      reused:
+        type: boolean
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
     type: object
   CreateInstrumentRequest:
     properties:
@@ -414,6 +819,23 @@ definitions:
     - currency
     - name
     - primary_ticker
+    type: object
+  CreateItemRequest:
+    properties:
+      note:
+        type: string
+      pinned:
+        type: boolean
+      portfolio_id:
+        type: string
+      scope_type:
+        type: string
+      security_id:
+        type: string
+      threshold_rules:
+        items:
+          $ref: '#/definitions/ThresholdRuleRequest'
+        type: array
     type: object
   CreatePortfolioRequest:
     properties:
@@ -455,6 +877,60 @@ definitions:
     - name
     - valuation_currency
     type: object
+  CreateResearchReportRequest:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      currency:
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      instrument_code:
+        maxLength: 40
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      investment_analysis:
+        minLength: 25
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      recommendation:
+        enum:
+        - BUY
+        - SELL
+        - HOLD
+        type: string
+      report_date:
+        type: string
+      report_no:
+        maxLength: 60
+        type: string
+      report_title:
+        type: string
+    required:
+    - author_user_id
+    - instrument_code
+    - investment_analysis
+    - owner_user_id
+    - recommendation
+    - report_date
+    - report_no
+    type: object
   CreateRuleInstanceRequest:
     properties:
       change_reason:
@@ -485,6 +961,35 @@ definitions:
       version:
         $ref: '#/definitions/RuleInstanceVersion'
     type: object
+  CreateSecurityRequest:
+    properties:
+      asset_type:
+        type: string
+      auto_build_ims_symbol:
+        type: boolean
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      ims_symbol:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      status:
+        type: string
+    type: object
   CreateUserRequest:
     properties:
       display_name:
@@ -502,6 +1007,343 @@ definitions:
     - email
     - password
     - username
+    type: object
+  DailyApproverEntry:
+    properties:
+      accountCode:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  DailyAuditSummary:
+    properties:
+      lastTransitionAt:
+        type: string
+      lastTransitionBy:
+        type: string
+      totalTransitions:
+        type: integer
+    type: object
+  DailyBlockingReason:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  DailyExecuteRequest:
+    properties:
+      accountingDate:
+        description: |-
+          AccountingDate applies to CLOSE_ACCOUNTING. Format YYYY-MM-DD.
+          When omitted, defaults to BusinessDate.
+        type: string
+      attestationReason:
+        description: AttestationReason is required when ZeroTransactionAttestation
+          is true (min 30 chars).
+        type: string
+      businessDate:
+        description: BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar).
+        type: string
+      notes:
+        description: Notes is an optional free-text remark for MANAGER_APPROVE.
+        type: string
+      operationType:
+        description: |-
+          OperationType is the canonical API operation name.
+          Valid values: START_INVESTMENT_DAY, CANCEL_INVESTMENT_DAY,
+            MANAGER_APPROVE, CANCEL_MANAGER_APPROVAL,
+            CLOSE_TRANSACTION, CANCEL_TRANSACTION_CLOSE,
+            CLOSE_ACCOUNTING, CANCEL_ACCOUNTING_CLOSE
+        type: string
+      reason:
+        description: Reason is mandatory for cancel/rollback operations (min 20 chars).
+        type: string
+      remark:
+        description: |-
+          Remark is optional free text from the operator. For cancel/rollback
+          operations it is accepted as an alias for reason.
+        type: string
+      zeroTransactionAttestation:
+        description: |-
+          ZeroTransactionAttestation must be true when approving a day with no
+          investment transactions. Applies to MANAGER_APPROVE only.
+        type: boolean
+    type: object
+  DailyModuleStatus:
+    properties:
+      ready:
+        type: boolean
+      reason:
+        type: string
+    type: object
+  DailyOperationSetting:
+    properties:
+      approvalMode:
+        type: string
+      approvers:
+        items:
+          $ref: '#/definitions/DailyApproverEntry'
+        type: array
+    type: object
+  DailySettingsUpdateRequest:
+    properties:
+      approvers:
+        description: |-
+          Approvers replaces the entire active approver list for this operation type.
+          Pass an empty array to remove all approvers.
+        items:
+          $ref: '#/definitions/ApproverInput'
+        type: array
+      operationType:
+        description: OperationType is the operation type to configure approvers for.
+        type: string
+    type: object
+  DailyTimelineEntry:
+    properties:
+      executedAt:
+        type: string
+      executedByAccountCode:
+        type: string
+      executedByUsername:
+        type: string
+      fromState:
+        type: string
+      isAdminOverride:
+        type: boolean
+      operationType:
+        description: canonical API name
+        type: string
+      reason:
+        type: string
+      toState:
+        type: string
+      transitionId:
+        type: string
+    type: object
+  DailyTransitionsResponse:
+    properties:
+      businessDate:
+        type: string
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+      transitions:
+        items:
+          $ref: '#/definitions/DailyTimelineEntry'
+        type: array
+    type: object
+  DailyWorkflowResponse:
+    description: Aggregated workflow state for one contract on one business date.
+    properties:
+      allowedOperations:
+        description: AllowedOperations lists operation types the caller may attempt
+          (API names).
+        items:
+          type: string
+        type: array
+      approvers:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/DailyApproverEntry'
+          type: array
+        description: Approvers maps operationType → configured approver list.
+        type: object
+      auditSummary:
+        $ref: '#/definitions/DailyAuditSummary'
+      blockedOperations:
+        items:
+          type: string
+        type: array
+      blockedReasons:
+        items:
+          $ref: '#/definitions/DailyBlockingReason'
+        type: array
+      businessDate:
+        description: YYYY-MM-DD
+        type: string
+      currentState:
+        description: |-
+          CurrentState is one of: NOT_STARTED, INVESTMENT_DAY_STARTED,
+          MANAGER_APPROVED, TRANSACTION_CLOSED, ACCOUNTING_CLOSED
+        type: string
+      isToday:
+        type: boolean
+      moduleReadiness:
+        additionalProperties:
+          $ref: '#/definitions/DailyModuleStatus'
+        type: object
+      persisted:
+        type: boolean
+      settings:
+        additionalProperties:
+          $ref: '#/definitions/DailyOperationSetting'
+        description: Settings maps operationType → approval configuration.
+        type: object
+      settingsSummary:
+        additionalProperties:
+          $ref: '#/definitions/DailyOperationSetting'
+        type: object
+      stateLabel:
+        type: string
+      timeline:
+        items:
+          $ref: '#/definitions/DailyTimelineEntry'
+        type: array
+      transitionRules:
+        items:
+          $ref: '#/definitions/TransitionRule'
+        type: array
+    type: object
+  DashboardSnapshotDTO:
+    properties:
+      lastRefreshed:
+        type: string
+      summary:
+        $ref: '#/definitions/TaskSummaryDTO'
+      tasks:
+        items:
+          $ref: '#/definitions/TaskDTO'
+        type: array
+      workflowStates:
+        items:
+          $ref: '#/definitions/WorkflowStateDTO'
+        type: array
+    type: object
+  DecisionLineResponse:
+    properties:
+      amount:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      line_number:
+        type: integer
+      notes:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      side:
+        type: string
+      target_weight:
+        type: string
+    type: object
+  DecisionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/DecisionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  DecisionResponse:
+    properties:
+      amendment_no:
+        type: integer
+      amount:
+        type: string
+      approval_request_id:
+        type: string
+      approval_stage:
+        description: Approval enrichment — populated by the approval-items endpoint.
+        type: integer
+      approval_status:
+        type: string
+      approval_total_stages:
+        type: integer
+      business_date:
+        type: string
+      cancellation_reason:
+        type: string
+      cancelled_at:
+        type: string
+      compliance_check_group_id:
+        type: string
+      compliance_release_approval_request_id:
+        type: string
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      current_approvers:
+        items:
+          type: string
+        type: array
+      decision_number:
+        type: string
+      decision_type:
+        type: string
+      exchange:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      lines:
+        description: Lines are included when the decision has basket/rebalance/switch
+          lines.
+        items:
+          $ref: '#/definitions/DecisionLineResponse'
+        type: array
+      portfolio_id:
+        type: string
+      previous_approvers:
+        items:
+          type: string
+        type: array
+      process_type:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      ready_for_execution_at:
+        type: string
+      research_report_id:
+        type: string
+      research_report_no:
+        type: string
+      side:
+        type: string
+      status:
+        type: string
+      strategy_code:
+        type: string
+      submitted_at:
+        type: string
+      submitter_user_id:
+        type: string
+      updated_at:
+        type: string
     type: object
   DeleteFundRequest:
     properties:
@@ -527,8 +1369,101 @@ definitions:
       error:
         type: string
     type: object
+  EvaluateRequest:
+    properties:
+      dry_run:
+        type: boolean
+      item_id:
+        type: string
+      portfolio_id:
+        type: string
+      rule_id:
+        type: string
+      scope_type:
+        type: string
+      security_id:
+        type: string
+    type: object
+  EvaluateResponseData:
+    properties:
+      alerts_created:
+        type: integer
+      alerts_suppressed:
+        type: integer
+      dry_run:
+        type: boolean
+      provider_failures:
+        type: integer
+      results:
+        items:
+          $ref: '#/definitions/EvaluateRuleResultResponse'
+        type: array
+      rules_evaluated:
+        type: integer
+      rules_skipped:
+        type: integer
+    type: object
+  EvaluateRuleResultResponse:
+    properties:
+      computed_state:
+        type: string
+      notification_status:
+        type: string
+      observed_price:
+        type: string
+      previous_state:
+        type: string
+      quote_status:
+        type: string
+      rule_id:
+        type: string
+      security_id:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      threshold_value:
+        type: string
+      watchlist_item_id:
+        type: string
+      would_create_alert:
+        type: boolean
+    type: object
+  EventResponse:
+    properties:
+      actor:
+        $ref: '#/definitions/UserDescriptor'
+      actor_name:
+        type: string
+      actor_user_id:
+        type: string
+      comment:
+        type: string
+      created_at:
+        type: string
+      delegated_from:
+        $ref: '#/definitions/UserDescriptor'
+      delegated_from_user_id:
+        type: string
+      event_type:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      stage_number:
+        type: integer
+    type: object
   ExecuteTransitionRequest:
     properties:
+      accountingDate:
+        description: |-
+          AccountingDate is the NAV / accounting posting date for
+          CLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to
+          BusinessDate. Must not precede BusinessDate. Ignored by other actions.
+        type: string
       action:
         description: |-
           Action identifies the transition to execute.
@@ -566,6 +1501,37 @@ definitions:
           investment transactions. Ignored for all other actions.
         type: boolean
     type: object
+  FundAllocationResponse:
+    properties:
+      as_of:
+        type: string
+      by_asset_class:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_country:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_currency:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      by_sector:
+        items:
+          $ref: '#/definitions/AllocationBucketResponse'
+        type: array
+      fund_id:
+        type: string
+      portfolio_count:
+        type: integer
+      total_cash:
+        type: string
+      total_nav:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
   FundCategory:
     properties:
       assetClassID:
@@ -598,6 +1564,64 @@ definitions:
       total:
         type: integer
     type: object
+  FundNAVHistoryResponse:
+    properties:
+      delta_pct:
+        type: string
+      from:
+        type: string
+      fund_id:
+        type: string
+      has_units:
+        type: boolean
+      high:
+        type: string
+      is_empty:
+        type: boolean
+      latest:
+        type: string
+      low:
+        type: string
+      range:
+        type: string
+      series:
+        items:
+          $ref: '#/definitions/NAVHistoryPointResponse'
+        type: array
+      to:
+        type: string
+    type: object
+  FundNAVResponse:
+    properties:
+      aum:
+        type: string
+      business_date:
+        type: string
+      cash_balance:
+        type: string
+      fund_id:
+        type: string
+      has_stale_inputs:
+        type: boolean
+      is_indicative:
+        type: boolean
+      market_value:
+        type: string
+      nav_per_unit:
+        type: string
+      portfolio_count:
+        type: integer
+      realised_pnl:
+        type: string
+      roi:
+        type: string
+      total_units:
+        type: string
+      unrealised_pnl:
+        type: string
+      valuation_ccy:
+        type: string
+    type: object
   FundResponse:
     properties:
       base_currency:
@@ -622,6 +1646,8 @@ definitions:
         type: string
       name:
         type: string
+      require_pretrade_preview:
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -633,8 +1659,86 @@ definitions:
       version:
         type: integer
     type: object
+  GroupMemberRequest:
+    properties:
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      status:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupMemberResponse:
+    properties:
+      created_at:
+        type: string
+      display_name:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupRequest:
+    properties:
+      group_code:
+        type: string
+      group_name:
+        type: string
+      is_active:
+        type: boolean
+      remarks:
+        type: string
+    type: object
+  GroupResponse:
+    properties:
+      created_at:
+        type: string
+      group_code:
+        type: string
+      group_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      remarks:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  Health:
+    properties:
+      enabled:
+        description: the chat module is mounted
+        type: boolean
+      mcp_connected:
+        description: at least one MCP server connected
+        type: boolean
+      tool_count:
+        description: allowlisted tools available
+        type: integer
+    type: object
   HealthResponse:
     properties:
+      chat:
+        $ref: '#/definitions/Health'
       database:
         type: string
       redis:
@@ -670,6 +1774,92 @@ definitions:
       version:
         type: integer
     type: object
+  ImportBatch:
+    properties:
+      accepted_records:
+        type: integer
+      batch_id:
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      error_message:
+        type: string
+      idempotency_key:
+        type: string
+      import_type:
+        type: string
+      provider:
+        type: string
+      rejected_records:
+        type: integer
+      started_at:
+        type: string
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
+      warning_records:
+        type: integer
+    type: object
+  ImportBatchStatusResponseDTO:
+    properties:
+      batch:
+        $ref: '#/definitions/ImportBatch'
+      chunks:
+        items:
+          $ref: '#/definitions/ImportChunkSummary'
+        type: array
+      errors:
+        items:
+          $ref: '#/definitions/ImportChunkItem'
+        type: array
+    type: object
+  ImportChunkItem:
+    properties:
+      chunk_id:
+        type: string
+      created_at:
+        type: string
+      error_code:
+        type: string
+      error_message:
+        type: string
+      item_id:
+        type: string
+      provider_symbol:
+        type: string
+      security_id:
+        type: string
+      status:
+        type: string
+      symbol:
+        type: string
+    type: object
+  ImportChunkSummary:
+    properties:
+      accepted_records:
+        type: integer
+      chunk_id:
+        type: string
+      chunk_index:
+        type: integer
+      error_message:
+        type: string
+      rejected_records:
+        type: integer
+      status:
+        type: string
+      total_records:
+        type: integer
+      warning_records:
+        type: integer
+    type: object
   ImportMarketDataRequest:
     properties:
       history_limit:
@@ -703,6 +1893,26 @@ definitions:
         type: string
       symbol:
         type: string
+    type: object
+  InboxItemResponse:
+    properties:
+      request:
+        $ref: '#/definitions/RequestResponse'
+      task:
+        $ref: '#/definitions/TaskResponse'
+    type: object
+  InboxListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/InboxItemResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
     type: object
   InstrumentListResponse:
     properties:
@@ -757,6 +1967,193 @@ definitions:
       updated_at:
         type: string
     type: object
+  IntradayAllocationBucketResponse:
+    properties:
+      key:
+        type: string
+      label:
+        type: string
+      market_value:
+        type: string
+      pct_of_total:
+        type: string
+    type: object
+  IntradayCashRowResponse:
+    properties:
+      balance:
+        type: string
+      currency:
+        type: string
+    type: object
+  IntradayPositionResponse:
+    properties:
+      asset_class_code:
+        type: string
+      asset_class_label:
+        type: string
+      average_cost:
+        type: string
+      cost_amount:
+        description: |-
+          Mark-to-market contract fields (additive — see docs/investment-module.md
+          holdings valuation section). CostAmount duplicates CostBasis under the
+          contract's field name; ROI is a ratio (unrealised_pnl / cost_amount),
+          not a percentage.
+        type: string
+      cost_basis:
+        type: string
+      currency:
+        type: string
+      fetched_at:
+        type: string
+      instrument_id:
+        type: string
+      is_stale:
+        type: boolean
+      latest_price:
+        type: string
+      market_data_snapshot_id:
+        type: string
+      market_value:
+        type: string
+      name:
+        type: string
+      price_at:
+        type: string
+      price_effective_date:
+        type: string
+      price_snapshot_id:
+        type: string
+      provider:
+        type: string
+      quantity:
+        type: string
+      roi:
+        type: string
+      source:
+        type: string
+      stale_reason:
+        type: string
+      ticker:
+        type: string
+      unrealised_pnl:
+        type: string
+      unrealised_pnl_pct:
+        type: string
+      unrealized_pnl:
+        description: |-
+          UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases
+          of UnrealisedPnL/UnrealisedPnLPct — the totals object below already
+          used the American spelling, so callers reading unrealized_* off both
+          positions and totals get a consistent contract.
+        type: string
+      unrealized_pnl_pct:
+        type: string
+    type: object
+  IntradayTotalsResponse:
+    properties:
+      cash_balance:
+        type: string
+      cost_amount:
+        type: string
+      estimated_aum:
+        type: string
+      market_value:
+        type: string
+      roi:
+        type: string
+      unrealized_pnl:
+        type: string
+    type: object
+  IntradayValuationResponse:
+    properties:
+      allocation:
+        items:
+          $ref: '#/definitions/IntradayAllocationBucketResponse'
+        type: array
+      as_of:
+        type: string
+      business_date:
+        type: string
+      cash:
+        items:
+          $ref: '#/definitions/IntradayCashRowResponse'
+        type: array
+      cash_balance:
+        type: string
+      delta_pct_vs_last_close:
+        type: string
+      estimated_aum:
+        type: string
+      estimated_nav_per_unit:
+        type: string
+      fund_code:
+        type: string
+      fund_id:
+        type: string
+      has_live_prices:
+        type: boolean
+      has_official:
+        type: boolean
+      has_units:
+        type: boolean
+      holdings_as_of_confirmed:
+        description: |-
+          HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are
+          confirmed as of BusinessDate. Always true for today; false for a
+          historical BusinessDate, since only prices are resolved as of that
+          date — see HoldingsAsOfNote.
+        type: boolean
+      holdings_as_of_note:
+        type: string
+      is_stale:
+        type: boolean
+      official_as_of:
+        type: string
+      official_aum:
+        type: string
+      official_nav_per_unit:
+        type: string
+      portfolio_count:
+        type: integer
+      positions:
+        items:
+          $ref: '#/definitions/IntradayPositionResponse'
+        type: array
+      primary_provider:
+        type: string
+      providers_used:
+        items:
+          type: string
+        type: array
+      stale_reason:
+        type: string
+      totals:
+        $ref: '#/definitions/IntradayTotalsResponse'
+      units_indicative:
+        type: boolean
+      units_outstanding:
+        type: string
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+      unrealised_pnl:
+        type: string
+      valuation_ccy:
+        type: string
+      valuation_currency:
+        description: |-
+          ValuationCurrency duplicates ValuationCcy under the mark-to-market
+          contract's field name (additive, kept alongside valuation_ccy for
+          backward compatibility with the official/estimated dual-view UI).
+        type: string
+    type: object
+  InvalidateResearchReportRequest:
+    properties:
+      reason:
+        type: string
+    type: object
   InvestmentStyle:
     properties:
       code:
@@ -772,6 +2169,15 @@ definitions:
       updatedAt:
         type: string
     type: object
+  ListAlertsResponseData:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/AlertEventResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/PaginationMeta'
+    type: object
   ListBreachesResult:
     properties:
       breaches:
@@ -784,6 +2190,15 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  ListItemsResponseData:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/WatchlistItemResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/PaginationMeta'
     type: object
   ListRuleInstancesResult:
     properties:
@@ -890,12 +2305,184 @@ definitions:
     required:
     - totp_code
     type: object
+  MapCandidateRequest:
+    properties:
+      security_id:
+        type: string
+    type: object
+  MappingsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ProviderMappingDTO'
+        type: array
+    type: object
+  MarketDataRefreshResponse:
+    properties:
+      completed_at:
+        type: string
+      errors:
+        items:
+          type: string
+        type: array
+      failed_symbols:
+        type: integer
+      fund_id:
+        type: string
+      requested_symbols:
+        type: integer
+      stale_symbols:
+        type: integer
+      started_at:
+        type: string
+      success_symbols:
+        type: integer
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+      used_provider:
+        type: string
+    type: object
+  MarketDataScreenRowDTO:
+    properties:
+      asset_type:
+        type: string
+      change_amount:
+        type: string
+      change_percent:
+        type: string
+      currency:
+        type: string
+      data_quality_status:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      freshness_status:
+        type: string
+      ims_symbol:
+        type: string
+      last_price:
+        type: string
+      last_update_at:
+        type: string
+      mapping_status:
+        type: string
+      name:
+        type: string
+      pinned:
+        type: boolean
+      provider_badges:
+        items:
+          $ref: '#/definitions/ProviderBadgeDTO'
+        type: array
+      security_id:
+        type: string
+      volume:
+        type: integer
+      watching:
+        type: boolean
+      yield_to_maturity:
+        type: string
+    type: object
+  MarketDataScreenSearchItemDTO:
+    properties:
+      action_hint:
+        type: string
+      asset_type:
+        type: string
+      change_amount:
+        type: string
+      change_percent:
+        type: string
+      currency:
+        type: string
+      data_quality_status:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      freshness_status:
+        type: string
+      has_active_mapping:
+        type: boolean
+      ims_symbol:
+        type: string
+      last_price:
+        type: string
+      last_update_at:
+        type: string
+      mapping_status:
+        type: string
+      name:
+        type: string
+      pinned:
+        type: boolean
+      provider_badges:
+        items:
+          $ref: '#/definitions/ProviderBadgeDTO'
+        type: array
+      security_id:
+        type: string
+      volume:
+        type: integer
+      watching:
+        type: boolean
+      yield_to_maturity:
+        type: string
+    type: object
+  MarketDataStatusResponse:
+    properties:
+      fund_id:
+        type: string
+      healthy:
+        type: boolean
+      last_quote_at:
+        type: string
+      note:
+        type: string
+      primary_provider:
+        type: string
+      stale_after_seconds:
+        type: integer
+      stale_positions:
+        type: integer
+      total_positions:
+        type: integer
+      unmapped_symbols:
+        items:
+          type: string
+        type: array
+    type: object
   MeResponse:
     properties:
       permissions:
         $ref: '#/definitions/PermissionsResp'
       user:
         $ref: '#/definitions/UserResponse'
+    type: object
+  NAVHistoryPointResponse:
+    properties:
+      aum:
+        type: string
+      business_date:
+        type: string
+      nav_per_unit:
+        type: string
+    type: object
+  OperationSettingEntry:
+    properties:
+      approvalMode:
+        type: string
+      approvers:
+        items:
+          $ref: '#/definitions/DailyApproverEntry'
+        type: array
+      operationType:
+        type: string
     type: object
   Override:
     properties:
@@ -920,10 +2507,17 @@ definitions:
     type: object
   OverrideRequest:
     properties:
-      approved_by:
-        type: string
       reason:
         type: string
+    type: object
+  PaginationMeta:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
     type: object
   PermissionsResp:
     properties:
@@ -935,6 +2529,23 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  PortfolioDescriptor:
+    properties:
+      display_name:
+        type: string
+      fund_code:
+        type: string
+      fund_id:
+        type: string
+      fund_name:
+        type: string
+      portfolio_code:
+        type: string
+      portfolio_id:
+        type: string
+      portfolio_name:
+        type: string
     type: object
   PortfolioListResponse:
     properties:
@@ -989,6 +2600,23 @@ definitions:
         type: string
       version:
         type: integer
+    type: object
+  PositionProjectionResponse:
+    properties:
+      current_average_cost:
+        type: string
+      current_cost_basis:
+        type: string
+      current_quantity:
+        type: string
+      instrument_id:
+        type: string
+      projected_average_cost:
+        type: string
+      projected_cost_basis:
+        type: string
+      projected_quantity:
+        type: string
     type: object
   PostPriceSnapshotRequest:
     properties:
@@ -1103,6 +2731,8 @@ definitions:
         type: string
       exchange:
         type: string
+      fees:
+        type: string
       order_id:
         type: string
       portfolio_id:
@@ -1201,6 +2831,69 @@ definitions:
       provider_ref:
         type: string
     type: object
+  ProcessConfigRequest:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      effective_date:
+        type: string
+      group_approval_enabled:
+        type: boolean
+      is_active:
+        type: boolean
+      process_code:
+        type: string
+      process_name:
+        type: string
+      process_type:
+        type: string
+      require_team_approval:
+        type: boolean
+      stages:
+        items:
+          $ref: '#/definitions/StageRequest'
+        type: array
+    type: object
+  ProcessConfigResponse:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      created_at:
+        type: string
+      effective_date:
+        type: string
+      group_approval_enabled:
+        type: boolean
+      id:
+        type: string
+      is_active:
+        type: boolean
+      process_code:
+        type: string
+      process_name:
+        type: string
+      process_type:
+        type: string
+      require_team_approval:
+        type: boolean
+      stages:
+        items:
+          $ref: '#/definitions/StageResponse'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  ProviderBadgeDTO:
+    properties:
+      label:
+        type: string
+      provider_code:
+        type: string
+    type: object
   ProviderHealthResponse:
     properties:
       configured:
@@ -1218,6 +2911,31 @@ definitions:
       provider_name:
         type: string
       role:
+        type: string
+    type: object
+  ProviderMappingDTO:
+    properties:
+      confidence_score:
+        type: string
+      is_primary:
+        type: boolean
+      mapping_id:
+        type: string
+      mapping_status:
+        type: string
+      priority:
+        type: integer
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_symbol:
+        type: string
+      security_id:
         type: string
     type: object
   Quote:
@@ -1247,6 +2965,12 @@ definitions:
       price:
         type: number
       provider:
+        type: string
+      snapshot_id:
+        description: |-
+          SnapshotID is the market_data_snapshots row id, populated only by
+          snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+          by a freshly fetched live provider quote.
         type: string
       stale:
         type: boolean
@@ -1285,6 +3009,12 @@ definitions:
         type: number
       provider:
         type: string
+      snapshot_id:
+        description: |-
+          SnapshotID is the market_data_snapshots row id, populated only by
+          snapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not
+          by a freshly fetched live provider quote.
+        type: string
       stale:
         type: boolean
       stale_reason:
@@ -1293,6 +3023,31 @@ definitions:
         type: string
       volume:
         type: integer
+    type: object
+  QuoteSnapshot:
+    properties:
+      change_percent:
+        type: string
+      currency:
+        type: string
+      effective_at:
+        type: string
+      fetched_at:
+        type: string
+      market_status:
+        type: string
+      previous_close:
+        type: string
+      price:
+        type: string
+      provider:
+        type: string
+      stale:
+        type: boolean
+      stale_reason:
+        type: string
+      symbol:
+        type: string
     type: object
   RefreshRequest:
     properties:
@@ -1325,6 +3080,188 @@ definitions:
       name:
         type: string
       updatedAt:
+        type: string
+    type: object
+  RejectCandidateRequest:
+    properties:
+      reason:
+        type: string
+    type: object
+  ReorderRequest:
+    properties:
+      member_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  RequestDetailResponse:
+    properties:
+      allowed_actions:
+        items:
+          type: string
+        type: array
+      request:
+        $ref: '#/definitions/RequestResponse'
+      signatures:
+        items:
+          $ref: '#/definitions/SignatureResponse'
+        type: array
+      tasks:
+        items:
+          $ref: '#/definitions/TaskResponse'
+        type: array
+      timeline:
+        items:
+          $ref: '#/definitions/EventResponse'
+        type: array
+      viewer_task:
+        $ref: '#/definitions/TaskResponse'
+    type: object
+  RequestListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/RequestResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  RequestResponse:
+    properties:
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      current_stage_number:
+        type: integer
+      final_decision_at:
+        type: string
+      final_decision_by:
+        type: string
+      id:
+        type: string
+      portfolio_id:
+        type: string
+      process_config_id:
+        type: string
+      process_type:
+        type: string
+      rejection_reason:
+        type: string
+      request_number:
+        type: string
+      status:
+        type: string
+      subject:
+        $ref: '#/definitions/SubjectDescriptor'
+      subject_id:
+        type: string
+      subject_reference:
+        type: string
+      subject_title:
+        type: string
+      subject_type:
+        type: string
+      submitted_at:
+        type: string
+      submitter:
+        $ref: '#/definitions/UserDescriptor'
+      submitter_id:
+        type: string
+      submitter_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  ResearchReportListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ResearchReportResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  ResearchReportResponse:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      currency:
+        type: string
+      derived_review_stage:
+        description: |-
+          Multi-level review badge derived from the approval engine. Empty when
+          the report has not been submitted; "PENDING_LEVEL_<N>" while the
+          approval is in progress; "REVIEW_COMPLETED" / "REJECTED" / "INVALIDATED"
+          at terminal states. Backend remains the source of truth; UI uses this
+          field for display only.
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      invalidated_at:
+        description: |-
+          Invalidation metadata. Populated together when the report is in
+          INVALIDATED state; omitted otherwise.
+        type: string
+      invalidated_by:
+        type: string
+      invalidation_reason:
+        type: string
+      investment_analysis:
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      post_submission_note:
+        type: string
+      recommendation:
+        type: string
+      rejection_reason:
+        type: string
+      report_date:
+        type: string
+      report_no:
+        type: string
+      report_status:
+        type: string
+      report_title:
+        type: string
+      review_status:
+        type: string
+      updated_at:
+        type: string
+      updated_by:
         type: string
     type: object
   ReverseTransactionRequest:
@@ -1438,6 +3375,31 @@ definitions:
       version:
         type: string
     type: object
+  RunImportBatchResponse:
+    properties:
+      accepted_records:
+        type: integer
+      batch_id:
+        type: string
+      chunks:
+        items:
+          $ref: '#/definitions/ImportChunkSummary'
+        type: array
+      errors:
+        items:
+          $ref: '#/definitions/ImportChunkItem'
+        type: array
+      rejected_records:
+        type: integer
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      total_symbols:
+        type: integer
+      warning_records:
+        type: integer
+    type: object
   RunValuationRequest:
     properties:
       business_date:
@@ -1450,6 +3412,27 @@ definitions:
         type: string
     required:
     - business_date
+    type: object
+  ScreenSearchResponseDTO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/MarketDataScreenSearchItemDTO'
+        type: array
+    type: object
+  ScreenWatchlistResponseDTO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/MarketDataScreenRowDTO'
+        type: array
+    type: object
+  SearchResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/SecurityDTO'
+        type: array
     type: object
   Sector:
     properties:
@@ -1470,6 +3453,115 @@ definitions:
       updatedAt:
         type: string
     type: object
+  SecurityDTO:
+    properties:
+      asset_type:
+        type: string
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      ims_symbol:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      provider_mappings:
+        items:
+          $ref: '#/definitions/ProviderMappingDTO'
+        type: array
+      security_id:
+        type: string
+      status:
+        type: string
+    type: object
+  SecurityDescriptor:
+    properties:
+      asset_type:
+        type: string
+      currency:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      ims_symbol:
+        type: string
+      name:
+        type: string
+      security_id:
+        type: string
+    type: object
+  SendMessageRequest:
+    properties:
+      content:
+        description: Content is the user's message. Required.
+        example: Summarize last quarter's NAV trend for Fund A.
+        maxLength: 16384
+        minLength: 1
+        type: string
+      model:
+        description: Model is the specific LLM model ID. Optional.
+        example: claude-haiku-4-5-20251001
+        type: string
+      provider:
+        description: Provider is the LLM provider ID. Optional.
+        example: anthropic
+        type: string
+      session_id:
+        description: SessionID is the existing session UUID. Empty starts a new session.
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - content
+    type: object
+  SessionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/SessionSummaryResponse'
+        type: array
+      limit:
+        example: 20
+        type: integer
+      page:
+        example: 1
+        type: integer
+      total:
+        example: 42
+        type: integer
+      total_pages:
+        example: 3
+        type: integer
+    type: object
+  SessionMessagesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ChatMessageResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      session_id:
+        type: string
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   SessionResponse:
     properties:
       created_at:
@@ -1483,6 +3575,378 @@ definitions:
       last_activity_at:
         type: string
       user_agent:
+        type: string
+    type: object
+  SessionSummaryResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      model:
+        example: claude-haiku-4-5-20251001
+        type: string
+      provider:
+        example: anthropic
+        type: string
+      updated_at:
+        type: string
+    type: object
+  SignatureResponse:
+    properties:
+      id:
+        type: string
+      is_proxy_signature:
+        type: boolean
+      proxy_for:
+        $ref: '#/definitions/UserDescriptor'
+      proxy_for_user_id:
+        type: string
+      signature_label:
+        type: string
+      signed_at:
+        type: string
+      signer:
+        $ref: '#/definitions/UserDescriptor'
+      signer_display_name:
+        type: string
+      signer_title:
+        type: string
+      signer_user_id:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  StageRequest:
+    properties:
+      approval_group_id:
+        type: string
+      approver_mode:
+        type: string
+      approver_user_id:
+        type: string
+      is_final_stage:
+        type: boolean
+      required_approval_count:
+        type: integer
+      stage_name:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  StageResponse:
+    properties:
+      approval_group_id:
+        type: string
+      approver_mode:
+        type: string
+      approver_user_id:
+        type: string
+      id:
+        type: string
+      is_final_stage:
+        type: boolean
+      reject_policy:
+        type: string
+      required_approval_count:
+        type: integer
+      stage_name:
+        type: string
+      stage_number:
+        type: integer
+    type: object
+  SubjectDescriptor:
+    properties:
+      display_label:
+        type: string
+      id:
+        type: string
+      type:
+        type: string
+    type: object
+  SubjectStatusResponse:
+    properties:
+      allowed_actions:
+        items:
+          type: string
+        type: array
+      has_request:
+        type: boolean
+      request:
+        $ref: '#/definitions/RequestResponse'
+    type: object
+  SubmitRequest:
+    properties:
+      contract_id:
+        type: string
+      contract_type:
+        type: string
+      portfolio_id:
+        type: string
+      process_type:
+        type: string
+      subject_id:
+        type: string
+      subject_reference:
+        type: string
+      subject_title:
+        type: string
+      subject_type:
+        type: string
+    type: object
+  SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+    type: object
+  TaskDTO:
+    properties:
+      actionUrl:
+        type: string
+      allowedActions:
+        items:
+          type: string
+        type: array
+      businessDate:
+        type: string
+      canAct:
+        type: boolean
+      contractId:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      module:
+        type: string
+      priority:
+        type: string
+      reason:
+        type: string
+      severity:
+        type: string
+      sourceRecordId:
+        type: string
+      sourceType:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      taskId:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  TaskListDTO:
+    properties:
+      summary:
+        $ref: '#/definitions/TaskSummaryDTO'
+      tasks:
+        items:
+          $ref: '#/definitions/TaskDTO'
+        type: array
+    type: object
+  TaskResponse:
+    properties:
+      acted_at:
+        type: string
+      acted_by:
+        type: string
+      action_comment:
+        type: string
+      actor:
+        $ref: '#/definitions/UserDescriptor'
+      approval_request_id:
+        type: string
+      assigned_group_id:
+        type: string
+      assigned_team_id:
+        type: string
+      assigned_user:
+        $ref: '#/definitions/UserDescriptor'
+      assigned_user_id:
+        type: string
+      assigned_user_name:
+        type: string
+      created_at:
+        type: string
+      delegated_from:
+        $ref: '#/definitions/UserDescriptor'
+      delegated_from_user_id:
+        type: string
+      due_at:
+        type: string
+      id:
+        type: string
+      is_delegated_action:
+        type: boolean
+      stage_number:
+        type: integer
+      status:
+        type: string
+    type: object
+  TaskSummaryDTO:
+    properties:
+      byModule:
+        additionalProperties:
+          type: integer
+        type: object
+      byPriority:
+        additionalProperties:
+          type: integer
+        type: object
+      highPriority:
+        type: integer
+      total:
+        type: integer
+    type: object
+  TeamContractRequest:
+    properties:
+      contract_id:
+        type: string
+      effective_date:
+        type: string
+    type: object
+  TeamContractResponse:
+    properties:
+      contract_id:
+        type: string
+      effective_date:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      team_id:
+        type: string
+    type: object
+  TeamMemberRequest:
+    properties:
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  TeamMemberResponse:
+    properties:
+      display_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      member_type:
+        type: string
+      priority_order:
+        type: integer
+      team_id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  TeamRequest:
+    properties:
+      has_co_manager:
+        type: boolean
+      is_active:
+        type: boolean
+      max_allowed_stamps:
+        type: integer
+      min_required_stamps:
+        type: integer
+      remarks:
+        type: string
+      team_code:
+        type: string
+      team_name:
+        type: string
+    type: object
+  TeamResponse:
+    properties:
+      created_at:
+        type: string
+      has_co_manager:
+        type: boolean
+      id:
+        type: string
+      is_active:
+        type: boolean
+      max_allowed_stamps:
+        type: integer
+      min_required_stamps:
+        type: integer
+      remarks:
+        type: string
+      team_code:
+        type: string
+      team_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  ThresholdRuleRequest:
+    properties:
+      cooldown_minutes:
+        type: integer
+      currency:
+        type: string
+      direction:
+        type: string
+      id:
+        type: string
+      metric_type:
+        type: string
+      status:
+        type: string
+      threshold_value:
+        type: string
+    type: object
+  ThresholdRuleResponse:
+    properties:
+      cooldown_minutes:
+        type: integer
+      created_at:
+        type: string
+      currency:
+        type: string
+      direction:
+        type: string
+      id:
+        type: string
+      last_alerted_at:
+        type: string
+      last_evaluated_at:
+        type: string
+      last_observed_at:
+        type: string
+      last_observed_price:
+        type: string
+      last_quote_stale:
+        type: boolean
+      last_stale_reason:
+        type: string
+      last_state:
+        type: string
+      last_state_changed_at:
+        type: string
+      metric_type:
+        type: string
+      status:
+        type: string
+      threshold_value:
+        type: string
+      updated_at:
         type: string
     type: object
   TransactionListResponse:
@@ -1545,6 +4009,25 @@ definitions:
       transaction_type:
         type: string
     type: object
+  TransactionSimulationResponse:
+    properties:
+      cash:
+        $ref: '#/definitions/CashProjectionResponse'
+      compliance:
+        $ref: '#/definitions/CompliancePreviewResponse'
+      gross_amount:
+        type: string
+      instrument_id:
+        type: string
+      net_amount:
+        type: string
+      portfolio_id:
+        type: string
+      position:
+        $ref: '#/definitions/PositionProjectionResponse'
+      transaction_type:
+        type: string
+    type: object
   TransitionEntry:
     properties:
       action:
@@ -1570,6 +4053,12 @@ definitions:
     type: object
   TransitionResponse:
     properties:
+      accountingDate:
+        description: |-
+          AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format
+          YYYY-MM-DD; distinct from BusinessDate because operators can backdate
+          or delay accounting cycles.
+        type: string
       approvalId:
         description: ApprovalID is set when the transition was an APPROVE action.
         type: string
@@ -1593,6 +4082,57 @@ definitions:
       workflowDayId:
         type: string
     type: object
+  TransitionRule:
+    properties:
+      fromState:
+        type: string
+      operationType:
+        type: string
+      requiresReason:
+        type: boolean
+      toState:
+        type: string
+    type: object
+  TransitionRulesResponse:
+    properties:
+      rules:
+        items:
+          $ref: '#/definitions/TransitionRule'
+        type: array
+    type: object
+  UnmappedCandidateDTO:
+    properties:
+      batch_id:
+        type: string
+      candidate_id:
+        type: string
+      candidate_status:
+        type: string
+      confidence_score:
+        type: string
+      created_at:
+        type: string
+      isin:
+        type: string
+      provider_asset_type:
+        type: string
+      provider_code:
+        type: string
+      provider_currency:
+        type: string
+      provider_exchange:
+        type: string
+      provider_name:
+        type: string
+      provider_symbol:
+        type: string
+      rejected_reason:
+        type: string
+      resolved_at:
+        type: string
+      suggested_security_id:
+        type: string
+    type: object
   UpdateFundRequest:
     properties:
       benchmark:
@@ -1608,6 +4148,8 @@ definitions:
         type: string
       name:
         type: string
+      require_pretrade_preview:
+        type: boolean
       risk_profile:
         type: string
       short_name:
@@ -1639,6 +4181,19 @@ definitions:
       tick_size:
         type: string
     type: object
+  UpdateItemRequest:
+    properties:
+      note:
+        type: string
+      pinned:
+        type: boolean
+      status:
+        type: string
+      threshold_rules:
+        items:
+          $ref: '#/definitions/ThresholdRuleRequest'
+        type: array
+    type: object
   UpdatePortfolioRequest:
     properties:
       benchmark:
@@ -1662,6 +4217,77 @@ definitions:
         type: string
     required:
     - expected_version
+    type: object
+  UpdateResearchReportRequest:
+    properties:
+      applicable_contract_id:
+        type: string
+      author_user_id:
+        type: string
+      company_outlook:
+        type: string
+      company_overview:
+        type: string
+      currency:
+        type: string
+      effective_date:
+        type: string
+      esg_comment:
+        type: string
+      financial_status:
+        type: string
+      instrument_code:
+        type: string
+      instrument_name:
+        type: string
+      instrument_type:
+        type: string
+      investment_analysis:
+        type: string
+      market:
+        type: string
+      owner_user_id:
+        type: string
+      post_submission_note:
+        type: string
+      recommendation:
+        type: string
+      report_date:
+        type: string
+      report_title:
+        type: string
+    type: object
+  UpdateSecurityRequest:
+    properties:
+      asset_type:
+        type: string
+      country_code:
+        type: string
+      currency:
+        type: string
+      cusip:
+        type: string
+      display_symbol:
+        type: string
+      exchange_mic:
+        type: string
+      figi:
+        type: string
+      isin:
+        type: string
+      name:
+        type: string
+      primary_identifier:
+        type: string
+      status:
+        type: string
+    type: object
+  UserDescriptor:
+    properties:
+      display_name:
+        type: string
+      user_id:
+        type: string
     type: object
   UserResponse:
     properties:
@@ -1753,9 +4379,67 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  WatchlistItemResponse:
+    properties:
+      created_at:
+        type: string
+      created_by_user:
+        $ref: '#/definitions/UserDescriptor'
+      created_by_user_id:
+        type: string
+      id:
+        type: string
+      note:
+        type: string
+      owner_user_id:
+        type: string
+      pinned:
+        type: boolean
+      portfolio:
+        $ref: '#/definitions/PortfolioDescriptor'
+      portfolio_id:
+        type: string
+      quote:
+        $ref: '#/definitions/QuoteSnapshot'
+      scope_type:
+        type: string
+      security:
+        $ref: '#/definitions/SecurityDescriptor'
+      status:
+        type: string
+      threshold_rules:
+        items:
+          $ref: '#/definitions/ThresholdRuleResponse'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  WorkflowSettingsResponse:
+    properties:
+      settings:
+        items:
+          $ref: '#/definitions/OperationSettingEntry'
+        type: array
+    type: object
+  WorkflowStateDTO:
+    properties:
+      businessDate:
+        type: string
+      contractId:
+        type: string
+      currentState:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   WorkflowStateResponse:
     properties:
       accountingClosedAt:
+        type: string
+      accountingDate:
+        description: |-
+          AccountingDate / PrevAccountingDate surface the NAV cycle date and
+          the prior cycle stashed during a rollback. Format YYYY-MM-DD.
         type: string
       allowedActions:
         description: |-
@@ -1798,6 +4482,8 @@ definitions:
           Clients can use this to distinguish a genuinely-started day from
           a cancelled/never-started synthetic NOT_STARTED response.
         type: boolean
+      prevAccountingDate:
+        type: string
       previousDay:
         allOf:
         - $ref: '#/definitions/PreviousDayStatus'
@@ -1817,6 +4503,266 @@ definitions:
           back in write requests (future: when version field is added to the
           transition request). Nil when Persisted=false.
         type: integer
+    type: object
+  actionResponse:
+    properties:
+      label:
+        type: string
+      url:
+        type: string
+    type: object
+  contextResponse:
+    properties:
+      business_id:
+        type: string
+      business_label:
+        type: string
+      business_reference:
+        type: string
+      business_title:
+        type: string
+      business_type:
+        type: string
+    type: object
+  eventResponse:
+    properties:
+      category:
+        type: string
+      label:
+        type: string
+      severity:
+        type: string
+      type:
+        type: string
+    type: object
+  healthResponse:
+    properties:
+      dead_count:
+        type: integer
+      enabled:
+        type: boolean
+      failed_count:
+        type: integer
+      from_address:
+        type: string
+      from_name:
+        type: string
+      pending_count:
+        type: integer
+      retry_policy:
+        items:
+          type: string
+        type: array
+      send_real_email:
+        type: boolean
+      smtp_host:
+        type: string
+      smtp_port:
+        type: integer
+      smtp_tls_mode:
+        type: string
+      stale_sending_timeout:
+        type: string
+      test_endpoint_enabled:
+        type: boolean
+      worker_batch_size:
+        type: integer
+      worker_enabled:
+        type: boolean
+      worker_interval:
+        type: string
+    type: object
+  listResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/notificationResponse'
+        type: array
+      total:
+        type: integer
+      unread:
+        type: integer
+    type: object
+  markAllReadResponse:
+    properties:
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      updated:
+        type: integer
+    type: object
+  markReadResponse:
+    properties:
+      notification_id:
+        type: string
+      read_at:
+        type: string
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      status:
+        type: string
+    type: object
+  notificationResponse:
+    properties:
+      action:
+        $ref: '#/definitions/actionResponse'
+      body:
+        type: string
+      context:
+        $ref: '#/definitions/contextResponse'
+      created_at:
+        type: string
+      event:
+        $ref: '#/definitions/eventResponse'
+      id:
+        description: backward-compat alias
+        type: string
+      is_read:
+        type: boolean
+      notification_id:
+        type: string
+      read_at:
+        type: string
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      title:
+        type: string
+    type: object
+  outboxDetailResponse:
+    properties:
+      attempts:
+        type: integer
+      body_html:
+        type: string
+      body_text:
+        type: string
+      context:
+        $ref: '#/definitions/contextResponse'
+      created_at:
+        type: string
+      event:
+        $ref: '#/definitions/eventResponse'
+      last_error:
+        type: string
+      max_attempts:
+        type: integer
+      next_attempt_at:
+        type: string
+      notification_id:
+        type: string
+      outbox_id:
+        type: string
+      provider_message_id:
+        type: string
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      sent_at:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      to_email:
+        type: string
+      to_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  outboxItemResponse:
+    properties:
+      attempts:
+        type: integer
+      context:
+        $ref: '#/definitions/contextResponse'
+      created_at:
+        type: string
+      event:
+        $ref: '#/definitions/eventResponse'
+      last_error:
+        type: string
+      max_attempts:
+        type: integer
+      next_attempt_at:
+        type: string
+      notification_id:
+        type: string
+      outbox_id:
+        type: string
+      provider_message_id:
+        type: string
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      sent_at:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+      to_email:
+        type: string
+      to_name:
+        type: string
+    type: object
+  outboxListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/outboxItemResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  retryResponse:
+    properties:
+      attempts:
+        type: integer
+      business_reference:
+        type: string
+      event_type:
+        type: string
+      max_attempts:
+        type: integer
+      next_attempt_at:
+        type: string
+      outbox_id:
+        type: string
+      recipient_username:
+        type: string
+      status:
+        type: string
+    type: object
+  testEmailRequest:
+    properties:
+      body:
+        type: string
+      subject:
+        type: string
+      to_email:
+        type: string
+      to_username:
+        type: string
+    type: object
+  testEmailResponse:
+    properties:
+      event:
+        $ref: '#/definitions/eventResponse'
+      outbox_id:
+        type: string
+      recipient:
+        $ref: '#/definitions/userSummaryResponse'
+      status:
+        type: string
+    type: object
+  userSummaryResponse:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -2253,6 +5199,1232 @@ paths:
       summary: Unlock User
       tags:
       - Admin
+  /approval-config/groups:
+    get:
+      parameters:
+      - description: Only active groups
+        in: query
+        name: active_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval groups
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/GroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval group
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Group payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval group
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members:
+    get:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMemberResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval group members
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}/approve:
+    post:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/{memberId}/revoke:
+    post:
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupMemberResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke an approval group member
+      tags:
+      - Approval - Config
+  /approval-config/groups/{id}/members/reorder:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Group UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Ordered member ids
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ReorderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMemberResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reorder approval group members
+      tags:
+      - Approval - Config
+  /approval-config/processes:
+    get:
+      parameters:
+      - description: Process type filter
+        in: query
+        name: process_type
+        type: string
+      - description: Only active configs
+        in: query
+        name: active_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ProcessConfigResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval process configs
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Process config payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ProcessConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}:
+    get:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an approval process config
+      tags:
+      - Approval - Config
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Process config payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ProcessConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}/activate:
+    post:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/processes/{id}/deactivate:
+    post:
+      parameters:
+      - description: Process config UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProcessConfigResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate an approval process config
+      tags:
+      - Approval - Config
+  /approval-config/teams:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval teams
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Team payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/contracts:
+    get:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamContractResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List a team's contract assignments
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Contract assignment
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamContractRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamContractResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign a contract/fund to an approval team
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/members:
+    get:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/TeamMemberResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval team members
+      tags:
+      - Approval - Config
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TeamMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add an approval team member
+      tags:
+      - Approval - Config
+  /approval-config/teams/{id}/members/{memberId}:
+    delete:
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove an approval team member
+      tags:
+      - Approval - Config
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Member UUID
+        in: path
+        name: memberId
+        required: true
+        type: string
+      - description: Member payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/TeamMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TeamMemberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an approval team member
+      tags:
+      - Approval - Config
+  /approvals/inbox:
+    get:
+      description: Returns the authenticated user's pending approval tasks joined
+        with their requests.
+      parameters:
+      - description: Task status filter (default PENDING)
+        in: query
+        name: status
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/InboxListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my approval inbox
+      tags:
+      - Approval - Runtime
+  /approvals/requests:
+    get:
+      description: Lists approval requests with optional filters.
+      parameters:
+      - description: Request status
+        in: query
+        name: status
+        type: string
+      - description: Process type
+        in: query
+        name: process_type
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List approval requests
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}:
+    get:
+      description: Returns a request with its tasks, immutable timeline and signature
+        records.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get approval request detail
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/cancel:
+    post:
+      description: Cancels an in-flight approval request (privileged).
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel an approval request
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/revoke:
+    post:
+      consumes:
+      - application/json
+      description: Revokes a previously approved request, returning the subject to
+        an un-approved state. Requires a reason.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      - description: Revocation reason
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke an approved request
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/timeline:
+    get:
+      description: Returns the immutable, ordered approval timeline for a request.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/EventResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get approval timeline
+      tags:
+      - Approval - Runtime
+  /approvals/requests/{requestId}/withdraw:
+    post:
+      description: The submitter withdraws their own active approval request.
+      parameters:
+      - description: Approval request UUID
+        in: path
+        name: requestId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Withdraw an approval request
+      tags:
+      - Approval - Runtime
+  /approvals/subjects/{subjectType}/{subjectId}/status:
+    get:
+      description: Returns the latest approval request for a business object (subject),
+        if any.
+      parameters:
+      - description: Subject type
+        in: path
+        name: subjectType
+        required: true
+        type: string
+      - description: Subject UUID
+        in: path
+        name: subjectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SubjectStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get subject approval status
+      tags:
+      - Approval - Runtime
+  /approvals/submit:
+    post:
+      consumes:
+      - application/json
+      description: Creates an approval request and the first stage tasks for a business
+        object.
+      parameters:
+      - description: Submit payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/SubmitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a subject for approval
+      tags:
+      - Approval - Runtime
+  /approvals/tasks/{taskId}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Records an approval on an assigned task and advances the request.
+      parameters:
+      - description: Approval task UUID
+        in: path
+        name: taskId
+        required: true
+        type: string
+      - description: Optional comment
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an approval task
+      tags:
+      - Approval - Runtime
+  /approvals/tasks/{taskId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Records a rejection (reason required); one rejection stops the
+        request.
+      parameters:
+      - description: Approval task UUID
+        in: path
+        name: taskId
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject an approval task
+      tags:
+      - Approval - Runtime
   /auth/change-password:
     post:
       consumes:
@@ -2618,6 +6790,158 @@ paths:
       summary: Revoke a Session
       tags:
       - Sessions
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: 'Streams text/event-stream. Each frame''s `data:` payload is a
+        ChatStreamEvent (see response model). Frames have event names: session_started,
+        text, done, error. Use fetch() + ReadableStream on the client — EventSource
+        cannot carry an Authorization header.'
+      parameters:
+      - description: Chat message
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/SendMessageRequest'
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: One example frame payload; the response is a stream of these
+          schema:
+            $ref: '#/definitions/ChatStreamEvent'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a chat message and stream the response
+      tags:
+      - Chat
+  /chat/sessions:
+    get:
+      description: Lists the caller's chat sessions. Auditors (IAM_AUDIT_VIEW) may
+        pass user_id to list another user's sessions; such access is strictly audited.
+      parameters:
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: 'Auditor-only: list this user''s sessions (requires IAM_AUDIT_VIEW)'
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List chat sessions
+      tags:
+      - Chat
+  /chat/sessions/{session_id}:
+    get:
+      description: Returns one session's metadata. Owner or auditor (IAM_AUDIT_VIEW).
+        Auditor access is strictly audited.
+      parameters:
+      - description: Session UUID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionSummaryResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a chat session
+      tags:
+      - Chat
+  /chat/sessions/{session_id}/messages:
+    get:
+      description: Returns a session's messages with safe provenance (no raw provider
+        payload). Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.
+      parameters:
+      - description: Session UUID
+        in: path
+        name: session_id
+        required: true
+        type: string
+      - description: Page (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SessionMessagesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List chat session messages
+      tags:
+      - Chat
   /compliance/breaches:
     get:
       description: List compliance breaches with optional portfolio, contract, rule,
@@ -2960,6 +7284,517 @@ paths:
       summary: Health Check
       tags:
       - System
+  /integration/dashboard/me:
+    get:
+      description: 'Returns the caller''s full dashboard read model: tasks, workflow
+        states, and aggregate counts.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/DashboardSnapshotDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal dashboard snapshot
+      tags:
+      - Integration
+  /integration/tasks/my:
+    get:
+      description: Returns the caller's task feed, optionally filtered by module,
+        priority, or status.
+      parameters:
+      - description: Filter by module (investment|workflow|compliance)
+        in: query
+        name: module
+        type: string
+      - description: Filter by priority (HIGH|MEDIUM|LOW|INFO)
+        in: query
+        name: priority
+        type: string
+      - description: Filter by status (PENDING|IN_PROGRESS|COMPLETED)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/TaskListDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal task list
+      tags:
+      - Integration
+  /integration/tasks/my/summary:
+    get:
+      description: Returns aggregate task counts for the caller without the full task
+        list.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/TaskSummaryDTO'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Personal task summary
+      tags:
+      - Integration
+  /investment/decisions:
+    get:
+      description: Returns a paginated list of investment decisions with optional
+        filters.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by fund UUID
+        in: query
+        name: fund_id
+        type: string
+      - description: Filter by portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Filter by contract UUID
+        in: query
+        name: contract_id
+        type: string
+      - description: Filter by business date YYYY-MM-DD
+        in: query
+        name: business_date
+        type: string
+      - description: Filter by lifecycle status
+        in: query
+        name: status
+        type: string
+      - description: Filter by instrument code
+        in: query
+        name: instrument_code
+        type: string
+      - description: Substring search on decision_no / instrument_code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Decisions
+      tags:
+      - Investment - Decisions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new investment decision in DRAFT status.
+      parameters:
+      - description: Decision fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateDecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Investment Decision
+      tags:
+      - Investment - Decisions
+  /investment/decisions/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels a DRAFT or SUBMITTED decision. A cancellation reason is
+        required.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cancellation reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CancelDecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Investment Decision
+      tags:
+      - Investment - Decisions
+  /investment/decisions/{id}/details:
+    get:
+      description: Returns a decision header with all child decision lines (for basket/rebalance/switch
+        decisions) and approval stage info.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Decision With Lines
+      tags:
+      - Investment - Decisions
+  /investment/decisions/{id}/submit:
+    post:
+      description: Submits a DRAFT decision for approval. Transitions status to SUBMITTED.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit Investment Decision
+      tags:
+      - Investment - Decisions
+  /investment/decisions/approval-items:
+    get:
+      description: Returns decisions pending approval (default status=PENDING_APPROVAL),
+        enriched with current and previous approver names and stage numbers.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Filter by fund UUID
+        in: query
+        name: fund_id
+        type: string
+      - description: Inclusive lower bound YYYY-MM-DD
+        in: query
+        name: business_date_from
+        type: string
+      - description: Inclusive upper bound YYYY-MM-DD
+        in: query
+        name: business_date_to
+        type: string
+      - description: Filter by exact decision number
+        in: query
+        name: decision_no
+        type: string
+      - description: INVESTMENT_DECISION | ORDER_CANCEL | ORDER_AMEND
+        in: query
+        name: process_type
+        type: string
+      - description: MUTUAL_FUND | ETF | STOCK | BOND | CASH
+        in: query
+        name: product_type
+        type: string
+      - description: Filter by research report number
+        in: query
+        name: research_no
+        type: string
+      - description: Decision lifecycle status (default PENDING_APPROVAL)
+        in: query
+        name: status
+        type: string
+      - description: Substring search on decision_no / instrument_code / research_report_no
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Decision Approval Items
+      tags:
+      - Investment - Decisions
+  /investment/decisions/batch-approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves multiple investment decision headers in a single call.
+        Each decision must be PENDING_APPROVAL and have a pending approval task assigned
+        to the authenticated user. Returns per-decision results — partial failures
+        are reported without aborting the rest.
+      parameters:
+      - description: Decision numbers and optional comment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/BatchApprovalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BatchApprovalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch Approve Investment Decisions
+      tags:
+      - Investment - Decisions
+  /investment/decisions/batch-reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects multiple investment decision headers in a single call.
+        A rejection reason is required and applied to all selected decisions. Returns
+        per-decision results.
+      parameters:
+      - description: Decision numbers and required reason
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/BatchRejectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/BatchApprovalResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch Reject Investment Decisions
+      tags:
+      - Investment - Decisions
   /investment/funds:
     get:
       description: List funds visible to the authenticated user.
@@ -3191,6 +8026,53 @@ paths:
       summary: Update Fund
       tags:
       - Investment - Funds
+  /investment/funds/{id}/allocation:
+    get:
+      description: Compute asset-class, sector, country and currency breakdowns for
+        a fund (read-only).
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match
+          the holdings valuation's business_date to guarantee identical figures.
+        in: query
+        name: business_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundAllocationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund Allocation
+      tags:
+      - Investment - Valuation
   /investment/funds/{id}/aum/compute:
     post:
       consumes:
@@ -3251,6 +8133,225 @@ paths:
       security:
       - BearerAuth: []
       summary: Compute Fund AUM
+      tags:
+      - Investment - Valuation
+  /investment/funds/{id}/holdings/valuation:
+    get:
+      description: Compute holdings mark-to-market valuation (market value, unrealised
+        P&L, ROI) as of business_date, alongside the official accounting NAV. business_date
+        defaults to today (UTC) and accepts YYYY-MM-DD.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Valuation date, YYYY-MM-DD. Defaults to today (UTC).
+        in: query
+        name: business_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/IntradayValuationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Mark-to-Market Holdings Valuation
+      tags:
+      - Investment - Intraday
+  /investment/funds/{id}/market-data/refresh:
+    post:
+      description: Trigger a provider fetch for every instrument held by the fund.
+        Records an audit event.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MarketDataRefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh Fund Market Data
+      tags:
+      - Investment - Intraday
+  /investment/funds/{id}/market-data/status:
+    get:
+      description: Report provider health and the number of stale positions for a
+        fund.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MarketDataStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund Market Data Status
+      tags:
+      - Investment - Intraday
+  /investment/funds/{id}/nav-history:
+    get:
+      description: Time series of NAV-per-unit (unitised funds) or AUM (non-unitised)
+        over a range.
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M)'
+        in: query
+        name: range
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundNAVHistoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Fund NAV History
+      tags:
+      - Investment - Valuation
+  /investment/funds/{id}/nav/latest:
+    get:
+      description: Aggregate latest per-portfolio valuations into a fund-level NAV
+        view (read-only; no side effects).
+      parameters:
+      - description: Fund UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FundNAVResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Latest Fund NAV
       tags:
       - Investment - Valuation
   /investment/instruments:
@@ -3992,6 +9093,64 @@ paths:
       summary: Reverse Portfolio Transaction
       tags:
       - Investment - Ledger
+  /investment/portfolios/{id}/transactions/simulate:
+    post:
+      consumes:
+      - application/json
+      description: Run the post preconditions and pre-trade compliance checks, then
+        preview ledger cash and position impact without mutating investment tables.
+      parameters:
+      - description: Portfolio UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction simulation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PostTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TransactionSimulationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Simulate Portfolio Transaction
+      tags:
+      - Investment - Ledger
   /investment/portfolios/{id}/valuations:
     get:
       description: List valuation snapshots for a portfolio with optional date filters.
@@ -4351,6 +9510,375 @@ paths:
       summary: List Sectors
       tags:
       - Investment - Reference
+  /investment/research-reports:
+    get:
+      description: Paginated list of research reports with optional filters.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: DRAFT | ACTIVE | EXPIRED | REJECTED
+        in: query
+        name: report_status
+        type: string
+      - description: NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED
+        in: query
+        name: review_status
+        type: string
+      - description: BUY | SELL | HOLD
+        in: query
+        name: recommendation
+        type: string
+      - description: Exact instrument code filter
+        in: query
+        name: instrument_code
+        type: string
+      - description: Owner user UUID
+        in: query
+        name: owner_user_id
+        type: string
+      - description: Inclusive lower bound YYYY-MM-DD
+        in: query
+        name: report_date_from
+        type: string
+      - description: Inclusive upper bound YYYY-MM-DD
+        in: query
+        name: report_date_to
+        type: string
+      - description: Substring search on report_no/instrument_code/report_title
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Research Reports
+      tags:
+      - Investment - Research
+    post:
+      consumes:
+      - application/json
+      description: Create a new DRAFT research report.
+      parameters:
+      - description: Research report create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}:
+    delete:
+      description: Soft-delete a research report. Only allowed while review_status
+        = NOT_SUBMITTED.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Investment Research Report
+      tags:
+      - Investment - Research
+    get:
+      description: Retrieve one research report by ID.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Research Report
+      tags:
+      - Investment - Research
+    put:
+      consumes:
+      - application/json
+      description: Apply partial updates to a research report. Refused when the report
+        has been deleted or its review is completed.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Research report update payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}/cancel-submit:
+    post:
+      description: Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused
+        once review has been completed.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Submission Of Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}/invalidate:
+    post:
+      consumes:
+      - application/json
+      description: One-way transition to INVALIDATED. An invalidated report cannot
+        be referenced by a decision, edited, submitted, cancelled, or soft-deleted.
+        The reason (≥20 characters) is stored and audited.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invalidation reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/InvalidateResearchReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invalidate Investment Research Report
+      tags:
+      - Investment - Research
+  /investment/research-reports/{id}/submit:
+    post:
+      description: Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval
+        workflow is invoked.
+      parameters:
+      - description: Research report UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ResearchReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit Investment Research Report
+      tags:
+      - Investment - Research
   /market-data/history:
     get:
       description: Get daily price bars for a symbol from the configured provider
@@ -4439,6 +9967,135 @@ paths:
       summary: Import Market Data
       tags:
       - MarketData
+  /market-data/import-batches:
+    post:
+      consumes:
+      - application/json
+      description: Create a chunked market data import batch for the given symbols.
+      parameters:
+      - description: Import batch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateImportBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/CreateImportBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Market Data Import Batch
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}:
+    get:
+      description: Returns batch status with chunk summary and error rows.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ImportBatchStatusResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Market Data Import Batch
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}/errors:
+    get:
+      description: Returns rejected/failed/warning items for the batch.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ImportChunkItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Market Data Import Batch Errors
+      tags:
+      - MarketData
+  /market-data/import-batches/{batch_id}/run:
+    post:
+      description: Runs all chunks for the batch synchronously.
+      parameters:
+      - description: Import batch id
+        in: path
+        name: batch_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RunImportBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Market Data Import Batch
+      tags:
+      - MarketData
   /market-data/provider-health:
     get:
       description: Get configured market data provider health and recent status information.
@@ -4510,6 +10167,1166 @@ paths:
       summary: Get Market Quote
       tags:
       - MarketData
+  /market-data/screen/search:
+    get:
+      description: Search canonical securities with latest snapshot data and add-to-watchlist
+        hint.
+      parameters:
+      - description: Free-text query
+        in: query
+        name: query
+        type: string
+      - description: Maximum rows (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ScreenSearchResponseDTO'
+      security:
+      - BearerAuth: []
+      summary: Market Data screen — search
+      tags:
+      - MarketData
+  /market-data/screen/watchlist:
+    get:
+      description: Canonical securities joined with their latest snapshot data. Frontend-safe
+        DTO.
+      parameters:
+      - description: Maximum rows (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ScreenWatchlistResponseDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Market Data screen — watchlist
+      tags:
+      - MarketData
+  /notifications:
+    get:
+      description: Returns the authenticated user's in-app notification center list
+        joined with IAM user data.
+      parameters:
+      - description: Return only unread notifications
+        in: query
+        name: unread_only
+        type: boolean
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for paging
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/listResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my in-app notifications
+      tags:
+      - Notification
+  /notifications/{id}/read:
+    post:
+      description: Marks a single in-app notification as read for the authenticated
+        user.
+      parameters:
+      - description: Notification ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/markReadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark one notification as read
+      tags:
+      - Notification
+  /notifications/email-outbox:
+    get:
+      description: Returns paged email delivery records for admin/operator use.
+      parameters:
+      - description: Filter by status (PENDING, SENDING, SENT, FAILED, DEAD)
+        in: query
+        name: status
+        type: string
+      - description: Filter by recipient username
+        in: query
+        name: recipient_username
+        type: string
+      - description: Filter by recipient email
+        in: query
+        name: recipient_email
+        type: string
+      - description: Filter by event type
+        in: query
+        name: event_type
+        type: string
+      - description: Filter by event category
+        in: query
+        name: event_category
+        type: string
+      - description: Filter by business type
+        in: query
+        name: business_type
+        type: string
+      - description: Filter by business reference
+        in: query
+        name: business_reference
+        type: string
+      - description: Filter created_at >= (RFC3339)
+        in: query
+        name: created_from
+        type: string
+      - description: Filter created_at <= (RFC3339)
+        in: query
+        name: created_to
+        type: string
+      - description: Page size (default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for paging
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/outboxListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List email outbox
+      tags:
+      - Notification - Email Admin
+  /notifications/email-outbox/{outbox_id}:
+    get:
+      description: Returns one email outbox record with full body for troubleshooting.
+      parameters:
+      - description: Outbox record UUID
+        in: path
+        name: outbox_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/outboxDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get email outbox detail
+      tags:
+      - Notification - Email Admin
+  /notifications/email-outbox/{outbox_id}/retry:
+    post:
+      description: Moves a FAILED or DEAD outbox row back to PENDING for another send
+        attempt.
+      parameters:
+      - description: Outbox record UUID
+        in: path
+        name: outbox_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/retryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Retry failed email
+      tags:
+      - Notification - Email Admin
+  /notifications/email/health:
+    get:
+      description: Returns email configuration and queue health without exposing secrets.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/healthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Email health
+      tags:
+      - Notification - Email Admin
+  /notifications/email/test:
+    post:
+      consumes:
+      - application/json
+      description: Creates a test email outbox row for SMTP verification. The background
+        worker delivers it.
+      parameters:
+      - description: Test email request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/testEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/testEmailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send test email
+      tags:
+      - Notification - Email Admin
+  /notifications/read-all:
+    post:
+      description: Marks every unread in-app notification for the authenticated user
+        as read.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/markAllReadResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark all notifications as read
+      tags:
+      - Notification
+  /reference-data/securities:
+    post:
+      consumes:
+      - application/json
+      description: Register a new canonical IMS security.
+      parameters:
+      - description: Security payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateSecurityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create canonical security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}:
+    get:
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get canonical security
+      tags:
+      - ReferenceData
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateSecurityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SecurityDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Patch canonical security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}/mappings:
+    get:
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MappingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List provider mappings for a security
+      tags:
+      - ReferenceData
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Provider mapping payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/AddProviderMappingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ProviderMappingDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add provider mapping to a security
+      tags:
+      - ReferenceData
+  /reference-data/securities/{security_id}/mappings/{mapping_id}:
+    delete:
+      description: Marks the mapping as INACTIVE rather than removing it physically.
+      parameters:
+      - description: Security id
+        in: path
+        name: security_id
+        required: true
+        type: string
+      - description: Mapping id
+        in: path
+        name: mapping_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Soft-delete a provider mapping
+      tags:
+      - ReferenceData
+  /reference-data/securities/search:
+    get:
+      description: Search canonical securities by query, asset type, provider, and
+        status.
+      parameters:
+      - description: Free-text query against ims_symbol/display_symbol/name/isin
+        in: query
+        name: query
+        type: string
+      - description: Filter by AssetType (EQUITY, BOND, FX, ...)
+        in: query
+        name: asset_type
+        type: string
+      - description: Only securities with an ACTIVE mapping for this provider_code
+        in: query
+        name: provider
+        type: string
+      - description: Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED)
+        in: query
+        name: status
+        type: string
+      - description: Result limit (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SearchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search canonical securities
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates:
+    get:
+      parameters:
+      - description: Filter by candidate_status
+        in: query
+        name: status
+        type: string
+      - description: Filter by provider_code
+        in: query
+        name: provider
+        type: string
+      - description: Filter by import batch id
+        in: query
+        name: batch_id
+        type: string
+      - description: Result limit (default 100, max 500)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/CandidatesResponse'
+      security:
+      - BearerAuth: []
+      summary: List unmapped provider symbol candidates
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates/{candidate_id}/map:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate id
+        in: path
+        name: candidate_id
+        required: true
+        type: string
+      - description: Security id to map to
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/MapCandidateRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Map a candidate to an existing security
+      tags:
+      - ReferenceData
+  /reference-data/unmapped-candidates/{candidate_id}/reject:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Candidate id
+        in: path
+        name: candidate_id
+        required: true
+        type: string
+      - description: Rejection reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RejectCandidateRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reject an unmapped candidate
+      tags:
+      - ReferenceData
+  /watchlists:
+    get:
+      parameters:
+      - description: PERSONAL or PORTFOLIO
+        in: query
+        name: scope_type
+        type: string
+      - description: Portfolio UUID (PORTFOLIO scope only)
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Canonical security UUID
+        in: query
+        name: security_id
+        type: string
+      - description: Include disabled items (default false)
+        in: query
+        name: include_disabled
+        type: boolean
+      - description: Include threshold rules (default true)
+        in: query
+        name: include_thresholds
+        type: boolean
+      - description: Include live quote (default true)
+        in: query
+        name: include_quote
+        type: boolean
+      - description: Page size (1-200, default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ListItemsResponseData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List watchlist items
+      tags:
+      - Watchlist
+  /watchlists/alerts:
+    get:
+      parameters:
+      - description: PERSONAL or PORTFOLIO
+        in: query
+        name: scope_type
+        type: string
+      - description: Portfolio UUID
+        in: query
+        name: portfolio_id
+        type: string
+      - description: Canonical security UUID
+        in: query
+        name: security_id
+        type: string
+      - description: Threshold rule UUID
+        in: query
+        name: rule_id
+        type: string
+      - description: Filter by acknowledgement state
+        in: query
+        name: acknowledged
+        type: boolean
+      - description: RFC3339 inclusive lower bound
+        in: query
+        name: created_from
+        type: string
+      - description: RFC3339 inclusive upper bound
+        in: query
+        name: created_to
+        type: string
+      - description: Page size (1-200, default 50)
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ListAlertsResponseData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List alert events
+      tags:
+      - Watchlist
+  /watchlists/alerts/{id}/acknowledge:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Alert event UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Acknowledgement payload
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/AcknowledgeAlertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/AlertEventResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Acknowledge an alert event
+      tags:
+      - Watchlist
+  /watchlists/evaluate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Evaluation filter
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/EvaluateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/EvaluateResponseData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Manually trigger rule evaluation
+      tags:
+      - Watchlist
+  /watchlists/items:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/CreateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/WatchlistItemResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a watchlist item
+      tags:
+      - Watchlist
+  /watchlists/items/{id}:
+    delete:
+      parameters:
+      - description: Item UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a watchlist item
+      tags:
+      - Watchlist
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/WatchlistItemResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a watchlist item
+      tags:
+      - Watchlist
+  /workflow/daily:
+    get:
+      description: Returns aggregated global workflow state for a business date.
+      parameters:
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyWorkflowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Daily Workflow State
+      tags:
+      - Workflow
+  /workflow/daily/execute:
+    post:
+      consumes:
+      - application/json
+      description: Execute a workflow transition using business-readable identifiers
+        and canonical operation types.
+      parameters:
+      - description: Execute payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/DailyExecuteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyWorkflowResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Execute Daily Workflow Transition
+      tags:
+      - Workflow
+  /workflow/daily/transitions:
+    get:
+      description: Returns paginated global workflow transition history.
+      parameters:
+      - description: Business date (YYYY-MM-DD)
+        in: query
+        name: businessDate
+        required: true
+        type: string
+      - description: Page number (1-based, default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20, max 100)
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DailyTransitionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Daily Transition History
+      tags:
+      - Workflow
   /workflow/day-states/{contractId}:
     get:
       description: Get the current workflow state for a contract and business date.
@@ -4676,6 +11493,90 @@ paths:
       security:
       - BearerAuth: []
       summary: Run Workflow Scheduler Once
+      tags:
+      - Workflow
+  /workflow/settings:
+    get:
+      description: Returns the configured approvers for each workflow operation type.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkflowSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Approval Settings
+      tags:
+      - Workflow
+    put:
+      consumes:
+      - application/json
+      description: 'Replace the configured approvers for a workflow operation type.
+        Admin only. Note: approver account codes are stored without IAM validation
+        (no cross-module IAM lookup interface exists).'
+      parameters:
+      - description: Settings payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/DailySettingsUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/WorkflowSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Workflow Approval Settings
+      tags:
+      - Workflow
+  /workflow/transition-rules:
+    get:
+      description: Returns the full state machine topology as a list of valid from→operation→to
+        transitions.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TransitionRulesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Workflow Transition Rules
       tags:
       - Workflow
 schemes:

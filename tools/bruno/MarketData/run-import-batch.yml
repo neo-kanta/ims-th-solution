@@ -1,0 +1,21 @@
+info:
+  name: run-import-batch
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{market-data-base-url}}/import-batches/:batchId/run"
+  params:
+    - name: batchId
+      value: "{{market-data-import-batch-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

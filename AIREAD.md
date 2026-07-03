@@ -34,11 +34,12 @@ Those are treated as **external systems** with clean integration points.
 
 | Layer     | Technology                       | Notes                             |
 | --------- | -------------------------------- | --------------------------------- |
-| Frontend  | **Nuxt 3** + Vue 3 + TypeScript  | SPA with file-based routing       |
+| Frontend  | **Nuxt 4** + Vue 3 + TypeScript  | SPA with file-based routing       |
 | Backend   | **Go (Golang)** modular monolith | chi router, domain-driven modules |
 | Database  | **PostgreSQL**                   | Migrations via golang-migrate     |
 | Infra     | **Docker** + Docker Compose      | Single compose for dev            |
 | API style | **REST** (JSON)                  | OpenAPI documented                |
+| AI Chat   | **Anthropic Claude** + MCP       | Optional; see §4.6                |
 
 **Architecture style:** Containerized Modular Monolith.
 One backend binary, one frontend app, one database — but with strict module boundaries
@@ -50,46 +51,65 @@ that allow future extraction to microservices if needed.
 
 ```
 ims-th-solution/
-├── api/                    # Go modular monolith
-│   ├── cmd/                    # Entrypoints (server, migrate, seed, scheduler)
+├── backend/                # Go modular monolith
+│   ├── cmd/                    # Entrypoints: server, migrate, seed, scheduler, contract-check
 │   ├── internal/               # Domain modules (private to this app)
 │   │   ├── workflow/           # Day-start → manager-approval → closing
 │   │   ├── investment/         # Analysis reports, decisions, execution, review
-│   │   ├── approval/           # Approval flow config, signing groups/teams
-│   │   ├── permissions/        # Accounts, groups, function/data permissions
-│   │   ├── iam/                # Login, sessions, tokens
+│   │   ├── approval/           # Approval flows, groups/teams, inbox, digital signatures
+│   │   ├── permissions/        # Accounts, groups, function/data permissions, role hierarchy
+│   │   ├── iam/                # Login, sessions, tokens, MFA
 │   │   ├── notification/       # Notification engine & config
 │   │   ├── audit/              # Audit log recording & querying
-│   │   ├── market_data/        # Market data integration adapter
-│   │   ├── reference_data/     # Currencies, markets, instruments, holidays
+│   │   ├── market_data/        # Quote/history providers, Redis cache, PostgreSQL persistence
+│   │   ├── reference_data/     # Thai holidays, currencies, markets, instruments
 │   │   ├── compliance/         # IRG / pre-trade / post-trade rule hooks
-│   │   └── integration/        # ETL jobs & external system adapters
-│   ├── platform/               # Cross-cutting: config, DB, middleware, logging, errors, clock
+│   │   ├── integration/        # User dashboard snapshot + task summary endpoints
+│   │   └── chat/               # AI financial assistant (Anthropic LLM + MCP)
+│   ├── platform/               # Cross-cutting: config, DB, middleware, logging, errors, clock, metrics
 │   └── pkg/                    # Shared kernel: types, enums, inter-module contracts
 │
-├── web/                   # Nuxt 3 + TypeScript
-│   ├── app/                    # Nuxt app directory
+├── frontend/               # Nuxt 4 + TypeScript
+│   ├── app/                    # Nuxt srcDir
+│   │   ├── api/                # Generated OpenAPI types (ims-api.d.ts) + typed client helpers
+│   │   ├── assets/css/         # Global CSS
+│   │   ├── composables/        # Thin Nuxt composables (useApi, useI18n)
+│   │   ├── features/           # Feature-owned components, composables, stores, services, types
+│   │   │   ├── approval/
+│   │   │   ├── auth/
+│   │   │   ├── chat/
+│   │   │   ├── compliance/
+│   │   │   ├── dashboard/
+│   │   │   ├── investment-decision/
+│   │   │   ├── investment-ledger/
+│   │   │   ├── investment-research/
+│   │   │   ├── investment-workspace/
+│   │   │   ├── market-data/
+│   │   │   ├── my-funds/
+│   │   │   ├── permissions/
+│   │   │   ├── settings/
+│   │   │   ├── shell/          # App shell: navigation, dashboard tab registry
+│   │   │   └── workflow/
 │   │   ├── layouts/            # default, auth, dashboard
-│   │   ├── pages/              # File-based routing by domain
 │   │   ├── middleware/         # auth.ts, permission.ts
-│   │   └── plugins/            # API client, toast, dayjs
-│   ├── modules/                # Domain feature modules (components, stores, composables, api)
-│   │   ├── workflow/
-│   │   ├── investment/
-│   │   ├── approval/
-│   │   ├── permissions/
-│   │   ├── notification/
-│   │   └── audit/
-│   └── shared/                 # Shared UI: components, composables, stores, types, utils
+│   │   ├── pages/              # File-based route shells
+│   │   ├── plugins/            # API client, toast, dayjs
+│   │   ├── shared/             # i18n messages, routing helpers, UI primitives
+│   │   ├── stores/             # Cross-feature Pinia stores
+│   │   └── types/              # App-level shared types
+│   └── scripts/                # generate-openapi-types.mjs and dev helpers
 │
-├── database/                   # Migrations, seeds, views, functions, triggers, ERDs
-├── docs/                       # ADRs, API docs, domain docs, runbooks, onboarding
-├── scripts/                    # Dev automation scripts
-├── infra/                      # Docker, docker-compose, nginx, env files
+├── tools/
+│   └── mcp/
+│       └── ims-mcp-server/     # Node.js stdio MCP server for the chat module
+│
+├── database/                   # Migrations and seeds
+├── docs/                       # Chat-assistant docs, API docs, runbooks, onboarding, handoff
+├── infra/                      # Docker Compose, nginx, env files
 └── tests/                      # Cross-cutting integration & E2E tests
 ```
 
-### Backend Module Internal Structure (EVERY module follows this)
+### Backend Module Internal Structure (every module follows this)
 
 ```
 internal/<module>/
@@ -102,7 +122,7 @@ internal/<module>/
 ├── application/
 │   ├── command/         # Write use cases (state-changing operations)
 │   ├── query/           # Read use cases
-│   └── dto/             # Application-level DTOs
+│   └── service/         # Application services
 ├── infrastructure/
 │   ├── persistence/     # Repository SQL implementations
 │   └── adapter/         # External system adapters
@@ -110,30 +130,26 @@ internal/<module>/
 │   ├── handler/         # HTTP handlers
 │   ├── dto/request/     # Request structs
 │   ├── dto/response/    # Response structs
-│   ├── validator/       # Request validation
 │   └── router.go        # Route registration
 ├── jobs/                # Background/scheduled tasks
 ├── permission/          # Module permission codes & policies
-├── module.go            # Dependency wiring, route registration
-└── README.md
+└── module.go            # Dependency wiring, route registration
 ```
 
-### Frontend Module Internal Structure (EVERY module follows this)
+### Frontend Feature Internal Structure (every feature follows this)
 
 ```
-modules/<domain>/
-├── components/
-│   ├── forms/           # Input forms
-│   ├── tables/          # Data tables
-│   ├── dialogs/         # Modal dialogs
-│   ├── cards/           # Summary/detail cards
-│   └── widgets/         # Composite widgets
+frontend/app/features/<feature>/
+├── components/          # Feature UI components
 ├── composables/         # Domain composables (useXxx.ts)
+├── services/            # Service layer (API calls, business logic)
 ├── stores/              # Pinia stores (useXxxStore.ts)
-├── api/                 # API client functions (xxxApi.ts)
-├── types/               # TypeScript types (xxx.types.ts)
-└── index.ts             # Barrel exports
+├── types/               # Local TypeScript types
+└── navigation/          # dashboardTabs.ts (if feature adds header tabs)
 ```
+
+> [!WARNING]
+> **API client types and routes MUST NOT be written by hand.** Feature components and stores must interact with the backend API exclusively through the typed client generated in `frontend/app/api/ims-api.d.ts` (Absolute path: `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`). Do not write API clients manually.
 
 ---
 
@@ -207,10 +223,33 @@ Enterprise-grade, server-side enforced:
 ### 4.5 Supporting Modules
 
 - **Audit / Change Log:** Configuration for which tables to audit, query interface for audit records
-- **Notification:** Basic settings, message templates, per-contract notification config, disabled notifications
-- **Reference Data:** Markets (SET, TFEX, foreign), currencies, instrument types, Thai holidays
-- **Compliance/IRG:** Extension points for blacklist/whitelist, investment ratio, instrument restriction, credit rating rules (hooks only in PoC)
-- **ETL/Integration:** Import/export adapters for market data, OMS, PAM — stub in PoC
+- **Notification:** Approval notifier and workflow stuck-day operator notifier; no dedicated user nav
+- **Reference Data:** Markets (SET, TFEX, foreign), currencies, instrument types, Thai holidays; exposes a `Resolver()` used by market data
+- **Compliance/IRG:** Extension points for blacklist/whitelist, investment ratio, instrument restriction, credit rating rules
+- **Integration:** User dashboard snapshot and personal task-summary endpoints
+
+### 4.6 AI Chat Assistant
+
+An AI financial assistant backed by the Anthropic Claude API (or a compatible LLM) and an MCP server.
+
+**Architecture:**
+- `backend/internal/chat/` — session management, message persistence, LLM provider adapter, MCP client
+- `tools/mcp/ims-mcp-server/` — Node.js stdio MCP server; all business data is accessed through it (never by the chat module importing other modules' internals)
+- Frontend: `frontend/app/features/chat/` — chat UI components and composables
+
+**Critical rules:**
+- The chat module MUST NOT import other modules' `internal/` packages; it reaches business data only via MCP tools
+- `CHAT_WRITE_ENABLED` gates mutating tools; default is read-only
+- If the LLM provider is misconfigured (missing API key), the `/chat` route is not mounted; the rest of the API stays up
+- Chat sessions and messages are persisted in PostgreSQL; audit events are recorded via the audit module's Recorder
+
+**Configuration:**
+- `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` — required for chat to activate
+- `ANTHROPIC_MODEL` — model selection (defaults to a configured default)
+- `CHAT_MAX_TOKENS_PER_TURN` — per-turn token budget
+- `CHAT_MCP_SERVERS_CONFIG` — optional path to mcp-servers.yaml; when absent, spawns the bundled ims-mcp binary
+- `CHAT_MCP_IMS_BIN` — override path to the ims-mcp binary
+- `IMS_API_BASE_URL` — forwarded to the MCP server so its tools reach the IMS REST API
 
 ---
 
@@ -229,8 +268,9 @@ Enterprise-grade, server-side enforced:
 | Vue components         | `PascalCase.vue`                         | `AnalysisReportForm.vue`                  |
 | Pinia stores           | `use<Name>Store.ts`                      | `useInvestmentDecisionStore.ts`           |
 | Composables            | `use<Name>.ts`                           | `useWorkflow.ts`                          |
-| API client files       | `<domain>Api.ts`                         | `investmentApi.ts`                        |
 | TypeScript types       | `<domain>.types.ts`                      | `investment.types.ts`                     |
+
+Note: **NO manual API client files (like `<domain>Api.ts`) are allowed.** All API interfaces are automatically generated into `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts`.
 
 ---
 
@@ -253,6 +293,7 @@ Enterprise-grade, server-side enforced:
 - Skip server-side permission checks
 - Use `any` / `interface{}` for cross-module data passing
 - Create circular module dependencies
+- **Write custom API fetch clients, request/response models, or route fetch utilities by hand.** All frontend API interactions must use the generated schema/types from `C:\Users\kanta\source\repos\ims-th-solution\frontend\app\api\ims-api.d.ts` (built via `make api-client`). Do not fucking dare write API code by hand.
 
 ---
 
@@ -270,33 +311,38 @@ This system operates on **Thai market business days**, not naive UTC timestamps.
 
 ## 8. Design Documents (in `docs/` directory)
 
-Read these for deeper context:
+The `docs/` directory contains:
 
-- `docs/adr/001-modular-monolith.md` — Why monolith, not microservices
-- `docs/adr/005-folder-structure.md` — Full folder structure rationale (D05 document)
-- `docs/domain/workflow_states.md` — Workflow state machine details
-- `docs/domain/stock_investment_flow.md` — Full stock investment lifecycle
-- `docs/api/api_endpoints.md` — API contract listing
+- `docs/api/` — API contract documentation
+- `docs/chat-assistant/` — AI chat feature design and MCP tool specs
+- `docs/onboarding/` — Developer onboarding guides
+- `docs/runbook/` — Operational runbooks
+- `docs/handoff/` — Handoff notes
+- `docs/IMS_Chat_AI_Financial_Assistant_Project_Documentation.docx` — Full chat-assistant project spec
+- `docs/IMS_Chat_AI_Financial_Assistant_Project_Documentation_Summary.md` — Chat-assistant spec summary
+
+For ADRs and domain state machine docs, refer to the original business requirement documents listed in §11.
 
 ---
 
 ## 9. Technology Versions
 
-| Tool            | Version | Notes                    |
-| --------------- | ------- | ------------------------ |
-| Go              | 1.23+   | Use latest stable        |
-| Node.js         | 20 LTS+ | For Nuxt build           |
-| Nuxt            | 3.x     | Latest stable            |
-| Vue             | 3.x     | Composition API only     |
-| TypeScript      | 5.x     | Strict mode              |
-| PostgreSQL      | 16+     | With uuid-ossp extension |
-| Docker          | 24+     |                          |
-| Docker Compose  | v2+     |                          |
-| chi (Go router) | v5      | HTTP router              |
-| golang-migrate  | v4      | DB migrations            |
-| Pinia           | 2.x     | Vue state management     |
-| Tailwind CSS    | 3.x     | Utility-first CSS        |
-| Playwright      | latest  | E2E testing              |
+| Tool            | Version | Notes                                       |
+| --------------- | ------- | ------------------------------------------- |
+| Go              | 1.25    | `go.mod` declared version                   |
+| Node.js         | 20 LTS+ | For Nuxt build                              |
+| Nuxt            | 4.x     | `nuxt ^4.3.1` in package.json               |
+| Vue             | 3.x     | Composition API only                        |
+| TypeScript      | 5.x     | Strict mode                                 |
+| PostgreSQL      | 16+     | With uuid-ossp extension                    |
+| Docker          | 24+     |                                             |
+| Docker Compose  | v2+     |                                             |
+| chi (Go router) | v5      | HTTP router                                 |
+| golang-migrate  | v4      | DB migrations                               |
+| Pinia           | 3.x     | Vue state management (`pinia ^3.0.4`)        |
+| Tailwind CSS    | 4.x     | Utility-first CSS (`@tailwindcss/postcss` v4)|
+| openapi-fetch   | 0.17+   | Typed OpenAPI client in frontend            |
+| Playwright      | latest  | E2E testing                                 |
 
 ---
 
@@ -305,7 +351,7 @@ Read these for deeper context:
 Key environment variables the system expects:
 
 ```env
-# Backend
+# Backend — core
 APP_ENV=development
 APP_PORT=8080
 APP_LOG_LEVEL=debug
@@ -319,6 +365,20 @@ DB_USER=ims_app
 DB_PASSWORD=<password>
 DB_SSL_MODE=disable
 DB_MAX_CONNECTIONS=25
+
+# Rate limiting (optional Redis backend)
+RATE_LIMIT_BACKEND=memory   # or "redis"
+REDIS_ADDR=localhost:6379
+
+# Market data
+ALPHA_VANTAGE_API_KEY=<key>  # Required in non-development
+
+# Chat / AI assistant (optional — omitting disables /chat)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=<key>
+ANTHROPIC_MODEL=claude-sonnet-4-6
+CHAT_WRITE_ENABLED=false
+IMS_API_BASE_URL=http://localhost:8080
 
 # Frontend
 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1

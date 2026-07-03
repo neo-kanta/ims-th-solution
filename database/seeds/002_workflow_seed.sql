@@ -12,12 +12,13 @@
 --     -> Accounting Day-end
 --
 -- Backend state mapping:
---   Investment Day-start  -> DAY_OPEN
---   Supervisor Approval   -> MANAGER_APPROVED
+--   Investment Day-start  -> INVESTMENT_DAY_STARTED
+--   Supervisor Approval   -> MANAGER_APPROVED_END_OF_DAY
 --   Transaction Day-end   -> TRANSACTION_CLOSED
 --   Accounting Day-end    -> ACCOUNTING_CLOSED
 --
--- Demo contract IDs are stable so Bruno/local API calls can target known data.
+-- Workflow is global per business_date. contract_id is populated with a fixed
+-- legacy placeholder only because older backend structs still scan the column.
 -- =============================================================================
 
 BEGIN;
@@ -119,9 +120,9 @@ WITH seed_days (
     VALUES
         (
             'd0000000-0000-0000-0000-000000000001'::uuid,
-            'c0000000-0000-0000-0000-000000000001'::uuid,
+            '00000000-0000-0000-0000-000000000000'::uuid,
             DATE '2026-04-24',
-            'DAY_OPEN',
+            'INVESTMENT_DAY_STARTED',
             TIMESTAMPTZ '2026-04-24 01:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             NULL::timestamptz,
@@ -139,61 +140,61 @@ WITH seed_days (
         ),
         (
             'd0000000-0000-0000-0000-000000000002'::uuid,
-            'c0000000-0000-0000-0000-000000000002'::uuid,
-            DATE '2026-04-24',
-            'MANAGER_APPROVED',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            '00000000-0000-0000-0000-000000000000'::uuid,
+            DATE '2026-04-23',
+            'MANAGER_APPROVED_END_OF_DAY',
+            TIMESTAMPTZ '2026-04-23 01:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-23 09:00:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-23 09:00:00+00',
             NULL::timestamptz,
             NULL::uuid,
             NULL::timestamptz,
             NULL::uuid,
             2,
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-23 01:30:00+00',
+            TIMESTAMPTZ '2026-04-23 09:00:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             'a0000000-0000-0000-0000-000000000001'::uuid
         ),
         (
             'd0000000-0000-0000-0000-000000000003'::uuid,
-            'c0000000-0000-0000-0000-000000000003'::uuid,
-            DATE '2026-04-24',
+            '00000000-0000-0000-0000-000000000000'::uuid,
+            DATE '2026-04-22',
             'TRANSACTION_CLOSED',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            TIMESTAMPTZ '2026-04-22 01:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-22 09:00:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
-            TIMESTAMPTZ '2026-04-24 10:30:00+00',
+            TIMESTAMPTZ '2026-04-22 09:00:00+00',
+            TIMESTAMPTZ '2026-04-22 10:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             NULL::timestamptz,
             NULL::uuid,
             3,
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
-            TIMESTAMPTZ '2026-04-24 10:30:00+00',
+            TIMESTAMPTZ '2026-04-22 01:30:00+00',
+            TIMESTAMPTZ '2026-04-22 10:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             'a0000000-0000-0000-0000-000000000001'::uuid
         ),
         (
             'd0000000-0000-0000-0000-000000000004'::uuid,
-            'c0000000-0000-0000-0000-000000000004'::uuid,
-            DATE '2026-04-24',
+            '00000000-0000-0000-0000-000000000000'::uuid,
+            DATE '2026-04-21',
             'ACCOUNTING_CLOSED',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            TIMESTAMPTZ '2026-04-21 01:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-21 09:00:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
-            TIMESTAMPTZ '2026-04-24 10:30:00+00',
+            TIMESTAMPTZ '2026-04-21 09:00:00+00',
+            TIMESTAMPTZ '2026-04-21 10:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
-            TIMESTAMPTZ '2026-04-24 11:30:00+00',
+            TIMESTAMPTZ '2026-04-21 11:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             4,
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
-            TIMESTAMPTZ '2026-04-24 11:30:00+00',
+            TIMESTAMPTZ '2026-04-21 01:30:00+00',
+            TIMESTAMPTZ '2026-04-21 11:30:00+00',
             'a0000000-0000-0000-0000-000000000001'::uuid,
             'a0000000-0000-0000-0000-000000000001'::uuid
         )
@@ -242,7 +243,7 @@ SELECT
     created_by,
     updated_by
 FROM seed_days
-ON CONFLICT (contract_id, business_date) DO UPDATE
+ON CONFLICT (business_date) DO UPDATE
 SET
     current_state = EXCLUDED.current_state,
     opened_at = EXCLUDED.opened_at,
@@ -263,17 +264,11 @@ SET
 WITH day_lookup AS (
     SELECT id AS workflow_day_id, contract_id, business_date
     FROM workflow__day_states
-    WHERE business_date = DATE '2026-04-24'
-      AND contract_id IN (
-          'c0000000-0000-0000-0000-000000000001'::uuid,
-          'c0000000-0000-0000-0000-000000000002'::uuid,
-          'c0000000-0000-0000-0000-000000000003'::uuid,
-          'c0000000-0000-0000-0000-000000000004'::uuid
-      )
+    WHERE business_date IN (DATE '2026-04-21', DATE '2026-04-22', DATE '2026-04-23', DATE '2026-04-24')
 ),
 seed_transitions (
     id,
-    contract_id,
+    business_date,
     from_state,
     to_state,
     action,
@@ -283,92 +278,92 @@ seed_transitions (
     VALUES
         (
             'e0000000-0000-0000-0000-000000000101'::uuid,
-            'c0000000-0000-0000-0000-000000000001'::uuid,
+            DATE '2026-04-24',
             'NOT_STARTED',
-            'DAY_OPEN',
+            'INVESTMENT_DAY_STARTED',
             'OPEN_DAY',
             TIMESTAMPTZ '2026-04-24 01:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Investment Day-start","modelStepThai":"ลงทุนเริ่ม","investmentWorkbench":["Analysis Report","Investment Decisions","Save","Investment Execution","Investment Review","Confirmation and Settlement","Review"]}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000201'::uuid,
-            'c0000000-0000-0000-0000-000000000002'::uuid,
+            DATE '2026-04-23',
             'NOT_STARTED',
-            'DAY_OPEN',
+            'INVESTMENT_DAY_STARTED',
             'OPEN_DAY',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            TIMESTAMPTZ '2026-04-23 01:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Investment Day-start","modelStepThai":"ลงทุนเริ่ม"}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000202'::uuid,
-            'c0000000-0000-0000-0000-000000000002'::uuid,
-            'DAY_OPEN',
-            'MANAGER_APPROVED',
+            DATE '2026-04-23',
+            'INVESTMENT_DAY_STARTED',
+            'MANAGER_APPROVED_END_OF_DAY',
             'APPROVE',
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-23 09:00:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Supervisor Approval","modelStepThai":"主管放行","transactionCount":3,"hasPendingUnreviewed":false,"zeroTransactionAttestation":false}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000301'::uuid,
-            'c0000000-0000-0000-0000-000000000003'::uuid,
+            DATE '2026-04-22',
             'NOT_STARTED',
-            'DAY_OPEN',
+            'INVESTMENT_DAY_STARTED',
             'OPEN_DAY',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            TIMESTAMPTZ '2026-04-22 01:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Investment Day-start","modelStepThai":"ลงทุนเริ่ม"}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000302'::uuid,
-            'c0000000-0000-0000-0000-000000000003'::uuid,
-            'DAY_OPEN',
-            'MANAGER_APPROVED',
+            DATE '2026-04-22',
+            'INVESTMENT_DAY_STARTED',
+            'MANAGER_APPROVED_END_OF_DAY',
             'APPROVE',
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-22 09:00:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Supervisor Approval","modelStepThai":"主管放行","transactionCount":4,"hasPendingUnreviewed":false,"zeroTransactionAttestation":false}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000303'::uuid,
-            'c0000000-0000-0000-0000-000000000003'::uuid,
-            'MANAGER_APPROVED',
+            DATE '2026-04-22',
+            'MANAGER_APPROVED_END_OF_DAY',
             'TRANSACTION_CLOSED',
             'CLOSE_TRANSACTIONS',
-            TIMESTAMPTZ '2026-04-24 10:30:00+00',
+            TIMESTAMPTZ '2026-04-22 10:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Transaction Day-end","modelStepThai":"交易關帳","postTradeGate":"cleared"}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000401'::uuid,
-            'c0000000-0000-0000-0000-000000000004'::uuid,
+            DATE '2026-04-21',
             'NOT_STARTED',
-            'DAY_OPEN',
+            'INVESTMENT_DAY_STARTED',
             'OPEN_DAY',
-            TIMESTAMPTZ '2026-04-24 01:30:00+00',
+            TIMESTAMPTZ '2026-04-21 01:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Investment Day-start","modelStepThai":"ลงทุนเริ่ม"}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000402'::uuid,
-            'c0000000-0000-0000-0000-000000000004'::uuid,
-            'DAY_OPEN',
-            'MANAGER_APPROVED',
+            DATE '2026-04-21',
+            'INVESTMENT_DAY_STARTED',
+            'MANAGER_APPROVED_END_OF_DAY',
             'APPROVE',
-            TIMESTAMPTZ '2026-04-24 09:00:00+00',
+            TIMESTAMPTZ '2026-04-21 09:00:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Supervisor Approval","modelStepThai":"主管放行","transactionCount":5,"hasPendingUnreviewed":false,"zeroTransactionAttestation":false}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000403'::uuid,
-            'c0000000-0000-0000-0000-000000000004'::uuid,
-            'MANAGER_APPROVED',
+            DATE '2026-04-21',
+            'MANAGER_APPROVED_END_OF_DAY',
             'TRANSACTION_CLOSED',
             'CLOSE_TRANSACTIONS',
-            TIMESTAMPTZ '2026-04-24 10:30:00+00',
+            TIMESTAMPTZ '2026-04-21 10:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Transaction Day-end","modelStepThai":"交易關帳","postTradeGate":"cleared"}'::jsonb
         ),
         (
             'e0000000-0000-0000-0000-000000000404'::uuid,
-            'c0000000-0000-0000-0000-000000000004'::uuid,
+            DATE '2026-04-21',
             'TRANSACTION_CLOSED',
             'ACCOUNTING_CLOSED',
             'CLOSE_ACCOUNTING',
-            TIMESTAMPTZ '2026-04-24 11:30:00+00',
+            TIMESTAMPTZ '2026-04-21 11:30:00+00',
             '{"workflowModel":"IMS investment workflow","modelStep":"Accounting Day-end","modelStepThai":"會計關帳","navPostback":"seeded"}'::jsonb
         )
 )
@@ -391,7 +386,7 @@ INSERT INTO workflow__transition_log (
 SELECT
     st.id,
     dl.workflow_day_id,
-    st.contract_id,
+    dl.contract_id,
     dl.business_date,
     st.from_state,
     st.to_state,
@@ -404,18 +399,27 @@ SELECT
     st.occurred_at,
     'seed-workflow-model'
 FROM seed_transitions st
-JOIN day_lookup dl ON dl.contract_id = st.contract_id
-ON CONFLICT (id) DO NOTHING;
+JOIN day_lookup dl ON dl.business_date = st.business_date
+ON CONFLICT (id) DO UPDATE
+SET
+    workflow_day_id = EXCLUDED.workflow_day_id,
+    contract_id = EXCLUDED.contract_id,
+    business_date = EXCLUDED.business_date,
+    from_state = EXCLUDED.from_state,
+    to_state = EXCLUDED.to_state,
+    action = EXCLUDED.action,
+    actor_id = EXCLUDED.actor_id,
+    actor_type = EXCLUDED.actor_type,
+    actor_username = EXCLUDED.actor_username,
+    reason = EXCLUDED.reason,
+    metadata = EXCLUDED.metadata,
+    occurred_at = EXCLUDED.occurred_at,
+    request_id = EXCLUDED.request_id;
 
 WITH approved_days AS (
     SELECT id AS workflow_day_id, contract_id, business_date
     FROM workflow__day_states
-    WHERE business_date = DATE '2026-04-24'
-      AND contract_id IN (
-          'c0000000-0000-0000-0000-000000000002'::uuid,
-          'c0000000-0000-0000-0000-000000000003'::uuid,
-          'c0000000-0000-0000-0000-000000000004'::uuid
-      )
+    WHERE business_date IN (DATE '2026-04-21', DATE '2026-04-22', DATE '2026-04-23')
 )
 INSERT INTO workflow__approval_records (
     id,
@@ -432,9 +436,9 @@ INSERT INTO workflow__approval_records (
     notes
 )
 SELECT
-    CASE contract_id
-        WHEN 'c0000000-0000-0000-0000-000000000002'::uuid THEN 'f0000000-0000-0000-0000-000000000002'::uuid
-        WHEN 'c0000000-0000-0000-0000-000000000003'::uuid THEN 'f0000000-0000-0000-0000-000000000003'::uuid
+    CASE business_date
+        WHEN DATE '2026-04-23' THEN 'f0000000-0000-0000-0000-000000000002'::uuid
+        WHEN DATE '2026-04-22' THEN 'f0000000-0000-0000-0000-000000000003'::uuid
         ELSE 'f0000000-0000-0000-0000-000000000004'::uuid
     END,
     workflow_day_id,
@@ -446,7 +450,11 @@ SELECT
     'APPROVED',
     false,
     NULL,
-    TIMESTAMPTZ '2026-04-24 09:00:00+00',
+    CASE business_date
+        WHEN DATE '2026-04-23' THEN TIMESTAMPTZ '2026-04-23 09:00:00+00'
+        WHEN DATE '2026-04-22' THEN TIMESTAMPTZ '2026-04-22 09:00:00+00'
+        ELSE TIMESTAMPTZ '2026-04-21 09:00:00+00'
+    END,
     'Seeded from the IMS workflow model: supervisor approval after investment review.'
 FROM approved_days
 ON CONFLICT (id) DO NOTHING;

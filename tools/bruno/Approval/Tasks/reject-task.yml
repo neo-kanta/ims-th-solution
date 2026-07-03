@@ -1,0 +1,28 @@
+info:
+  name: reject-task
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/tasks/:taskId/reject"
+  params:
+    - name: taskId
+      value: "{{approval-task-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "comment": "Rejected from Bruno",
+        "reason": "Sample rejection for approval runtime endpoint coverage."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -22,17 +22,29 @@ func (s FundStatus) IsValid() bool {
 type PortfolioStatus string
 
 const (
-	PortfolioStatusActive PortfolioStatus = "ACTIVE"
-	PortfolioStatusPaused PortfolioStatus = "PAUSED"
-	PortfolioStatusClosed PortfolioStatus = "CLOSED"
+	PortfolioStatusDraft           PortfolioStatus = "DRAFT"
+	PortfolioStatusPendingApproval PortfolioStatus = "PENDING_APPROVAL"
+	PortfolioStatusActive          PortfolioStatus = "ACTIVE"
+	PortfolioStatusPaused          PortfolioStatus = "PAUSED" // Phase 1 compat alias for SUSPENDED
+	PortfolioStatusSuspended       PortfolioStatus = "SUSPENDED"
+	PortfolioStatusRejected        PortfolioStatus = "REJECTED"
+	PortfolioStatusClosed          PortfolioStatus = "CLOSED"
 )
 
 func (s PortfolioStatus) IsValid() bool {
 	switch s {
-	case PortfolioStatusActive, PortfolioStatusPaused, PortfolioStatusClosed:
+	case PortfolioStatusDraft, PortfolioStatusPendingApproval,
+		PortfolioStatusActive, PortfolioStatusPaused, PortfolioStatusSuspended,
+		PortfolioStatusRejected, PortfolioStatusClosed:
 		return true
 	}
 	return false
+}
+
+// IsOpenForBusiness reports whether the portfolio can receive new transactions.
+// Investment activity starts only after approval completes and status is ACTIVE.
+func (s PortfolioStatus) IsOpenForBusiness() bool {
+	return s == PortfolioStatusActive
 }
 
 // InstrumentStatus represents the tradability state of an instrument.

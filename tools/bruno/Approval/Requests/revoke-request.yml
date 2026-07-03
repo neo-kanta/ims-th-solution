@@ -1,0 +1,28 @@
+info:
+  name: revoke-request
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/requests/:requestId/revoke"
+  params:
+    - name: requestId
+      value: "{{approval-request-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "comment": "{{approval-comment}}",
+        "reason": "{{approval-reason}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

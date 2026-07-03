@@ -12,17 +12,22 @@ import (
 // RegisterRoutes mounts all workflow routes under the given router prefix.
 // Caller is responsible for applying auth middleware before calling this.
 //
-// Route layout (all prefixed with /workflow by the caller's router):
+// Legacy UUID-based routes (unchanged):
 //
-//	GET  /workflow/day-states/{contractId}               → current state (+ synthetic NOT_STARTED)
+//	GET  /workflow/day-states/{contractId}               → current state
 //	GET  /workflow/day-states/{contractId}/history       → transition history
-//	POST /workflow/day-states/{contractId}/transitions   → execute transition (body.action)
+//	POST /workflow/day-states/{contractId}/transitions   → execute transition
 //
-// Per-action permission enforcement for the POST route is performed inside the
-// handler (it reads req.Action before calling the matching WORKFLOW_* code).
-// Gating the whole POST with a single code here would either be wrong (what
-// Batch 1 did — APPROVE was reachable with WORKFLOW_OPEN_DAY) or over-restrictive.
-func RegisterRoutes(r chi.Router, h *handler.WorkflowHandler, permChecker platformmw.PermissionChecker) {
+// New business-readable routes:
+//
+//	GET  /workflow/daily                                 → aggregated daily state
+//	POST /workflow/daily/execute                         → execute via operationType
+//	GET  /workflow/daily/transitions                     → paginated history
+//	GET  /workflow/transition-rules                      → static state machine topology
+//	GET  /workflow/settings                              → approver configuration
+//	PUT  /workflow/settings                              → update approver configuration (Admin only)
+func RegisterRoutes(r chi.Router, h *handler.WorkflowHandler, daily *handler.DailyHandler, permChecker platformmw.PermissionChecker) {
+	// ── Legacy UUID-based endpoints ───────────────────────────────────────────
 	r.Route("/workflow/day-states", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			if permChecker != nil {
@@ -40,5 +45,17 @@ func RegisterRoutes(r chi.Router, h *handler.WorkflowHandler, permChecker platfo
 			r.Use(platformmw.RequirePermission(permChecker, workflowperm.CodeRunScheduler))
 		}
 		r.Post("/run-once", h.RunSchedulerOnce)
+	})
+
+	// ── New business-readable daily endpoints ─────────────────────────────────
+	// Auth is enforced by the underlying handlers (JWT claims + admin/approver check).
+	// No RequirePermission middleware here — the new API uses settings-based approval.
+	r.Route("/workflow", func(r chi.Router) {
+		r.Get("/daily", daily.GetDailyWorkflow)
+		r.Post("/daily/execute", daily.ExecuteDailyTransition)
+		r.Get("/daily/transitions", daily.GetDailyTransitions)
+		r.Get("/transition-rules", daily.GetTransitionRules)
+		r.Get("/settings", daily.GetSettings)
+		r.Put("/settings", daily.UpdateSettings)
 	})
 }

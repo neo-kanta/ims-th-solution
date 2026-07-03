@@ -257,7 +257,7 @@ func (h *WorkflowHandler) ExecuteTransition(w http.ResponseWriter, r *http.Reque
 	case vo.ActionCancelTransactionClose:
 		h.handleCancelTransactionClose(w, r, contractID, businessDate, actor, &req)
 	case vo.ActionCloseAccounting:
-		h.handleCloseAccounting(w, r, contractID, businessDate, actor)
+		h.handleCloseAccounting(w, r, contractID, businessDate, actor, &req)
 	case vo.ActionRollbackAccountingClose:
 		h.handleRollbackAccountingClose(w, r, contractID, businessDate, actor, &req)
 	default:
@@ -485,17 +485,27 @@ func (h *WorkflowHandler) handleCancelTransactionClose(
 func (h *WorkflowHandler) handleCloseAccounting(
 	w http.ResponseWriter, r *http.Request,
 	contractID uuid.UUID, businessDate time.Time, actor vo.ActorContext,
+	req *request.ExecuteTransitionRequest,
 ) {
-	result, err := h.closeAccounting.Handle(r.Context(), command.CloseAccountingRequest{
+	cmdReq := command.CloseAccountingRequest{
 		ContractID:   contractID,
 		BusinessDate: businessDate,
 		Actor:        actor,
-	})
+	}
+	if req != nil && req.AccountingDate != nil {
+		ad, err := time.Parse("2006-01-02", *req.AccountingDate)
+		if err != nil {
+			httputil.BadRequest(w, "invalid accountingDate (expected YYYY-MM-DD)")
+			return
+		}
+		cmdReq.AccountingDate = ad
+	}
+	result, err := h.closeAccounting.Handle(r.Context(), cmdReq)
 	if err != nil {
 		writeCommandError(w, err)
 		return
 	}
-	httputil.Created(w, response.TransitionResponse{
+	resp := response.TransitionResponse{
 		TransitionID:  result.TransitionID.String(),
 		WorkflowDayID: result.WorkflowDayID.String(),
 		ContractID:    result.ContractID.String(),
@@ -503,7 +513,9 @@ func (h *WorkflowHandler) handleCloseAccounting(
 		FromState:     string(result.FromState),
 		ToState:       string(result.ToState),
 		OccurredAt:    result.OccurredAt.Format(time.RFC3339),
-	})
+	}
+	resp.AccountingDate = result.AccountingDate.Format("2006-01-02")
+	httputil.Created(w, resp)
 }
 
 func (h *WorkflowHandler) handleRollbackAccountingClose(
@@ -586,11 +598,12 @@ func buildActorContext(w http.ResponseWriter, r *http.Request) (vo.ActorContext,
 		return vo.ActorContext{}, false
 	}
 	return vo.ActorContext{
-		UserID:    userID,
-		Username:  claims.Username,
-		ActorType: vo.ActorTypeHuman,
-		RequestID: chimw.GetReqID(r.Context()),
-		Roles:     claims.Roles,
+		UserID:      userID,
+		Username:    claims.Username,
+		AccountCode: claims.Username,
+		ActorType:   vo.ActorTypeHuman,
+		RequestID:   chimw.GetReqID(r.Context()),
+		Roles:       claims.Roles,
 	}, true
 }
 
@@ -703,6 +716,14 @@ func mapStateResponse(
 		resp.ManagerApprovedBy = uuidPtrString(d.ManagerApprovedBy)
 		resp.TransactionClosedAt = d.TransactionClosedAt
 		resp.AccountingClosedAt = d.AccountingClosedAt
+		if d.AccountingDate != nil {
+			s := d.AccountingDate.Format("2006-01-02")
+			resp.AccountingDate = &s
+		}
+		if d.PrevAccountingDate != nil {
+			s := d.PrevAccountingDate.Format("2006-01-02")
+			resp.PrevAccountingDate = &s
+		}
 		resp.Version = &ver
 		return resp
 	}

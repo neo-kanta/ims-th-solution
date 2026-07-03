@@ -1,0 +1,45 @@
+info:
+  name: add-security-mapping
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{reference-data-base-url}}/securities/:securityId/mappings"
+  params:
+    - name: securityId
+      value: "{{reference-data-security-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "provider_code": "{{reference-data-provider}}",
+        "provider_symbol": "BRUNO-RD",
+        "provider_exchange": "XBKK",
+        "provider_currency": "THB",
+        "provider_asset_type": "{{reference-data-asset-type}}",
+        "priority": 1,
+        "is_primary": true,
+        "confidence_score": "0.99"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("reference-data-mapping-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

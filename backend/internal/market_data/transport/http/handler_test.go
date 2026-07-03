@@ -161,8 +161,9 @@ func (p *stubProvider) ProviderName() string {
 }
 
 type stubRepository struct {
-	savedQuote *domain.Quote
-	dailyBars  []domain.PriceBar
+	savedQuote     *domain.Quote
+	dailyBars      []domain.PriceBar
+	latestQuoteFor map[string]*domain.Quote
 }
 
 func (r *stubRepository) UpsertSymbol(ctx context.Context, mapping domain.SymbolMapping) error {
@@ -185,11 +186,22 @@ func (r *stubRepository) SaveDailyPrices(ctx context.Context, symbol string, pro
 }
 
 func (r *stubRepository) GetLatestQuote(ctx context.Context, symbol string) (*domain.Quote, error) {
+	if r.latestQuoteFor == nil {
+		return nil, nil
+	}
+	if q, ok := r.latestQuoteFor[symbol]; ok {
+		clone := *q
+		return &clone, nil
+	}
 	return nil, nil
 }
 
 func (r *stubRepository) ListDailyPrices(ctx context.Context, symbol string, limit int) ([]domain.PriceBar, error) {
 	return nil, nil
+}
+
+func (r *stubRepository) GetSnapshotAsOf(ctx context.Context, symbol string, businessDate time.Time) (*domain.Quote, error) {
+	return r.GetLatestQuote(ctx, symbol)
 }
 
 func (r *stubRepository) LogProviderRequest(ctx context.Context, log domain.ProviderRequestLog) error {

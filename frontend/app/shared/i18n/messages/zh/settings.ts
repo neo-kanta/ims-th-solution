@@ -4,6 +4,14 @@ export const zhSettingsMessages = {
     title: "管理控制中心",
     description:
       "用于 IAM 用户操作与审计可视化的前端工作区，基于现有管理 API 提供支持。",
+    individualBreadcrumb: "Settings",
+    individualTitle: "Settings",
+    individualDescription:
+      "Manage your personal profile, password, MFA recovery, active sessions, and assigned access.",
+    administrationBreadcrumb: "Administration",
+    administrationTitle: "Administrator settings",
+    administrationDescription:
+      "Administrator workspace for IAM operations, roles, permissions, policy controls, and audit evidence backed by the available admin APIs.",
     refreshUsers: "刷新用户",
     refreshAudit: "刷新审计",
     metrics: {
@@ -19,6 +27,11 @@ export const zhSettingsMessages = {
     console: {
       nav: {
         sectionsLabel: "Settings sections",
+        accountGroup: "Account",
+        individualGroup: "Individual",
+        administrationGroup: "Administration",
+        accessGroup: "Access",
+        systemGroup: "System",
         overview: "Overview",
         overviewDesc: "Control health and API map",
         personalAccount: "Personal Account",
@@ -80,51 +93,63 @@ export const zhSettingsMessages = {
         pendingReview: "Pending review",
         pendingReviewHelper: "Locked users plus visible risk events",
         permissionCoverage: "Permission coverage",
-        permissionCoverageHelper: "{functionCount} functions / {dataScopeCount} data scopes",
+        permissionCoverageHelper:
+          "{functionCount} functions / {dataScopeCount} data scopes",
       },
       overview: {
         title: "Settings overview",
-        subtitle: "Operational snapshot for identity, permission, policy, notification, and audit controls.",
+        subtitle:
+          "Operational snapshot for identity, permission, policy, notification, and audit controls.",
         application: "Application",
         apiBase: "API base",
         timezone: "Timezone",
         apiMapTitle: "API integration map",
-        apiMapSubtitle: "Live controls are wired to existing endpoints; unavailable domains stay read-only.",
+        apiMapSubtitle:
+          "Live controls are wired to existing endpoints; unavailable domains stay read-only.",
         liveApi: "Live API",
         signals: {
           userApi: "User API",
-          userApiAvailable: "Directory operations are enabled for this session.",
+          userApiAvailable:
+            "Directory operations are enabled for this session.",
           userApiRestricted: "Current account cannot view IAM users.",
           lockedUsers: "Locked users",
           lockedUsersReview: "Immediate access review recommended.",
           lockedUsersClear: "No locked accounts returned by the metric query.",
           auditRisk: "Audit risk",
-          auditRiskHelper: "Visible critical, high, and medium IAM audit events.",
+          auditRiskHelper:
+            "Visible critical, high, and medium IAM audit events.",
           auditRiskCurrentPage: "风险事件（当前页）",
-          auditRiskCurrentPageHelper: "仅统计本页可见的审计记录。请使用过滤器调整时间范围。",
+          auditRiskCurrentPageHelper:
+            "仅统计本页可见的审计记录。请使用过滤器调整时间范围。",
           dataAccess: "Data access",
           dataAccessHelper: "Contract/fund scopes in the current auth session.",
         },
         capabilities: {
           personalAccount: "Personal account",
-          personalAccountCapability: "Read own profile, change own password, read MFA status, list and revoke own sessions",
+          personalAccountCapability:
+            "Read own profile, change own password, read MFA status, list and revoke own sessions",
           otherAccounts: "Other accounts",
-          otherAccountsCapability: "List, create, enable, disable, lock, unlock, reset passwords",
+          otherAccountsCapability:
+            "List, create, enable, disable, lock, unlock, reset passwords",
           userSessions: "User sessions",
-          userSessionsCapability: "List and revoke active sessions for selected users",
+          userSessionsCapability:
+            "List and revoke active sessions for selected users",
           audit: "Audit / Change logs",
           auditCapability: "Filter IAM audit events and export CSV evidence",
           groups: "Groups / Roles",
           groupsCapability: "Derived from current user directory payload",
           permissions: "Function and data permissions",
-          permissionsCapability: "Backend administration endpoints are not exposed in this frontend",
+          permissionsCapability:
+            "Backend administration endpoints are not exposed in this frontend",
           policy: "Security policy / Notifications",
-          policyCapability: "Displayed as typed configuration scaffolds until APIs exist",
+          policyCapability:
+            "Displayed as typed configuration scaffolds until APIs exist",
         },
       },
       personal: {
         title: "Personal account",
-        subtitle: "Your own profile, password, MFA state, active sessions, and assigned access.",
+        subtitle:
+          "Your own profile, password, MFA state, active sessions, and assigned access.",
         refresh: "Refresh account",
         currentUser: "Current user",
         usernameUnavailable: "Username unavailable",
@@ -142,24 +167,30 @@ export const zhSettingsMessages = {
         enrolled: "Enrolled",
         recoveryCodes: "Recovery codes",
         changePasswordTitle: "Change personal password",
-        changePasswordSubtitle: "Uses the authenticated account endpoint and never changes another user's credential.",
+        changePasswordSubtitle:
+          "Uses the authenticated account endpoint and never changes another user's credential.",
         currentPassword: "Current password",
         newPassword: "New password",
         confirmNewPassword: "Confirm new password",
-        passwordHelp: "Minimum 8 characters. Backend password policy still applies.",
+        passwordHelp:
+          "Minimum 8 characters. Backend password policy still applies.",
         showPasswords: "Show password fields",
         hidePasswords: "Hide password fields",
         changePassword: "Change password",
         activeSessionsTitle: "My active sessions",
-        activeSessionsSubtitle: "Sessions returned from the personal account session API.",
+        activeSessionsSubtitle:
+          "Sessions returned from the personal account session API.",
         noSessions: "No active sessions were returned for your account.",
         lastActivity: "Last activity {date}",
         expires: "Expires {date}",
         revokeOwnSessionTitle: "Revoke your active session",
-        revokeOwnSessionDescription: "This ends the selected session from {ip}. If this is your current browser session, you may need to sign in again.",
+        revokeOwnSessionDescription:
+          "This ends the selected session from {ip}. If this is your current browser session, you may need to sign in again.",
         validationCurrentPassword: "Enter your current password.",
-        validationNewPassword: "Use at least 8 characters for the new password.",
-        validationPasswordMismatch: "New password and confirmation do not match.",
+        validationNewPassword:
+          "Use at least 8 characters for the new password.",
+        validationPasswordMismatch:
+          "New password and confirmation do not match.",
         mfaEnableCta: "启用 MFA",
         mfaDisableCta: "停用 MFA",
         mfaEnroll: {
@@ -191,8 +222,7 @@ export const zhSettingsMessages = {
         },
         mfaDisable: {
           title: "停用多重身份验证",
-          body:
-            "停用 MFA 将移除关键的安全层。请输入验证器应用当前的 6 位代码确认。",
+          body: "停用 MFA 将移除关键的安全层。请输入验证器应用当前的 6 位代码确认。",
           totpLabel: "6 位代码",
           confirmCta: "停用 MFA",
           disabling: "停用中…",
@@ -200,9 +230,11 @@ export const zhSettingsMessages = {
       },
       otherAccounts: {
         title: "Other accounts",
-        subtitle: "Search, filter, and inspect admin-managed IAM accounts separate from your personal account.",
+        subtitle:
+          "Search, filter, and inspect admin-managed IAM accounts separate from your personal account.",
         createTitle: "Create other account",
-        createSubtitle: "Creates an admin-managed IAM account, not your personal profile.",
+        createSubtitle:
+          "Creates an admin-managed IAM account, not your personal profile.",
         searchUsers: "Search users",
         activity: "Activity",
         lockState: "Lock state",
@@ -215,7 +247,8 @@ export const zhSettingsMessages = {
         disabledStatus: "Disabled",
         lockedStatus: "Locked",
         resignedNotExposed: "Resigned not exposed",
-        resignedUnavailable: "Resigned state is not present in the current IAM user payload.",
+        resignedUnavailable:
+          "Resigned state is not present in the current IAM user payload.",
         validationUsername: "Use at least 3 characters.",
         validationEmail: "Enter a valid email address.",
         validationPassword: "Use at least 8 characters.",
@@ -231,12 +264,14 @@ export const zhSettingsMessages = {
         current: "Current",
         expires: "Expires {date}",
         noAccountSelected: "No account selected",
-        noAccountSelectedSubtitle: "Select a user to review status, sessions, and controlled actions.",
+        noAccountSelectedSubtitle:
+          "Select a user to review status, sessions, and controlled actions.",
         resetPasswordHint: "重置后，用户在下次登录时必须更改密码。",
       },
       groupsRoles: {
         title: "Groups / roles",
-        subtitle: "Role inventory is derived from visible IAM users until dedicated group APIs are exposed.",
+        subtitle:
+          "Role inventory is derived from visible IAM users until dedicated group APIs are exposed.",
         directoryDerived: "Directory derived",
         partialDirectory: "Partial directory",
         noGroups: "No groups are visible in the current directory response.",
@@ -248,20 +283,26 @@ export const zhSettingsMessages = {
         functionalResponsibility: "Functional responsibility",
         permissionFamilies: "Permission families",
         dataScopes: "Data scopes",
-        selectGroup: "Select a group to review responsibilities and access scope.",
+        selectGroup:
+          "Select a group to review responsibilities and access scope.",
         membersCount: "{count} members",
         notClassified: "未分类",
         notConfigured: "未配置 — 等待分组 API",
         membersOnPage: "成员（当前页）",
-        membersCountHint: "仅统计当前页可见的目录条目。完整成员数需要后端分组 API。",
-        directoryDerivedDescription: "源自 IAM 目录分组 \"{group}\"。属性元数据等待分组 API。",
+        membersCountHint:
+          "仅统计当前页可见的目录条目。完整成员数需要后端分组 API。",
+        directoryDerivedDescription:
+          '源自 IAM 目录分组 "{group}"。属性元数据等待分组 API。',
       },
       functionPermissions: {
         title: "Function permissions",
-        subtitle: "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
+        subtitle:
+          "Matrix layout for menu-level actions. Current session permissions are readable; administration APIs are pending.",
         sessionGrants: "{count} session grants",
-        notice: "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
-        sampleNotice: "此权限矩阵仅供示意，未接入后端 API；显示的内容不代表系统中实际配置的权限。",
+        notice:
+          "This section is a typed read-only scaffold. No permission mutation is submitted without a backend endpoint.",
+        sampleNotice:
+          "此权限矩阵仅供示意，未接入后端 API；显示的内容不代表系统中实际配置的权限。",
         menuFunction: "Menu / Function",
         owner: "Owner",
         source: "Source",
@@ -281,7 +322,8 @@ export const zhSettingsMessages = {
       },
       dataPermissions: {
         title: "Data permissions",
-        subtitle: "Review access by user or by contract/fund. Live contract grants are limited to the current session payload.",
+        subtitle:
+          "Review access by user or by contract/fund. Live contract grants are limited to the current session payload.",
         viewModeLabel: "Data permission view mode",
         userToContracts: "User to contracts",
         contractToUsers: "Contract to users",
@@ -289,19 +331,24 @@ export const zhSettingsMessages = {
         searchPlaceholder: "Search user, contract, fund, or scope",
         grantsCount: "{count} grants",
         noMatches: "No data permissions match the current search.",
-        sampleNotice: "仅为演示数据。数据权限管理 API 尚未开放，此处显示不代表真实授权。",
+        sampleNotice:
+          "仅为演示数据。数据权限管理 API 尚未开放，此处显示不代表真实授权。",
       },
       securityPolicy: {
         title: "Security policy",
-        subtitle: "Password and access-control rules. Values are read-only until policy APIs are available.",
+        subtitle:
+          "Password and access-control rules. Values are read-only until policy APIs are available.",
         authMode: "Authentication mode",
-        authModeHelper: "Internal password policy remains editable only when the backend exposes policy management.",
+        authModeHelper:
+          "Internal password policy remains editable only when the backend exposes policy management.",
         externalAuthority: "External authority",
         internalAuthority: "Internal authority",
-        sampleNotice: "此处的值仅为占位符。实际的锁定策略、密码过期及复杂度规则由后端配置。",
+        sampleNotice:
+          "此处的值仅为占位符。实际的锁定策略、密码过期及复杂度规则由后端配置。",
         settings: {
           minimumLength: "Minimum length",
-          minimumLengthHelper: "Temporary and reset passwords must satisfy this floor.",
+          minimumLengthHelper:
+            "Temporary and reset passwords must satisfy this floor.",
           expiryDays: "Password expiry",
           expiryDaysHelper: "Rotation interval for internal password mode.",
           reuse: "Reuse restriction",
@@ -309,9 +356,11 @@ export const zhSettingsMessages = {
           failedAttempts: "Max failed login attempts",
           failedAttemptsHelper: "Account locks after this threshold.",
           changeInterval: "Minimum change interval",
-          changeIntervalHelper: "Limits rapid password churn after a successful change.",
+          changeIntervalHelper:
+            "Limits rapid password churn after a successful change.",
           enforceRule: "Enforce password rule",
-          enforceRuleHelper: "Applies complexity and history validation to all internal accounts.",
+          enforceRuleHelper:
+            "Applies complexity and history validation to all internal accounts.",
           characters: "characters",
           days: "days",
           previousPasswords: "previous passwords",
@@ -320,7 +369,8 @@ export const zhSettingsMessages = {
       },
       notifications: {
         title: "Notifications",
-        subtitle: "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
+        subtitle:
+          "Event routing preview for IAM and audit operations. Notification configuration APIs are not exposed here.",
         channelsLabel: "Notification channels",
         sampleNotice: "通知规则仅为演示。尚无订阅 API，开关仅为只读预览。",
         events: {
@@ -342,7 +392,8 @@ export const zhSettingsMessages = {
       },
       audit: {
         action: "Action",
-        subtitle: "Immutable IAM security events with actor, target, and network context.",
+        subtitle:
+          "Immutable IAM security events with actor, target, and network context.",
         eventType: "Event type",
         actorId: "Actor ID",
         targetType: "Target type",
@@ -354,7 +405,8 @@ export const zhSettingsMessages = {
         network: "Network",
         exportCsv: "Export CSV",
         exportTitle: "Export audit records",
-        exportDescription: "The export contains security event metadata for the current filters. Keep the CSV in an approved evidence location.",
+        exportDescription:
+          "The export contains security event metadata for the current filters. Keep the CSV in an approved evidence location.",
         severity: {
           critical: "严重",
           high: "高",
@@ -392,11 +444,16 @@ export const zhSettingsMessages = {
         resetPasswordTitle: "Reset password for {username}",
         revokeSessionTitle: "Revoke active session",
         revokeSessionConfirmLabel: "Revoke session",
-        statusDisable: "This prevents future sign-ins for the selected account. Existing audit evidence remains available.",
-        statusLock: "This immediately blocks account access until an administrator unlocks it.",
-        statusDefault: "This updates account access state and records the administrative action in the audit trail.",
-        resetPassword: "The account will be forced to change this temporary password at next sign-in. Do not share it through unsecured channels.",
-        revokeSession: "This ends the session from {ip} and records the administrative revocation.",
+        statusDisable:
+          "This prevents future sign-ins for the selected account. Existing audit evidence remains available.",
+        statusLock:
+          "This immediately blocks account access until an administrator unlocks it.",
+        statusDefault:
+          "This updates account access state and records the administrative action in the audit trail.",
+        resetPassword:
+          "The account will be forced to change this temporary password at next sign-in. Do not share it through unsecured channels.",
+        revokeSession:
+          "This ends the session from {ip} and records the administrative revocation.",
       },
     },
     usersPanelTitle: "管理员用户",

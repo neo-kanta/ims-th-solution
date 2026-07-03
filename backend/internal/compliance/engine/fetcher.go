@@ -20,6 +20,10 @@ type Fetcher struct {
 	portfolioMeta   ports.PortfolioMetadataPort
 }
 
+type orderAwareNAVPort interface {
+	GetNAVForCheck(ctx context.Context, input spi.CheckInput) (*spi.NAVSnapshot, error)
+}
+
 // NewFetcher creates a Fetcher with all port dependencies.
 func NewFetcher(
 	positions ports.PositionSnapshotPort,
@@ -68,7 +72,13 @@ func (f *Fetcher) Fetch(ctx context.Context, deps spi.DataDependencies, input sp
 	}
 
 	if deps.NAV && f.marketData != nil {
-		nav, err := f.marketData.GetNAV(ctx, input.PortfolioID, input.BusinessDate)
+		var nav *spi.NAVSnapshot
+		var err error
+		if aware, ok := f.marketData.(orderAwareNAVPort); ok {
+			nav, err = aware.GetNAVForCheck(ctx, input)
+		} else {
+			nav, err = f.marketData.GetNAV(ctx, input.PortfolioID, input.BusinessDate)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("fetching NAV: %w", err)
 		}

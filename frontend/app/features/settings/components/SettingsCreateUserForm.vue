@@ -245,6 +245,7 @@ function handleSubmit() {
       <AppButton
         type="submit"
         variant="primary"
+        data-testid="iam-create-user-submit"
         :loading="loading"
         :disabled="isSubmitDisabled"
       >

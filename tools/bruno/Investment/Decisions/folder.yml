@@ -1,0 +1,6 @@
+info:
+  name: Decisions
+  type: folder
+
+request:
+  auth: inherit

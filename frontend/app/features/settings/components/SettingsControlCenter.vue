@@ -27,6 +27,8 @@ import type {
   PermissionActionColumn,
   SettingsKpiMetric,
   SettingsGroupRole,
+  SettingsConsoleMode,
+  SettingsNavigationGroup,
   SettingsNavigationItem,
   SettingsOverviewSignal,
   SecurityPolicyModel,
@@ -62,13 +64,31 @@ import { useSettingsUserMetrics } from "../composables/useSettingsUserMetrics";
 import { isRiskAuditEvent } from "../lib/audit";
 import {
   SETTINGS_API_CAPABILITIES,
-  SETTINGS_DEMO_DATA_GRANTS,
-  SETTINGS_DEMO_GROUPS,
   SETTINGS_FUNCTION_PERMISSION_ROWS,
   SETTINGS_NOTIFICATION_PREFERENCES,
   SETTINGS_PERMISSION_ACTIONS,
   SETTINGS_SECURITY_POLICY,
 } from "../lib/settingsCatalog";
+
+const props = withDefaults(
+  defineProps<{
+    mode?: SettingsConsoleMode;
+  }>(),
+  {
+    mode: "administration",
+  },
+);
+
+const INDIVIDUAL_SETTINGS_SECTIONS = ["personal-account"] as const;
+const ADMINISTRATION_SETTINGS_SECTIONS = [
+  "overview",
+  "users",
+  "groups",
+  "function-permissions",
+  "data-permissions",
+  "security-policy",
+  "audit",
+] as const;
 
 const USER_PAGE_LIMIT = 12;
 const AUDIT_PAGE_LIMIT = 12;
@@ -181,7 +201,14 @@ function humanizeGroupName(value: string): string {
 const authStore = useAuthStore();
 const { t } = useI18n();
 const runtimeConfig = useRuntimeConfig();
-const { activeSection } = useSettingsActiveSection();
+const isIndividualSettings = computed(() => props.mode === "individual");
+const isAdministrationSettings = computed(() => props.mode === "administration");
+const { activeSection } = useSettingsActiveSection({
+  validSections: isIndividualSettings.value
+    ? INDIVIDUAL_SETTINGS_SECTIONS
+    : ADMINISTRATION_SETTINGS_SECTIONS,
+  defaultSection: isIndividualSettings.value ? "personal-account" : "overview",
+});
 
 const canViewUsers = computed(() => authStore.hasPermission("IAM_USER_VIEW"));
 const canCreateUsers = computed(() =>
@@ -230,6 +257,7 @@ const usersState = ref<AdminUserListPayload>({
   offset: 0,
   limit: USER_PAGE_LIMIT,
 });
+let userRequestToken = 0;
 // `userMetrics` is owned by useSettingsUserMetrics.
 const auditState = ref<AuditListPayload>({
   events: [],
@@ -395,6 +423,21 @@ const metricLoading = computed(
     userMetricsLoading.value ||
     (auditLoading.value && auditState.value.total === 0),
 );
+const settingsTitle = computed(() =>
+  isIndividualSettings.value
+    ? t("settings.individualTitle")
+    : t("settings.administrationTitle"),
+);
+const settingsDescription = computed(() =>
+  isIndividualSettings.value
+    ? t("settings.individualDescription")
+    : t("settings.administrationDescription"),
+);
+const settingsEyebrow = computed(() =>
+  isIndividualSettings.value
+    ? t("settings.individualBreadcrumb")
+    : t("settings.administrationBreadcrumb"),
+);
 const appName = computed(() =>
   String(runtimeConfig.public.appName || "IMS Thailand"),
 );
@@ -412,22 +455,44 @@ const clientTimezone = computed(() => {
 
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Bangkok";
 });
-const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
-  {
+const settingsAccountName = computed(
+  () =>
+    personalAccount.value?.user.display_name ||
+    authStore.user?.displayName ||
+    t("auth.welcome"),
+);
+const settingsAccountSubtitle = computed(
+  () =>
+    personalAccount.value?.user.username ||
+    authStore.user?.username ||
+    t("shell.activeSession"),
+);
+const settingsAccountInitials = computed(() => {
+  const source = settingsAccountName.value || settingsAccountSubtitle.value;
+  const parts = source.split(/\s+/).filter(Boolean).slice(0, 2);
+
+  if (parts.length === 0) {
+    return "IM";
+  }
+
+  return parts.map((part) => part[0]?.toUpperCase() || "").join("");
+});
+const settingsNavItems = computed<Record<SettingsSectionId, SettingsNavigationItem>>(() => ({
+  overview: {
     id: "overview",
     label: t("settings.console.nav.overview"),
     description: t("settings.console.nav.overviewDesc"),
     icon: "dashboard",
     status: "live",
   },
-  {
+  "personal-account": {
     id: "personal-account",
     label: t("settings.console.nav.personalAccount"),
     description: t("settings.console.nav.personalAccountDesc"),
     icon: "user",
     status: "live",
   },
-  {
+  users: {
     id: "users",
     label: t("settings.console.nav.otherAccounts"),
     description: t("settings.console.nav.otherAccountsDesc"),
@@ -436,7 +501,7 @@ const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
     count: canViewUsers.value ? usersState.value.total : undefined,
     disabled: !(canViewUsers.value || canCreateUsers.value),
   },
-  {
+  groups: {
     id: "groups",
     label: t("settings.console.nav.groupsRoles"),
     description: t("settings.console.nav.groupsRolesDesc"),
@@ -445,7 +510,7 @@ const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
     count: observedGroupCount.value,
     disabled: !canViewUsers.value,
   },
-  {
+  "function-permissions": {
     id: "function-permissions",
     label: t("settings.console.nav.functionPermissions"),
     description: t("settings.console.nav.functionPermissionsDesc"),
@@ -453,7 +518,7 @@ const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
     status: "read-only",
     count: currentSessionFunctionCount.value,
   },
-  {
+  "data-permissions": {
     id: "data-permissions",
     label: t("settings.console.nav.dataPermissions"),
     description: t("settings.console.nav.dataPermissionsDesc"),
@@ -461,21 +526,21 @@ const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
     status: "read-only",
     count: currentSessionContractCount.value,
   },
-  {
+  "security-policy": {
     id: "security-policy",
     label: t("settings.console.nav.securityPolicy"),
     description: t("settings.console.nav.securityPolicyDesc"),
     icon: "shield",
     status: "pending",
   },
-  {
+  notifications: {
     id: "notifications",
     label: t("settings.console.nav.notifications"),
     description: t("settings.console.nav.notificationsDesc"),
     icon: "notifications",
     status: "pending",
   },
-  {
+  audit: {
     id: "audit",
     label: t("settings.console.nav.auditLogs"),
     description: t("settings.console.nav.auditLogsDesc"),
@@ -484,7 +549,42 @@ const settingsNavItems = computed<SettingsNavigationItem[]>(() => [
     count: canViewAudit.value ? auditState.value.total : undefined,
     disabled: !canViewAudit.value,
   },
-]);
+}));
+const settingsNavGroups = computed<SettingsNavigationGroup[]>(() => {
+  const items = settingsNavItems.value;
+
+  if (isIndividualSettings.value) {
+    return [
+      {
+        id: "individual",
+        label: t("settings.console.nav.individualGroup"),
+        items: [items["personal-account"]],
+      },
+    ];
+  }
+
+  return [
+    {
+      id: "administration",
+      label: t("settings.console.nav.administrationGroup"),
+      items: [items.overview, items.users],
+    },
+    {
+      id: "access",
+      label: t("settings.console.nav.accessGroup"),
+      items: [
+        items.groups,
+        items["function-permissions"],
+        items["data-permissions"],
+      ],
+    },
+    {
+      id: "system",
+      label: t("settings.console.nav.systemGroup"),
+      items: [items["security-policy"], items.audit],
+    },
+  ];
+});
 const overviewSignals = computed<SettingsOverviewSignal[]>(() => [
   {
     id: "api-users",
@@ -778,9 +878,7 @@ const derivedGroups = computed<SettingsGroupRole[]>(() => {
     }
   }
 
-  return groups.size > 0
-    ? Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name))
-    : SETTINGS_DEMO_GROUPS;
+  return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name));
 });
 const directoryCompleteForGroups = computed(
   () =>
@@ -799,6 +897,8 @@ const functionPermissionRows = computed<FunctionPermissionRow[]>(() => {
     permissions: { ...row.permissions },
   }));
 });
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const dataPermissionGrants = computed<DataPermissionGrant[]>(() => {
   const currentUser = authStore.user;
   const sessionGrants = authStore.permissions.contracts.map((contractId) => ({
@@ -807,13 +907,15 @@ const dataPermissionGrants = computed<DataPermissionGrant[]>(() => {
     userLabel:
       currentUser?.displayName ?? t("settings.console.common.currentSession"),
     contractId,
-    contractName: contractId,
+    contractName: UUID_PATTERN.test(contractId)
+      ? t("settings.console.dataPermissions.fundAccess", "Fund access")
+      : contractId,
     scope: "Read only" as const,
     source: "session" as const,
     updatedAt: t("settings.console.common.currentSession"),
   }));
 
-  return [...sessionGrants, ...SETTINGS_DEMO_DATA_GRANTS];
+  return sessionGrants;
 });
 
 const confirmDialog = computed(() => {
@@ -927,12 +1029,15 @@ function statusBadges(user: AdminUser): UserStatusBadge[] {
 }
 
 // Kept for prop-drilling shape compatibility — first badge is the dominant one.
+// statusBadges() never returns an empty array (it always pushes an "active"
+// fallback), but the type system can't see that — the empty-string fallback
+// keeps the signature honest without needing a non-null assertion.
 function statusLabel(user: AdminUser) {
-  return statusBadges(user)[0].label;
+  return statusBadges(user)[0]?.label ?? "";
 }
 
 function statusClass(user: AdminUser) {
-  return statusBadges(user)[0].badgeClass;
+  return statusBadges(user)[0]?.badgeClass ?? "";
 }
 
 function actionLabel(action: AdminUserStatusAction) {
@@ -1079,14 +1184,24 @@ async function loadUsers(offset = userQuery.offset) {
     return;
   }
 
+  // Guards against out-of-order responses: e.g. a create-user submit kicks
+  // off an unfiltered refresh, then the admin immediately searches — the two
+  // requests race, and without this token the unfiltered response can land
+  // after (and overwrite) the filtered one, hiding the row the search just
+  // matched. Only the response for the most recently *initiated* call is
+  // applied.
+  const requestToken = ++userRequestToken;
+
   usersLoading.value = true;
   usersError.value = null;
   userQuery.offset = Math.max(0, offset);
 
   try {
-    usersState.value = await adminApi.listUsers(
-      buildUserRequest(userQuery.offset),
-    );
+    const result = await adminApi.listUsers(buildUserRequest(userQuery.offset));
+    if (requestToken !== userRequestToken) {
+      return;
+    }
+    usersState.value = result;
 
     const selectedStillVisible = usersState.value.users.some(
       (user) => user.id === selectedUserId.value,
@@ -1101,6 +1216,9 @@ async function loadUsers(offset = userQuery.offset) {
       await loadSessions(selectedUserId.value);
     }
   } catch (error) {
+    if (requestToken !== userRequestToken) {
+      return;
+    }
     usersError.value = getErrorMessage(error, t("settings.errors.loadUsers"));
     usersState.value = {
       users: [],
@@ -1112,7 +1230,9 @@ async function loadUsers(offset = userQuery.offset) {
     sessions.value = [];
     sessionsError.value = null;
   } finally {
-    usersLoading.value = false;
+    if (requestToken === userRequestToken) {
+      usersLoading.value = false;
+    }
   }
 }
 
@@ -1178,9 +1298,12 @@ async function handleCreateUser(payload: CreateAdminUserInput) {
       await loadUsers(0);
       await loadUserMetrics();
 
-      if (usersState.value.users.some((user) => user.id === created.id)) {
-        selectedUserId.value = created.id;
-        await loadSessions(created.id);
+      // The OpenAPI schema marks `id` as optional, but the server always
+      // populates it on a successful POST. Narrow it before propagating.
+      const createdId = created.id;
+      if (createdId && usersState.value.users.some((user) => user.id === createdId)) {
+        selectedUserId.value = createdId;
+        await loadSessions(createdId);
       }
     }
 
@@ -1479,14 +1602,18 @@ async function refreshUsers() {
 }
 
 onMounted(async () => {
-  const tasks: Promise<unknown>[] = [loadPersonalAccount()];
+  const tasks: Promise<unknown>[] = [];
 
-  if (canViewUsers.value) {
+  if (isIndividualSettings.value) {
+    tasks.push(loadPersonalAccount());
+  }
+
+  if (isAdministrationSettings.value && canViewUsers.value) {
     tasks.push(loadUsers(0));
     tasks.push(loadUserMetrics());
   }
 
-  if (canViewAudit.value) {
+  if (isAdministrationSettings.value && canViewAudit.value) {
     tasks.push(loadAudit(0));
   }
 
@@ -1497,15 +1624,15 @@ onMounted(async () => {
 <template>
   <div class="settings-control-center">
     <AppPageHeader
-      :title="t('settings.title')"
-      :description="t('settings.description')"
+      :title="settingsTitle"
+      :description="settingsDescription"
     >
       <template #eyebrow>
-        <span class="settings-eyebrow">{{ t("settings.breadcrumb") }}</span>
+        <span class="settings-eyebrow">{{ settingsEyebrow }}</span>
       </template>
       <template #actions>
         <AppButton
-          v-if="canViewUsers"
+          v-if="isAdministrationSettings && canViewUsers"
           variant="secondary"
           size="sm"
           :loading="usersLoading || userMetricsLoading"
@@ -1515,7 +1642,7 @@ onMounted(async () => {
           <span>{{ t("settings.refreshUsers") }}</span>
         </AppButton>
         <AppButton
-          v-if="canViewAudit"
+          v-if="isAdministrationSettings && canViewAudit"
           variant="secondary"
           size="sm"
           :loading="auditLoading"
@@ -1550,14 +1677,18 @@ onMounted(async () => {
 
     <div class="settings-console-shell">
       <SettingsSectionNav
-        :items="settingsNavItems"
+        :groups="settingsNavGroups"
         :active-section="activeSection"
+        :account-name="settingsAccountName"
+        :account-subtitle="settingsAccountSubtitle"
+        :account-initials="settingsAccountInitials"
+        :show-identity="isIndividualSettings"
         @select="activeSection = $event"
       />
 
       <div class="settings-console-main">
         <SettingsOverviewPanel
-          v-show="activeSection === 'overview'"
+          v-show="isAdministrationSettings && activeSection === 'overview'"
           :metrics="kpiMetrics"
           :loading="metricLoading"
           :signals="overviewSignals"
@@ -1568,7 +1699,7 @@ onMounted(async () => {
         />
 
         <SettingsPersonalAccountPanel
-          v-show="activeSection === 'personal-account'"
+          v-show="isIndividualSettings && activeSection === 'personal-account'"
           :account="personalAccount"
           :mfa-status="personalMfaStatus"
           :sessions="personalSessions"
@@ -1588,7 +1719,10 @@ onMounted(async () => {
           @start-mfa-disable="openMfaDisableDialog"
         />
 
-        <section v-show="activeSection === 'users'" class="settings-workspace">
+        <section
+          v-show="isAdministrationSettings && activeSection === 'users'"
+          class="settings-workspace"
+        >
           <SettingsUserDirectory
             v-if="canViewUsers"
             :users="users"
@@ -1648,37 +1782,37 @@ onMounted(async () => {
         </section>
 
         <SettingsGroupsRolesPanel
-          v-show="activeSection === 'groups'"
+          v-show="isAdministrationSettings && activeSection === 'groups'"
           :groups="derivedGroups"
           :directory-complete="directoryCompleteForGroups"
           :loading="usersLoading"
         />
 
         <SettingsFunctionPermissionsPanel
-          v-show="activeSection === 'function-permissions'"
+          v-show="isAdministrationSettings && activeSection === 'function-permissions'"
           :actions="permissionActions"
           :rows="functionPermissionRows"
           :session-permission-count="currentSessionFunctionCount"
         />
 
         <SettingsDataPermissionsPanel
-          v-show="activeSection === 'data-permissions'"
+          v-show="isAdministrationSettings && activeSection === 'data-permissions'"
           :grants="dataPermissionGrants"
           :format-date-time="formatDateTime"
         />
 
         <SettingsSecurityPolicyPanel
-          v-show="activeSection === 'security-policy'"
+          v-show="isAdministrationSettings && activeSection === 'security-policy'"
           :policy="securityPolicy"
         />
 
         <SettingsNotificationsPanel
-          v-show="activeSection === 'notifications'"
+          v-show="isAdministrationSettings && activeSection === 'notifications'"
           :preferences="notificationPreferences"
         />
 
         <SettingsAuditLog
-          v-if="canViewAudit"
+          v-if="isAdministrationSettings && canViewAudit"
           v-show="activeSection === 'audit'"
           :events="auditState.events"
           :total="auditState.total"
@@ -1734,8 +1868,11 @@ onMounted(async () => {
 
 <style scoped>
 .settings-control-center {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-4);
   padding-bottom: var(--space-8);
 }
 
@@ -1801,8 +1938,8 @@ onMounted(async () => {
 
 .settings-console-shell {
   display: grid;
-  grid-template-columns: minmax(15rem, 0.28fr) minmax(0, 1fr);
-  gap: var(--space-5);
+  grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
+  gap: var(--space-6);
   align-items: start;
 }
 
@@ -1815,9 +1952,9 @@ onMounted(async () => {
 .settings-control-center :deep(.settings-panel) {
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: var(--bg-card);
-  box-shadow: var(--shadow-xs);
+  box-shadow: none;
 }
 
 .settings-control-center :deep(.settings-panel__header),

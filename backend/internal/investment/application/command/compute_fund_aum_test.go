@@ -232,6 +232,9 @@ func (r fundAUMFundRepo) GetByID(context.Context, uuid.UUID) (*entity.Fund, erro
 	return r.fund, nil
 }
 func (r fundAUMFundRepo) GetByCode(context.Context, string) (*entity.Fund, error) { return nil, nil }
+func (r fundAUMFundRepo) GetByContractCode(context.Context, string) (*entity.Fund, error) {
+	return nil, nil
+}
 func (r fundAUMFundRepo) List(context.Context, domain.FundListFilter) ([]*entity.Fund, int, error) {
 	return nil, 0, nil
 }

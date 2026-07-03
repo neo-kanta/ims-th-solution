@@ -1,0 +1,52 @@
+info:
+  name: create-research-report
+  type: http
+  seq: 32
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/research-reports"
+  body:
+    type: json
+    data: |-
+      {
+        "report_no": "{{investment-research-report-no}}",
+        "report_date": "{{investment-business-date}}",
+        "effective_date": "{{investment-business-date}}",
+        "owner_user_id": "{{user_id}}",
+        "author_user_id": "{{user_id}}",
+        "applicable_contract_id": null,
+        "instrument_type": "{{investment-research-instrument-type}}",
+        "instrument_code": "{{investment-research-instrument-code}}",
+        "instrument_name": "{{investment-research-instrument-name}}",
+        "market": "{{investment-research-market}}",
+        "currency": "{{investment-instrument-currency}}",
+        "recommendation": "{{investment-research-recommendation}}",
+        "report_title": "{{investment-research-report-title}}",
+        "company_overview": "{{investment-research-company-overview}}",
+        "company_outlook": "{{investment-research-company-outlook}}",
+        "esg_comment": "{{investment-research-esg-comment}}",
+        "financial_status": "{{investment-research-financial-status}}",
+        "investment_analysis": "{{investment-research-investment-analysis}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-research-report-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

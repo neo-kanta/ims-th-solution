@@ -196,6 +196,64 @@ variables:
     value: '{"THB":"1","USD":"36.50"}'
   - name: investment-total-units
     value: "1000"
+  - name: investment-research-report-id
+    value: ""
+  - name: investment-research-report-no
+    value: BRUNO-RPT-001
+  - name: investment-research-report-title
+    value: Bruno Sample Research Report
+  - name: investment-research-report-status
+    value: DRAFT
+  - name: investment-research-review-status
+    value: NOT_SUBMITTED
+  - name: investment-research-recommendation
+    value: BUY
+  - name: investment-research-instrument-type
+    value: EQUITY
+  - name: investment-research-instrument-code
+    value: BRUNO
+  - name: investment-research-instrument-name
+    value: Bruno Sample Instrument
+  - name: investment-research-market
+    value: SET
+  - name: investment-research-company-overview
+    value: Sample company overview from Bruno.
+  - name: investment-research-company-outlook
+    value: Stable outlook with monitored catalysts.
+  - name: investment-research-esg-comment
+    value: No material ESG concern identified in this sample.
+  - name: investment-research-financial-status
+    value: Healthy balance sheet and consistent cash generation.
+  - name: investment-research-investment-analysis
+    value: Bruno sample analysis contains enough detail to satisfy validation and exercise the research report API.
+  - name: investment-research-rejection-reason
+    value: ""
+  - name: investment-research-post-submission-note
+    value: Submitted from Bruno for workflow testing.
+  - name: investment-decision-id
+    value: ""
+  - name: investment-decision-no
+    value: ""
+  - name: investment-decision-status
+    value: PENDING_APPROVAL
+  - name: investment-decision-approval-status
+    value: PENDING_APPROVAL
+  - name: investment-decision-comment
+    value: Approved from Bruno batch action.
+  - name: investment-decision-search
+    value: BRUNO
+  - name: investment-decision-process-type
+    value: INVESTMENT_DECISION
+  - name: investment-decision-product-type
+    value: STOCK
+  - name: investment-decision-research-no
+    value: "{{investment-research-report-no}}"
+  - name: investment-decision-rationale
+    value: Bruno sample investment decision rationale.
+  - name: investment-decision-cancel-reason
+    value: Cancelled from Bruno after validation test.
+  - name: investment-decision-reject-reason
+    value: Rejected from Bruno batch action after validation test.
   - name: compliance-base-url
     value: http://localhost:8080/api/v1/compliance
   - name: compliance-portfolio-id
@@ -253,7 +311,7 @@ variables:
   - name: workflow-scheduler-base-url
     value: http://localhost:8080/api/v1/workflow/scheduler
   - name: workflow-scheduler-run-id
-    value: 7bf08b8d-8899-4630-bbde-d76b5f4b6ca9
+    value: 128188a7-c35b-42c2-b7f9-dd4696f70769
   - name: workflow-scheduler-run-status
     value: SKIPPED
   - name: workflow-contract-id
@@ -269,7 +327,7 @@ variables:
   - name: workflow-seed-note
     value: "Seeded workflow contracts: DAY_OPEN=...001, MANAGER_APPROVED=...002, TRANSACTION_CLOSED=...003, ACCOUNTING_CLOSED=...004"
   - name: workflow-business-date
-    value: 2026-04-24
+    value: 2026-06-16
   - name: workflow-action
     value: APPROVE
   - name: workflow-reason
@@ -282,3 +340,161 @@ variables:
     value: Triggered from Bruno.
   - name: workflow-idempotency-key
     value: ""
+  - name: workflow-contract-code
+    value: IMS-DEMO-001
+  - name: workflow-operation-type
+    value: MANAGER_APPROVE
+  - name: approval-config-base-url
+    value: http://localhost:8080/api/v1/approval-config
+  - name: approval-base-url
+    value: http://localhost:8080/api/v1/approvals
+  - name: approval-group-id
+    value: ""
+  - name: approval-group-member-id
+    value: ""
+  - name: approval-process-id
+    value: ""
+  - name: approval-team-id
+    value: ""
+  - name: approval-team-member-id
+    value: ""
+  - name: approval-request-id
+    value: ""
+  - name: approval-task-id
+    value: ""
+  - name: approval-page
+    value: "1"
+  - name: approval-limit
+    value: "20"
+  - name: approval-status
+    value: PENDING
+  - name: approval-active-only
+    value: "true"
+  - name: approval-process-type
+    value: PORTFOLIO_ONBOARDING
+  - name: approval-comment
+    value: Approved from Bruno.
+  - name: approval-reason
+    value: Revoked from Bruno for rework.
+  - name: chat-base-url
+    value: http://localhost:8080/api/v1/chat
+  - name: chat-session-id
+    value: ""
+  - name: chat-page
+    value: "1"
+  - name: chat-limit
+    value: "20"
+  - name: chat-model
+    value: claude-haiku-4-5-20251001
+  - name: chat-provider
+    value: anthropic
+  - name: chat-message
+    value: Summarize the latest sample portfolio state in one sentence.
+  - name: reference-data-base-url
+    value: http://localhost:8080/api/v1/reference-data
+  - name: reference-data-security-id
+    value: ""
+  - name: reference-data-mapping-id
+    value: ""
+  - name: reference-data-candidate-id
+    value: ""
+  - name: reference-data-query
+    value: BRUNO
+  - name: reference-data-asset-type
+    value: EQUITY
+  - name: reference-data-provider
+    value: bloomberg
+  - name: reference-data-status
+    value: ACTIVE
+  - name: reference-data-limit
+    value: "20"
+  - name: market-data-import-batch-id
+    value: ""
+  - name: market-data-import-type
+    value: watchlist
+  - name: market-data-chunk-size
+    value: "25"
+  - name: market-data-screen-query
+    value: technology
+  - name: notification-base-url
+    value: http://localhost:8080/api/v1/notifications
+  - name: notification-id
+    value: ""
+  - name: notification-outbox-id
+    value: ""
+  - name: notification-unread-only
+    value: "true"
+  - name: notification-limit
+    value: "20"
+  - name: notification-offset
+    value: "0"
+  - name: notification-email-status
+    value: FAILED
+  - name: notification-recipient-username
+    value: ""
+  - name: notification-recipient-email
+    value: ""
+  - name: notification-event-type
+    value: ""
+  - name: notification-event-category
+    value: ""
+  - name: notification-business-type
+    value: ""
+  - name: notification-business-reference
+    value: ""
+  - name: notification-created-from
+    value: ""
+  - name: notification-created-to
+    value: ""
+  - name: notification-test-to-email
+    value: bruno-notify@test.local
+  - name: notification-test-to-username
+    value: bruno.notify
+  - name: notification-test-subject
+    value: Bruno notification test
+  - name: notification-test-body
+    value: Bruno notification test email body.
+  - name: watchlist-base-url
+    value: http://localhost:8080/api/v1/watchlists
+  - name: watchlist-item-id
+    value: ""
+  - name: watchlist-alert-id
+    value: ""
+  - name: watchlist-rule-id
+    value: ""
+  - name: watchlist-scope-type
+    value: PERSONAL
+  - name: watchlist-include-disabled
+    value: "false"
+  - name: watchlist-include-thresholds
+    value: "true"
+  - name: watchlist-include-quote
+    value: "true"
+  - name: watchlist-limit
+    value: "20"
+  - name: watchlist-offset
+    value: "0"
+  - name: watchlist-acknowledged
+    value: "false"
+  - name: watchlist-created-from
+    value: ""
+  - name: watchlist-created-to
+    value: ""
+  - name: watchlist-note
+    value: Bruno watchlist note.
+  - name: watchlist-ack-note
+    value: Acknowledged from Bruno.
+  - name: watchlist-pinned
+    value: "true"
+  - name: watchlist-status
+    value: ACTIVE
+  - name: watchlist-metric-type
+    value: PRICE
+  - name: watchlist-direction
+    value: ABOVE
+  - name: watchlist-threshold-value
+    value: "35.00"
+  - name: watchlist-cooldown-minutes
+    value: "60"
+  - name: watchlist-dry-run
+    value: "true"

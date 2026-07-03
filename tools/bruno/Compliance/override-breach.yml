@@ -14,8 +14,7 @@ http:
     type: json
     data: |-
       {
-        "reason": "{{compliance-override-reason}}",
-        "approved_by": "{{compliance-approved-by}}"
+        "reason": "{{compliance-override-reason}}"
       }
   auth:
     type: bearer

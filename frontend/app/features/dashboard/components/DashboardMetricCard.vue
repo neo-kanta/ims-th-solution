@@ -55,27 +55,27 @@ defineProps<{
 }
 
 .dashboard-metric-card.tone-primary {
-  --metric-accent: var(--color-primary-700);
-  --metric-icon-bg: var(--color-primary-50);
-  --metric-icon-color: var(--color-primary-700);
+  --metric-accent: var(--action-primary);
+  --metric-icon-bg: var(--status-executed-bg);
+  --metric-icon-color: var(--status-executed-text);
 }
 
 .dashboard-metric-card.tone-info {
-  --metric-accent: var(--color-info-600);
-  --metric-icon-bg: var(--color-info-50);
-  --metric-icon-color: var(--color-info-700);
+  --metric-accent: var(--state-info);
+  --metric-icon-bg: var(--status-in-review-bg);
+  --metric-icon-color: var(--status-in-review-text);
 }
 
 .dashboard-metric-card.tone-danger {
-  --metric-accent: var(--color-danger-500);
-  --metric-icon-bg: var(--color-danger-50);
-  --metric-icon-color: var(--color-danger-700);
+  --metric-accent: var(--state-danger);
+  --metric-icon-bg: var(--status-rejected-bg);
+  --metric-icon-color: var(--status-rejected-text);
 }
 
 .dashboard-metric-card.tone-success {
-  --metric-accent: var(--color-primary-700);
-  --metric-icon-bg: var(--color-primary-50);
-  --metric-icon-color: var(--color-primary-700);
+  --metric-accent: var(--state-success);
+  --metric-icon-bg: var(--status-approved-bg);
+  --metric-icon-color: var(--status-approved-text);
 }
 
 .dashboard-metric-card__content {

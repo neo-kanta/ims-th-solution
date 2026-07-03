@@ -31,7 +31,9 @@ const fundSelect = `
 	SELECT id, code, name, COALESCE(short_name, ''),
 	       fund_category_id, base_currency, inception_date,
 	       manager_user_id, COALESCE(benchmark, ''), COALESCE(risk_profile, ''),
-	       has_units, COALESCE(external_pam_ref, ''),
+	       has_units, require_pretrade_preview,
+	       COALESCE(require_research_report_for_decision, false),
+	       COALESCE(external_pam_ref, ''),
 	       status, version,
 	       created_at, updated_at, created_by, updated_by, deleted_at
 	FROM investment__funds`
@@ -42,17 +44,19 @@ func (r *PostgresFundRepository) Create(ctx context.Context, tx pgx.Tx, f *entit
 		INSERT INTO investment__funds (
 			id, code, name, short_name, fund_category_id, base_currency,
 			inception_date, manager_user_id, benchmark, risk_profile,
-			has_units, external_pam_ref, status, version,
+			has_units, require_pretrade_preview, require_research_report_for_decision,
+			external_pam_ref, status, version,
 			created_at, updated_at, created_by, updated_by
 		) VALUES (
 			$1, $2, $3, NULLIF($4,''), $5, $6,
 			$7, $8, NULLIF($9,''), NULLIF($10,''),
-			$11, NULLIF($12,''), $13, $14,
-			$15, $16, $17, $18
+			$11, $12, $13, NULLIF($14,''), $15, $16,
+			$17, $18, $19, $20
 		)`,
 		f.ID, f.Code, f.Name, f.ShortName, f.FundCategoryID, f.BaseCurrency,
 		f.InceptionDate, f.ManagerUserID, f.Benchmark, string(f.RiskProfile),
-		f.HasUnits, f.ExternalPAMRef, string(f.Status), f.Version,
+		f.HasUnits, f.RequirePretradePreview, f.RequireResearchReportForDecision,
+		f.ExternalPAMRef, string(f.Status), f.Version,
 		f.CreatedAt, f.UpdatedAt, f.CreatedBy, f.UpdatedBy,
 	)
 	if err != nil {
@@ -70,6 +74,13 @@ func (r *PostgresFundRepository) GetByID(ctx context.Context, id uuid.UUID) (*en
 // GetByCode returns the fund by its business code, alive only.
 func (r *PostgresFundRepository) GetByCode(ctx context.Context, code string) (*entity.Fund, error) {
 	row := r.pool.QueryRow(ctx, fundSelect+" WHERE code = $1 AND deleted_at IS NULL", code)
+	return scanFund(row)
+}
+
+// GetByContractCode returns the fund by its cross-module contract_code, alive only.
+// Returns (nil, nil) when no alive fund has the given contractCode.
+func (r *PostgresFundRepository) GetByContractCode(ctx context.Context, contractCode string) (*entity.Fund, error) {
+	row := r.pool.QueryRow(ctx, fundSelect+" WHERE contract_code = $1 AND deleted_at IS NULL LIMIT 1", contractCode)
 	return scanFund(row)
 }
 
@@ -152,22 +163,25 @@ func (r *PostgresFundRepository) List(ctx context.Context, filter domain.FundLis
 func (r *PostgresFundRepository) Update(ctx context.Context, tx pgx.Tx, f *entity.Fund) error {
 	tag, err := tx.Exec(ctx, `
 		UPDATE investment__funds
-		   SET name             = $3,
-		       short_name       = NULLIF($4,''),
-		       fund_category_id = $5,
-		       manager_user_id  = $6,
-		       benchmark        = NULLIF($7,''),
-		       risk_profile     = NULLIF($8,''),
-		       status           = $9,
-		       external_pam_ref = NULLIF($10,''),
-		       version          = $11,
-		       updated_at       = $12,
-		       updated_by       = $13
+		   SET name                                  = $3,
+		       short_name                            = NULLIF($4,''),
+		       fund_category_id                      = $5,
+		       manager_user_id                       = $6,
+		       benchmark                             = NULLIF($7,''),
+		       risk_profile                          = NULLIF($8,''),
+		       status                                = $9,
+		       external_pam_ref                      = NULLIF($10,''),
+		       require_pretrade_preview              = $14,
+		       require_research_report_for_decision  = $15,
+		       version                               = $11,
+		       updated_at                            = $12,
+		       updated_by                            = $13
 		 WHERE id = $1 AND version = $2 AND deleted_at IS NULL`,
 		f.ID, f.Version-1,
 		f.Name, f.ShortName, f.FundCategoryID, f.ManagerUserID,
 		f.Benchmark, string(f.RiskProfile), string(f.Status), f.ExternalPAMRef,
-		f.Version, f.UpdatedAt, f.UpdatedBy,
+		f.Version, f.UpdatedAt, f.UpdatedBy, f.RequirePretradePreview,
+		f.RequireResearchReportForDecision,
 	)
 	if err != nil {
 		return fmt.Errorf("updating fund: %w", err)
@@ -223,7 +237,8 @@ func scanFund(s scanner) (*entity.Fund, error) {
 		&f.ID, &f.Code, &f.Name, &f.ShortName,
 		&f.FundCategoryID, &f.BaseCurrency, &f.InceptionDate,
 		&f.ManagerUserID, &f.Benchmark, &riskStr,
-		&f.HasUnits, &f.ExternalPAMRef,
+		&f.HasUnits, &f.RequirePretradePreview, &f.RequireResearchReportForDecision,
+		&f.ExternalPAMRef,
 		&statusStr, &f.Version,
 		&f.CreatedAt, &f.UpdatedAt, &f.CreatedBy, &f.UpdatedBy, &f.DeletedAt,
 	)

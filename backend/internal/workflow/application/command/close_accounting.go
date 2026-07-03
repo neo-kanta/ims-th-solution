@@ -20,7 +20,10 @@ import (
 type CloseAccountingRequest struct {
 	ContractID   uuid.UUID
 	BusinessDate time.Time
-	Actor        vo.ActorContext
+	// AccountingDate is the NAV / accounting cycle date. When zero, defaults
+	// to BusinessDate (steady-state). Must not precede BusinessDate.
+	AccountingDate time.Time
+	Actor          vo.ActorContext
 }
 
 type CloseAccountingResult struct {
@@ -28,6 +31,7 @@ type CloseAccountingResult struct {
 	WorkflowDayID      uuid.UUID
 	ContractID         uuid.UUID
 	BusinessDate       time.Time
+	AccountingDate     time.Time
 	FromState          vo.WorkflowState
 	ToState            vo.WorkflowState
 	OccurredAt         time.Time
@@ -56,9 +60,30 @@ func NewCloseAccountingHandler(
 }
 
 func (h *CloseAccountingHandler) Handle(ctx context.Context, req CloseAccountingRequest) (*CloseAccountingResult, error) {
+	// Resolve the accounting date. Default to business date when the caller
+	// did not specify; refuse a date earlier than business date (the DB CHECK
+	// would also reject it, but a typed domain error is friendlier).
+	accountingDate := req.AccountingDate
+	if accountingDate.IsZero() {
+		accountingDate = req.BusinessDate
+	}
+	accountingDate = accountingDate.UTC().Truncate(24 * time.Hour)
+	bd := req.BusinessDate.UTC().Truncate(24 * time.Hour)
+	if accountingDate.Before(bd) {
+		return nil, &domain.ErrInvalidTransition{
+			Code:            "WORKFLOW_ACCOUNTING_DATE_BEFORE_BUSINESS_DATE",
+			AttemptedAction: string(vo.ActionCloseAccounting),
+			CurrentState:    string(vo.StateTransactionClosed),
+			Reason: fmt.Sprintf(
+				"accounting_date %s cannot precede business_date %s",
+				accountingDate.Format("2006-01-02"), bd.Format("2006-01-02"),
+			),
+		}
+	}
+
 	var result *CloseAccountingResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -78,6 +103,11 @@ func (h *CloseAccountingHandler) Handle(ctx context.Context, req CloseAccounting
 		day.CurrentState = vo.StateAccountingClosed
 		day.AccountingClosedAt = &now
 		day.AccountingClosedBy = &req.Actor.UserID
+		day.AccountingDate = &accountingDate
+		// PrevAccountingDate stays untouched on close — it tracks rollback
+		// cycles only. Cleared explicitly below for first-time closes so a
+		// re-close after rollback starts fresh.
+		day.PrevAccountingDate = nil
 		day.UpdatedAt = now
 		day.UpdatedBy = req.Actor.UserID
 
@@ -86,19 +116,23 @@ func (h *CloseAccountingHandler) Handle(ctx context.Context, req CloseAccounting
 		}
 
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     fromState,
-			ToState:       vo.StateAccountingClosed,
-			Action:        vo.ActionCloseAccounting,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Metadata:      map[string]any{},
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        fromState,
+			ToState:          vo.StateAccountingClosed,
+			Action:           vo.ActionCloseAccounting,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Metadata: map[string]any{
+				"accounting_date": accountingDate.Format("2006-01-02"),
+			},
+			OccurredAt: now,
+			RequestID:  req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)
@@ -109,6 +143,7 @@ func (h *CloseAccountingHandler) Handle(ctx context.Context, req CloseAccounting
 			WorkflowDayID:      day.ID,
 			ContractID:         req.ContractID,
 			BusinessDate:       req.BusinessDate,
+			AccountingDate:     accountingDate,
 			FromState:          fromState,
 			ToState:            vo.StateAccountingClosed,
 			OccurredAt:         now,

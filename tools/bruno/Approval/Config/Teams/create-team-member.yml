@@ -1,0 +1,41 @@
+info:
+  name: create-team-member
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/teams/:teamId/members"
+  params:
+    - name: teamId
+      value: "{{approval-team-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "user_id": "{{user_id}}",
+        "member_type": "MANAGER",
+        "priority_order": 1,
+        "is_active": true
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-team-member-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

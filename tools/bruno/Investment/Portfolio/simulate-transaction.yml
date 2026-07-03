@@ -1,0 +1,41 @@
+info:
+  name: simulate-transaction
+  type: http
+  seq: 31
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/portfolios/:portfolioId/transactions/simulate"
+  params:
+    - name: portfolioId
+      value: "{{investment-portfolio-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "business_date": "{{investment-business-date}}",
+        "settlement_date": "{{investment-settlement-date}}",
+        "instrument_id": "{{investment-instrument-id}}",
+        "transaction_type": "{{investment-transaction-type}}",
+        "side": "{{investment-side}}",
+        "quantity": {{investment-quantity}},
+        "price": {{investment-price}},
+        "fees": {{investment-fees}},
+        "gross_amount": {{investment-gross-amount}},
+        "net_amount": {{investment-net-amount}},
+        "currency": "{{investment-instrument-currency}}",
+        "fx_rate_to_base": {{investment-fx-rate-to-base}},
+        "external_ref": "{{investment-external-ref}}",
+        "reason": "{{investment-transaction-reason}}",
+        "force_post": {{investment-force-post}}
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

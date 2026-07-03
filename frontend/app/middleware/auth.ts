@@ -33,25 +33,26 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // 1. Restore session if cookie exists but user data is missing
+  // 1. Restore session if cookie exists but user data is missing. Runs on
+  // both server and client: the permission middleware that follows this one
+  // reads authStore.permissions synchronously, so a hard navigation (typed
+  // URL, bookmark, reload) needs permissions populated during SSR too —
+  // otherwise it evaluates against the default empty state and incorrectly
+  // bounces an authorized user to /403.
   if (authStore.isAuthenticated && !authStore.user) {
     try {
-      if (import.meta.client) {
-        const restored = await authStore.restoreSession();
+      const restored = await authStore.restoreSession();
 
-        if (!restored && !isPublicRoute) {
-          return navigateTo(
-            `/auth/login?reason=session_restore_failed&redirect=${encodeURIComponent(to.fullPath)}`,
-          );
-        }
-      }
-    } catch (error) {
-      if (import.meta.client) {
-        authStore.clearAuth();
+      if (!restored && !isPublicRoute) {
         return navigateTo(
           `/auth/login?reason=session_restore_failed&redirect=${encodeURIComponent(to.fullPath)}`,
         );
       }
+    } catch (error) {
+      authStore.clearAuth();
+      return navigateTo(
+        `/auth/login?reason=session_restore_failed&redirect=${encodeURIComponent(to.fullPath)}`,
+      );
     }
   }
 

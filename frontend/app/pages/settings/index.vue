@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SettingsControlCenter from "../../features/settings/components/SettingsControlCenter.vue";
+import PersonalSettingsConsole from "../../features/settings/components/PersonalSettingsConsole.vue";
 
 definePageMeta({
   layout: "dashboard",
@@ -8,5 +8,5 @@ definePageMeta({
 </script>
 
 <template>
-  <SettingsControlCenter />
+  <PersonalSettingsConsole />
 </template>

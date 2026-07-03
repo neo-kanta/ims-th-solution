@@ -66,6 +66,7 @@ type PreTradeRequest struct {
 	Side         string `json:"side"` // BUY | SELL
 	Quantity     string `json:"quantity"`
 	Price        string `json:"price"`
+	Fees         string `json:"fees,omitempty"`
 	Currency     string `json:"currency"`
 	Exchange     string `json:"exchange"`
 }
@@ -121,6 +122,14 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 		httputil.BadRequest(w, "invalid price")
 		return
 	}
+	fees := decimal.Zero
+	if req.Fees != "" {
+		fees, err = decimal.NewFromString(req.Fees)
+		if err != nil {
+			httputil.BadRequest(w, "invalid fees")
+			return
+		}
+	}
 
 	actor := actorFromCtx(r)
 
@@ -135,6 +144,7 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 		Side:         vo.OrderSide(req.Side),
 		Quantity:     qty,
 		Price:        price,
+		Fees:         fees,
 		Currency:     req.Currency,
 		Exchange:     req.Exchange,
 	})
@@ -315,8 +325,7 @@ func (h *ComplianceHandler) ListBreaches(w http.ResponseWriter, r *http.Request)
 // ============================================================
 
 type OverrideRequest struct {
-	Reason     string `json:"reason"`
-	ApprovedBy string `json:"approved_by,omitempty"`
+	Reason string `json:"reason"`
 }
 
 // OverrideBreach handles POST /compliance/breaches/{breachID}/override.
@@ -368,11 +377,10 @@ func (h *ComplianceHandler) OverrideBreach(w http.ResponseWriter, r *http.Reques
 		BreachID:     breachID,
 		Reason:       req.Reason,
 		OverriddenBy: actorUUID,
-	}
-	if req.ApprovedBy != "" {
-		if id, err := uuid.Parse(req.ApprovedBy); err == nil {
-			overrideReq.ApprovedBy = &id
-		}
+		// ApprovedBy is intentionally not populated from the request body.
+		// A second-level approver identity must never come from the caller;
+		// it is derived from authenticated context or routed through the
+		// shared approval engine in a future phase.
 	}
 
 	override, err := h.overrideCmd.Handle(r.Context(), overrideReq)

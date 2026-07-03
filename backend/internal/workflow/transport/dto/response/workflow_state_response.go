@@ -28,6 +28,11 @@ type WorkflowStateResponse struct {
 	TransactionClosedAt *time.Time `json:"transactionClosedAt"`
 	AccountingClosedAt  *time.Time `json:"accountingClosedAt"`
 
+	// AccountingDate / PrevAccountingDate surface the NAV cycle date and
+	// the prior cycle stashed during a rollback. Format YYYY-MM-DD.
+	AccountingDate     *string `json:"accountingDate,omitempty"`
+	PrevAccountingDate *string `json:"prevAccountingDate,omitempty"`
+
 	// AllowedActions is computed server-side from the current state.
 	// The UI must use this list to decide which buttons to enable.
 	AllowedActions []string `json:"allowedActions"`
@@ -75,6 +80,11 @@ type TransitionResponse struct {
 	ApprovalID *string `json:"approvalId,omitempty"`
 	// IsZeroTransaction is set when the APPROVE was on a zero-transaction day.
 	IsZeroTransaction *bool `json:"isZeroTransaction,omitempty"`
+
+	// AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format
+	// YYYY-MM-DD; distinct from BusinessDate because operators can backdate
+	// or delay accounting cycles.
+	AccountingDate string `json:"accountingDate,omitempty"`
 }
 
 // HistoryResponse is returned by GET /workflow/day-states/{contractId}/history

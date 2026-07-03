@@ -668,6 +668,1933 @@ const docTemplate = `{
                 }
             }
         },
+        "/approval-config/groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List approval groups",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Only active groups",
+                        "name": "active_only",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Create an approval group",
+                "parameters": [
+                    {
+                        "description": "Group payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/GroupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Update an approval group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Group payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List approval group members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupMemberResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Add an approval group member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Member payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}/members/reorder": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Reorder approval group members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Ordered member ids",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReorderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupMemberResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}/members/{memberId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Update an approval group member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member UUID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Member payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}/members/{memberId}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Approve an approval group member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member UUID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/groups/{id}/members/{memberId}/revoke": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Revoke an approval group member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member UUID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupMemberResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/processes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List approval process configs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Process type filter",
+                        "name": "process_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Only active configs",
+                        "name": "active_only",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ProcessConfigResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Create an approval process config",
+                "parameters": [
+                    {
+                        "description": "Process config payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/processes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Get an approval process config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Process config UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Update an approval process config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Process config UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Process config payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/processes/{id}/activate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Activate an approval process config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Process config UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/processes/{id}/deactivate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Deactivate an approval process config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Process config UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ProcessConfigResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/teams": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List approval teams",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/TeamResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Create an approval team",
+                "parameters": [
+                    {
+                        "description": "Team payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/teams/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Update an approval team",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Team payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/teams/{id}/contracts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List a team's contract assignments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/TeamContractResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Assign a contract/fund to an approval team",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Contract assignment",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TeamContractRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TeamContractResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/teams/{id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "List approval team members",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/TeamMemberResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Add an approval team member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Member payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TeamMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TeamMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approval-config/teams/{id}/members/{memberId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Update an approval team member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member UUID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Member payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TeamMemberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TeamMemberResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Config"
+                ],
+                "summary": "Remove an approval team member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Member UUID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/inbox": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's pending approval tasks joined with their requests.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "List my approval inbox",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task status filter (default PENDING)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/InboxListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists approval requests with optional filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "List approval requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Process type",
+                        "name": "process_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests/{requestId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a request with its tasks, immutable timeline and signature records.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Get approval request detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval request UUID",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestDetailResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests/{requestId}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an in-flight approval request (privileged).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Cancel an approval request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval request UUID",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests/{requestId}/revoke": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revokes a previously approved request, returning the subject to an un-approved state. Requires a reason.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Revoke an approved request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval request UUID",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Revocation reason",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ActionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests/{requestId}/timeline": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the immutable, ordered approval timeline for a request.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Get approval timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval request UUID",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/EventResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/requests/{requestId}/withdraw": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "The submitter withdraws their own active approval request.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Withdraw an approval request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval request UUID",
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/subjects/{subjectType}/{subjectId}/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the latest approval request for a business object (subject), if any.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Get subject approval status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subject type",
+                        "name": "subjectType",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Subject UUID",
+                        "name": "subjectId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SubjectStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates an approval request and the first stage tasks for a business object.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Submit a subject for approval",
+                "parameters": [
+                    {
+                        "description": "Submit payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SubmitRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/tasks/{taskId}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records an approval on an assigned task and advances the request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Approve an approval task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval task UUID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional comment",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/ActionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/tasks/{taskId}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records a rejection (reason required); one rejection stops the request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Reject an approval task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Approval task UUID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ActionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/change-password": {
             "post": {
                 "security": [
@@ -1229,6 +3156,236 @@ const docTemplate = `{
                 }
             }
         },
+        "/chat": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Streams text/event-stream. Each frame's ` + "`" + `data:` + "`" + ` payload is a ChatStreamEvent (see response model). Frames have event names: session_started, text, done, error. Use fetch() + ReadableStream on the client — EventSource cannot carry an Authorization header.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send a chat message and stream the response",
+                "parameters": [
+                    {
+                        "description": "Chat message",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "One example frame payload; the response is a stream of these",
+                        "schema": {
+                            "$ref": "#/definitions/ChatStreamEvent"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists the caller's chat sessions. Auditors (IAM_AUDIT_VIEW) may pass user_id to list another user's sessions; such access is strictly audited.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "List chat sessions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Auditor-only: list this user's sessions (requires IAM_AUDIT_VIEW)",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SessionListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/sessions/{session_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one session's metadata. Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get a chat session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session UUID",
+                        "name": "session_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SessionSummaryResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/sessions/{session_id}/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a session's messages with safe provenance (no raw provider payload). Owner or auditor (IAM_AUDIT_VIEW). Auditor access is strictly audited.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "List chat session messages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Session UUID",
+                        "name": "session_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SessionMessagesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/breaches": {
             "get": {
                 "security": [
@@ -1756,6 +3913,798 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/dashboard/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the caller's full dashboard read model: tasks, workflow states, and aggregate counts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal dashboard snapshot",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/DashboardSnapshotDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/tasks/my": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the caller's task feed, optionally filtered by module, priority, or status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal task list",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by module (investment|workflow|compliance)",
+                        "name": "module",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by priority (HIGH|MEDIUM|LOW|INFO)",
+                        "name": "priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (PENDING|IN_PROGRESS|COMPLETED)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/TaskListDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/integration/tasks/my/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregate task counts for the caller without the full task list.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Personal task summary",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/TaskSummaryDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of investment decisions with optional filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "List Investment Decisions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by fund UUID",
+                        "name": "fund_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by portfolio UUID",
+                        "name": "portfolio_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by contract UUID",
+                        "name": "contract_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by business date YYYY-MM-DD",
+                        "name": "business_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by lifecycle status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by instrument code",
+                        "name": "instrument_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on decision_no / instrument_code",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new investment decision in DRAFT status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Create Investment Decision",
+                "parameters": [
+                    {
+                        "description": "Decision fields",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateDecisionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/approval-items": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns decisions pending approval (default status=PENDING_APPROVAL), enriched with current and previous approver names and stage numbers.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "List Investment Decision Approval Items",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by portfolio UUID",
+                        "name": "portfolio_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by fund UUID",
+                        "name": "fund_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive lower bound YYYY-MM-DD",
+                        "name": "business_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive upper bound YYYY-MM-DD",
+                        "name": "business_date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by exact decision number",
+                        "name": "decision_no",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "INVESTMENT_DECISION | ORDER_CANCEL | ORDER_AMEND",
+                        "name": "process_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "MUTUAL_FUND | ETF | STOCK | BOND | CASH",
+                        "name": "product_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by research report number",
+                        "name": "research_no",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Decision lifecycle status (default PENDING_APPROVAL)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on decision_no / instrument_code / research_report_no",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/batch-approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approves multiple investment decision headers in a single call. Each decision must be PENDING_APPROVAL and have a pending approval task assigned to the authenticated user. Returns per-decision results — partial failures are reported without aborting the rest.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Batch Approve Investment Decisions",
+                "parameters": [
+                    {
+                        "description": "Decision numbers and optional comment",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/BatchApprovalRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/BatchApprovalResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/batch-reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rejects multiple investment decision headers in a single call. A rejection reason is required and applied to all selected decisions. Returns per-decision results.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Batch Reject Investment Decisions",
+                "parameters": [
+                    {
+                        "description": "Decision numbers and required reason",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/BatchRejectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/BatchApprovalResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a DRAFT or SUBMITTED decision. A cancellation reason is required.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Cancel Investment Decision",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cancellation reason",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CancelDecisionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/{id}/details": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a decision header with all child decision lines (for basket/rebalance/switch decisions) and approval stage info.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Get Investment Decision With Lines",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/decisions/{id}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submits a DRAFT decision for approval. Transitions status to SUBMITTED.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Decisions"
+                ],
+                "summary": "Submit Investment Decision",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/funds": {
             "get": {
                 "security": [
@@ -2115,6 +5064,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/investment/funds/{id}/allocation": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Compute asset-class, sector, country and currency breakdowns for a fund (read-only).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Fund Allocation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Valuation date, YYYY-MM-DD. Defaults to today (UTC). Must match the holdings valuation's business_date to guarantee identical figures.",
+                        "name": "business_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundAllocationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/funds/{id}/aum/compute": {
             "post": {
                 "security": [
@@ -2196,6 +5215,338 @@ const docTemplate = `{
                     },
                     "422": {
                         "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/holdings/valuation": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Compute holdings mark-to-market valuation (market value, unrealised P\u0026L, ROI) as of business_date, alongside the official accounting NAV. business_date defaults to today (UTC) and accepts YYYY-MM-DD.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Intraday"
+                ],
+                "summary": "Get Mark-to-Market Holdings Valuation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Valuation date, YYYY-MM-DD. Defaults to today (UTC).",
+                        "name": "business_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/IntradayValuationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/market-data/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Trigger a provider fetch for every instrument held by the fund. Records an audit event.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Intraday"
+                ],
+                "summary": "Refresh Fund Market Data",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MarketDataRefreshResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/market-data/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Report provider health and the number of stale positions for a fund.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Intraday"
+                ],
+                "summary": "Get Fund Market Data Status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MarketDataStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/nav-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Time series of NAV-per-unit (unitised funds) or AUM (non-unitised) over a range.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Fund NAV History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Window: 1M, 3M, 6M, 1Y, 5Y, YTD (default 3M)",
+                        "name": "range",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundNAVHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/funds/{id}/nav/latest": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Aggregate latest per-portfolio valuations into a fund-level NAV view (read-only; no side effects).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Valuation"
+                ],
+                "summary": "Get Latest Fund NAV",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fund UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/FundNAVResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -3256,6 +6607,94 @@ const docTemplate = `{
                 }
             }
         },
+        "/investment/portfolios/{id}/transactions/simulate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Ledger"
+                ],
+                "summary": "Simulate Portfolio Transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction simulation payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionSimulationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/investment/portfolios/{id}/transactions/{txnId}/reverse": {
             "post": {
                 "security": [
@@ -3915,6 +7354,570 @@ const docTemplate = `{
                 }
             }
         },
+        "/investment/research-reports": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Paginated list of research reports with optional filters.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "List Investment Research Reports",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "DRAFT | ACTIVE | EXPIRED | REJECTED",
+                        "name": "report_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "NOT_SUBMITTED | SUBMITTED | REVIEW_COMPLETED",
+                        "name": "review_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "BUY | SELL | HOLD",
+                        "name": "recommendation",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact instrument code filter",
+                        "name": "instrument_code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Owner user UUID",
+                        "name": "owner_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive lower bound YYYY-MM-DD",
+                        "name": "report_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inclusive upper bound YYYY-MM-DD",
+                        "name": "report_date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Substring search on report_no/instrument_code/report_title",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new DRAFT research report.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Create Investment Research Report",
+                "parameters": [
+                    {
+                        "description": "Research report create payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateResearchReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one research report by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Get Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Apply partial updates to a research report. Refused when the report has been deleted or its review is completed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Update Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Research report update payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateResearchReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-delete a research report. Only allowed while review_status = NOT_SUBMITTED.",
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Delete Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}/cancel-submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Move review_status from SUBMITTED back to NOT_SUBMITTED. Refused once review has been completed.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Cancel Submission Of Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}/invalidate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "One-way transition to INVALIDATED. An invalidated report cannot be referenced by a decision, edited, submitted, cancelled, or soft-deleted. The reason (≥20 characters) is stored and audited.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Invalidate Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Invalidation reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/InvalidateResearchReportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/research-reports/{id}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Move review_status from NOT_SUBMITTED to SUBMITTED. No real approval workflow is invoked.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Research"
+                ],
+                "summary": "Submit Investment Research Report",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Research report UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ResearchReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/market-data/history": {
             "get": {
                 "security": [
@@ -4051,6 +8054,210 @@ const docTemplate = `{
                 }
             }
         },
+        "/market-data/import-batches": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a chunked market data import batch for the given symbols.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Create Market Data Import Batch",
+                "parameters": [
+                    {
+                        "description": "Import batch payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateImportBatchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CreateImportBatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns batch status with chunk summary and error rows.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Get Market Data Import Batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ImportBatchStatusResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}/errors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns rejected/failed/warning items for the batch.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "List Market Data Import Batch Errors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ImportChunkItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/import-batches/{batch_id}/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs all chunks for the batch synchronously.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Run Market Data Import Batch",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Import batch id",
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/RunImportBatchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/market-data/provider-health": {
             "get": {
                 "security": [
@@ -4154,6 +8361,1847 @@ const docTemplate = `{
                     },
                     "502": {
                         "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/screen/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search canonical securities with latest snapshot data and add-to-watchlist hint.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Market Data screen — search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Free-text query",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum rows (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenSearchResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/market-data/screen/watchlist": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Canonical securities joined with their latest snapshot data. Frontend-safe DTO.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MarketData"
+                ],
+                "summary": "Market Data screen — watchlist",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Maximum rows (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ScreenWatchlistResponseDTO"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the authenticated user's in-app notification center list joined with IAM user data.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "List my in-app notifications",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Return only unread notifications",
+                        "name": "unread_only",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for paging",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/listResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/email-outbox": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paged email delivery records for admin/operator use.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification - Email Admin"
+                ],
+                "summary": "List email outbox",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by status (PENDING, SENDING, SENT, FAILED, DEAD)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by recipient username",
+                        "name": "recipient_username",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by recipient email",
+                        "name": "recipient_email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by event type",
+                        "name": "event_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by event category",
+                        "name": "event_category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by business type",
+                        "name": "business_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by business reference",
+                        "name": "business_reference",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter created_at \u003e= (RFC3339)",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter created_at \u003c= (RFC3339)",
+                        "name": "created_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for paging",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/outboxListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/email-outbox/{outbox_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns one email outbox record with full body for troubleshooting.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification - Email Admin"
+                ],
+                "summary": "Get email outbox detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Outbox record UUID",
+                        "name": "outbox_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/outboxDetailResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/email-outbox/{outbox_id}/retry": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Moves a FAILED or DEAD outbox row back to PENDING for another send attempt.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification - Email Admin"
+                ],
+                "summary": "Retry failed email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Outbox record UUID",
+                        "name": "outbox_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/retryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/email/health": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns email configuration and queue health without exposing secrets.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification - Email Admin"
+                ],
+                "summary": "Email health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/healthResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/email/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a test email outbox row for SMTP verification. The background worker delivers it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification - Email Admin"
+                ],
+                "summary": "Send test email",
+                "parameters": [
+                    {
+                        "description": "Test email request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/testEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/testEmailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks every unread in-app notification for the authenticated user as read.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Mark all notifications as read",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/markAllReadResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}/read": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks a single in-app notification as read for the authenticated user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Mark one notification as read",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/markReadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Register a new canonical IMS security.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Create canonical security",
+                "parameters": [
+                    {
+                        "description": "Security payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateSecurityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search canonical securities by query, asset type, provider, and status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Search canonical securities",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Free-text query against ims_symbol/display_symbol/name/isin",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by AssetType (EQUITY, BOND, FX, ...)",
+                        "name": "asset_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Only securities with an ACTIVE mapping for this provider_code",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by SecurityStatus (ACTIVE, INACTIVE, SUSPENDED)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Get canonical security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Patch canonical security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Patch payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateSecurityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SecurityDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}/mappings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "List provider mappings for a security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MappingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Add provider mapping to a security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Provider mapping payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AddProviderMappingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ProviderMappingDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/securities/{security_id}/mappings/{mapping_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the mapping as INACTIVE rather than removing it physically.",
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Soft-delete a provider mapping",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Security id",
+                        "name": "security_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Mapping id",
+                        "name": "mapping_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "List unmapped provider symbol candidates",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by candidate_status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by provider_code",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by import batch id",
+                        "name": "batch_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CandidatesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates/{candidate_id}/map": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Map a candidate to an existing security",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate id",
+                        "name": "candidate_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Security id to map to",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MapCandidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reference-data/unmapped-candidates/{candidate_id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ReferenceData"
+                ],
+                "summary": "Reject an unmapped candidate",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Candidate id",
+                        "name": "candidate_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rejection reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RejectCandidateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "List watchlist items",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "PERSONAL or PORTFOLIO",
+                        "name": "scope_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID (PORTFOLIO scope only)",
+                        "name": "portfolio_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Canonical security UUID",
+                        "name": "security_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include disabled items (default false)",
+                        "name": "include_disabled",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include threshold rules (default true)",
+                        "name": "include_thresholds",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Include live quote (default true)",
+                        "name": "include_quote",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (1-200, default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListItemsResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists/alerts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "List alert events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "PERSONAL or PORTFOLIO",
+                        "name": "scope_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Portfolio UUID",
+                        "name": "portfolio_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Canonical security UUID",
+                        "name": "security_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Threshold rule UUID",
+                        "name": "rule_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by acknowledgement state",
+                        "name": "acknowledged",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 inclusive lower bound",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 inclusive upper bound",
+                        "name": "created_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (1-200, default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListAlertsResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists/alerts/{id}/acknowledge": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "Acknowledge an alert event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Alert event UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Acknowledgement payload",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/AcknowledgeAlertRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/AlertEventResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists/evaluate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "Manually trigger rule evaluation",
+                "parameters": [
+                    {
+                        "description": "Evaluation filter",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/EvaluateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/EvaluateResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists/items": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "Create a watchlist item",
+                "parameters": [
+                    {
+                        "description": "Create payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/WatchlistItemResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchlists/items/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "Delete a watchlist item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Item UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchlist"
+                ],
+                "summary": "Update a watchlist item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Item UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/WatchlistItemResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/daily": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns aggregated global workflow state for a business date.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Daily Workflow State",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "businessDate",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DailyWorkflowResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/daily/execute": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Execute a workflow transition using business-readable identifiers and canonical operation types.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Execute Daily Workflow Transition",
+                "parameters": [
+                    {
+                        "description": "Execute payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DailyExecuteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DailyWorkflowResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/daily/transitions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated global workflow transition history.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Daily Transition History",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business date (YYYY-MM-DD)",
+                        "name": "businessDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20, max 100)",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DailyTransitionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -4419,6 +10467,135 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/workflow/settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the configured approvers for each workflow operation type.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Workflow Approval Settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/WorkflowSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replace the configured approvers for a workflow operation type. Admin only. Note: approver account codes are stored without IAM validation (no cross-module IAM lookup interface exists).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Update Workflow Approval Settings",
+                "parameters": [
+                    {
+                        "description": "Settings payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DailySettingsUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/WorkflowSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/workflow/transition-rules": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the full state machine topology as a list of valid from→operation→to transitions.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Workflow"
+                ],
+                "summary": "Get Workflow Transition Rules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TransitionRulesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -4447,6 +10624,54 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "AcknowledgeAlertRequest": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "ActionRequest": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "AddProviderMappingRequest": {
+            "type": "object",
+            "properties": {
+                "confidence_score": {
+                    "type": "string"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_symbol": {
                     "type": "string"
                 }
             }
@@ -4529,6 +10754,133 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "AlertEventResponse": {
+            "type": "object",
+            "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
+                "acknowledged_by": {
+                    "type": "string"
+                },
+                "acknowledged_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "acknowledgement_note": {
+                    "type": "string"
+                },
+                "acknowledgement_state": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "created_by_user_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_state": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "evaluated_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "notification_status": {
+                    "type": "string"
+                },
+                "observed_at": {
+                    "type": "string"
+                },
+                "observed_price": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "portfolio": {
+                    "$ref": "#/definitions/PortfolioDescriptor"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "previous_state": {
+                    "type": "string"
+                },
+                "quote_provider": {
+                    "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security": {
+                    "$ref": "#/definitions/SecurityDescriptor"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "threshold_rule_id": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "watchlist_item_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "AllocationBucketResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "stable machine key",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "human label",
+                    "type": "string"
+                },
+                "market_value": {
+                    "description": "decimal string in valuation_ccy",
+                    "type": "string"
+                },
+                "pct_of_nav": {
+                    "description": "0..100, two-decimal precision",
+                    "type": "string"
+                }
+            }
+        },
+        "ApproverInput": {
+            "type": "object",
+            "properties": {
+                "accountCode": {
+                    "description": "AccountCode is the approver's account code. Required.",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "Role is a descriptive label (e.g. \"FundManager\"). Optional.",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Username is a snapshot of the approver's display name. Optional.",
                     "type": "string"
                 }
             }
@@ -4662,6 +11014,75 @@ const docTemplate = `{
                 }
             }
         },
+        "BatchApprovalRequest": {
+            "type": "object",
+            "required": [
+                "decision_nos"
+            ],
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "decision_nos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "BatchApprovalResponse": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BatchApprovalResultResponse"
+                    }
+                },
+                "succeeded": {
+                    "type": "integer"
+                }
+            }
+        },
+        "BatchApprovalResultResponse": {
+            "type": "object",
+            "properties": {
+                "decision_no": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "ok": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "BatchRejectionRequest": {
+            "type": "object",
+            "required": [
+                "decision_nos",
+                "reason"
+            ],
+            "properties": {
+                "decision_nos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "BlockingReason": {
             "type": "object",
             "properties": {
@@ -4749,6 +11170,29 @@ const docTemplate = `{
                 }
             }
         },
+        "CancelDecisionRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "CandidatesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UnmappedCandidateDTO"
+                    }
+                }
+            }
+        },
         "CashBalanceResponse": {
             "type": "object",
             "properties": {
@@ -4766,6 +11210,23 @@ const docTemplate = `{
                 }
             }
         },
+        "CashProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "cash_impact": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_balance": {
+                    "type": "string"
+                },
+                "projected_balance": {
+                    "type": "string"
+                }
+            }
+        },
         "ChangePasswordRequest": {
             "type": "object",
             "required": [
@@ -4778,6 +11239,131 @@ const docTemplate = `{
                 },
                 "old_password": {
                     "type": "string"
+                }
+            }
+        },
+        "ChatFigureBinding": {
+            "type": "object",
+            "properties": {
+                "figure": {
+                    "type": "string",
+                    "example": "10.25"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "tool_raw"
+                },
+                "tool_name": {
+                    "type": "string",
+                    "example": "get_fund_nav"
+                }
+            }
+        },
+        "ChatMessageResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provenance": {
+                    "type": "object"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "assistant"
+                }
+            }
+        },
+        "ChatSourceRef": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string",
+                    "example": "2026-06-07T08:30:00Z"
+                },
+                "server": {
+                    "type": "string",
+                    "example": "ims"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "succeeded"
+                },
+                "tool_name": {
+                    "type": "string",
+                    "example": "get_fund_nav"
+                }
+            }
+        },
+        "ChatStreamEvent": {
+            "type": "object",
+            "properties": {
+                "bindings": {
+                    "description": "Bindings links cited figures to the tool that produced them. Present only\non kind=sources, and only when the answer passed numeric validation.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ChatFigureBinding"
+                    }
+                },
+                "error": {
+                    "description": "Error is a safe, user-facing error message. Present only on kind=error.",
+                    "type": "string",
+                    "example": "the assistant could not complete this turn"
+                },
+                "kind": {
+                    "description": "Kind is the SSE event name. One of: session_started, text, done, error.",
+                    "type": "string",
+                    "example": "text"
+                },
+                "message_id": {
+                    "description": "MessageID is the user message id on session_started, or the assistant\nmessage id on done.",
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174001"
+                },
+                "session_id": {
+                    "description": "SessionID is the conversation id. Present on session_started, done, and error.",
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "sources": {
+                    "description": "Sources lists the turn-level provenance (which tools ran). Present only on\nkind=sources.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ChatSourceRef"
+                    }
+                },
+                "stop_reason": {
+                    "description": "StopReason is the canonical termination reason. Present only on kind=done.\nOne of: end_turn, tool_use, max_tokens, stop_sequence, error, unknown.",
+                    "type": "string",
+                    "example": "end_turn"
+                },
+                "text": {
+                    "description": "Text is an incremental token. Present only on kind=text.",
+                    "type": "string",
+                    "example": "Hello"
+                },
+                "tool_name": {
+                    "description": "ToolName is the MCP tool being called. Present only on kind=tool_call.",
+                    "type": "string",
+                    "example": "get_portfolio_holdings"
+                },
+                "tool_status": {
+                    "description": "ToolStatus is the tool-call lifecycle marker. Present only on\nkind=tool_call. One of: running, ok, error, denied.",
+                    "type": "string",
+                    "example": "running"
+                },
+                "unverified": {
+                    "description": "Unverified lists the figures that failed numeric validation. Present only\non kind=validation with tool_status=blocked.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -4883,6 +11469,49 @@ const docTemplate = `{
                 }
             }
         },
+        "ComplianceBreachPreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "CompliancePreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ComplianceBreachPreviewResponse"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
         "ComputeFundAUMRequest": {
             "type": "object",
             "required": [
@@ -4934,6 +11563,67 @@ const docTemplate = `{
                 }
             }
         },
+        "CreateDecisionRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "contract_id",
+                "currency",
+                "fund_id",
+                "instrument_code",
+                "portfolio_id",
+                "side"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string"
+                },
+                "research_report_id": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string",
+                    "enum": [
+                        "BUY",
+                        "SELL"
+                    ]
+                }
+            }
+        },
         "CreateFundRequest": {
             "type": "object",
             "required": [
@@ -4973,12 +11663,68 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255
                 },
+                "require_pretrade_preview": {
+                    "description": "RequirePretradePreview controls the trade-ticket UX on the Operation tab.\nWhen true the UI must run a pre-trade simulation before allowing a post;\nwhen false it posts directly (server still enforces gates).",
+                    "type": "boolean"
+                },
                 "risk_profile": {
                     "type": "string"
                 },
                 "short_name": {
                     "type": "string",
                     "maxLength": 80
+                }
+            }
+        },
+        "CreateImportBatchRequest": {
+            "type": "object",
+            "properties": {
+                "chunk_size": {
+                    "type": "integer"
+                },
+                "history_limit": {
+                    "type": "integer"
+                },
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "import_type": {
+                    "type": "string"
+                },
+                "include_history": {
+                    "type": "boolean"
+                },
+                "include_quote": {
+                    "type": "boolean"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "symbols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "CreateImportBatchResponse": {
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string"
+                },
+                "reused": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
                 }
             }
         },
@@ -5034,6 +11780,32 @@ const docTemplate = `{
                 },
                 "tick_size": {
                     "type": "string"
+                }
+            }
+        },
+        "CreateItemRequest": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "threshold_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ThresholdRuleRequest"
+                    }
                 }
             }
         },
@@ -5094,6 +11866,82 @@ const docTemplate = `{
                 }
             }
         },
+        "CreateResearchReportRequest": {
+            "type": "object",
+            "required": [
+                "author_user_id",
+                "instrument_code",
+                "investment_analysis",
+                "owner_user_id",
+                "recommendation",
+                "report_date",
+                "report_no"
+            ],
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string",
+                    "minLength": 25
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string",
+                    "enum": [
+                        "BUY",
+                        "SELL",
+                        "HOLD"
+                    ]
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_no": {
+                    "type": "string",
+                    "maxLength": 60
+                },
+                "report_title": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateRuleInstanceRequest": {
             "type": "object",
             "properties": {
@@ -5138,6 +11986,50 @@ const docTemplate = `{
                 }
             }
         },
+        "CreateSecurityRequest": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "auto_build_ims_symbol": {
+                    "type": "boolean"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateUserRequest": {
             "type": "object",
             "required": [
@@ -5160,6 +12052,482 @@ const docTemplate = `{
                 "username": {
                     "type": "string",
                     "minLength": 3
+                }
+            }
+        },
+        "DailyApproverEntry": {
+            "type": "object",
+            "properties": {
+                "accountCode": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "DailyAuditSummary": {
+            "type": "object",
+            "properties": {
+                "lastTransitionAt": {
+                    "type": "string"
+                },
+                "lastTransitionBy": {
+                    "type": "string"
+                },
+                "totalTransitions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "DailyBlockingReason": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "DailyExecuteRequest": {
+            "type": "object",
+            "properties": {
+                "accountingDate": {
+                    "description": "AccountingDate applies to CLOSE_ACCOUNTING. Format YYYY-MM-DD.\nWhen omitted, defaults to BusinessDate.",
+                    "type": "string"
+                },
+                "attestationReason": {
+                    "description": "AttestationReason is required when ZeroTransactionAttestation is true (min 30 chars).",
+                    "type": "string"
+                },
+                "businessDate": {
+                    "description": "BusinessDate is mandatory; format YYYY-MM-DD (Asia/Bangkok calendar).",
+                    "type": "string"
+                },
+                "notes": {
+                    "description": "Notes is an optional free-text remark for MANAGER_APPROVE.",
+                    "type": "string"
+                },
+                "operationType": {
+                    "description": "OperationType is the canonical API operation name.\nValid values: START_INVESTMENT_DAY, CANCEL_INVESTMENT_DAY,\n  MANAGER_APPROVE, CANCEL_MANAGER_APPROVAL,\n  CLOSE_TRANSACTION, CANCEL_TRANSACTION_CLOSE,\n  CLOSE_ACCOUNTING, CANCEL_ACCOUNTING_CLOSE",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "Reason is mandatory for cancel/rollback operations (min 20 chars).",
+                    "type": "string"
+                },
+                "remark": {
+                    "description": "Remark is optional free text from the operator. For cancel/rollback\noperations it is accepted as an alias for reason.",
+                    "type": "string"
+                },
+                "zeroTransactionAttestation": {
+                    "description": "ZeroTransactionAttestation must be true when approving a day with no\ninvestment transactions. Applies to MANAGER_APPROVE only.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "DailyModuleStatus": {
+            "type": "object",
+            "properties": {
+                "ready": {
+                    "type": "boolean"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "DailyOperationSetting": {
+            "type": "object",
+            "properties": {
+                "approvalMode": {
+                    "type": "string"
+                },
+                "approvers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DailyApproverEntry"
+                    }
+                }
+            }
+        },
+        "DailySettingsUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "approvers": {
+                    "description": "Approvers replaces the entire active approver list for this operation type.\nPass an empty array to remove all approvers.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ApproverInput"
+                    }
+                },
+                "operationType": {
+                    "description": "OperationType is the operation type to configure approvers for.",
+                    "type": "string"
+                }
+            }
+        },
+        "DailyTimelineEntry": {
+            "type": "object",
+            "properties": {
+                "executedAt": {
+                    "type": "string"
+                },
+                "executedByAccountCode": {
+                    "type": "string"
+                },
+                "executedByUsername": {
+                    "type": "string"
+                },
+                "fromState": {
+                    "type": "string"
+                },
+                "isAdminOverride": {
+                    "type": "boolean"
+                },
+                "operationType": {
+                    "description": "canonical API name",
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "toState": {
+                    "type": "string"
+                },
+                "transitionId": {
+                    "type": "string"
+                }
+            }
+        },
+        "DailyTransitionsResponse": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "transitions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DailyTimelineEntry"
+                    }
+                }
+            }
+        },
+        "DailyWorkflowResponse": {
+            "description": "Aggregated workflow state for one contract on one business date.",
+            "type": "object",
+            "properties": {
+                "allowedOperations": {
+                    "description": "AllowedOperations lists operation types the caller may attempt (API names).",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "approvers": {
+                    "description": "Approvers maps operationType → configured approver list.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/DailyApproverEntry"
+                        }
+                    }
+                },
+                "auditSummary": {
+                    "$ref": "#/definitions/DailyAuditSummary"
+                },
+                "blockedOperations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "blockedReasons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DailyBlockingReason"
+                    }
+                },
+                "businessDate": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                },
+                "currentState": {
+                    "description": "CurrentState is one of: NOT_STARTED, INVESTMENT_DAY_STARTED,\nMANAGER_APPROVED, TRANSACTION_CLOSED, ACCOUNTING_CLOSED",
+                    "type": "string"
+                },
+                "isToday": {
+                    "type": "boolean"
+                },
+                "moduleReadiness": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DailyModuleStatus"
+                    }
+                },
+                "persisted": {
+                    "type": "boolean"
+                },
+                "settings": {
+                    "description": "Settings maps operationType → approval configuration.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DailyOperationSetting"
+                    }
+                },
+                "settingsSummary": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DailyOperationSetting"
+                    }
+                },
+                "stateLabel": {
+                    "type": "string"
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DailyTimelineEntry"
+                    }
+                },
+                "transitionRules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TransitionRule"
+                    }
+                }
+            }
+        },
+        "DashboardSnapshotDTO": {
+            "type": "object",
+            "properties": {
+                "lastRefreshed": {
+                    "type": "string"
+                },
+                "summary": {
+                    "$ref": "#/definitions/TaskSummaryDTO"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskDTO"
+                    }
+                },
+                "workflowStates": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WorkflowStateDTO"
+                    }
+                }
+            }
+        },
+        "DecisionLineResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "line_number": {
+                    "type": "integer"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "product_type": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "target_weight": {
+                    "type": "string"
+                }
+            }
+        },
+        "DecisionListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DecisionResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "DecisionResponse": {
+            "type": "object",
+            "properties": {
+                "amendment_no": {
+                    "type": "integer"
+                },
+                "amount": {
+                    "type": "string"
+                },
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "approval_stage": {
+                    "description": "Approval enrichment — populated by the approval-items endpoint.",
+                    "type": "integer"
+                },
+                "approval_status": {
+                    "type": "string"
+                },
+                "approval_total_stages": {
+                    "type": "integer"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cancellation_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "compliance_check_group_id": {
+                    "type": "string"
+                },
+                "compliance_release_approval_request_id": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "decision_number": {
+                    "type": "string"
+                },
+                "decision_type": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "lines": {
+                    "description": "Lines are included when the decision has basket/rebalance/switch lines.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DecisionLineResponse"
+                    }
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "previous_approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "product_type": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string"
+                },
+                "ready_for_execution_at": {
+                    "type": "string"
+                },
+                "research_report_id": {
+                    "type": "string"
+                },
+                "research_report_no": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "strategy_code": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitter_user_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -5199,9 +12567,145 @@ const docTemplate = `{
                 }
             }
         },
+        "EvaluateRequest": {
+            "type": "object",
+            "properties": {
+                "dry_run": {
+                    "type": "boolean"
+                },
+                "item_id": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "EvaluateResponseData": {
+            "type": "object",
+            "properties": {
+                "alerts_created": {
+                    "type": "integer"
+                },
+                "alerts_suppressed": {
+                    "type": "integer"
+                },
+                "dry_run": {
+                    "type": "boolean"
+                },
+                "provider_failures": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EvaluateRuleResultResponse"
+                    }
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "rules_skipped": {
+                    "type": "integer"
+                }
+            }
+        },
+        "EvaluateRuleResultResponse": {
+            "type": "object",
+            "properties": {
+                "computed_state": {
+                    "type": "string"
+                },
+                "notification_status": {
+                    "type": "string"
+                },
+                "observed_price": {
+                    "type": "string"
+                },
+                "previous_state": {
+                    "type": "string"
+                },
+                "quote_status": {
+                    "type": "string"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "watchlist_item_id": {
+                    "type": "string"
+                },
+                "would_create_alert": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "EventResponse": {
+            "type": "object",
+            "properties": {
+                "actor": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "actor_name": {
+                    "type": "string"
+                },
+                "actor_user_id": {
+                    "type": "string"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "delegated_from": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "delegated_from_user_id": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "stage_number": {
+                    "type": "integer"
+                }
+            }
+        },
         "ExecuteTransitionRequest": {
             "type": "object",
             "properties": {
+                "accountingDate": {
+                    "description": "AccountingDate is the NAV / accounting posting date for\nCLOSE_ACCOUNTING. Format YYYY-MM-DD. When omitted, defaults to\nBusinessDate. Must not precede BusinessDate. Ignored by other actions.",
+                    "type": "string"
+                },
                 "action": {
                     "description": "Action identifies the transition to execute.\nValid values: OPEN_DAY, APPROVE, CANCEL_DAY_START, CANCEL_APPROVAL,\nCLOSE_TRANSACTIONS, CANCEL_TRANSACTION_CLOSE, CLOSE_ACCOUNTING,\nROLLBACK_ACCOUNTING_CLOSE",
                     "type": "string"
@@ -5229,6 +12733,53 @@ const docTemplate = `{
                 "zeroTransactionAttestation": {
                     "description": "ZeroTransactionAttestation must be true when approving a day with no\ninvestment transactions. Ignored for all other actions.",
                     "type": "boolean"
+                }
+            }
+        },
+        "FundAllocationResponse": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string"
+                },
+                "by_asset_class": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_country": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_currency": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "by_sector": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AllocationBucketResponse"
+                    }
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "total_cash": {
+                    "type": "string"
+                },
+                "total_nav": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
                 }
             }
         },
@@ -5281,6 +12832,94 @@ const docTemplate = `{
                 }
             }
         },
+        "FundNAVHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "delta_pct": {
+                    "type": "string"
+                },
+                "from": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "high": {
+                    "type": "string"
+                },
+                "is_empty": {
+                    "type": "boolean"
+                },
+                "latest": {
+                    "type": "string"
+                },
+                "low": {
+                    "type": "string"
+                },
+                "range": {
+                    "type": "string"
+                },
+                "series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/NAVHistoryPointResponse"
+                    }
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "FundNAVResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cash_balance": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_stale_inputs": {
+                    "type": "boolean"
+                },
+                "is_indicative": {
+                    "type": "boolean"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "nav_per_unit": {
+                    "type": "string"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "realised_pnl": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "total_units": {
+                    "type": "string"
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
         "FundResponse": {
             "type": "object",
             "properties": {
@@ -5317,6 +12956,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "require_pretrade_preview": {
+                    "type": "boolean"
+                },
                 "risk_profile": {
                     "type": "string"
                 },
@@ -5334,9 +12976,127 @@ const docTemplate = `{
                 }
             }
         },
+        "GroupMemberRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "member_type": {
+                    "type": "string"
+                },
+                "priority_order": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupMemberResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "member_type": {
+                    "type": "string"
+                },
+                "priority_order": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupRequest": {
+            "type": "object",
+            "properties": {
+                "group_code": {
+                    "type": "string"
+                },
+                "group_name": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "remarks": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "group_code": {
+                    "type": "string"
+                },
+                "group_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "remarks": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "Health": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "the chat module is mounted",
+                    "type": "boolean"
+                },
+                "mcp_connected": {
+                    "description": "at least one MCP server connected",
+                    "type": "boolean"
+                },
+                "tool_count": {
+                    "description": "allowlisted tools available",
+                    "type": "integer"
+                }
+            }
+        },
         "HealthResponse": {
             "type": "object",
             "properties": {
+                "chat": {
+                    "$ref": "#/definitions/Health"
+                },
                 "database": {
                     "type": "string"
                 },
@@ -5391,6 +13151,137 @@ const docTemplate = `{
                 }
             }
         },
+        "ImportBatch": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "batch_id": {
+                    "type": "string"
+                },
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "idempotency_key": {
+                    "type": "string"
+                },
+                "import_type": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
+                },
+                "warning_records": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ImportBatchStatusResponseDTO": {
+            "type": "object",
+            "properties": {
+                "batch": {
+                    "$ref": "#/definitions/ImportBatch"
+                },
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkSummary"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkItem"
+                    }
+                }
+            }
+        },
+        "ImportChunkItem": {
+            "type": "object",
+            "properties": {
+                "chunk_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_code": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "item_id": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
+                }
+            }
+        },
+        "ImportChunkSummary": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "chunk_id": {
+                    "type": "string"
+                },
+                "chunk_index": {
+                    "type": "integer"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_records": {
+                    "type": "integer"
+                },
+                "warning_records": {
+                    "type": "integer"
+                }
+            }
+        },
         "ImportMarketDataRequest": {
             "type": "object",
             "properties": {
@@ -5440,6 +13331,37 @@ const docTemplate = `{
                 },
                 "symbol": {
                     "type": "string"
+                }
+            }
+        },
+        "InboxItemResponse": {
+            "type": "object",
+            "properties": {
+                "request": {
+                    "$ref": "#/definitions/RequestResponse"
+                },
+                "task": {
+                    "$ref": "#/definitions/TaskResponse"
+                }
+            }
+        },
+        "InboxListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/InboxItemResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -5523,6 +13445,265 @@ const docTemplate = `{
                 }
             }
         },
+        "IntradayAllocationBucketResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "pct_of_total": {
+                    "type": "string"
+                }
+            }
+        },
+        "IntradayCashRowResponse": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "IntradayPositionResponse": {
+            "type": "object",
+            "properties": {
+                "asset_class_code": {
+                    "type": "string"
+                },
+                "asset_class_label": {
+                    "type": "string"
+                },
+                "average_cost": {
+                    "type": "string"
+                },
+                "cost_amount": {
+                    "description": "Mark-to-market contract fields (additive — see docs/investment-module.md\nholdings valuation section). CostAmount duplicates CostBasis under the\ncontract's field name; ROI is a ratio (unrealised_pnl / cost_amount),\nnot a percentage.",
+                    "type": "string"
+                },
+                "cost_basis": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fetched_at": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "latest_price": {
+                    "type": "string"
+                },
+                "market_data_snapshot_id": {
+                    "type": "string"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price_at": {
+                    "type": "string"
+                },
+                "price_effective_date": {
+                    "type": "string"
+                },
+                "price_snapshot_id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                },
+                "unrealised_pnl_pct": {
+                    "type": "string"
+                },
+                "unrealized_pnl": {
+                    "description": "UnrealizedPnL/UnrealizedPnLPct are additive American-spelling aliases\nof UnrealisedPnL/UnrealisedPnLPct — the totals object below already\nused the American spelling, so callers reading unrealized_* off both\npositions and totals get a consistent contract.",
+                    "type": "string"
+                },
+                "unrealized_pnl_pct": {
+                    "type": "string"
+                }
+            }
+        },
+        "IntradayTotalsResponse": {
+            "type": "object",
+            "properties": {
+                "cash_balance": {
+                    "type": "string"
+                },
+                "cost_amount": {
+                    "type": "string"
+                },
+                "estimated_aum": {
+                    "type": "string"
+                },
+                "market_value": {
+                    "type": "string"
+                },
+                "roi": {
+                    "type": "string"
+                },
+                "unrealized_pnl": {
+                    "type": "string"
+                }
+            }
+        },
+        "IntradayValuationResponse": {
+            "type": "object",
+            "properties": {
+                "allocation": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/IntradayAllocationBucketResponse"
+                    }
+                },
+                "as_of": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cash": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/IntradayCashRowResponse"
+                    }
+                },
+                "cash_balance": {
+                    "type": "string"
+                },
+                "delta_pct_vs_last_close": {
+                    "type": "string"
+                },
+                "estimated_aum": {
+                    "type": "string"
+                },
+                "estimated_nav_per_unit": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "has_live_prices": {
+                    "type": "boolean"
+                },
+                "has_official": {
+                    "type": "boolean"
+                },
+                "has_units": {
+                    "type": "boolean"
+                },
+                "holdings_as_of_confirmed": {
+                    "description": "HoldingsAsOfConfirmed is true when positions/cash/official AUM/NAV are\nconfirmed as of BusinessDate. Always true for today; false for a\nhistorical BusinessDate, since only prices are resolved as of that\ndate — see HoldingsAsOfNote.",
+                    "type": "boolean"
+                },
+                "holdings_as_of_note": {
+                    "type": "string"
+                },
+                "is_stale": {
+                    "type": "boolean"
+                },
+                "official_as_of": {
+                    "type": "string"
+                },
+                "official_aum": {
+                    "type": "string"
+                },
+                "official_nav_per_unit": {
+                    "type": "string"
+                },
+                "portfolio_count": {
+                    "type": "integer"
+                },
+                "positions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/IntradayPositionResponse"
+                    }
+                },
+                "primary_provider": {
+                    "type": "string"
+                },
+                "providers_used": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "totals": {
+                    "$ref": "#/definitions/IntradayTotalsResponse"
+                },
+                "units_indicative": {
+                    "type": "boolean"
+                },
+                "units_outstanding": {
+                    "type": "string"
+                },
+                "unmapped_symbols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "unrealised_pnl": {
+                    "type": "string"
+                },
+                "valuation_ccy": {
+                    "type": "string"
+                },
+                "valuation_currency": {
+                    "description": "ValuationCurrency duplicates ValuationCcy under the mark-to-market\ncontract's field name (additive, kept alongside valuation_ccy for\nbackward compatibility with the official/estimated dual-view UI).",
+                    "type": "string"
+                }
+            }
+        },
+        "InvalidateResearchReportRequest": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "InvestmentStyle": {
             "type": "object",
             "properties": {
@@ -5546,6 +13727,20 @@ const docTemplate = `{
                 }
             }
         },
+        "ListAlertsResponseData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AlertEventResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PaginationMeta"
+                }
+            }
+        },
         "ListBreachesResult": {
             "type": "object",
             "properties": {
@@ -5563,6 +13758,20 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "ListItemsResponseData": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/WatchlistItemResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PaginationMeta"
                 }
             }
         },
@@ -5724,6 +13933,237 @@ const docTemplate = `{
                 }
             }
         },
+        "MapCandidateRequest": {
+            "type": "object",
+            "properties": {
+                "security_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "MappingsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderMappingDTO"
+                    }
+                }
+            }
+        },
+        "MarketDataRefreshResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "failed_symbols": {
+                    "type": "integer"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "requested_symbols": {
+                    "type": "integer"
+                },
+                "stale_symbols": {
+                    "type": "integer"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "success_symbols": {
+                    "type": "integer"
+                },
+                "unmapped_symbols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "used_provider": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarketDataScreenRowDTO": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "change_amount": {
+                    "type": "string"
+                },
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "data_quality_status": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "freshness_status": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "last_price": {
+                    "type": "string"
+                },
+                "last_update_at": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "provider_badges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderBadgeDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                },
+                "watching": {
+                    "type": "boolean"
+                },
+                "yield_to_maturity": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarketDataScreenSearchItemDTO": {
+            "type": "object",
+            "properties": {
+                "action_hint": {
+                    "type": "string"
+                },
+                "asset_type": {
+                    "type": "string"
+                },
+                "change_amount": {
+                    "type": "string"
+                },
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "data_quality_status": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "freshness_status": {
+                    "type": "string"
+                },
+                "has_active_mapping": {
+                    "type": "boolean"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "last_price": {
+                    "type": "string"
+                },
+                "last_update_at": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "provider_badges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderBadgeDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
+                },
+                "watching": {
+                    "type": "boolean"
+                },
+                "yield_to_maturity": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarketDataStatusResponse": {
+            "type": "object",
+            "properties": {
+                "fund_id": {
+                    "type": "string"
+                },
+                "healthy": {
+                    "type": "boolean"
+                },
+                "last_quote_at": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "primary_provider": {
+                    "type": "string"
+                },
+                "stale_after_seconds": {
+                    "type": "integer"
+                },
+                "stale_positions": {
+                    "type": "integer"
+                },
+                "total_positions": {
+                    "type": "integer"
+                },
+                "unmapped_symbols": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "MeResponse": {
             "type": "object",
             "properties": {
@@ -5732,6 +14172,37 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/UserResponse"
+                }
+            }
+        },
+        "NAVHistoryPointResponse": {
+            "type": "object",
+            "properties": {
+                "aum": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "nav_per_unit": {
+                    "type": "string"
+                }
+            }
+        },
+        "OperationSettingEntry": {
+            "type": "object",
+            "properties": {
+                "approvalMode": {
+                    "type": "string"
+                },
+                "approvers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DailyApproverEntry"
+                    }
+                },
+                "operationType": {
+                    "type": "string"
                 }
             }
         },
@@ -5768,11 +14239,22 @@ const docTemplate = `{
         "OverrideRequest": {
             "type": "object",
             "properties": {
-                "approved_by": {
-                    "type": "string"
-                },
                 "reason": {
                     "type": "string"
+                }
+            }
+        },
+        "PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         },
@@ -5790,6 +14272,32 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "PortfolioDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "fund_name": {
+                    "type": "string"
+                },
+                "portfolio_code": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "portfolio_name": {
+                    "type": "string"
                 }
             }
         },
@@ -5872,6 +14380,32 @@ const docTemplate = `{
                 },
                 "version": {
                     "type": "integer"
+                }
+            }
+        },
+        "PositionProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "current_average_cost": {
+                    "type": "string"
+                },
+                "current_cost_basis": {
+                    "type": "string"
+                },
+                "current_quantity": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "projected_average_cost": {
+                    "type": "string"
+                },
+                "projected_cost_basis": {
+                    "type": "string"
+                },
+                "projected_quantity": {
+                    "type": "string"
                 }
             }
         },
@@ -6044,6 +14578,9 @@ const docTemplate = `{
                 "exchange": {
                     "type": "string"
                 },
+                "fees": {
+                    "type": "string"
+                },
                 "order_id": {
                     "type": "string"
                 },
@@ -6193,6 +14730,102 @@ const docTemplate = `{
                 }
             }
         },
+        "ProcessConfigRequest": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "contract_type": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "group_approval_enabled": {
+                    "type": "boolean"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "process_code": {
+                    "type": "string"
+                },
+                "process_name": {
+                    "type": "string"
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "require_team_approval": {
+                    "type": "boolean"
+                },
+                "stages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StageRequest"
+                    }
+                }
+            }
+        },
+        "ProcessConfigResponse": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "contract_type": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "group_approval_enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "process_code": {
+                    "type": "string"
+                },
+                "process_name": {
+                    "type": "string"
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "require_team_approval": {
+                    "type": "boolean"
+                },
+                "stages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StageResponse"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProviderBadgeDTO": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                }
+            }
+        },
         "ProviderHealthResponse": {
             "type": "object",
             "properties": {
@@ -6218,6 +14851,44 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "ProviderMappingDTO": {
+            "type": "object",
+            "properties": {
+                "confidence_score": {
+                    "type": "string"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "mapping_id": {
+                    "type": "string"
+                },
+                "mapping_status": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "security_id": {
                     "type": "string"
                 }
             }
@@ -6262,6 +14933,10 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "provider": {
+                    "type": "string"
+                },
+                "snapshot_id": {
+                    "description": "SnapshotID is the market_data_snapshots row id, populated only by\nsnapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not\nby a freshly fetched live provider quote.",
                     "type": "string"
                 },
                 "stale": {
@@ -6320,6 +14995,10 @@ const docTemplate = `{
                 "provider": {
                     "type": "string"
                 },
+                "snapshot_id": {
+                    "description": "SnapshotID is the market_data_snapshots row id, populated only by\nsnapshot-table reads (GetSnapshotAsOf / GetLatestQuote repo path), not\nby a freshly fetched live provider quote.",
+                    "type": "string"
+                },
                 "stale": {
                     "type": "boolean"
                 },
@@ -6331,6 +15010,44 @@ const docTemplate = `{
                 },
                 "volume": {
                     "type": "integer"
+                }
+            }
+        },
+        "QuoteSnapshot": {
+            "type": "object",
+            "properties": {
+                "change_percent": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_at": {
+                    "type": "string"
+                },
+                "fetched_at": {
+                    "type": "string"
+                },
+                "market_status": {
+                    "type": "string"
+                },
+                "previous_close": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "stale": {
+                    "type": "boolean"
+                },
+                "stale_reason": {
+                    "type": "string"
+                },
+                "symbol": {
+                    "type": "string"
                 }
             }
         },
@@ -6381,6 +15098,271 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "RejectCandidateRequest": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReorderRequest": {
+            "type": "object",
+            "properties": {
+                "member_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "RequestDetailResponse": {
+            "type": "object",
+            "properties": {
+                "allowed_actions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "request": {
+                    "$ref": "#/definitions/RequestResponse"
+                },
+                "signatures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SignatureResponse"
+                    }
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskResponse"
+                    }
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EventResponse"
+                    }
+                },
+                "viewer_task": {
+                    "$ref": "#/definitions/TaskResponse"
+                }
+            }
+        },
+        "RequestListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RequestResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "RequestResponse": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "current_stage_number": {
+                    "type": "integer"
+                },
+                "final_decision_at": {
+                    "type": "string"
+                },
+                "final_decision_by": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "process_config_id": {
+                    "type": "string"
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "rejection_reason": {
+                    "type": "string"
+                },
+                "request_number": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "$ref": "#/definitions/SubjectDescriptor"
+                },
+                "subject_id": {
+                    "type": "string"
+                },
+                "subject_reference": {
+                    "type": "string"
+                },
+                "subject_title": {
+                    "type": "string"
+                },
+                "subject_type": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitter": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "submitter_id": {
+                    "type": "string"
+                },
+                "submitter_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "ResearchReportListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ResearchReportResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResearchReportResponse": {
+            "type": "object",
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "derived_review_stage": {
+                    "description": "Multi-level review badge derived from the approval engine. Empty when\nthe report has not been submitted; \"PENDING_LEVEL_\u003cN\u003e\" while the\napproval is in progress; \"REVIEW_COMPLETED\" / \"REJECTED\" / \"INVALIDATED\"\nat terminal states. Backend remains the source of truth; UI uses this\nfield for display only.",
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "invalidated_at": {
+                    "description": "Invalidation metadata. Populated together when the report is in\nINVALIDATED state; omitted otherwise.",
+                    "type": "string"
+                },
+                "invalidated_by": {
+                    "type": "string"
+                },
+                "invalidation_reason": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string"
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "post_submission_note": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "rejection_reason": {
+                    "type": "string"
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_no": {
+                    "type": "string"
+                },
+                "report_status": {
+                    "type": "string"
+                },
+                "report_title": {
+                    "type": "string"
+                },
+                "review_status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "updated_by": {
                     "type": "string"
                 }
             }
@@ -6549,6 +15531,44 @@ const docTemplate = `{
                 }
             }
         },
+        "RunImportBatchResponse": {
+            "type": "object",
+            "properties": {
+                "accepted_records": {
+                    "type": "integer"
+                },
+                "batch_id": {
+                    "type": "string"
+                },
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkSummary"
+                    }
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ImportChunkItem"
+                    }
+                },
+                "rejected_records": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "total_symbols": {
+                    "type": "integer"
+                },
+                "warning_records": {
+                    "type": "integer"
+                }
+            }
+        },
         "RunValuationRequest": {
             "type": "object",
             "required": [
@@ -6566,6 +15586,39 @@ const docTemplate = `{
                 },
                 "total_units": {
                     "type": "string"
+                }
+            }
+        },
+        "ScreenSearchResponseDTO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MarketDataScreenSearchItemDTO"
+                    }
+                }
+            }
+        },
+        "ScreenWatchlistResponseDTO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MarketDataScreenRowDTO"
+                    }
+                }
+            }
+        },
+        "SearchResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SecurityDTO"
+                    }
                 }
             }
         },
@@ -6598,6 +15651,165 @@ const docTemplate = `{
                 }
             }
         },
+        "SecurityDTO": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "provider_mappings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProviderMappingDTO"
+                    }
+                },
+                "security_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "SecurityDescriptor": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "ims_symbol": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "security_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "description": "Content is the user's message. Required.",
+                    "type": "string",
+                    "maxLength": 16384,
+                    "minLength": 1,
+                    "example": "Summarize last quarter's NAV trend for Fund A."
+                },
+                "model": {
+                    "description": "Model is the specific LLM model ID. Optional.",
+                    "type": "string",
+                    "example": "claude-haiku-4-5-20251001"
+                },
+                "provider": {
+                    "description": "Provider is the LLM provider ID. Optional.",
+                    "type": "string",
+                    "example": "anthropic"
+                },
+                "session_id": {
+                    "description": "SessionID is the existing session UUID. Empty starts a new session.",
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                }
+            }
+        },
+        "SessionListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SessionSummaryResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "SessionMessagesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ChatMessageResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "SessionResponse": {
             "type": "object",
             "properties": {
@@ -6617,6 +15829,572 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
+        "SessionSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "model": {
+                    "type": "string",
+                    "example": "claude-haiku-4-5-20251001"
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "anthropic"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "SignatureResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_proxy_signature": {
+                    "type": "boolean"
+                },
+                "proxy_for": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "proxy_for_user_id": {
+                    "type": "string"
+                },
+                "signature_label": {
+                    "type": "string"
+                },
+                "signed_at": {
+                    "type": "string"
+                },
+                "signer": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "signer_display_name": {
+                    "type": "string"
+                },
+                "signer_title": {
+                    "type": "string"
+                },
+                "signer_user_id": {
+                    "type": "string"
+                },
+                "stage_number": {
+                    "type": "integer"
+                }
+            }
+        },
+        "StageRequest": {
+            "type": "object",
+            "properties": {
+                "approval_group_id": {
+                    "type": "string"
+                },
+                "approver_mode": {
+                    "type": "string"
+                },
+                "approver_user_id": {
+                    "type": "string"
+                },
+                "is_final_stage": {
+                    "type": "boolean"
+                },
+                "required_approval_count": {
+                    "type": "integer"
+                },
+                "stage_name": {
+                    "type": "string"
+                },
+                "stage_number": {
+                    "type": "integer"
+                }
+            }
+        },
+        "StageResponse": {
+            "type": "object",
+            "properties": {
+                "approval_group_id": {
+                    "type": "string"
+                },
+                "approver_mode": {
+                    "type": "string"
+                },
+                "approver_user_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_final_stage": {
+                    "type": "boolean"
+                },
+                "reject_policy": {
+                    "type": "string"
+                },
+                "required_approval_count": {
+                    "type": "integer"
+                },
+                "stage_name": {
+                    "type": "string"
+                },
+                "stage_number": {
+                    "type": "integer"
+                }
+            }
+        },
+        "SubjectDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_label": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "SubjectStatusResponse": {
+            "type": "object",
+            "properties": {
+                "allowed_actions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "has_request": {
+                    "type": "boolean"
+                },
+                "request": {
+                    "$ref": "#/definitions/RequestResponse"
+                }
+            }
+        },
+        "SubmitRequest": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "contract_type": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "subject_id": {
+                    "type": "string"
+                },
+                "subject_reference": {
+                    "type": "string"
+                },
+                "subject_title": {
+                    "type": "string"
+                },
+                "subject_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "TaskDTO": {
+            "type": "object",
+            "properties": {
+                "actionUrl": {
+                    "type": "string"
+                },
+                "allowedActions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "businessDate": {
+                    "type": "string"
+                },
+                "canAct": {
+                    "type": "boolean"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "module": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "sourceRecordId": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "taskId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "TaskListDTO": {
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "$ref": "#/definitions/TaskSummaryDTO"
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TaskDTO"
+                    }
+                }
+            }
+        },
+        "TaskResponse": {
+            "type": "object",
+            "properties": {
+                "acted_at": {
+                    "type": "string"
+                },
+                "acted_by": {
+                    "type": "string"
+                },
+                "action_comment": {
+                    "type": "string"
+                },
+                "actor": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "assigned_group_id": {
+                    "type": "string"
+                },
+                "assigned_team_id": {
+                    "type": "string"
+                },
+                "assigned_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "assigned_user_id": {
+                    "type": "string"
+                },
+                "assigned_user_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "delegated_from": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "delegated_from_user_id": {
+                    "type": "string"
+                },
+                "due_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_delegated_action": {
+                    "type": "boolean"
+                },
+                "stage_number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "TaskSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "byModule": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "byPriority": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "highPriority": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "TeamContractRequest": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "TeamContractResponse": {
+            "type": "object",
+            "properties": {
+                "contract_id": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "team_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "TeamMemberRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "member_type": {
+                    "type": "string"
+                },
+                "priority_order": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "TeamMemberResponse": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "member_type": {
+                    "type": "string"
+                },
+                "priority_order": {
+                    "type": "integer"
+                },
+                "team_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "TeamRequest": {
+            "type": "object",
+            "properties": {
+                "has_co_manager": {
+                    "type": "boolean"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_allowed_stamps": {
+                    "type": "integer"
+                },
+                "min_required_stamps": {
+                    "type": "integer"
+                },
+                "remarks": {
+                    "type": "string"
+                },
+                "team_code": {
+                    "type": "string"
+                },
+                "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "TeamResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "has_co_manager": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_allowed_stamps": {
+                    "type": "integer"
+                },
+                "min_required_stamps": {
+                    "type": "integer"
+                },
+                "remarks": {
+                    "type": "string"
+                },
+                "team_code": {
+                    "type": "string"
+                },
+                "team_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "ThresholdRuleRequest": {
+            "type": "object",
+            "properties": {
+                "cooldown_minutes": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metric_type": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                }
+            }
+        },
+        "ThresholdRuleResponse": {
+            "type": "object",
+            "properties": {
+                "cooldown_minutes": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "direction": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_alerted_at": {
+                    "type": "string"
+                },
+                "last_evaluated_at": {
+                    "type": "string"
+                },
+                "last_observed_at": {
+                    "type": "string"
+                },
+                "last_observed_price": {
+                    "type": "string"
+                },
+                "last_quote_stale": {
+                    "type": "boolean"
+                },
+                "last_stale_reason": {
+                    "type": "string"
+                },
+                "last_state": {
+                    "type": "string"
+                },
+                "last_state_changed_at": {
+                    "type": "string"
+                },
+                "metric_type": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_value": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -6712,6 +16490,35 @@ const docTemplate = `{
                 }
             }
         },
+        "TransactionSimulationResponse": {
+            "type": "object",
+            "properties": {
+                "cash": {
+                    "$ref": "#/definitions/CashProjectionResponse"
+                },
+                "compliance": {
+                    "$ref": "#/definitions/CompliancePreviewResponse"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "position": {
+                    "$ref": "#/definitions/PositionProjectionResponse"
+                },
+                "transaction_type": {
+                    "type": "string"
+                }
+            }
+        },
         "TransitionEntry": {
             "type": "object",
             "properties": {
@@ -6750,6 +16557,10 @@ const docTemplate = `{
         "TransitionResponse": {
             "type": "object",
             "properties": {
+                "accountingDate": {
+                    "description": "AccountingDate is set when the transition was CLOSE_ACCOUNTING. Format\nYYYY-MM-DD; distinct from BusinessDate because operators can backdate\nor delay accounting cycles.",
+                    "type": "string"
+                },
                 "approvalId": {
                     "description": "ApprovalID is set when the transition was an APPROVE action.",
                     "type": "string"
@@ -6782,6 +16593,84 @@ const docTemplate = `{
                 }
             }
         },
+        "TransitionRule": {
+            "type": "object",
+            "properties": {
+                "fromState": {
+                    "type": "string"
+                },
+                "operationType": {
+                    "type": "string"
+                },
+                "requiresReason": {
+                    "type": "boolean"
+                },
+                "toState": {
+                    "type": "string"
+                }
+            }
+        },
+        "TransitionRulesResponse": {
+            "type": "object",
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TransitionRule"
+                    }
+                }
+            }
+        },
+        "UnmappedCandidateDTO": {
+            "type": "object",
+            "properties": {
+                "batch_id": {
+                    "type": "string"
+                },
+                "candidate_id": {
+                    "type": "string"
+                },
+                "candidate_status": {
+                    "type": "string"
+                },
+                "confidence_score": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "provider_asset_type": {
+                    "type": "string"
+                },
+                "provider_code": {
+                    "type": "string"
+                },
+                "provider_currency": {
+                    "type": "string"
+                },
+                "provider_exchange": {
+                    "type": "string"
+                },
+                "provider_name": {
+                    "type": "string"
+                },
+                "provider_symbol": {
+                    "type": "string"
+                },
+                "rejected_reason": {
+                    "type": "string"
+                },
+                "resolved_at": {
+                    "type": "string"
+                },
+                "suggested_security_id": {
+                    "type": "string"
+                }
+            }
+        },
         "UpdateFundRequest": {
             "type": "object",
             "required": [
@@ -6806,6 +16695,9 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "require_pretrade_preview": {
+                    "type": "boolean"
                 },
                 "risk_profile": {
                     "type": "string"
@@ -6851,6 +16743,26 @@ const docTemplate = `{
                 }
             }
         },
+        "UpdateItemRequest": {
+            "type": "object",
+            "properties": {
+                "note": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ThresholdRuleRequest"
+                    }
+                }
+            }
+        },
         "UpdatePortfolioRequest": {
             "type": "object",
             "required": [
@@ -6883,6 +16795,114 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "style_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateResearchReportRequest": {
+            "type": "object",
+            "properties": {
+                "applicable_contract_id": {
+                    "type": "string"
+                },
+                "author_user_id": {
+                    "type": "string"
+                },
+                "company_outlook": {
+                    "type": "string"
+                },
+                "company_overview": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "effective_date": {
+                    "type": "string"
+                },
+                "esg_comment": {
+                    "type": "string"
+                },
+                "financial_status": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_name": {
+                    "type": "string"
+                },
+                "instrument_type": {
+                    "type": "string"
+                },
+                "investment_analysis": {
+                    "type": "string"
+                },
+                "market": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "post_submission_note": {
+                    "type": "string"
+                },
+                "recommendation": {
+                    "type": "string"
+                },
+                "report_date": {
+                    "type": "string"
+                },
+                "report_title": {
+                    "type": "string"
+                }
+            }
+        },
+        "UpdateSecurityRequest": {
+            "type": "object",
+            "properties": {
+                "asset_type": {
+                    "type": "string"
+                },
+                "country_code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "cusip": {
+                    "type": "string"
+                },
+                "display_symbol": {
+                    "type": "string"
+                },
+                "exchange_mic": {
+                    "type": "string"
+                },
+                "figi": {
+                    "type": "string"
+                },
+                "isin": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "primary_identifier": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserDescriptor": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -7024,10 +17044,95 @@ const docTemplate = `{
                 }
             }
         },
+        "WatchlistItemResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by_user": {
+                    "$ref": "#/definitions/UserDescriptor"
+                },
+                "created_by_user_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                },
+                "owner_user_id": {
+                    "type": "string"
+                },
+                "pinned": {
+                    "type": "boolean"
+                },
+                "portfolio": {
+                    "$ref": "#/definitions/PortfolioDescriptor"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "quote": {
+                    "$ref": "#/definitions/QuoteSnapshot"
+                },
+                "scope_type": {
+                    "type": "string"
+                },
+                "security": {
+                    "$ref": "#/definitions/SecurityDescriptor"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "threshold_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ThresholdRuleResponse"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "WorkflowSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "settings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/OperationSettingEntry"
+                    }
+                }
+            }
+        },
+        "WorkflowStateDTO": {
+            "type": "object",
+            "properties": {
+                "businessDate": {
+                    "type": "string"
+                },
+                "contractId": {
+                    "type": "string"
+                },
+                "currentState": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "WorkflowStateResponse": {
             "type": "object",
             "properties": {
                 "accountingClosedAt": {
+                    "type": "string"
+                },
+                "accountingDate": {
+                    "description": "AccountingDate / PrevAccountingDate surface the NAV cycle date and\nthe prior cycle stashed during a rollback. Format YYYY-MM-DD.",
                     "type": "string"
                 },
                 "allowedActions": {
@@ -7075,6 +17180,9 @@ const docTemplate = `{
                     "description": "Persisted is false when no workflow__day_states row exists yet.\nClients can use this to distinguish a genuinely-started day from\na cancelled/never-started synthetic NOT_STARTED response.",
                     "type": "boolean"
                 },
+                "prevAccountingDate": {
+                    "type": "string"
+                },
                 "previousDay": {
                     "description": "PreviousDay is populated only when Persisted=false (NOT_STARTED).\nIt lets the UI display the previous-day status before the operator\nclicks \"Open Day\".",
                     "allOf": [
@@ -7095,6 +17203,403 @@ const docTemplate = `{
                 "version": {
                     "description": "Version is the optimistic lock counter. Clients should pass this\nback in write requests (future: when version field is added to the\ntransition request). Nil when Persisted=false.",
                     "type": "integer"
+                }
+            }
+        },
+        "actionResponse": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "contextResponse": {
+            "type": "object",
+            "properties": {
+                "business_id": {
+                    "type": "string"
+                },
+                "business_label": {
+                    "type": "string"
+                },
+                "business_reference": {
+                    "type": "string"
+                },
+                "business_title": {
+                    "type": "string"
+                },
+                "business_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "eventResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "healthResponse": {
+            "type": "object",
+            "properties": {
+                "dead_count": {
+                    "type": "integer"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "failed_count": {
+                    "type": "integer"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "from_name": {
+                    "type": "string"
+                },
+                "pending_count": {
+                    "type": "integer"
+                },
+                "retry_policy": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "send_real_email": {
+                    "type": "boolean"
+                },
+                "smtp_host": {
+                    "type": "string"
+                },
+                "smtp_port": {
+                    "type": "integer"
+                },
+                "smtp_tls_mode": {
+                    "type": "string"
+                },
+                "stale_sending_timeout": {
+                    "type": "string"
+                },
+                "test_endpoint_enabled": {
+                    "type": "boolean"
+                },
+                "worker_batch_size": {
+                    "type": "integer"
+                },
+                "worker_enabled": {
+                    "type": "boolean"
+                },
+                "worker_interval": {
+                    "type": "string"
+                }
+            }
+        },
+        "listResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/notificationResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "unread": {
+                    "type": "integer"
+                }
+            }
+        },
+        "markAllReadResponse": {
+            "type": "object",
+            "properties": {
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "markReadResponse": {
+            "type": "object",
+            "properties": {
+                "notification_id": {
+                    "type": "string"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "notificationResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/actionResponse"
+                },
+                "body": {
+                    "type": "string"
+                },
+                "context": {
+                    "$ref": "#/definitions/contextResponse"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event": {
+                    "$ref": "#/definitions/eventResponse"
+                },
+                "id": {
+                    "description": "backward-compat alias",
+                    "type": "string"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "notification_id": {
+                    "type": "string"
+                },
+                "read_at": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "outboxDetailResponse": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "body_html": {
+                    "type": "string"
+                },
+                "body_text": {
+                    "type": "string"
+                },
+                "context": {
+                    "$ref": "#/definitions/contextResponse"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event": {
+                    "$ref": "#/definitions/eventResponse"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "next_attempt_at": {
+                    "type": "string"
+                },
+                "notification_id": {
+                    "type": "string"
+                },
+                "outbox_id": {
+                    "type": "string"
+                },
+                "provider_message_id": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_email": {
+                    "type": "string"
+                },
+                "to_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "outboxItemResponse": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "context": {
+                    "$ref": "#/definitions/contextResponse"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event": {
+                    "$ref": "#/definitions/eventResponse"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "next_attempt_at": {
+                    "type": "string"
+                },
+                "notification_id": {
+                    "type": "string"
+                },
+                "outbox_id": {
+                    "type": "string"
+                },
+                "provider_message_id": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_email": {
+                    "type": "string"
+                },
+                "to_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "outboxListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/outboxItemResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "retryResponse": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "business_reference": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "next_attempt_at": {
+                    "type": "string"
+                },
+                "outbox_id": {
+                    "type": "string"
+                },
+                "recipient_username": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "testEmailRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_email": {
+                    "type": "string"
+                },
+                "to_username": {
+                    "type": "string"
+                }
+            }
+        },
+        "testEmailResponse": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "$ref": "#/definitions/eventResponse"
+                },
+                "outbox_id": {
+                    "type": "string"
+                },
+                "recipient": {
+                    "$ref": "#/definitions/userSummaryResponse"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "userSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }

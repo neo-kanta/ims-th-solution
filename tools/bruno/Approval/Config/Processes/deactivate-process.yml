@@ -1,0 +1,21 @@
+info:
+  name: deactivate-process
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/processes/:processId/deactivate"
+  params:
+    - name: processId
+      value: "{{approval-process-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

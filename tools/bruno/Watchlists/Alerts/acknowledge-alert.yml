@@ -1,0 +1,27 @@
+info:
+  name: acknowledge-alert
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{watchlist-base-url}}/alerts/:id/acknowledge"
+  params:
+    - name: id
+      value: "{{watchlist-alert-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "note": "{{watchlist-ack-note}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

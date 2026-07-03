@@ -1,0 +1,21 @@
+info:
+  name: refresh-market-data
+  type: http
+  seq: 38
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/funds/:fundId/market-data/refresh"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

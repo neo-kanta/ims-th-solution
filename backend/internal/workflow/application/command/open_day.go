@@ -96,13 +96,13 @@ func (h *OpenDayHandler) Handle(ctx context.Context, req OpenDayRequest) (*OpenD
 	var result *OpenDayResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
 		// Step 4 — read previous day state (non-locking read inside tx)
-		prevDay, err := h.dayRepo.GetByContractDate(ctx, req.ContractID, prevDate)
+		prevDay, err := h.dayRepo.GetByBusinessDate(ctx, prevDate)
 		if err != nil {
 			return fmt.Errorf("reading previous business day: %w", err)
 		}
 
 		// Read current day to detect existing row (for the ErrWorkflowDayExists path)
-		currentDay, err := h.dayRepo.GetByContractDate(ctx, req.ContractID, req.BusinessDate)
+		currentDay, err := h.dayRepo.GetByBusinessDate(ctx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("reading current workflow day: %w", err)
 		}
@@ -123,7 +123,7 @@ func (h *OpenDayHandler) Handle(ctx context.Context, req OpenDayRequest) (*OpenD
 			ID:             uuid.New(),
 			ContractID:     req.ContractID,
 			BusinessDate:   req.BusinessDate,
-			CurrentState:   vo.StateDayOpen,
+			CurrentState:   vo.StateInvestmentDayStarted,
 			OpenedAt:       &now,
 			OpenedBy:       &req.Actor.UserID,
 			PendingReclose: false,
@@ -140,19 +140,21 @@ func (h *OpenDayHandler) Handle(ctx context.Context, req OpenDayRequest) (*OpenD
 
 		// Step 7 — append immutable transition log
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     vo.StateNotStarted,
-			ToState:       vo.StateDayOpen,
-			Action:        vo.ActionOpenDay,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Metadata:      map[string]any{},
-			OccurredAt:    now,
-			RequestID:     req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        vo.StateNotStarted,
+			ToState:          vo.StateInvestmentDayStarted,
+			Action:           vo.ActionOpenDay,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Metadata:         map[string]any{},
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)
@@ -164,7 +166,7 @@ func (h *OpenDayHandler) Handle(ctx context.Context, req OpenDayRequest) (*OpenD
 			ContractID:    req.ContractID,
 			BusinessDate:  req.BusinessDate,
 			FromState:     vo.StateNotStarted,
-			ToState:       vo.StateDayOpen,
+			ToState:       vo.StateInvestmentDayStarted,
 			OccurredAt:    now,
 		}
 		return nil

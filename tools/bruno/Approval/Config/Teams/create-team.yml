@@ -1,0 +1,40 @@
+info:
+  name: create-team
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/teams"
+  body:
+    type: json
+    data: |-
+      {
+        "team_code": "BRUNO-TEAM-001",
+        "team_name": "Bruno Approval Team",
+        "remarks": "Created from Bruno approval config coverage sync.",
+        "is_active": true,
+        "has_co_manager": false,
+        "min_required_stamps": 1,
+        "max_allowed_stamps": 2
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-team-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

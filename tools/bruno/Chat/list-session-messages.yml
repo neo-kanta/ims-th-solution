@@ -1,0 +1,27 @@
+info:
+  name: list-session-messages
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{chat-base-url}}/sessions/:sessionId/messages?page={{chat-page}}&limit={{chat-limit}}"
+  params:
+    - name: sessionId
+      value: "{{chat-session-id}}"
+      type: path
+    - name: page
+      value: "{{chat-page}}"
+      type: query
+    - name: limit
+      value: "{{chat-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

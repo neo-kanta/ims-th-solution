@@ -7,12 +7,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/adapter"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/application"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/infrastructure/alphavantage"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/infrastructure/persistence"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/infrastructure/yahoo"
 	httptransport "github.com/neo-kanta/ims-th-solution/backend/internal/market_data/transport/http"
+	refdomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/config"
 )
 
@@ -21,7 +24,13 @@ type Module struct {
 	handler *httptransport.Handler
 }
 
-func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig, redisClient *redis.Client) *Module {
+// SecurityResolver mirrors the subset of reference_data the market_data
+// module consumes for batch import resolution. The parameter type uses
+// refdomain.SecurityResolver so callers wire reference_data once and pass
+// the same resolver to investment, market_data, etc.
+type SecurityResolver = refdomain.SecurityResolver
+
+func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig, redisClient *redis.Client, resolver SecurityResolver) *Module {
 	if cfg == nil {
 		cfg = &config.AppConfig{}
 	}
@@ -43,6 +52,13 @@ func NewModule(pool *pgxpool.Pool, cfg *config.AppConfig, redisClient *redis.Cli
 			domain.ProviderYahoo:        true,
 		},
 	}, []domain.MarketDataProvider{alpha, yahooProvider}, repo, repo, cache)
+	service.SetImportBatchRepository(repo)
+	if resolver != nil {
+		// resolver satisfies the local market_data application.SecurityResolver
+		// (a structural superset) because refdomain.SecurityResolver declares
+		// the same method set.
+		service.SetSecurityResolver(resolver)
+	}
 
 	return &Module{
 		service: service,
@@ -62,6 +78,17 @@ func (m *Module) Service() *application.Service {
 		return nil
 	}
 	return m.service
+}
+
+// QuoteProvider returns a contract.MarketQuoteProvider implementation backed
+// by this module's application service. Consumed by the investment module
+// (intraday valuation) so the cross-module dependency direction stays
+// investment → contract ← market_data/adapter.
+func (m *Module) QuoteProvider() contract.MarketQuoteProvider {
+	if m == nil || m.service == nil {
+		return nil
+	}
+	return adapter.NewQuoteProviderAdapter(m.service)
 }
 
 func marketDataOperationTimeout(httpTimeout time.Duration, providers ...string) time.Duration {

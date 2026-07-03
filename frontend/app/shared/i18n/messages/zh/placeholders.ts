@@ -17,8 +17,11 @@ export const zhPlaceholderMessages = {
       description: "投资决策功能即将推出。",
     },
     executionOrders: {
-      title: "执行指令",
-      description: "执行指令功能即将推出。",
+      title: "交易執行與委託",
+      description: "登錄交易並檢視執行狀態。",
+      notConfiguredTitle: "交易執行以基金為單位處理",
+      notConfiguredCopy:
+        "後端尚未提供全域之委託管理 API。如需登錄真實的 BUY / SELL 交易,請於目標基金的「Operation」分頁進行;後端會在過帳時再次執行 Pre-trade 合規檢查,回傳成功即代表通過合規並寫入 Ledger。",
     },
     investmentReview: {
       title: "投资复核",

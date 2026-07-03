@@ -48,8 +48,9 @@ func NewComplianceContractAdapter(
 
 // Compile-time contract assertions.
 var (
-	_ contract.ComplianceChecker = (*ComplianceContractAdapter)(nil)
-	_ contract.PostTradeVerifier = (*ComplianceContractAdapter)(nil)
+	_ contract.ComplianceChecker   = (*ComplianceContractAdapter)(nil)
+	_ contract.ComplianceSimulator = (*ComplianceContractAdapter)(nil)
+	_ contract.PostTradeVerifier   = (*ComplianceContractAdapter)(nil)
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,6 +62,24 @@ var (
 func (a *ComplianceContractAdapter) CheckProposedOrder(
 	ctx context.Context,
 	req contract.ProposedOrderCheck,
+) (*contract.ProposedOrderResult, error) {
+	return a.checkProposedOrder(ctx, req, true)
+}
+
+// SimulateProposedOrder delegates to the pre-trade handler in dry-run mode.
+// The rule evaluation and returned evidence match CheckProposedOrder, but no
+// compliance_check_records or compliance_breaches rows are inserted.
+func (a *ComplianceContractAdapter) SimulateProposedOrder(
+	ctx context.Context,
+	req contract.ProposedOrderCheck,
+) (*contract.ProposedOrderResult, error) {
+	return a.checkProposedOrder(ctx, req, false)
+}
+
+func (a *ComplianceContractAdapter) checkProposedOrder(
+	ctx context.Context,
+	req contract.ProposedOrderCheck,
+	persist bool,
 ) (*contract.ProposedOrderResult, error) {
 	if a == nil || a.preTrade == nil {
 		return nil, fmt.Errorf("compliance contract adapter not initialised")
@@ -77,11 +96,18 @@ func (a *ComplianceContractAdapter) CheckProposedOrder(
 		Side:         mapOrderSideFromContract(req.Side),
 		Quantity:     req.Quantity,
 		Price:        req.Price,
+		Fees:         req.Fees,
 		Currency:     req.Currency,
 		Exchange:     req.Exchange,
 	}
 
-	resp, err := a.preTrade.Handle(ctx, internalReq)
+	var resp *command.PreTradeCheckResponse
+	var err error
+	if persist {
+		resp, err = a.preTrade.Handle(ctx, internalReq)
+	} else {
+		resp, err = a.preTrade.HandleDryRun(ctx, internalReq)
+	}
 	if err != nil {
 		return nil, err
 	}

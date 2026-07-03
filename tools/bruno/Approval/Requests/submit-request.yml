@@ -1,0 +1,44 @@
+info:
+  name: submit-request
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/submit"
+  body:
+    type: json
+    data: |-
+      {
+        "contract_id": "{{workflow-contract-id}}",
+        "contract_type": "WORKFLOW_DAY",
+        "portfolio_id": "{{investment-portfolio-id}}",
+        "process_type": "{{approval-process-type}}",
+        "subject_id": "{{investment-research-report-id}}",
+        "subject_reference": "BRUNO-SUBJECT-001",
+        "subject_title": "Bruno approval submission",
+        "subject_type": "RESEARCH_REPORT"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-request-id", data.id, { persist: true });
+        }
+        if (data.current_task_id) {
+          bru.setEnvVar("approval-task-id", data.current_task_id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

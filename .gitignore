@@ -40,6 +40,7 @@ frontend/.cache/
 .env
 .env.local
 .env.*.local
+infra/env/.env.e2e
 !infra/env/.env.development
 
 # =============================

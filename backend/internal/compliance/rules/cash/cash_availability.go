@@ -106,12 +106,16 @@ func (r *AvailabilityRule) Evaluate(
 	nav := data.NAV.NAV
 	availableCash := data.NAV.CashBalance.Sub(data.NAV.ReservedCash)
 	tradeValue := input.ProposedOrder.TradeValue()
-	remainingCash := availableCash.Sub(tradeValue)
+	requiredCash := input.ProposedOrder.RequiredCash()
+	fees := input.ProposedOrder.Fees
+	remainingCash := availableCash.Sub(requiredCash)
 
 	metrics := map[string]string{
 		"available_cash":      availableCash.StringFixed(2),
 		"reserved_cash":       data.NAV.ReservedCash.StringFixed(2),
 		"trade_value":         tradeValue.StringFixed(2),
+		"fees":                fees.StringFixed(2),
+		"required_cash":       requiredCash.StringFixed(2),
 		"cash_after_trade":    remainingCash.StringFixed(2),
 		"nav":                 nav.StringFixed(2),
 		"min_cash_buffer_pct": p.MinCashBufferPct.StringFixed(4),
@@ -127,15 +131,15 @@ func (r *AvailabilityRule) Evaluate(
 		return spi.EvalResult{
 			Verdict: vo.VerdictBlock,
 			Message: fmt.Sprintf(
-				"insufficient cash: trade value %s exceeds available cash %s (shortfall %s)",
-				tradeValue.StringFixed(2), availableCash.StringFixed(2), shortfall.StringFixed(2),
+				"insufficient cash: required cash %s (trade value %s + fees %s) exceeds available cash %s (shortfall %s)",
+				requiredCash.StringFixed(2), tradeValue.StringFixed(2), fees.StringFixed(2), availableCash.StringFixed(2), shortfall.StringFixed(2),
 			),
 			Evidence: vo.Evidence{
 				Metrics: metrics,
 				ThresholdBreached: &vo.ThresholdBreach{
 					MetricName: "available_cash",
 					Actual:     availableCash.StringFixed(2),
-					Limit:      tradeValue.StringFixed(2),
+					Limit:      requiredCash.StringFixed(2),
 					Operator:   ">=",
 					Unit:       "amount",
 				},
@@ -173,8 +177,8 @@ func (r *AvailabilityRule) Evaluate(
 	return spi.EvalResult{
 		Verdict: vo.VerdictPass,
 		Message: fmt.Sprintf(
-			"sufficient cash available: trade value %s, cash remaining after trade %s",
-			tradeValue.StringFixed(2), remainingCash.StringFixed(2),
+			"sufficient cash available: required cash %s, cash remaining after trade %s",
+			requiredCash.StringFixed(2), remainingCash.StringFixed(2),
 		),
 		Evidence: vo.Evidence{Metrics: metrics, References: references},
 	}, nil

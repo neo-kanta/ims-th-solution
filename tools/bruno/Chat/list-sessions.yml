@@ -1,0 +1,39 @@
+info:
+  name: list-sessions
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{chat-base-url}}/sessions?page={{chat-page}}&limit={{chat-limit}}&user_id={{user_id}}"
+  params:
+    - name: page
+      value: "{{chat-page}}"
+      type: query
+    - name: limit
+      value: "{{chat-limit}}"
+      type: query
+    - name: user_id
+      value: "{{user_id}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("chat-session-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

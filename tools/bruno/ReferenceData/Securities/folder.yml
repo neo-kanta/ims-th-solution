@@ -1,0 +1,6 @@
+info:
+  name: Securities
+  type: folder
+
+request:
+  auth: inherit

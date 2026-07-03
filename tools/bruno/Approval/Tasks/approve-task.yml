@@ -1,0 +1,28 @@
+info:
+  name: approve-task
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/tasks/:taskId/approve"
+  params:
+    - name: taskId
+      value: "{{approval-task-id}}"
+      type: path
+  body:
+    type: json
+    data: |-
+      {
+        "comment": "Approved from Bruno",
+        "reason": "Validation pass for approval runtime endpoints."
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

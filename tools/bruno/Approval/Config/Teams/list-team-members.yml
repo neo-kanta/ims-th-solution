@@ -1,0 +1,33 @@
+info:
+  name: list-team-members
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{approval-config-base-url}}/teams/:teamId/members"
+  params:
+    - name: teamId
+      value: "{{approval-team-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("approval-team-member-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

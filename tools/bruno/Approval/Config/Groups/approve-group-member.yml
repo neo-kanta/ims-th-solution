@@ -1,0 +1,24 @@
+info:
+  name: approve-group-member
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{approval-config-base-url}}/groups/:groupId/members/:memberId/approve"
+  params:
+    - name: groupId
+      value: "{{approval-group-id}}"
+      type: path
+    - name: memberId
+      value: "{{approval-group-member-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

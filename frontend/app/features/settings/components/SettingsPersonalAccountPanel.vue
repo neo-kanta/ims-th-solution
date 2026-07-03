@@ -329,61 +329,7 @@ function submitPasswordChange() {
       </form>
     </section>
 
-    <section class="settings-panel">
-      <header class="settings-panel__header">
-        <div>
-          <h2 class="settings-panel__title">
-            {{ t("settings.console.personal.activeSessionsTitle") }}
-          </h2>
-          <p class="settings-panel__subtitle">
-            {{ t("settings.console.personal.activeSessionsSubtitle") }}
-          </p>
-        </div>
-        <span class="badge badge-neutral">
-          {{ t("settings.console.personal.sessions") }}: {{ sessions.length }}
-        </span>
-      </header>
 
-      <div v-if="sessionsError" class="alert alert-danger settings-panel__alert" role="alert">
-        {{ sessionsError }}
-      </div>
-
-      <div class="settings-personal-sessions">
-        <article
-          v-for="session in sessions"
-          :key="session.id"
-          class="settings-personal-session"
-        >
-          <div class="settings-personal-session__copy">
-            <div class="settings-record-primary">
-              {{ session.ip_address || t("settings.console.common.unknownIp") }}
-            </div>
-            <div class="settings-record-secondary">
-              {{ session.user_agent || t("settings.console.common.userAgentUnavailable") }}
-            </div>
-            <div class="settings-record-secondary">
-              {{ t("settings.console.personal.lastActivity", { date: formatDateTime(session.last_activity_at) }) }}
-            </div>
-            <div class="settings-record-secondary">
-              {{ t("settings.console.personal.expires", { date: formatDateTime(session.expires_at) }) }}
-            </div>
-          </div>
-          <AppButton
-            variant="secondary"
-            size="sm"
-            :loading="revokingSessionId === session.id"
-            :disabled="Boolean(revokingSessionId)"
-            @click="emit('revokeSession', session)"
-          >
-            {{ t("settings.actions.revoke") }}
-          </AppButton>
-        </article>
-
-        <div v-if="!sessionsError && sessions.length === 0" class="settings-card-state">
-          {{ t("settings.console.personal.noSessions") }}
-        </div>
-      </div>
-    </section>
   </section>
 </template>
 
@@ -538,46 +484,6 @@ function submitPasswordChange() {
   flex-wrap: wrap;
 }
 
-.settings-personal-sessions {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-
-.settings-personal-session {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4);
-}
-
-.settings-personal-session__copy {
-  min-width: 0;
-}
-
-.settings-record-primary {
-  display: block;
-  color: var(--text-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.settings-record-secondary {
-  display: block;
-  margin-top: var(--space-1);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-relaxed);
-  overflow-wrap: anywhere;
-}
-
-.settings-card-state {
-  padding: var(--space-6);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  text-align: center;
-}
 
 @media (max-width: 980px) {
   .settings-personal__summary,

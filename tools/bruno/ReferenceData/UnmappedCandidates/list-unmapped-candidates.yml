@@ -1,0 +1,42 @@
+info:
+  name: list-unmapped-candidates
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{reference-data-base-url}}/unmapped-candidates?status={{reference-data-status}}&provider={{reference-data-provider}}&batch_id={{market-data-import-batch-id}}&limit={{reference-data-limit}}"
+  params:
+    - name: status
+      value: "{{reference-data-status}}"
+      type: query
+    - name: provider
+      value: "{{reference-data-provider}}"
+      type: query
+    - name: batch_id
+      value: "{{market-data-import-batch-id}}"
+      type: query
+    - name: limit
+      value: "{{reference-data-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("reference-data-candidate-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

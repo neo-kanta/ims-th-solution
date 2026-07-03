@@ -1,0 +1,45 @@
+info:
+  name: search-securities
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{reference-data-base-url}}/securities/search?query={{reference-data-query}}&asset_type={{reference-data-asset-type}}&provider={{reference-data-provider}}&status={{reference-data-status}}&limit={{reference-data-limit}}"
+  params:
+    - name: query
+      value: "{{reference-data-query}}"
+      type: query
+    - name: asset_type
+      value: "{{reference-data-asset-type}}"
+      type: query
+    - name: provider
+      value: "{{reference-data-provider}}"
+      type: query
+    - name: status
+      value: "{{reference-data-status}}"
+      type: query
+    - name: limit
+      value: "{{reference-data-limit}}"
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const first = rows[0] || {};
+
+        if (first.id) {
+          bru.setEnvVar("reference-data-security-id", first.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

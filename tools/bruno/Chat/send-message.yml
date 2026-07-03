@@ -1,0 +1,38 @@
+info:
+  name: send-message
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{chat-base-url}}"
+  body:
+    type: json
+    data: |-
+      {
+        "content": "{{chat-message}}",
+        "provider": "{{chat-provider}}",
+        "model": "{{chat-model}}",
+        "session_id": "{{chat-session-id}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+        const sessionId = data.session_id || data.id || data.session?.id;
+
+        if (sessionId) {
+          bru.setEnvVar("chat-session-id", sessionId, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

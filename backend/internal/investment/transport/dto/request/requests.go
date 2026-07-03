@@ -21,20 +21,25 @@ type CreateFundRequest struct {
 	Benchmark      string     `json:"benchmark"`
 	RiskProfile    string     `json:"risk_profile"`
 	HasUnits       bool       `json:"has_units"`
-	ExternalPAMRef string     `json:"external_pam_ref"`
+	// RequirePretradePreview controls the trade-ticket UX on the Operation tab.
+	// When true the UI must run a pre-trade simulation before allowing a post;
+	// when false it posts directly (server still enforces gates).
+	RequirePretradePreview bool   `json:"require_pretrade_preview"`
+	ExternalPAMRef         string `json:"external_pam_ref"`
 }
 
 // UpdateFundRequest is the JSON body for PUT /investment/funds/{id}.
 type UpdateFundRequest struct {
-	ExpectedVersion int        `json:"expected_version" validate:"required,min=1"`
-	Name            *string    `json:"name"`
-	ShortName       *string    `json:"short_name"`
-	FundCategoryID  *uuid.UUID `json:"fund_category_id"`
-	ManagerUserID   *uuid.UUID `json:"manager_user_id"`
-	Benchmark       *string    `json:"benchmark"`
-	RiskProfile     *string    `json:"risk_profile"`
-	Status          *string    `json:"status"`
-	ExternalPAMRef  *string    `json:"external_pam_ref"`
+	ExpectedVersion        int        `json:"expected_version" validate:"required,min=1"`
+	Name                   *string    `json:"name"`
+	ShortName              *string    `json:"short_name"`
+	FundCategoryID         *uuid.UUID `json:"fund_category_id"`
+	ManagerUserID          *uuid.UUID `json:"manager_user_id"`
+	Benchmark              *string    `json:"benchmark"`
+	RiskProfile            *string    `json:"risk_profile"`
+	Status                 *string    `json:"status"`
+	ExternalPAMRef         *string    `json:"external_pam_ref"`
+	RequirePretradePreview *bool      `json:"require_pretrade_preview"`
 }
 
 // DeleteFundRequest is the JSON body for DELETE /investment/funds/{id}.
@@ -169,4 +174,185 @@ type RunValuationRequest struct {
 // under the fund into a single fund-scoped snapshot for the business date.
 type ComputeFundAUMRequest struct {
 	BusinessDate string `json:"business_date" validate:"required"`
+}
+
+// ─── Research Reports ─────────────────────────────────────────────────────────
+
+// CreateResearchReportRequest is the JSON body for POST /investment/research-reports.
+type CreateResearchReportRequest struct {
+	ReportNo             string     `json:"report_no"            validate:"required,max=60"`
+	ReportDate           string     `json:"report_date"          validate:"required"`
+	EffectiveDate        string     `json:"effective_date"`
+	OwnerUserID          uuid.UUID  `json:"owner_user_id"        validate:"required"`
+	AuthorUserID         uuid.UUID  `json:"author_user_id"       validate:"required"`
+	ApplicableContractID *uuid.UUID `json:"applicable_contract_id"`
+
+	InstrumentType string `json:"instrument_type"`
+	InstrumentCode string `json:"instrument_code" validate:"required,max=40"`
+	InstrumentName string `json:"instrument_name"`
+	Market         string `json:"market"`
+	Currency       string `json:"currency"`
+
+	Recommendation string `json:"recommendation" validate:"required,oneof=BUY SELL HOLD"`
+	ReportTitle    string `json:"report_title"`
+
+	CompanyOverview    string `json:"company_overview"`
+	CompanyOutlook     string `json:"company_outlook"`
+	ESGComment         string `json:"esg_comment"`
+	FinancialStatus    string `json:"financial_status"`
+	InvestmentAnalysis string `json:"investment_analysis" validate:"required,min=25"`
+}
+
+// ─── Decisions ───────────────────────────────────────────────────────────────
+
+// CreateDecisionRequest is the JSON body for POST /investment/decisions.
+type CreateDecisionRequest struct {
+	FundID           uuid.UUID  `json:"fund_id"            validate:"required"`
+	PortfolioID      uuid.UUID  `json:"portfolio_id"       validate:"required"`
+	ContractID       uuid.UUID  `json:"contract_id"        validate:"required"`
+	InstrumentID     *uuid.UUID `json:"instrument_id"`
+	InstrumentCode   string     `json:"instrument_code"    validate:"required,max=40"`
+	BusinessDate     string     `json:"business_date"      validate:"required"`
+	Side             string     `json:"side"               validate:"required,oneof=BUY SELL"`
+	Quantity         string     `json:"quantity"`
+	Amount           string     `json:"amount"`
+	LimitPrice       string     `json:"limit_price"`
+	Currency         string     `json:"currency"           validate:"required,len=3"`
+	Exchange         string     `json:"exchange"`
+	ResearchReportID *uuid.UUID `json:"research_report_id"`
+	Rationale        string     `json:"rationale"`
+}
+
+// UpdateDecisionRequest is the JSON body for PUT /investment/decisions/{id}.
+type UpdateDecisionRequest struct {
+	InstrumentID     *uuid.UUID `json:"instrument_id"`
+	InstrumentCode   *string    `json:"instrument_code"`
+	BusinessDate     *string    `json:"business_date"`
+	Side             *string    `json:"side"`
+	Quantity         *string    `json:"quantity"`
+	Amount           *string    `json:"amount"`
+	LimitPrice       *string    `json:"limit_price"`
+	Currency         *string    `json:"currency"`
+	Exchange         *string    `json:"exchange"`
+	ResearchReportID *uuid.UUID `json:"research_report_id"`
+	Rationale        *string    `json:"rationale"`
+}
+
+// CancelDecisionRequest is the JSON body for POST /investment/decisions/{id}/cancel.
+type CancelDecisionRequest struct {
+	Reason string `json:"reason" validate:"required,max=500"`
+}
+
+// BatchApprovalRequest is the JSON body for POST /investment/decisions/batch-approve.
+type BatchApprovalRequest struct {
+	DecisionNos []string `json:"decision_nos" validate:"required,min=1"`
+	Comment     string   `json:"comment"`
+}
+
+// BatchRejectionRequest is the JSON body for POST /investment/decisions/batch-reject.
+type BatchRejectionRequest struct {
+	DecisionNos []string `json:"decision_nos" validate:"required,min=1"`
+	Reason      string   `json:"reason"       validate:"required,max=500"`
+}
+
+// ─── Executions ──────────────────────────────────────────────────────────────
+
+// CreateExecutionRequest is the JSON body for POST /investment/executions.
+type CreateExecutionRequest struct {
+	DecisionID      uuid.UUID `json:"decision_id"       validate:"required"`
+	OrderedQuantity string    `json:"ordered_quantity"`
+	OrderedAmount   string    `json:"ordered_amount"`
+	BrokerReference string    `json:"broker_reference"`
+}
+
+// FillExecutionRequest is the JSON body for POST /investment/executions/{id}/fill.
+type FillExecutionRequest struct {
+	ExecutedQuantity string `json:"executed_quantity"`
+	ExecutedAmount   string `json:"executed_amount"`
+	ExecutionPrice   string `json:"execution_price"`
+	Status           string `json:"status"`
+	BrokerReference  string `json:"broker_reference"`
+}
+
+// CancelExecutionRequest is the JSON body for POST /investment/executions/{id}/cancel.
+type CancelExecutionRequest struct {
+	Reason string `json:"reason" validate:"required,max=500"`
+}
+
+// ─── Trade confirmations ─────────────────────────────────────────────────────
+
+// RecordConfirmationRequest is the JSON body for POST /investment/trade-confirmations.
+type RecordConfirmationRequest struct {
+	ExecutionID       uuid.UUID  `json:"execution_id"       validate:"required"`
+	ConfirmedQuantity string     `json:"confirmed_quantity"`
+	ConfirmedAmount   string     `json:"confirmed_amount"`
+	ConfirmedPrice    string     `json:"confirmed_price"`
+	BrokerReference   string     `json:"broker_reference"`
+	ImportBatchID     *uuid.UUID `json:"import_batch_id"`
+}
+
+// ResolveConfirmationRequest is the JSON body for POST /investment/trade-confirmations/{id}/resolve.
+type ResolveConfirmationRequest struct {
+	TargetStatus      string `json:"target_status"       validate:"required,oneof=MATCHED MISMATCHED REVIEWED"`
+	DiscrepancyReason string `json:"discrepancy_reason"`
+}
+
+// UpdateResearchReportRequest is the JSON body for PUT /investment/research-reports/{id}.
+// Only fields set on the wire are applied (pointer-based partial update).
+//
+// Lifecycle status fields (report_status, review_status, rejection_reason) are
+// deliberately excluded: status transitions go through the dedicated
+// submit / cancel-submit endpoints and through the approval engine's final
+// decision callback. Accepting them on the generic edit path would let an
+// editor flip REJECTED → ACTIVE or EXPIRED → ACTIVE without approval.
+type UpdateResearchReportRequest struct {
+	ReportDate           *string    `json:"report_date"`
+	EffectiveDate        *string    `json:"effective_date"`
+	OwnerUserID          *uuid.UUID `json:"owner_user_id"`
+	AuthorUserID         *uuid.UUID `json:"author_user_id"`
+	ApplicableContractID *uuid.UUID `json:"applicable_contract_id"`
+
+	InstrumentType *string `json:"instrument_type"`
+	InstrumentCode *string `json:"instrument_code"`
+	InstrumentName *string `json:"instrument_name"`
+	Market         *string `json:"market"`
+	Currency       *string `json:"currency"`
+
+	Recommendation *string `json:"recommendation"`
+	ReportTitle    *string `json:"report_title"`
+
+	CompanyOverview    *string `json:"company_overview"`
+	CompanyOutlook     *string `json:"company_outlook"`
+	ESGComment         *string `json:"esg_comment"`
+	FinancialStatus    *string `json:"financial_status"`
+	InvestmentAnalysis *string `json:"investment_analysis"`
+
+	PostSubmissionNote *string `json:"post_submission_note"`
+}
+
+// ImportConfirmationBatchRowRequest is one row inside a batch-import payload.
+// Decimal-bearing fields stay as strings so broker-side precision survives
+// the JSON round-trip.
+type ImportConfirmationBatchRowRequest struct {
+	ExecutionID       uuid.UUID `json:"execution_id"`
+	ConfirmedQuantity string    `json:"confirmed_quantity,omitempty"`
+	ConfirmedAmount   string    `json:"confirmed_amount,omitempty"`
+	ConfirmedPrice    string    `json:"confirmed_price,omitempty"`
+	BrokerReference   string    `json:"broker_reference,omitempty"`
+}
+
+// ImportConfirmationBatchRequest is the JSON body for
+// POST /investment/trade-confirmations/batch.
+type ImportConfirmationBatchRequest struct {
+	SourceFilename string                              `json:"source_filename,omitempty"`
+	Rows           []ImportConfirmationBatchRowRequest `json:"rows"`
+}
+
+// InvalidateResearchReportRequest is the JSON body for
+// POST /investment/research-reports/{id}/invalidate.
+//
+// The reason must be at least 20 characters; the application command and the
+// DB CHECK both enforce that lower bound.
+type InvalidateResearchReportRequest struct {
+	Reason string `json:"reason"`
 }

@@ -58,7 +58,7 @@ func NewRollbackAccountingCloseHandler(
 func (h *RollbackAccountingCloseHandler) Handle(ctx context.Context, req RollbackAccountingCloseRequest) (*RollbackAccountingCloseResult, error) {
 	var result *RollbackAccountingCloseResult
 	txErr := database.WithTransaction(ctx, h.pool, func(tx pgx.Tx) error {
-		day, err := h.dayRepo.GetForUpdate(ctx, tx, req.ContractID, req.BusinessDate)
+		day, err := h.dayRepo.GetForUpdateByBusinessDate(ctx, tx, req.BusinessDate)
 		if err != nil {
 			return fmt.Errorf("locking workflow day: %w", err)
 		}
@@ -76,11 +76,21 @@ func (h *RollbackAccountingCloseHandler) Handle(ctx context.Context, req Rollbac
 			return err
 		}
 
+		// Stash the prior accounting date so the audit trail preserves which
+		// NAV cycle was reversed. Cleared the next time CLOSE_ACCOUNTING runs.
+		var priorAccountingDate *time.Time
+		if day.AccountingDate != nil {
+			t := *day.AccountingDate
+			priorAccountingDate = &t
+		}
+
 		now := time.Now().UTC()
 		fromState := day.CurrentState
 		day.CurrentState = vo.StateTransactionClosed
 		day.AccountingClosedAt = nil
 		day.AccountingClosedBy = nil
+		day.PrevAccountingDate = priorAccountingDate
+		day.AccountingDate = nil
 		day.PendingReclose = true
 		day.RecloseCount = day.RecloseCount + 1
 		day.UpdatedAt = now
@@ -91,23 +101,29 @@ func (h *RollbackAccountingCloseHandler) Handle(ctx context.Context, req Rollbac
 		}
 
 		reason := req.Reason
+		metadata := map[string]any{
+			"recloseCount": day.RecloseCount,
+		}
+		if priorAccountingDate != nil {
+			metadata["prev_accounting_date"] = priorAccountingDate.Format("2006-01-02")
+		}
 		transition := &entity.WorkflowTransition{
-			ID:            uuid.New(),
-			WorkflowDayID: day.ID,
-			ContractID:    req.ContractID,
-			BusinessDate:  req.BusinessDate,
-			FromState:     fromState,
-			ToState:       vo.StateTransactionClosed,
-			Action:        vo.ActionRollbackAccountingClose,
-			ActorID:       &req.Actor.UserID,
-			ActorType:     req.Actor.ActorType,
-			ActorUsername: req.Actor.Username,
-			Reason:        &reason,
-			Metadata: map[string]any{
-				"recloseCount": day.RecloseCount,
-			},
-			OccurredAt: now,
-			RequestID:  req.Actor.RequestID,
+			ID:               uuid.New(),
+			WorkflowDayID:    day.ID,
+			ContractID:       req.ContractID,
+			BusinessDate:     req.BusinessDate,
+			FromState:        fromState,
+			ToState:          vo.StateTransactionClosed,
+			Action:           vo.ActionRollbackAccountingClose,
+			ActorID:          &req.Actor.UserID,
+			ActorType:        req.Actor.ActorType,
+			ActorUsername:    req.Actor.Username,
+			ActorAccountCode: req.Actor.AccountCode,
+			IsAdminOverride:  req.Actor.IsAdminOverride,
+			Reason:           &reason,
+			Metadata:         metadata,
+			OccurredAt:       now,
+			RequestID:        req.Actor.RequestID,
 		}
 		if err := h.logRepo.Append(ctx, tx, transition); err != nil {
 			return fmt.Errorf("appending transition log: %w", err)

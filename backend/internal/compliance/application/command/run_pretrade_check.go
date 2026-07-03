@@ -27,6 +27,7 @@ type PreTradeCheckRequest struct {
 	Side     vo.OrderSide
 	Quantity decimal.Decimal
 	Price    decimal.Decimal
+	Fees     decimal.Decimal
 	Currency string
 	Exchange string
 }
@@ -65,6 +66,16 @@ func NewRunPreTradeCheckHandler(pipeline *engine.Pipeline, registry *spi.RuleReg
 // Returns an error only for infrastructure failures (DB, network).
 // A BLOCK verdict is returned in the response, not as an error.
 func (h *RunPreTradeCheckHandler) Handle(ctx context.Context, req PreTradeCheckRequest) (*PreTradeCheckResponse, error) {
+	return h.handle(ctx, req, true)
+}
+
+// HandleDryRun evaluates pre-trade rules without writing check records or
+// breach rows. It is intended for investment trade simulation.
+func (h *RunPreTradeCheckHandler) HandleDryRun(ctx context.Context, req PreTradeCheckRequest) (*PreTradeCheckResponse, error) {
+	return h.handle(ctx, req, false)
+}
+
+func (h *RunPreTradeCheckHandler) handle(ctx context.Context, req PreTradeCheckRequest, persist bool) (*PreTradeCheckResponse, error) {
 	if err := validatePreTradeRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid pre-trade request: %w", err)
 	}
@@ -87,6 +98,7 @@ func (h *RunPreTradeCheckHandler) Handle(ctx context.Context, req PreTradeCheckR
 			Side:     req.Side,
 			Quantity: req.Quantity,
 			Price:    req.Price,
+			Fees:     req.Fees,
 			Currency: req.Currency,
 			Exchange: req.Exchange,
 		},
@@ -94,7 +106,13 @@ func (h *RunPreTradeCheckHandler) Handle(ctx context.Context, req PreTradeCheckR
 
 	scopes := buildScopes(req.PortfolioID, req.ContractID)
 
-	output, err := h.pipeline.RunCheck(ctx, input, scopes)
+	var output *engine.CheckOutput
+	var err error
+	if persist {
+		output, err = h.pipeline.RunCheck(ctx, input, scopes)
+	} else {
+		output, err = h.pipeline.RunCheckDryRun(ctx, input, scopes)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("running pre-trade check: %w", err)
 	}
@@ -141,6 +159,9 @@ func validatePreTradeRequest(req PreTradeCheckRequest) error {
 	}
 	if req.Price.IsZero() || req.Price.IsNegative() {
 		return fmt.Errorf("price must be positive")
+	}
+	if req.Fees.IsNegative() {
+		return fmt.Errorf("fees must be non-negative")
 	}
 	if req.BusinessDate.IsZero() {
 		return fmt.Errorf("business_date is required")

@@ -1,0 +1,24 @@
+info:
+  name: list-nav-history
+  type: http
+  seq: 36
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/funds/:fundId/nav-history?range=30d"
+  params:
+    - name: fundId
+      value: "{{investment-fund-id}}"
+      type: path
+    - name: range
+      value: 30d
+      type: query
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

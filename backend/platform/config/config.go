@@ -100,6 +100,20 @@ type AppConfig struct {
 	MarketDataHTTPTimeout      time.Duration // per-call HTTP timeout for provider calls
 	MarketDataCacheTTL         time.Duration // in-memory cache TTL for repeated quotes
 
+	// Intraday market data on the investment Holdings page.
+	// MarketDataStaleAfter is the maximum age of a provider quote before the
+	// dashboard surfaces it as stale (defaults to 15m).
+	// MarketDataRefreshInterval is reserved for a future scheduler — the
+	// service reads it via the IntradayConfig and exposes it on the status
+	// endpoint so the UI can hint at how often to poll.
+	MarketDataStaleAfter      time.Duration
+	MarketDataRefreshInterval time.Duration
+
+	// Optional Twelve Data API key. Twelve Data is documented as a future
+	// provider option; this field is captured so the env example matches the
+	// spec, but no client is wired yet.
+	TwelveDataAPIKey string
+
 	// Market data: Alpha Vantage
 	AlphaVantageAPIKey          string        // Alpha Vantage API key. Never logged. REQUIRED in non-development.
 	AlphaVantageRateLimitPerMin int           // Per-minute provider call budget (default: 5 — free tier).
@@ -117,6 +131,65 @@ type AppConfig struct {
 	// and surfaces the snapshot as stale. Codes match
 	// investment__asset_classes; an unknown code falls back to default 1d.
 	ValuationStaleThresholdsByAssetClass map[string]time.Duration
+
+	// Email notification: feature + worker flags.
+	EmailEnabled             bool
+	EmailWorkerEnabled       bool
+	EmailWorkerInterval      time.Duration
+	EmailWorkerBatchSize     int
+	EmailMaxAttempts         int
+	EmailStaleSendingTimeout time.Duration
+	EmailRetryPolicy         []time.Duration // per-attempt delays
+	EmailAllowRawEmail       bool
+	EmailAllowedDomains      []string
+	EmailTestEndpointEnabled bool
+	EmailSendRealEmail       bool
+
+	// SMTP: provider-independent transport config.
+	// SMTPPassword is never emitted in API responses or logs.
+	SMTPHost        string
+	SMTPPort        int
+	SMTPUsername    string
+	SMTPPassword    string
+	SMTPTLSMode     string // "none", "starttls", "tls"
+	SMTPFromAddress string
+	SMTPFromName    string
+	SMTPTimeout     time.Duration
+
+	// AppPublicBaseURL is the frontend origin used to build action URLs in emails.
+	AppPublicBaseURL string
+
+	// Chat: provider selection + credentials.
+	//
+	// LLMProvider chooses which adapter the chat module uses. Slice A only
+	// supports "anthropic"; Slice B adds openai, gemini, openai_compatible.
+	// Switching at runtime requires only LLM_PROVIDER + the matching
+	// *_API_KEY — no code change.
+	//
+	// AnthropicAPIKey is required when LLMProvider=anthropic. If missing,
+	// the chat module logs a warning and is not mounted; the rest of the
+	// API continues to function.
+	LLMProvider          string
+	AnthropicAPIKey      string
+	AnthropicModel       string
+	ChatMaxTokensPerTurn int
+
+	// Chat: MCP + tool execution.
+	//
+	// ChatWriteEnabled gates mutating MCP tools. OFF by default — the
+	// assistant is read-only unless explicitly enabled AND the user passes a
+	// server-side permission check.
+	//
+	// ChatMCPServersConfig is an optional path to mcp-servers.yaml. When
+	// empty, the chat module spawns the bundled ims-mcp stdio server.
+	//
+	// ChatMCPIMSBin is the path to the ims-mcp binary (default: alongside the
+	// server binary). IMSAPIBaseURL is forwarded to it so its read-only tools
+	// reach the IMS REST API.
+	ChatWriteEnabled     bool
+	ChatMCPServersConfig string
+	ChatMCPIMSBin        string
+	IMSAPIBaseURL        string
 }
 
 // Load reads configuration from environment variables.
@@ -208,10 +281,21 @@ func Load() (*AppConfig, error) {
 		CORSAllowedOrigins: parseStringSlice("CORS_ALLOWED_ORIGINS"),
 
 		// Market data: providers + transport
-		MarketDataPrimaryProvider:  strings.ToLower(getEnvOrDefault("MARKET_DATA_PRIMARY_PROVIDER", "alpha_vantage")),
+		// MARKET_DATA_PROVIDER is honoured as an alias for
+		// MARKET_DATA_PRIMARY_PROVIDER so the env example aligns with the
+		// requested variable name. Explicit primary wins when both are set.
+		MarketDataPrimaryProvider:  strings.ToLower(getEnvOrDefault("MARKET_DATA_PRIMARY_PROVIDER", getEnvOrDefault("MARKET_DATA_PROVIDER", "alpha_vantage"))),
 		MarketDataFallbackProvider: strings.ToLower(getEnvOrDefault("MARKET_DATA_FALLBACK_PROVIDER", "yahoo")),
-		MarketDataHTTPTimeout:      time.Duration(parseInt("MARKET_DATA_HTTP_TIMEOUT_SECONDS", 15)) * time.Second,
-		MarketDataCacheTTL:         time.Duration(parseInt("MARKET_DATA_CACHE_TTL_SECONDS", 900)) * time.Second,
+		// MARKET_DATA_TIMEOUT_MS is the new operator-facing knob; the
+		// legacy MARKET_DATA_HTTP_TIMEOUT_SECONDS still wins when set so
+		// existing deployments don't change behaviour.
+		MarketDataHTTPTimeout: marketDataHTTPTimeout(),
+		MarketDataCacheTTL:    time.Duration(parseInt("MARKET_DATA_CACHE_TTL_SECONDS", 900)) * time.Second,
+
+		// Intraday valuation on the Holdings page.
+		MarketDataStaleAfter:      time.Duration(parseInt("MARKET_DATA_STALE_AFTER_MINUTES", 15)) * time.Minute,
+		MarketDataRefreshInterval: time.Duration(parseInt("MARKET_DATA_REFRESH_INTERVAL_MINUTES", 15)) * time.Minute,
+		TwelveDataAPIKey:          os.Getenv("TWELVE_DATA_API_KEY"),
 
 		// Market data: Alpha Vantage
 		AlphaVantageAPIKey:          os.Getenv("ALPHA_VANTAGE_API_KEY"),
@@ -228,6 +312,41 @@ func Load() (*AppConfig, error) {
 			"VALUATION_STALE_THRESHOLDS",
 			"EQUITY=24h,FIXED_INCOME=72h,FUND=24h,ETF=24h,CASH=720h,ALTERNATIVE=720h,DERIVATIVE=24h",
 		),
+
+		// Email notification
+		EmailEnabled:             parseBool("NOTIFICATION_EMAIL_ENABLED", false),
+		EmailWorkerEnabled:       parseBool("NOTIFICATION_EMAIL_WORKER_ENABLED", false),
+		EmailWorkerInterval:      parseDuration("NOTIFICATION_EMAIL_WORKER_INTERVAL", "10s"),
+		EmailWorkerBatchSize:     parseInt("NOTIFICATION_EMAIL_WORKER_BATCH_SIZE", 25),
+		EmailMaxAttempts:         parseInt("NOTIFICATION_EMAIL_MAX_ATTEMPTS", 5),
+		EmailStaleSendingTimeout: parseDuration("NOTIFICATION_EMAIL_STALE_SENDING_TIMEOUT", "10m"),
+		EmailRetryPolicy:         parseRetryPolicy("NOTIFICATION_EMAIL_RETRY_POLICY", "1m,5m,15m,1h"),
+		EmailAllowRawEmail:       parseBool("NOTIFICATION_EMAIL_ALLOW_RAW_EMAIL", false),
+		EmailAllowedDomains:      parseStringSlice("NOTIFICATION_EMAIL_ALLOWED_DOMAINS"),
+		EmailTestEndpointEnabled: parseBool("NOTIFICATION_EMAIL_TEST_ENDPOINT_ENABLED", false),
+		EmailSendRealEmail:       parseBool("NOTIFICATION_EMAIL_SEND_REAL_EMAIL", false),
+
+		// SMTP
+		SMTPHost:        getEnvOrDefault("SMTP_HOST", "localhost"),
+		SMTPPort:        parseInt("SMTP_PORT", 1025),
+		SMTPUsername:    os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:    os.Getenv("SMTP_PASSWORD"),
+		SMTPTLSMode:     strings.ToLower(getEnvOrDefault("SMTP_TLS_MODE", "none")),
+		SMTPFromAddress: getEnvOrDefault("SMTP_FROM_ADDRESS", "no-reply@ims-demo.local"),
+		SMTPFromName:    getEnvOrDefault("SMTP_FROM_NAME", "IMS Thailand"),
+		SMTPTimeout:     parseDuration("SMTP_TIMEOUT", "10s"),
+
+		AppPublicBaseURL: getEnvOrDefault("APP_PUBLIC_BASE_URL", "http://localhost:3000"),
+
+		// Chat
+		LLMProvider:          strings.ToLower(getEnvOrDefault("LLM_PROVIDER", "anthropic")),
+		AnthropicAPIKey:      os.Getenv("ANTHROPIC_API_KEY"),
+		AnthropicModel:       getEnvOrDefault("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+		ChatMaxTokensPerTurn: parseInt("CHAT_MAX_TOKENS_PER_TURN", 1024),
+		ChatWriteEnabled:     parseBool("CHAT_WRITE_ENABLED", false),
+		ChatMCPServersConfig: os.Getenv("CHAT_MCP_SERVERS_CONFIG"),
+		ChatMCPIMSBin:        os.Getenv("CHAT_MCP_IMS_BIN"),
+		IMSAPIBaseURL:        getEnvOrDefault("IMS_API_BASE_URL", "http://localhost:8080/api/v1"),
 	}
 
 	if cfg.JWTSecret == "" && cfg.Env != "development" {
@@ -255,6 +374,16 @@ func Load() (*AppConfig, error) {
 // MarshalJSON / String redactions for config: AppConfig has no String method
 // today; if one is added, ensure JWTSecret, JWTSecretPrevious, DBPassword,
 // MFAEncryptionKey, RedisPassword, and AlphaVantageAPIKey are NEVER emitted.
+
+// marketDataHTTPTimeout reads the per-call provider HTTP timeout, preferring
+// MARKET_DATA_TIMEOUT_MS when set (the operator-facing knob from the spec)
+// and falling back to the legacy MARKET_DATA_HTTP_TIMEOUT_SECONDS / default.
+func marketDataHTTPTimeout() time.Duration {
+	if ms := parseInt("MARKET_DATA_TIMEOUT_MS", 0); ms > 0 {
+		return time.Duration(ms) * time.Millisecond
+	}
+	return time.Duration(parseInt("MARKET_DATA_HTTP_TIMEOUT_SECONDS", 15)) * time.Second
+}
 
 // parseStaleThresholds parses a comma-separated list of CODE=DURATION pairs
 // (e.g. "EQUITY=24h,FIXED_INCOME=72h") into a map. Unparseable entries fall
@@ -344,6 +473,25 @@ func parseBool(key string, defaultVal bool) bool {
 		return defaultVal
 	}
 	return b
+}
+
+// parseRetryPolicy parses a comma-separated duration list (e.g. "1m,5m,15m,1h")
+// into a slice of time.Duration values. Invalid entries are skipped.
+func parseRetryPolicy(key, defaultVal string) []time.Duration {
+	val := getEnvOrDefault(key, defaultVal)
+	var out []time.Duration
+	for _, part := range strings.Split(val, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		d, err := time.ParseDuration(part)
+		if err != nil {
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
 }
 
 func parseStringSlice(key string) []string {

@@ -1,0 +1,55 @@
+import { enMarketDataMessages } from "../en/marketData";
+
+export const thMarketDataMessages = {
+  marketData: {
+    ...enMarketDataMessages.marketData,
+    tabs: {
+      ...enMarketDataMessages.marketData.tabs,
+      provider: "ผู้ให้บริการ",
+      market: "ตลาด",
+      watchlist: "รายการเฝ้าดู",
+      stage: "สถานะการแมปซิมโบล",
+      settings: "การตั้งค่า",
+    },
+    descriptions: {
+      ...enMarketDataMessages.marketData.descriptions,
+      market: "หลักทรัพย์มาตรฐานที่คุณนำเข้า ค้นหาข้อมูลในแคตตาล็อก เพิ่มตราสารใหม่ หรือเปิดเพื่อดูรายละเอียด",
+      watchlist: "ราคาล่าสุดของหลักทรัพย์ทั้งหมดที่คุณติดตาม นำเข้าข้อมูลจาก Yahoo Finance และ Alpha Vantage",
+      stage: "ซิมโบลจากผู้ให้บริการที่ระบบยังไม่สามารถระบุได้ จับคู่ซิมโบลเหล่านั้นกับหลักทรัพย์ที่มีอยู่หรือปฏิเสธรายการ",
+      settings: "ตั้งค่าการเชื่อมต่อ API ของ Yahoo Finance และ Alpha Vantage",
+    },
+    actions: {
+      ...enMarketDataMessages.marketData.actions,
+      syncAll: "ซิงค์ทั้งหมด",
+      syncing: "กำลังซิงค์...",
+      live: "เรียลไทม์",
+      apiKeys: "รหัส API",
+      addSecurity: "เพิ่มหลักทรัพย์",
+      saveConfigurations: "บันทึกการตั้งค่า",
+      retry: "ลองอีกครั้ง",
+    },
+    labels: {
+      ...enMarketDataMessages.marketData.labels,
+      search: "ค้นหา",
+      assetType: "ประเภทสินทรัพย์",
+      status: "สถานะ",
+      createSecurity: "สร้างหลักทรัพย์มาตรฐาน",
+      providerConfig: "ตั้งค่าผู้ให้บริการข้อมูลตลาด",
+      apiKey: "คีย์ API",
+      apiKeyHelp: "คีย์ API ของคุณใช้สำหรับการตรวจสอบสิทธิ์กับบริการ Alpha Vantage",
+      baseUrl: "URL พื้นฐาน",
+      providerStatus: "สถานะผู้ให้บริการ",
+      enabled: "เปิดใช้งาน",
+      disabled: "ปิดใช้งาน",
+    },
+    messages: {
+      ...enMarketDataMessages.marketData.messages,
+      providerHealthError: "ไม่สามารถเชื่อมต่อกับบริการตรวจสอบสถานะผู้ให้บริการได้: {error}",
+      failedLoadWatchlist: "โหลดรายการเฝ้าดูไม่สำเร็จ: {error}",
+      failedLoadSecurities: "โหลดหลักทรัพย์ไม่สำเร็จ: {error}",
+      failedLoadCandidates: "โหลดซิมโบลที่รอดำเนินการไม่สำเร็จ: {error}",
+      saveSuccess: "บันทึกการตั้งค่าผู้ให้บริการข้อมูลตลาดสำเร็จแล้ว",
+      footerBanner: "ราคา ข้อมูลย้อนหลัง และการนำเข้าข้อมูลดิบแบบแบ่งส่วนใช้งานได้จริงแล้ว การนำเข้าข้อมูลจะผ่าน Yahoo Finance และ Alpha Vantage; ซิมโบลที่ยังไม่ได้จับคู่จะไปแสดงที่หน้าสถานะการแมปซิมโบลเพื่อรอการตรวจสอบ ส่วนการอัปโหลดข้อมูลพันธบัตร ThaiBMA ยังเป็นเพียงหน้าจอตัวอย่าง - อยู่ระหว่างรอการพัฒนาฝั่งหลังบ้าน",
+    },
+  },
+} as const;

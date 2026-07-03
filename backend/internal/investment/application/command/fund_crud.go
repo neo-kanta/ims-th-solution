@@ -18,18 +18,19 @@ import (
 
 // CreateFundRequest is the input for creating a Fund (contract).
 type CreateFundRequest struct {
-	Code           string
-	Name           string
-	ShortName      string
-	FundCategoryID uuid.UUID
-	BaseCurrency   string
-	InceptionDate  time.Time
-	ManagerUserID  *uuid.UUID
-	Benchmark      string
-	RiskProfile    vo.RiskProfile
-	HasUnits       bool
-	ExternalPAMRef string
-	ActorID        uuid.UUID
+	Code                   string
+	Name                   string
+	ShortName              string
+	FundCategoryID         uuid.UUID
+	BaseCurrency           string
+	InceptionDate          time.Time
+	ManagerUserID          *uuid.UUID
+	Benchmark              string
+	RiskProfile            vo.RiskProfile
+	HasUnits               bool
+	RequirePretradePreview bool
+	ExternalPAMRef         string
+	ActorID                uuid.UUID
 }
 
 // UpdateFundRequest is the input for updating mutable Fund metadata.
@@ -37,17 +38,18 @@ type CreateFundRequest struct {
 // Only non-nil pointer fields are applied. Optimistic concurrency uses
 // ExpectedVersion (typically the value the client last read).
 type UpdateFundRequest struct {
-	FundID          uuid.UUID
-	ExpectedVersion int
-	Name            *string
-	ShortName       *string
-	FundCategoryID  *uuid.UUID
-	ManagerUserID   *uuid.UUID
-	Benchmark       *string
-	RiskProfile     *vo.RiskProfile
-	Status          *vo.FundStatus
-	ExternalPAMRef  *string
-	ActorID         uuid.UUID
+	FundID                 uuid.UUID
+	ExpectedVersion        int
+	Name                   *string
+	ShortName              *string
+	FundCategoryID         *uuid.UUID
+	ManagerUserID          *uuid.UUID
+	Benchmark              *string
+	RiskProfile            *vo.RiskProfile
+	Status                 *vo.FundStatus
+	ExternalPAMRef         *string
+	RequirePretradePreview *bool
+	ActorID                uuid.UUID
 }
 
 // FundCommandHandler bundles the small fund CRUD operations.
@@ -94,24 +96,25 @@ func (h *FundCommandHandler) Create(ctx context.Context, req CreateFundRequest) 
 	now := h.now()
 	actor := req.ActorID
 	f := &entity.Fund{
-		ID:             uuid.New(),
-		Code:           req.Code,
-		Name:           req.Name,
-		ShortName:      req.ShortName,
-		FundCategoryID: req.FundCategoryID,
-		BaseCurrency:   req.BaseCurrency,
-		InceptionDate:  req.InceptionDate,
-		ManagerUserID:  req.ManagerUserID,
-		Benchmark:      req.Benchmark,
-		RiskProfile:    req.RiskProfile,
-		HasUnits:       req.HasUnits,
-		ExternalPAMRef: req.ExternalPAMRef,
-		Status:         vo.FundStatusActive,
-		Version:        1,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-		CreatedBy:      &actor,
-		UpdatedBy:      &actor,
+		ID:                     uuid.New(),
+		Code:                   req.Code,
+		Name:                   req.Name,
+		ShortName:              req.ShortName,
+		FundCategoryID:         req.FundCategoryID,
+		BaseCurrency:           req.BaseCurrency,
+		InceptionDate:          req.InceptionDate,
+		ManagerUserID:          req.ManagerUserID,
+		Benchmark:              req.Benchmark,
+		RiskProfile:            req.RiskProfile,
+		HasUnits:               req.HasUnits,
+		RequirePretradePreview: req.RequirePretradePreview,
+		ExternalPAMRef:         req.ExternalPAMRef,
+		Status:                 vo.FundStatusActive,
+		Version:                1,
+		CreatedAt:              now,
+		UpdatedAt:              now,
+		CreatedBy:              &actor,
+		UpdatedBy:              &actor,
 	}
 
 	if err := withTransaction(ctx, h.pool, func(dbtx pgx.Tx) error {
@@ -181,6 +184,9 @@ func (h *FundCommandHandler) Update(ctx context.Context, req UpdateFundRequest) 
 	}
 	if req.ExternalPAMRef != nil {
 		f.ExternalPAMRef = *req.ExternalPAMRef
+	}
+	if req.RequirePretradePreview != nil {
+		f.RequirePretradePreview = *req.RequirePretradePreview
 	}
 
 	now := h.now()

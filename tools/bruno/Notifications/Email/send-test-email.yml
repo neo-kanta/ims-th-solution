@@ -1,0 +1,26 @@
+info:
+  name: send-test-email
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{notification-base-url}}/email/test"
+  body:
+    type: json
+    data: |-
+      {
+        "to_email": "{{notification-test-to-email}}",
+        "to_username": "{{notification-test-to-username}}",
+        "subject": "{{notification-test-subject}}",
+        "body": "{{notification-test-body}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

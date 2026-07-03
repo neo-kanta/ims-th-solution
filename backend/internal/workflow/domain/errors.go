@@ -113,3 +113,24 @@ func (e *ErrCancelBlockedByTransactions) Error() string {
 		e.ContractID, e.BusinessDate, e.TransactionCount,
 	)
 }
+
+// ErrPendingTradeConfirmations is returned when CLOSE_TRANSACTIONS is attempted
+// while one or more executions for the business date are missing a resolved
+// trade confirmation (PENDING_REVIEW or MISMATCHED without reason).
+//
+// The transport layer maps this to HTTP 422 Unprocessable Entity. The middle/
+// back office is expected to import or review the broker confirmations before
+// retrying the close.
+type ErrPendingTradeConfirmations struct {
+	ContractID      string
+	BusinessDate    string
+	PendingCount    int
+	UnresolvedCount int
+}
+
+func (e *ErrPendingTradeConfirmations) Error() string {
+	return fmt.Sprintf(
+		"cannot close transactions for contract %s on %s: %d pending and %d unresolved trade confirmation(s)",
+		e.ContractID, e.BusinessDate, e.PendingCount, e.UnresolvedCount,
+	)
+}

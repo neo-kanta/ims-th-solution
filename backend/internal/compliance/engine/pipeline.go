@@ -54,6 +54,17 @@ func NewPipeline(
 
 // RunCheck executes the full evaluation pipeline.
 func (p *Pipeline) RunCheck(ctx context.Context, input spi.CheckInput, scopes []vo.Scope) (*CheckOutput, error) {
+	return p.runCheck(ctx, input, scopes, true)
+}
+
+// RunCheckDryRun evaluates the same rules as RunCheck but skips persistence of
+// check records and breaches. It is used by order simulation endpoints where a
+// caller needs a faithful verdict without audit-table side effects.
+func (p *Pipeline) RunCheckDryRun(ctx context.Context, input spi.CheckInput, scopes []vo.Scope) (*CheckOutput, error) {
+	return p.runCheck(ctx, input, scopes, false)
+}
+
+func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []vo.Scope, persist bool) (*CheckOutput, error) {
 	pipelineStart := time.Now()
 
 	slog.Info("irg: starting check",
@@ -61,6 +72,7 @@ func (p *Pipeline) RunCheck(ctx context.Context, input spi.CheckInput, scopes []
 		"timing", input.Timing,
 		"portfolio_id", input.PortfolioID,
 		"contract_id", input.ContractID,
+		"persist", persist,
 	)
 
 	// 1. Resolve applicable rules from binding matrix
@@ -149,17 +161,19 @@ func (p *Pipeline) RunCheck(ctx context.Context, input spi.CheckInput, scopes []
 		)
 	}
 
-	// 5. Persist all records (append-only)
-	if len(records) > 0 {
+	// 5. Persist all records (append-only), unless this is a dry run.
+	if persist && len(records) > 0 {
 		if err := p.checkRepo.CreateBatch(ctx, records); err != nil {
 			return nil, fmt.Errorf("persisting check records: %w", err)
 		}
 	}
 
-	// 6. Persist breaches
-	for i := range breaches {
-		if err := p.breachRepo.Create(ctx, &breaches[i]); err != nil {
-			slog.Error("irg: failed to persist breach", "error", err, "breach_id", breaches[i].ID)
+	// 6. Persist breaches, unless this is a dry run.
+	if persist {
+		for i := range breaches {
+			if err := p.breachRepo.Create(ctx, &breaches[i]); err != nil {
+				slog.Error("irg: failed to persist breach", "error", err, "breach_id", breaches[i].ID)
+			}
 		}
 	}
 
@@ -180,6 +194,7 @@ func (p *Pipeline) RunCheck(ctx context.Context, input spi.CheckInput, scopes []
 		"final_verdict", finalVerdict,
 		"rules_evaluated", len(records),
 		"breaches", len(breaches),
+		"persist", persist,
 		"duration_ms", output.TotalDurationMs,
 	)
 

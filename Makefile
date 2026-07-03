@@ -2,7 +2,8 @@
 # Quick commands for development, testing, and deployment.
 
 .PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed db-reset \
-        contract-check test test-unit test-integration test-e2e lint build docker-build swagger api-client
+        contract-check test test-unit test-integration test-e2e test-e2e-backend test-e2e-ci \
+        e2e-db-setup lint build docker-build swagger api-client
 
 # =============================
 # Development
@@ -38,7 +39,7 @@ migrate-new: ## Create new migration pair (usage: make migrate-new module=workfl
 	echo "Created: database/migrations/$${timestamp}_$(module)__$(name).{up,down}.sql"
 
 seed: ## Load seed data
-	cd backend && go run cmd/seed/main.go
+	cd backend && go run ./cmd/seed
 
 db-reset: ## Drop + recreate + migrate + seed
 	@echo "Resetting database..."
@@ -71,8 +72,20 @@ test-unit: ## Unit tests only (backend)
 test-integration: ## Integration tests
 	cd backend && go test -v -run Integration ./...
 
-test-e2e: ## Playwright E2E tests
-	cd tests/e2e && npx playwright test
+e2e-db-setup: ## Create/migrate/seed the dedicated ims_e2e database (safe to rerun)
+	bash tests/e2e/scripts/setup-db.sh
+
+test-e2e: ## Playwright E2E tests (requires backend+frontend running against ims_e2e)
+	cd tests/e2e && npm run test:e2e
+
+test-e2e-ci: ## Playwright E2E tests, CI mode (retries + CI reporter)
+	cd tests/e2e && npm run test:e2e:ci
+
+test-e2e-backend: ## Backend-only Go E2E tests (401/403 proof; build tag e2e)
+	# Scoped to TestE2E_IAM_* — TestE2E_InvestmentOversellEnvelope in this
+	# same package has pre-existing, unrelated bugs (see tests/e2e/COVERAGE.md)
+	# uncovered while wiring this target up; fix tracked separately.
+	cd backend && go test -tags e2e -count=1 -v -run TestE2E_IAM ./tests/e2e/...
 
 lint: ## Lint both frontend and backend
 	cd backend && go vet ./...

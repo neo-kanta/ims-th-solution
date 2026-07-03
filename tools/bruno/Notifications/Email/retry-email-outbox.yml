@@ -1,0 +1,21 @@
+info:
+  name: retry-email-outbox
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{notification-base-url}}/email-outbox/:outbox_id/retry"
+  params:
+    - name: outbox_id
+      value: "{{notification-outbox-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

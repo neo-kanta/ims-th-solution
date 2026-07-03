@@ -1,0 +1,24 @@
+info:
+  name: delete-security-mapping
+  type: http
+  seq: 7
+
+http:
+  method: DELETE
+  url: "{{reference-data-base-url}}/securities/:securityId/mappings/:mappingId"
+  params:
+    - name: securityId
+      value: "{{reference-data-security-id}}"
+      type: path
+    - name: mappingId
+      value: "{{reference-data-mapping-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

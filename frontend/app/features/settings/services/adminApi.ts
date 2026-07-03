@@ -25,7 +25,7 @@ type CreateUserResponse =
   paths["/admin/users"]["post"]["responses"][201]["content"]["application/json"];
 type AdminResetPasswordRequest =
   paths["/admin/users/{id}/reset-password"]["post"]["requestBody"]["content"]["application/json"];
-type AdminUserResponse = AdminUserListResponse["users"][number];
+type AdminUserResponse = NonNullable<AdminUserListResponse["users"]>[number];
 type AdminSessionResponse =
   paths["/admin/users/{id}/sessions"]["get"]["responses"][200]["content"]["application/json"];
 type SessionResponse = AdminSessionResponse[number];
