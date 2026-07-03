@@ -327,6 +327,275 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Post Portfolio Transaction By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction post payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/transactions/simulate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Run the post preconditions and pre-trade compliance checks, then preview ledger cash and position impact without mutating investment tables, resolved by business code (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Simulate Portfolio Transaction By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction simulation payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PostTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionSimulationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/transactions/{transactionId}/reverse": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Post a reversal transaction for an existing portfolio transaction, resolved by business code (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Reverse Portfolio Transaction By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Transaction UUID",
+                        "name": "transactionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Transaction reversal payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReverseTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/portfolios/{portfolioCode}/valuations": {
@@ -512,6 +781,66 @@
                 }
             }
         },
+        "CashProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "cash_impact": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_balance": {
+                    "type": "string"
+                },
+                "projected_balance": {
+                    "type": "string"
+                }
+            }
+        },
+        "ComplianceBreachPreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "CompliancePreviewResponse": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ComplianceBreachPreviewResponse"
+                    }
+                },
+                "check_group_id": {
+                    "type": "string"
+                },
+                "rules_evaluated": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
         "ErrorResponse": {
             "type": "object",
             "properties": {
@@ -612,6 +941,111 @@
                 }
             }
         },
+        "PositionProjectionResponse": {
+            "type": "object",
+            "properties": {
+                "current_average_cost": {
+                    "type": "string"
+                },
+                "current_cost_basis": {
+                    "type": "string"
+                },
+                "current_quantity": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "projected_average_cost": {
+                    "type": "string"
+                },
+                "projected_cost_basis": {
+                    "type": "string"
+                },
+                "projected_quantity": {
+                    "type": "string"
+                }
+            }
+        },
+        "PostTransactionRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "currency",
+                "transaction_type"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "external_ref": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "force_post": {
+                    "type": "boolean"
+                },
+                "fx_rate_to_base": {
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "settlement_date": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "source_decision_id": {
+                    "type": "string"
+                },
+                "source_execution_id": {
+                    "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReverseTransactionRequest": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "reason"
+            ],
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "force_post": {
+                    "type": "boolean"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "TransactionListResponse": {
             "type": "object",
             "properties": {
@@ -697,6 +1131,35 @@
                 },
                 "status": {
                     "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "TransactionSimulationResponse": {
+            "type": "object",
+            "properties": {
+                "cash": {
+                    "$ref": "#/definitions/CashProjectionResponse"
+                },
+                "compliance": {
+                    "$ref": "#/definitions/CompliancePreviewResponse"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "net_amount": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "position": {
+                    "$ref": "#/definitions/PositionProjectionResponse"
                 },
                 "transaction_type": {
                     "type": "string"

@@ -196,6 +196,14 @@ func bootTestServer(t *testing.T, ctx context.Context, dsn string) (*httptest.Se
 		})
 	})
 
+	// Mirrors cmd/server/main.go's /api/v2 mount (Portfolio V2 routes).
+	r.Route("/api/v2", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(iamMod.AuthMiddleware())
+			investmentMod.RegisterRoutesV2(r)
+		})
+	})
+
 	return httptest.NewServer(r), pool
 }
 

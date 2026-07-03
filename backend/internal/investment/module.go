@@ -473,6 +473,18 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 			r.Get("/{portfolioCode}/valuations", h.ListValuationsByCode)
 			r.Get("/{portfolioCode}/valuations/latest", h.GetLatestValuationByCode)
 		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerSimulate))
+			r.Post("/{portfolioCode}/transactions/simulate", h.SimulateTransactionByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerPost))
+			r.Post("/{portfolioCode}/transactions", h.PostTransactionByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerReverse))
+			r.Post("/{portfolioCode}/transactions/{transactionId}/reverse", h.ReverseTransactionByCode)
+		})
 	})
 }
 
