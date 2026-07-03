@@ -75,6 +75,47 @@ func (r *PostgresPortfolioRepository) GetByFundCode(ctx context.Context, fundID 
 	return scanPortfolio(row)
 }
 
+// GetByCode fetches every alive row for the code (not just one) so it can
+// detect the fund-scoped-uniqueness gap described on the interface doc
+// comment: two alive portfolios under different funds may legally share a
+// code today. Returning an arbitrary match in that case could resolve to
+// the wrong portfolio — a data-access issue, not just a display nit — so
+// this refuses to guess and returns *domain.ErrAmbiguousPortfolioCode
+// instead.
+func (r *PostgresPortfolioRepository) GetByCode(ctx context.Context, code string) (*entity.Portfolio, error) {
+	rows, err := r.pool.Query(ctx,
+		portfolioSelect+" WHERE code = $1 AND deleted_at IS NULL",
+		code,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("querying portfolio by code: %w", err)
+	}
+	defer rows.Close()
+
+	var matches []*entity.Portfolio
+	for rows.Next() {
+		p, err := scanPortfolio(rows)
+		if err != nil {
+			return nil, err
+		}
+		if p != nil {
+			matches = append(matches, p)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("scanning portfolios by code: %w", err)
+	}
+
+	switch len(matches) {
+	case 0:
+		return nil, nil
+	case 1:
+		return matches[0], nil
+	default:
+		return nil, &domain.ErrAmbiguousPortfolioCode{Code: code, Count: len(matches)}
+	}
+}
+
 func (r *PostgresPortfolioRepository) List(ctx context.Context, filter domain.PortfolioListFilter) ([]*entity.Portfolio, int, error) {
 	conds := []string{"deleted_at IS NULL"}
 	args := []any{}

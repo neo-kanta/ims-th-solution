@@ -255,6 +255,9 @@ func (r fundAUMPortfolioRepo) GetByID(context.Context, uuid.UUID) (*entity.Portf
 func (r fundAUMPortfolioRepo) GetByFundCode(context.Context, uuid.UUID, string) (*entity.Portfolio, error) {
 	return nil, nil
 }
+func (r fundAUMPortfolioRepo) GetByCode(context.Context, string) (*entity.Portfolio, error) {
+	return nil, nil
+}
 func (r fundAUMPortfolioRepo) List(_ context.Context, _ domain.PortfolioListFilter) ([]*entity.Portfolio, int, error) {
 	return r.portfolios, len(r.portfolios), nil
 }

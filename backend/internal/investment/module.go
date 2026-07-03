@@ -448,6 +448,26 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 	})
 }
 
+// RegisterRoutesV2 mounts the investment module's Portfolio V2 HTTP routes
+// (docs/api/portfolio-v2-api-ddd.md) onto the given authenticated router.
+// Expected to be called inside an r.Route("/api/v2", ...) block that already
+// has auth middleware applied. Additive only — V1 routes registered by
+// RegisterRoutes are untouched and keep serving.
+func (m *Module) RegisterRoutesV2(r chi.Router) {
+	if m == nil || m.handler == nil || m.middlewarePerm == nil {
+		return
+	}
+	pc := m.middlewarePerm
+	h := m.handler
+
+	r.Route("/portfolios", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodePortfolioView))
+			r.Get("/{portfolioCode}", h.GetPortfolioByCode)
+		})
+	})
+}
+
 // SubmitDecisionHandler returns the Decision-submit command handler. Kept
 // for the existing pre-trade tests; persistence wiring will land in a
 // follow-up batch once the Decision repo is implemented.
