@@ -1,5 +1,21 @@
 basePath: /api/v2
 definitions:
+  CancelDecisionRequest:
+    properties:
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - reason
+    type: object
+  CancelExecutionRequest:
+    properties:
+      reason:
+        maxLength: 500
+        type: string
+    required:
+    - reason
+    type: object
   CashBalanceResponse:
     properties:
       balance:
@@ -50,12 +66,247 @@ definitions:
       verdict:
         type: string
     type: object
+  CreateDecisionV2Request:
+    properties:
+      amount:
+        type: string
+      business_date:
+        type: string
+      currency:
+        type: string
+      exchange:
+        type: string
+      instrument_code:
+        maxLength: 40
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      research_report_id:
+        type: string
+      side:
+        enum:
+        - BUY
+        - SELL
+        type: string
+    required:
+    - business_date
+    - currency
+    - instrument_code
+    - side
+    type: object
+  CreateExecutionV2Request:
+    properties:
+      broker_reference:
+        type: string
+      ordered_amount:
+        type: string
+      ordered_quantity:
+        type: string
+    type: object
+  DecisionLineResponse:
+    properties:
+      amount:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      line_number:
+        type: integer
+      notes:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      side:
+        type: string
+      target_weight:
+        type: string
+    type: object
+  DecisionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/DecisionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  DecisionResponse:
+    properties:
+      amendment_no:
+        type: integer
+      amount:
+        type: string
+      approval_request_id:
+        type: string
+      approval_stage:
+        description: Approval enrichment — populated by the approval-items endpoint.
+        type: integer
+      approval_status:
+        type: string
+      approval_total_stages:
+        type: integer
+      business_date:
+        type: string
+      cancellation_reason:
+        type: string
+      cancelled_at:
+        type: string
+      compliance_check_group_id:
+        type: string
+      compliance_release_approval_request_id:
+        type: string
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      current_approvers:
+        items:
+          type: string
+        type: array
+      decision_number:
+        type: string
+      decision_type:
+        type: string
+      exchange:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      limit_price:
+        type: string
+      lines:
+        description: Lines are included when the decision has basket/rebalance/switch
+          lines.
+        items:
+          $ref: '#/definitions/DecisionLineResponse'
+        type: array
+      portfolio_id:
+        type: string
+      previous_approvers:
+        items:
+          type: string
+        type: array
+      process_type:
+        type: string
+      product_type:
+        type: string
+      quantity:
+        type: string
+      rationale:
+        type: string
+      ready_for_execution_at:
+        type: string
+      research_report_id:
+        type: string
+      research_report_no:
+        type: string
+      side:
+        type: string
+      status:
+        type: string
+      strategy_code:
+        type: string
+      submitted_at:
+        type: string
+      submitter_user_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
   ErrorResponse:
     properties:
       code:
         type: string
       details: {}
       error:
+        type: string
+    type: object
+  ExecutionResponse:
+    properties:
+      broker_reference:
+        type: string
+      business_date:
+        type: string
+      cancellation_reason:
+        type: string
+      cancelled_at:
+        type: string
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      decision_id:
+        type: string
+      executed_amount:
+        type: string
+      executed_at:
+        type: string
+      executed_quantity:
+        type: string
+      execution_price:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      ordered_amount:
+        type: string
+      ordered_quantity:
+        type: string
+      portfolio_id:
+        type: string
+      side:
+        type: string
+      status:
+        type: string
+      trader_user_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  FillExecutionRequest:
+    properties:
+      broker_reference:
+        type: string
+      executed_amount:
+        type: string
+      executed_quantity:
+        type: string
+      execution_price:
+        type: string
+      status:
         type: string
     type: object
   HoldingResponse:
@@ -174,6 +425,32 @@ definitions:
     - currency
     - transaction_type
     type: object
+  RecordConfirmationV2Request:
+    properties:
+      broker_reference:
+        type: string
+      confirmed_amount:
+        type: string
+      confirmed_price:
+        type: string
+      confirmed_quantity:
+        type: string
+      import_batch_id:
+        type: string
+    type: object
+  ResolveConfirmationRequest:
+    properties:
+      discrepancy_reason:
+        type: string
+      target_status:
+        enum:
+        - MATCHED
+        - MISMATCHED
+        - REVIEWED
+        type: string
+    required:
+    - target_status
+    type: object
   ReverseTransactionRequest:
     properties:
       business_date:
@@ -185,6 +462,47 @@ definitions:
     required:
     - business_date
     - reason
+    type: object
+  TradeConfirmationResponse:
+    properties:
+      broker_reference:
+        type: string
+      business_date:
+        type: string
+      confirmed_amount:
+        type: string
+      confirmed_price:
+        type: string
+      confirmed_quantity:
+        type: string
+      contract_id:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      decision_id:
+        type: string
+      discrepancy_reason:
+        type: string
+      execution_id:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      import_batch_id:
+        type: string
+      portfolio_id:
+        type: string
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
     type: object
   TransactionListResponse:
     properties:
@@ -439,6 +757,534 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Portfolio Cash Balances By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve:
+    post:
+      consumes:
+      - application/json
+      description: Matches or reviews a trade confirmation that belongs to the resolved
+        portfolio (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Confirmation UUID
+        in: path
+        name: confirmationId
+        required: true
+        type: string
+      - description: Resolution fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ResolveConfirmationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TradeConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resolve Portfolio Trade Confirmation By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/decisions:
+    get:
+      description: List investment decisions for a portfolio, resolved by business
+        code (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Decisions By Code
+      tags:
+      - Investment - Portfolios V2
+    post:
+      consumes:
+      - application/json
+      description: Creates a new investment decision in DRAFT status for a portfolio,
+        resolved by business code (Portfolio V2). Request body must not include fund_id,
+        portfolio_id, or contract_id.
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Decision fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateDecisionV2Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Portfolio Decision By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/decisions/{decisionId}:
+    get:
+      description: Retrieve one investment decision that belongs to the resolved portfolio
+        (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Decision UUID
+        in: path
+        name: decisionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Portfolio Decision By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/decisions/{decisionId}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels a DRAFT or SUBMITTED decision that belongs to the resolved
+        portfolio (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Decision UUID
+        in: path
+        name: decisionId
+        required: true
+        type: string
+      - description: Cancellation reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CancelDecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Portfolio Decision By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/decisions/{decisionId}/executions:
+    post:
+      consumes:
+      - application/json
+      description: Opens an execution against an APPROVED decision that belongs to
+        the resolved portfolio (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Decision UUID
+        in: path
+        name: decisionId
+        required: true
+        type: string
+      - description: Execution fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateExecutionV2Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Portfolio Execution By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/decisions/{decisionId}/submit:
+    post:
+      description: Submits a DRAFT decision that belongs to the resolved portfolio
+        for approval (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Decision UUID
+        in: path
+        name: decisionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit Portfolio Decision By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/executions/{executionId}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an execution that belongs to the resolved portfolio (Portfolio
+        V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Execution UUID
+        in: path
+        name: executionId
+        required: true
+        type: string
+      - description: Cancellation reason
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CancelExecutionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel Portfolio Execution By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/executions/{executionId}/confirmations:
+    post:
+      consumes:
+      - application/json
+      description: Records a broker confirmation against an execution that belongs
+        to the resolved portfolio (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Execution UUID
+        in: path
+        name: executionId
+        required: true
+        type: string
+      - description: Confirmation fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RecordConfirmationV2Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/TradeConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Record Portfolio Trade Confirmation By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/executions/{executionId}/fill:
+    post:
+      consumes:
+      - application/json
+      description: Records a fill against an execution that belongs to the resolved
+        portfolio (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Execution UUID
+        in: path
+        name: executionId
+        required: true
+        type: string
+      - description: Fill fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/FillExecutionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fill Portfolio Execution By Code
       tags:
       - Investment - Portfolios V2
   /portfolios/{portfolioCode}/holdings:

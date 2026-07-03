@@ -9,6 +9,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 
@@ -27,12 +28,32 @@ import (
 // Writes the appropriate error response and returns (nil, false) on any
 // failure — callers should return immediately when ok is false.
 func (h *InvestmentHandler) resolvePortfolioCode(w http.ResponseWriter, r *http.Request) (*entity.Portfolio, bool) {
+	return resolvePortfolioByCode(w, r, h.portfolios, h.pc)
+}
+
+// resolvePortfolioByCode is the shared {portfolioCode} -> portfolio resolver
+// for every Portfolio V2 handler (portfolio_v2_handler.go,
+// portfolio_v2_ledger_handler.go, portfolio_v2_decision_handler.go,
+// portfolio_v2_execution_handler.go). Writes the appropriate error response
+// and returns (nil, false) on any failure — callers should return
+// immediately when ok is false.
+//
+// pc may be nil: the V1 decision/execution/confirmation handlers never
+// enforced fund-scoped data permission beyond the route-level function
+// permission (middleware.RequirePermission), so their V2 counterparts pass
+// nil here to preserve that V1 behavior rather than silently tightening
+// authorization as a side effect of the portfolio-code migration.
+func resolvePortfolioByCode(
+	w http.ResponseWriter, r *http.Request,
+	portfolios domain.PortfolioRepository,
+	pc contract.PermissionChecker,
+) (*entity.Portfolio, bool) {
 	code := chi.URLParam(r, "portfolioCode")
 	if code == "" {
 		httputil.BadRequest(w, "invalid portfolio code")
 		return nil, false
 	}
-	p, err := h.portfolios.GetByCode(r.Context(), code)
+	p, err := portfolios.GetByCode(r.Context(), code)
 	if err != nil {
 		// Includes *domain.ErrAmbiguousPortfolioCode (409).
 		writeDomainError(w, err)
@@ -42,7 +63,7 @@ func (h *InvestmentHandler) resolvePortfolioCode(w http.ResponseWriter, r *http.
 		httputil.NotFound(w, "portfolio not found")
 		return nil, false
 	}
-	if !hasFundAccess(r.Context(), h.pc, p.FundID) {
+	if pc != nil && !hasFundAccess(r.Context(), pc, p.FundID) {
 		httputil.Forbidden(w, "no access to this portfolio")
 		return nil, false
 	}

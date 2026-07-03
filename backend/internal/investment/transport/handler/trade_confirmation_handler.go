@@ -15,12 +15,34 @@ import (
 
 type TradeConfirmationHandler struct {
 	confirmations domain.TradeConfirmationRepository
+	executions    domain.ExecutionRepository
+	portfolios    domain.PortfolioRepository
 	cmd           *command.TradeConfirmationCommandHandler
 	batchImport   *command.ConfirmationBatchImportHandler
 }
 
 func NewTradeConfirmationHandler(repo domain.TradeConfirmationRepository, cmd *command.TradeConfirmationCommandHandler) *TradeConfirmationHandler {
 	return &TradeConfirmationHandler{confirmations: repo, cmd: cmd}
+}
+
+// SetExecutionRepository wires the execution repository post-construction so
+// the Portfolio V2 (portfolioCode) route
+// POST /portfolios/{portfolioCode}/executions/{executionId}/confirmations
+// can verify the execution belongs to the resolved portfolio before
+// recording a confirmation.
+func (h *TradeConfirmationHandler) SetExecutionRepository(r domain.ExecutionRepository) {
+	if h != nil {
+		h.executions = r
+	}
+}
+
+// SetPortfolioRepository wires the portfolio repository post-construction so
+// the Portfolio V2 (portfolioCode) routes can resolve portfolioCode ->
+// portfolio_id.
+func (h *TradeConfirmationHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = r
+	}
 }
 
 // SetBatchImportHandler wires the batch importer after construction. Kept as a

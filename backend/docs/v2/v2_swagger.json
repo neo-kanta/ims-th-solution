@@ -156,6 +156,802 @@
                 }
             }
         },
+        "/portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Matches or reviews a trade confirmation that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Resolve Portfolio Trade Confirmation By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Confirmation UUID",
+                        "name": "confirmationId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resolution fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ResolveConfirmationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/TradeConfirmationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/decisions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List investment decisions for a portfolio, resolved by business code (Portfolio V2).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "List Portfolio Decisions By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new investment decision in DRAFT status for a portfolio, resolved by business code (Portfolio V2). Request body must not include fund_id, portfolio_id, or contract_id.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Create Portfolio Decision By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Decision fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateDecisionV2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/decisions/{decisionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve one investment decision that belongs to the resolved portfolio (Portfolio V2).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Get Portfolio Decision By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "decisionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/decisions/{decisionId}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a DRAFT or SUBMITTED decision that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Cancel Portfolio Decision By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "decisionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cancellation reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CancelDecisionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/decisions/{decisionId}/executions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Opens an execution against an APPROVED decision that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Create Portfolio Execution By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "decisionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Execution fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateExecutionV2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/decisions/{decisionId}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submits a DRAFT decision that belongs to the resolved portfolio for approval (Portfolio V2).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Submit Portfolio Decision By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Decision UUID",
+                        "name": "decisionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/executions/{executionId}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an execution that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Cancel Portfolio Execution By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Execution UUID",
+                        "name": "executionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Cancellation reason",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CancelExecutionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/executions/{executionId}/confirmations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records a broker confirmation against an execution that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Record Portfolio Trade Confirmation By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Execution UUID",
+                        "name": "executionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Confirmation fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RecordConfirmationV2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/TradeConfirmationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/executions/{executionId}/fill": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records a fill against an execution that belongs to the resolved portfolio (Portfolio V2).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Fill Portfolio Execution By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Execution UUID",
+                        "name": "executionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fill fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FillExecutionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/portfolios/{portfolioCode}/holdings": {
             "get": {
                 "security": [
@@ -764,6 +1560,30 @@
         }
     },
     "definitions": {
+        "CancelDecisionRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
+        "CancelExecutionRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                }
+            }
+        },
         "CashBalanceResponse": {
             "type": "object",
             "properties": {
@@ -841,6 +1661,263 @@
                 }
             }
         },
+        "CreateDecisionV2Request": {
+            "type": "object",
+            "required": [
+                "business_date",
+                "currency",
+                "instrument_code",
+                "side"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string",
+                    "maxLength": 40
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string"
+                },
+                "research_report_id": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string",
+                    "enum": [
+                        "BUY",
+                        "SELL"
+                    ]
+                }
+            }
+        },
+        "CreateExecutionV2Request": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
+                }
+            }
+        },
+        "DecisionLineResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "line_number": {
+                    "type": "integer"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "product_type": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "target_weight": {
+                    "type": "string"
+                }
+            }
+        },
+        "DecisionListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DecisionResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "DecisionResponse": {
+            "type": "object",
+            "properties": {
+                "amendment_no": {
+                    "type": "integer"
+                },
+                "amount": {
+                    "type": "string"
+                },
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "approval_stage": {
+                    "description": "Approval enrichment — populated by the approval-items endpoint.",
+                    "type": "integer"
+                },
+                "approval_status": {
+                    "type": "string"
+                },
+                "approval_total_stages": {
+                    "type": "integer"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cancellation_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "compliance_check_group_id": {
+                    "type": "string"
+                },
+                "compliance_release_approval_request_id": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "current_approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "decision_number": {
+                    "type": "string"
+                },
+                "decision_type": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "limit_price": {
+                    "type": "string"
+                },
+                "lines": {
+                    "description": "Lines are included when the decision has basket/rebalance/switch lines.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DecisionLineResponse"
+                    }
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "previous_approvers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "process_type": {
+                    "type": "string"
+                },
+                "product_type": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "rationale": {
+                    "type": "string"
+                },
+                "ready_for_execution_at": {
+                    "type": "string"
+                },
+                "research_report_id": {
+                    "type": "string"
+                },
+                "research_report_no": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "strategy_code": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitter_user_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "ErrorResponse": {
             "type": "object",
             "properties": {
@@ -849,6 +1926,100 @@
                 },
                 "details": {},
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "ExecutionResponse": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cancellation_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "executed_amount": {
+                    "type": "string"
+                },
+                "executed_at": {
+                    "type": "string"
+                },
+                "executed_quantity": {
+                    "type": "string"
+                },
+                "execution_price": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trader_user_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "FillExecutionRequest": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "executed_amount": {
+                    "type": "string"
+                },
+                "executed_quantity": {
+                    "type": "string"
+                },
+                "execution_price": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -1028,6 +2199,45 @@
                 }
             }
         },
+        "RecordConfirmationV2Request": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "confirmed_amount": {
+                    "type": "string"
+                },
+                "confirmed_price": {
+                    "type": "string"
+                },
+                "confirmed_quantity": {
+                    "type": "string"
+                },
+                "import_batch_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "ResolveConfirmationRequest": {
+            "type": "object",
+            "required": [
+                "target_status"
+            ],
+            "properties": {
+                "discrepancy_reason": {
+                    "type": "string"
+                },
+                "target_status": {
+                    "type": "string",
+                    "enum": [
+                        "MATCHED",
+                        "MISMATCHED",
+                        "REVIEWED"
+                    ]
+                }
+            }
+        },
         "ReverseTransactionRequest": {
             "type": "object",
             "required": [
@@ -1042,6 +2252,68 @@
                     "type": "boolean"
                 },
                 "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "TradeConfirmationResponse": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "confirmed_amount": {
+                    "type": "string"
+                },
+                "confirmed_price": {
+                    "type": "string"
+                },
+                "confirmed_quantity": {
+                    "type": "string"
+                },
+                "contract_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "discrepancy_reason": {
+                    "type": "string"
+                },
+                "execution_id": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "import_batch_id": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

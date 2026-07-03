@@ -15,11 +15,33 @@ import (
 
 type ExecutionHandler struct {
 	executions domain.ExecutionRepository
+	decisions  domain.DecisionRepository
+	portfolios domain.PortfolioRepository
 	cmd        *command.ExecutionCommandHandler
 }
 
 func NewExecutionHandler(repo domain.ExecutionRepository, cmd *command.ExecutionCommandHandler) *ExecutionHandler {
 	return &ExecutionHandler{executions: repo, cmd: cmd}
+}
+
+// SetDecisionRepository wires the decision repository post-construction so
+// the Portfolio V2 (portfolioCode) route
+// POST /portfolios/{portfolioCode}/decisions/{decisionId}/executions in
+// portfolio_v2_execution_handler.go can verify the decision belongs to the
+// resolved portfolio before creating an execution.
+func (h *ExecutionHandler) SetDecisionRepository(r domain.DecisionRepository) {
+	if h != nil {
+		h.decisions = r
+	}
+}
+
+// SetPortfolioRepository wires the portfolio repository post-construction so
+// the Portfolio V2 (portfolioCode) routes can resolve portfolioCode ->
+// portfolio_id.
+func (h *ExecutionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = r
+	}
 }
 
 // ListExecutions handles GET /investment/executions?decision_id=&contract_id=&business_date=.

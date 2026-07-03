@@ -214,9 +214,14 @@ func NewModule(
 	m.decisionHandler = handler.NewDecisionHandler(m.decisions, m.decisionCmd)
 	m.decisionHandler.SetDecisionLineRepository(m.decisionLines)
 	m.decisionHandler.SetBatchApprovalHandler(m.decisionBatchCmd)
+	m.decisionHandler.SetPortfolioRepository(m.portfolios)
 	m.executionHandler = handler.NewExecutionHandler(m.executions, m.executionCmd)
+	m.executionHandler.SetDecisionRepository(m.decisions)
+	m.executionHandler.SetPortfolioRepository(m.portfolios)
 	m.confirmationHandler = handler.NewTradeConfirmationHandler(m.confirmations, m.confirmationCmd)
 	m.confirmationHandler.SetBatchImportHandler(m.confirmationImportCmd)
+	m.confirmationHandler.SetExecutionRepository(m.executions)
+	m.confirmationHandler.SetPortfolioRepository(m.portfolios)
 
 	return m
 }
@@ -485,6 +490,46 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerReverse))
 			r.Post("/{portfolioCode}/transactions/{transactionId}/reverse", h.ReverseTransactionByCode)
 		})
+
+		// ── Decisions (Milestone 5) ────────────────────────────────────
+		if dh := m.decisionHandler; dh != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionView))
+				r.Get("/{portfolioCode}/decisions", dh.ListDecisionsByCode)
+				r.Get("/{portfolioCode}/decisions/{decisionId}", dh.GetDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionManage))
+				r.Post("/{portfolioCode}/decisions", dh.CreateDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionSubmit))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/submit", dh.SubmitDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionCancel))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/cancel", dh.CancelDecisionByCode)
+			})
+		}
+
+		// ── Executions (Milestone 5) ────────────────────────────────────
+		if eh := m.executionHandler; eh != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeExecutionManage))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/executions", eh.CreateExecutionByCode)
+				r.Post("/{portfolioCode}/executions/{executionId}/fill", eh.FillExecutionByCode)
+				r.Post("/{portfolioCode}/executions/{executionId}/cancel", eh.CancelExecutionByCode)
+			})
+		}
+
+		// ── Trade confirmations (Milestone 5) ───────────────────────────
+		if ch := m.confirmationHandler; ch != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeConfirmationManage))
+				r.Post("/{portfolioCode}/executions/{executionId}/confirmations", ch.RecordConfirmationByCode)
+				r.Post("/{portfolioCode}/confirmations/{confirmationId}/resolve", ch.ResolveConfirmationByCode)
+			})
+		}
 	})
 }
 

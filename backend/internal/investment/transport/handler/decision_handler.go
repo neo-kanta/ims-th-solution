@@ -24,10 +24,20 @@ type DecisionHandler struct {
 	cmd           *command.DecisionCommandHandler
 	batchApproval *command.DecisionBatchApprovalHandler
 	approvalStage contract.ApprovalStatusProvider
+	portfolios    domain.PortfolioRepository
 }
 
 func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCommandHandler) *DecisionHandler {
 	return &DecisionHandler{decisions: repo, cmd: cmd}
+}
+
+// SetPortfolioRepository wires the portfolio repository post-construction so
+// the Portfolio V2 (portfolioCode) routes in portfolio_v2_decision_handler.go
+// can resolve portfolioCode -> portfolio_id.
+func (h *DecisionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = r
+	}
 }
 
 // SetDecisionLineRepository wires the line repository post-construction.
