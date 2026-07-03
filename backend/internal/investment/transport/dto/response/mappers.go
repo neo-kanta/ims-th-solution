@@ -40,6 +40,7 @@ func FromPortfolio(p *entity.Portfolio) PortfolioResponse {
 	return PortfolioResponse{
 		ID:                p.ID,
 		FundID:            p.FundID,
+		PortfolioType:     string(p.PortfolioType),
 		Code:              p.Code,
 		Name:              p.Name,
 		Description:       p.Description,

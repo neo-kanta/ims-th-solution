@@ -46,6 +46,7 @@ func TestIntegrationGetByCode_AmbiguousCodeReturnsExplicitError(t *testing.T) {
 		CREATE TABLE %s.investment__portfolios (
 			id                  UUID PRIMARY KEY,
 			fund_id             UUID NOT NULL,
+			portfolio_type      VARCHAR(20) NOT NULL DEFAULT 'LIVE',
 			code                VARCHAR(40) NOT NULL,
 			name                VARCHAR(200) NOT NULL,
 			description         TEXT,
@@ -155,6 +156,7 @@ func TestIntegrationGetByCode_IgnoresSoftDeletedDuplicates(t *testing.T) {
 		CREATE TABLE %s.investment__portfolios (
 			id                  UUID PRIMARY KEY,
 			fund_id             UUID NOT NULL,
+			portfolio_type      VARCHAR(20) NOT NULL DEFAULT 'LIVE',
 			code                VARCHAR(40) NOT NULL,
 			name                VARCHAR(200) NOT NULL,
 			description         TEXT,

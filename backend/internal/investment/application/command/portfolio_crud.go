@@ -18,6 +18,7 @@ import (
 // CreatePortfolioRequest creates a new Portfolio under an existing Fund.
 type CreatePortfolioRequest struct {
 	FundID            uuid.UUID
+	PortfolioType     vo.PortfolioType
 	Code              string
 	Name              string
 	Description       string
@@ -122,11 +123,20 @@ func (h *PortfolioCommandHandler) Create(ctx context.Context, req CreatePortfoli
 		return nil, &domain.ErrInvalidDecisionRequest{Field: "tax_lot_method", Detail: "invalid"}
 	}
 
+	portfolioType := req.PortfolioType
+	if portfolioType == "" {
+		portfolioType = vo.PortfolioTypeLive
+	}
+	if !portfolioType.IsValid() {
+		return nil, &domain.ErrInvalidDecisionRequest{Field: "portfolio_type", Detail: "invalid"}
+	}
+
 	now := h.now()
 	actor := req.ActorID
 	p := &entity.Portfolio{
 		ID:                uuid.New(),
 		FundID:            req.FundID,
+		PortfolioType:     portfolioType,
 		Code:              req.Code,
 		Name:              req.Name,
 		Description:       req.Description,

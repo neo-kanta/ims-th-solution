@@ -14729,6 +14729,7 @@ export interface components {
             inception_date: string;
             manager_user_id?: string;
             name: string;
+            portfolio_type?: string;
             risk_profile?: string;
             strategy_code?: string;
             style_id?: string;
@@ -15634,6 +15635,7 @@ export interface components {
             inception_date?: string;
             manager_user_id?: string;
             name?: string;
+            portfolio_type?: string;
             risk_profile?: string;
             status?: string;
             strategy_code?: string;

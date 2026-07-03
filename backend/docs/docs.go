@@ -11849,6 +11849,9 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255
                 },
+                "portfolio_type": {
+                    "type": "string"
+                },
                 "risk_profile": {
                     "type": "string"
                 },
@@ -14355,6 +14358,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "portfolio_type": {
                     "type": "string"
                 },
                 "risk_profile": {

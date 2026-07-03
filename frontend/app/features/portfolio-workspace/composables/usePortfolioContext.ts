@@ -33,6 +33,10 @@ export function usePortfolioContext(portfolioCode: () => string) {
   const displayName = computed(
     () => portfolio.value?.name || portfolio.value?.code || portfolioCode(),
   );
+  const portfolioType = computed(() => portfolio.value?.portfolio_type ?? "LIVE");
+  const isLive = computed(() => portfolioType.value === "LIVE");
+  const isSimulation = computed(() => portfolioType.value === "SIMULATION");
+  const isModel = computed(() => portfolioType.value === "MODEL");
 
   async function reload() {
     const code = portfolioCode();
@@ -56,6 +60,10 @@ export function usePortfolioContext(portfolioCode: () => string) {
     portfolio,
     portfolioId,
     displayName,
+    portfolioType,
+    isLive,
+    isSimulation,
+    isModel,
     loading,
     error,
     reload,

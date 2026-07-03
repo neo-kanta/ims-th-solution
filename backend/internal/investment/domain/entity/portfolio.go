@@ -15,6 +15,7 @@ import (
 type Portfolio struct {
 	ID                uuid.UUID
 	FundID            uuid.UUID
+	PortfolioType     vo.PortfolioType
 	Code              string
 	Name              string
 	Description       string

@@ -18,6 +18,24 @@ func (s FundStatus) IsValid() bool {
 	return false
 }
 
+// PortfolioType classifies whether a Portfolio is real, paper, or a
+// target-allocation template (docs/api/portfolio-v2-api-ddd.md section 4).
+type PortfolioType string
+
+const (
+	PortfolioTypeLive       PortfolioType = "LIVE"
+	PortfolioTypeSimulation PortfolioType = "SIMULATION"
+	PortfolioTypeModel      PortfolioType = "MODEL"
+)
+
+func (t PortfolioType) IsValid() bool {
+	switch t {
+	case PortfolioTypeLive, PortfolioTypeSimulation, PortfolioTypeModel:
+		return true
+	}
+	return false
+}
+
 // PortfolioStatus represents the lifecycle state of a Portfolio.
 type PortfolioStatus string
 

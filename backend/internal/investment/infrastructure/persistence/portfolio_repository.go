@@ -27,7 +27,7 @@ func NewPostgresPortfolioRepository(pool *pgxpool.Pool) *PostgresPortfolioReposi
 }
 
 const portfolioSelect = `
-	SELECT id, fund_id, code, name, COALESCE(description, ''),
+	SELECT id, fund_id, portfolio_type, code, name, COALESCE(description, ''),
 	       base_currency, valuation_currency,
 	       COALESCE(strategy_code, ''), style_id,
 	       manager_user_id, COALESCE(benchmark, ''), COALESCE(risk_profile, ''),
@@ -38,19 +38,19 @@ const portfolioSelect = `
 func (r *PostgresPortfolioRepository) Create(ctx context.Context, tx pgx.Tx, p *entity.Portfolio) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO investment__portfolios (
-			id, fund_id, code, name, description,
+			id, fund_id, portfolio_type, code, name, description,
 			base_currency, valuation_currency, strategy_code, style_id,
 			manager_user_id, benchmark, risk_profile, inception_date,
 			status, has_units, tax_lot_method, version,
 			created_at, updated_at, created_by, updated_by
 		) VALUES (
-			$1, $2, $3, $4, NULLIF($5,''),
-			$6, $7, NULLIF($8,''), $9,
-			$10, NULLIF($11,''), NULLIF($12,''), $13,
-			$14, $15, $16, $17,
-			$18, $19, $20, $21
+			$1, $2, $3, $4, $5, NULLIF($6,''),
+			$7, $8, NULLIF($9,''), $10,
+			$11, NULLIF($12,''), NULLIF($13,''), $14,
+			$15, $16, $17, $18,
+			$19, $20, $21, $22
 		)`,
-		p.ID, p.FundID, p.Code, p.Name, p.Description,
+		p.ID, p.FundID, string(p.PortfolioType), p.Code, p.Name, p.Description,
 		p.BaseCurrency, p.ValuationCurrency, p.StrategyCode, p.StyleID,
 		p.ManagerUserID, p.Benchmark, string(p.RiskProfile), p.InceptionDate,
 		string(p.Status), p.HasUnits, string(p.TaxLotMethod), p.Version,
@@ -270,9 +270,9 @@ func (r *PostgresPortfolioRepository) HasOpenActivity(ctx context.Context, portf
 
 func scanPortfolio(s scanner) (*entity.Portfolio, error) {
 	var p entity.Portfolio
-	var statusStr, riskStr, taxStr string
+	var typeStr, statusStr, riskStr, taxStr string
 	err := s.Scan(
-		&p.ID, &p.FundID, &p.Code, &p.Name, &p.Description,
+		&p.ID, &p.FundID, &typeStr, &p.Code, &p.Name, &p.Description,
 		&p.BaseCurrency, &p.ValuationCurrency,
 		&p.StrategyCode, &p.StyleID,
 		&p.ManagerUserID, &p.Benchmark, &riskStr,
@@ -285,6 +285,7 @@ func scanPortfolio(s scanner) (*entity.Portfolio, error) {
 		}
 		return nil, fmt.Errorf("scanning portfolio: %w", err)
 	}
+	p.PortfolioType = vo.PortfolioType(typeStr)
 	p.Status = vo.PortfolioStatus(statusStr)
 	p.RiskProfile = vo.RiskProfile(riskStr)
 	p.TaxLotMethod = vo.TaxLotMethod(taxStr)

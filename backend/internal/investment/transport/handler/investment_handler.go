@@ -543,9 +543,14 @@ func (h *InvestmentHandler) CreatePortfolio(w http.ResponseWriter, r *http.Reque
 	if taxMethod == "" {
 		taxMethod = vo.TaxLotMethodAverage
 	}
+	portfolioType := vo.PortfolioType(req.PortfolioType)
+	if portfolioType == "" {
+		portfolioType = vo.PortfolioTypeLive
+	}
 
 	p, err := h.portfolioCmd.Create(r.Context(), command.CreatePortfolioRequest{
 		FundID:            req.FundID,
+		PortfolioType:     portfolioType,
 		Code:              req.Code,
 		Name:              req.Name,
 		Description:       req.Description,

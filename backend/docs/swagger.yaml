@@ -859,6 +859,8 @@ definitions:
       name:
         maxLength: 255
         type: string
+      portfolio_type:
+        type: string
       risk_profile:
         type: string
       strategy_code:
@@ -2583,6 +2585,8 @@ definitions:
       manager_user_id:
         type: string
       name:
+        type: string
+      portfolio_type:
         type: string
       risk_profile:
         type: string

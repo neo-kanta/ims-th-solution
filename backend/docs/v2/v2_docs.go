@@ -2088,6 +2088,9 @@ const docTemplatev2 = `{
                 "name": {
                     "type": "string"
                 },
+                "portfolio_type": {
+                    "type": "string"
+                },
                 "risk_profile": {
                     "type": "string"
                 },

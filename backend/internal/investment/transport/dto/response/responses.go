@@ -36,6 +36,7 @@ type FundResponse struct {
 type PortfolioResponse struct {
 	ID                uuid.UUID  `json:"id"`
 	FundID            uuid.UUID  `json:"fund_id"`
+	PortfolioType     string     `json:"portfolio_type"`
 	Code              string     `json:"code"`
 	Name              string     `json:"name"`
 	Description       string     `json:"description,omitempty"`
