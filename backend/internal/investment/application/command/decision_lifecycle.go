@@ -181,10 +181,22 @@ func (h *DecisionCommandHandler) Create(ctx context.Context, req CreateDecisionR
 		Rationale:        req.Rationale,
 		Status:           vo.DecisionLifecycleDraft,
 		SubmitterUserID:  req.ActorID,
-		CreatedAt:        now,
-		CreatedBy:        req.ActorID,
-		UpdatedAt:        now,
-		UpdatedBy:        req.ActorID,
+		// This request shape only ever builds a single-order decision header
+		// (basket/rebalance/switch decisions are out of scope for Create).
+		// These three columns are NOT NULL with a DB-side DEFAULT
+		// (20260615000004_investment__add_decision_basket_fields.up.sql), but
+		// the DEFAULT only applies when a column is omitted from the INSERT —
+		// the persistence layer's INSERT always lists them explicitly, so an
+		// unset Go zero value inserts '' and trips
+		// chk_inv_decision_decision_type/process_type/product_type. Set the
+		// same values the migration documents as the defaults.
+		DecisionType: vo.DecisionTypeSingleOrder,
+		ProcessType:  vo.DecisionProcessInvestment,
+		ProductType:  vo.DecisionProductMutualFund,
+		CreatedAt:    now,
+		CreatedBy:    req.ActorID,
+		UpdatedAt:    now,
+		UpdatedBy:    req.ActorID,
 	}
 
 	if req.ResearchReportID != nil {
