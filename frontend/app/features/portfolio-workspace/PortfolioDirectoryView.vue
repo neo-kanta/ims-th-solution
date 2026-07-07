@@ -1,108 +1,192 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 
-import AppCard from "~/shared/ui/AppCard.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
 import { useI18n } from "~/composables/useI18n";
-import { usePortfolioDirectory } from "~/features/investment-ledger/composables/usePortfolioDirectory";
+import { useMyPortfolios } from "./composables/useMyPortfolios";
+import PortfolioKpiStrip from "./components/PortfolioKpiStrip.vue";
+import PortfolioFilterToolbar from "./components/PortfolioFilterToolbar.vue";
+import PortfolioSummaryCard from "./components/PortfolioSummaryCard.vue";
 
 const { t } = useI18n();
-const { portfolios, loading, error, load } = usePortfolioDirectory();
+const router = useRouter();
+
+const {
+  cards,
+  filtered,
+  counts,
+  filter,
+  sort,
+  search,
+  businessDate,
+  loading,
+  decorating,
+  error,
+  kpis,
+  loadAll,
+  setFilter,
+  setSort,
+  setSearch,
+} = useMyPortfolios();
 
 onMounted(() => {
-  void load();
+  void loadAll();
 });
 
-function portfolioRoute(code: string): string {
-  return `/portfolios/${encodeURIComponent(code)}/overview`;
+function openPortfolio(code: string) {
+  void router.push(`/portfolios/${encodeURIComponent(code)}/overview`);
+}
+
+function viewBreaches(fundId: string) {
+  void router.push({
+    path: "/compliance/exceptions",
+    query: { contract_id: fundId },
+  });
+}
+
+function writeResearch(fundId: string) {
+  void router.push({
+    path: "/investment/analysis/new",
+    query: { fund_id: fundId },
+  });
 }
 </script>
 
 <template>
-  <section class="portfolio-directory">
+  <section class="portfolio-directory-page">
     <AppPageHeader
-      :title="t('portfolio.directory.title')"
-      :description="t('portfolio.directory.subtitle')"
+      :title="t('portfolio.directory.title', 'Portfolios')"
+      :description="
+        t(
+          'portfolio.directory.subtitle',
+          'Operational cockpit for portfolios you can act on today — valuations, cash, and compliance breaches in one place.',
+        )
+      "
+    >
+      <template #actions>
+        <div class="portfolio-directory-page__date" aria-live="polite">
+          <span class="portfolio-directory-page__date-label">{{ t("portfolio.page.asOf", "Business date") }}</span>
+          <span class="portfolio-directory-page__date-value">{{ businessDate }}</span>
+        </div>
+      </template>
+    </AppPageHeader>
+
+    <PortfolioKpiStrip :kpis="kpis" :loading="loading && cards.length === 0" />
+
+    <PortfolioFilterToolbar
+      :filter="filter"
+      :sort="sort"
+      :search="search"
+      :counts="counts"
+      @update:filter="setFilter"
+      @update:sort="setSort"
+      @update:search="setSearch"
     />
 
-    <div v-if="loading && portfolios.length === 0" class="portfolio-directory__notice" role="status">
-      {{ t("portfolio.directory.loading") }}
+    <div v-if="decorating && !loading" class="portfolio-directory-page__notice" role="status">
+      {{ t("portfolio.page.decorating", "Refreshing valuation and compliance signals…") }}
     </div>
 
-    <div v-else-if="error" class="portfolio-directory__error" role="alert">
-      <div class="portfolio-directory__error-title">{{ t("portfolio.directory.errorTitle") }}</div>
-      <div class="portfolio-directory__error-detail">{{ error }}</div>
-      <button type="button" class="portfolio-directory__retry" @click="load">
-        {{ t("portfolio.directory.retry") }}
+    <div v-if="loading && cards.length === 0" class="portfolio-directory-page__notice" role="status">
+      {{ t("portfolio.page.loading", "Loading portfolios…") }}
+    </div>
+
+    <div v-else-if="error" class="portfolio-directory-page__error" role="alert">
+      <div class="portfolio-directory-page__error-title">
+        {{ t("portfolio.page.errorTitle", "Failed to load portfolios") }}
+      </div>
+      <div class="portfolio-directory-page__error-detail">{{ error }}</div>
+      <button type="button" class="portfolio-directory-page__retry" @click="loadAll">
+        {{ t("portfolio.page.retry", "Retry") }}
       </button>
     </div>
 
-    <div v-else-if="portfolios.length === 0" class="portfolio-directory__notice">
-      {{ t("portfolio.directory.empty") }}
+    <div v-else-if="filtered.length === 0" class="portfolio-directory-page__empty">
+      {{
+        cards.length === 0
+          ? t("portfolio.page.empty", "You don't have access to any active portfolios yet.")
+          : t("portfolio.page.noResults", "No portfolios match the current filter.")
+      }}
     </div>
 
-    <AppCard v-else :flush="true">
-      <table class="portfolio-directory__table">
-        <thead>
-          <tr>
-            <th>{{ t("portfolio.directory.columns.code") }}</th>
-            <th>{{ t("portfolio.directory.columns.name") }}</th>
-            <th>{{ t("portfolio.directory.columns.status") }}</th>
-            <th>{{ t("portfolio.directory.columns.currency") }}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in portfolios" :key="p.id">
-            <td class="portfolio-directory__code">{{ p.code }}</td>
-            <td>{{ p.name }}</td>
-            <td>{{ p.status }}</td>
-            <td>{{ p.valuation_currency || p.base_currency }}</td>
-            <td class="portfolio-directory__actions">
-              <NuxtLink
-                v-if="p.code"
-                :to="portfolioRoute(p.code)"
-                class="portfolio-directory__open"
-              >
-                {{ t("portfolio.directory.open") }}
-              </NuxtLink>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </AppCard>
+    <div v-else class="portfolio-directory-page__grid">
+      <PortfolioSummaryCard
+        v-for="card in filtered"
+        :key="card.portfolio_id"
+        :card="card"
+        :loading="decorating && !card.valuation.available"
+        @open="openPortfolio"
+        @view-breaches="viewBreaches"
+        @write-research="writeResearch"
+      />
+    </div>
   </section>
 </template>
 
 <style scoped>
-.portfolio-directory {
+.portfolio-directory-page {
   display: grid;
   gap: var(--space-4, 16px);
 }
 
-.portfolio-directory__notice,
-.portfolio-directory__error {
+.portfolio-directory-page__date {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-subtle, #d0d7de);
+  border-radius: 6px;
+  padding: 4px 10px;
+  line-height: 1.2;
+}
+
+.portfolio-directory-page__date-label {
+  font-weight: 700;
+  color: var(--text-secondary, #8c959f);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.portfolio-directory-page__date-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #0f172a);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.portfolio-directory-page__notice,
+.portfolio-directory-page__empty {
   padding: var(--space-4, 16px);
   background: var(--bg-card-muted, #f6f8fa);
   border: 1px solid var(--border-subtle, #d0d7de);
   border-radius: var(--radius-md, 6px);
   font-size: 13px;
   color: var(--text-secondary, #57606a);
+  text-align: center;
 }
 
-.portfolio-directory__error {
-  background: var(--alert-danger-bg);
-  border-color: var(--alert-danger-border);
+.portfolio-directory-page__error {
+  padding: var(--space-4, 16px);
+  background: var(--bg-danger-soft, rgba(207, 34, 46, 0.06));
+  border: 1px solid rgba(207, 34, 46, 0.3);
+  border-radius: var(--radius-md, 6px);
   display: grid;
   gap: 6px;
 }
 
-.portfolio-directory__error-title {
+.portfolio-directory-page__error-title {
   font-weight: 600;
-  color: var(--alert-danger-text, #cf222e);
+  color: var(--state-danger, #cf222e);
 }
 
-.portfolio-directory__retry {
+.portfolio-directory-page__error-detail {
+  font-size: 12px;
+  color: var(--text-secondary, #57606a);
+}
+
+.portfolio-directory-page__retry {
   justify-self: start;
   font-family: inherit;
   font-size: 12px;
@@ -114,43 +198,15 @@ function portfolioRoute(code: string): string {
   cursor: pointer;
 }
 
-.portfolio-directory__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.portfolio-directory-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: var(--space-4, 16px);
 }
 
-.portfolio-directory__table th {
-  text-align: left;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-tertiary, #6e7781);
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-subtle, #d0d7de);
-}
-
-.portfolio-directory__table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-subtle, #d0d7de);
-}
-
-.portfolio-directory__code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 600;
-}
-
-.portfolio-directory__actions {
-  text-align: right;
-}
-
-.portfolio-directory__open {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--state-info, #0969da);
-  text-decoration: none;
-}
-.portfolio-directory__open:hover {
-  text-decoration: underline;
+@media (max-width: 720px) {
+  .portfolio-directory-page__grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
