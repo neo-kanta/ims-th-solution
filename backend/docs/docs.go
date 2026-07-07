@@ -4122,12 +4122,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by contract UUID",
-                        "name": "contract_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Filter by business date YYYY-MM-DD",
                         "name": "business_date",
                         "in": "query"
@@ -11567,7 +11561,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "business_date",
-                "contract_id",
                 "currency",
                 "fund_id",
                 "instrument_code",
@@ -11579,9 +11572,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "business_date": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "currency": {
@@ -12436,9 +12426,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "compliance_release_approval_request_id": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {

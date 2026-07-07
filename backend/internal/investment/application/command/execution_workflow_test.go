@@ -41,7 +41,7 @@ func (r *fakeExecutionRepo) GetByID(_ context.Context, _ uuid.UUID) (*entity.Exe
 func (r *fakeExecutionRepo) ListByDecision(_ context.Context, _ uuid.UUID) ([]*entity.Execution, error) {
 	return nil, nil
 }
-func (r *fakeExecutionRepo) ListByContractDate(_ context.Context, _ uuid.UUID, _ time.Time) ([]*entity.Execution, error) {
+func (r *fakeExecutionRepo) ListByFundDate(_ context.Context, _ uuid.UUID, _ time.Time) ([]*entity.Execution, error) {
 	return nil, nil
 }
 
@@ -71,7 +71,6 @@ func approvedDecision() *entity.Decision {
 		ID:             uuid.New(),
 		FundID:         uuid.New(),
 		PortfolioID:    uuid.New(),
-		ContractID:     uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,
 		Status:         vo.DecisionLifecycleApproved,

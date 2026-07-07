@@ -76,7 +76,6 @@ function buildBody(): ApiCreateDecisionRequest | null {
   const f = form.value;
   return {
     fund_id: fundId.value,
-    contract_id: fundId.value,
     portfolio_id: p.id,
     instrument_code: f.instrument_code ?? "",
     side: (f.side as "BUY" | "SELL") ?? "BUY",

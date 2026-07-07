@@ -29,7 +29,7 @@ func NewPostgresDecisionRepository(pool *pgxpool.Pool) *PostgresDecisionReposito
 }
 
 const decisionSelect = `
-	SELECT id, decision_number, fund_id, portfolio_id, contract_id,
+	SELECT id, decision_number, fund_id, portfolio_id,
 	       instrument_id, instrument_code, business_date,
 	       side, quantity, amount, limit_price, currency, exchange,
 	       research_report_id, research_report_no, rationale,
@@ -73,11 +73,11 @@ func (r *PostgresDecisionRepository) GetByDecisionNumber(ctx context.Context, de
 func (r *PostgresDecisionRepository) FindDecisionSubjectRefByNumber(ctx context.Context, decisionNumber string) (*domain.DecisionSubjectRef, error) {
 	var ref domain.DecisionSubjectRef
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, decision_number, contract_id, approval_request_id
+		`SELECT id, decision_number, fund_id, approval_request_id
 		   FROM investment__decisions
 		  WHERE decision_number = $1`,
 		decisionNumber,
-	).Scan(&ref.DecisionID, &ref.DecisionNumber, &ref.ContractID, &ref.ApprovalRequestID)
+	).Scan(&ref.DecisionID, &ref.DecisionNumber, &ref.FundID, &ref.ApprovalRequestID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -90,7 +90,7 @@ func (r *PostgresDecisionRepository) FindDecisionSubjectRefByNumber(ctx context.
 func (r *PostgresDecisionRepository) Create(ctx context.Context, tx pgx.Tx, d *entity.Decision) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO investment__decisions (
-			id, decision_number, fund_id, portfolio_id, contract_id,
+			id, decision_number, fund_id, portfolio_id,
 			instrument_id, instrument_code, business_date,
 			side, quantity, amount, limit_price, currency, exchange,
 			research_report_id, research_report_no, rationale,
@@ -102,19 +102,19 @@ func (r *PostgresDecisionRepository) Create(ctx context.Context, tx pgx.Tx, d *e
 			decision_type, process_type, product_type, strategy_code, amendment_no,
 			compliance_release_approval_request_id
 		) VALUES (
-			$1, $2, $3, $4, $5,
-			$6, $7, $8,
-			$9, $10, $11, $12, $13, $14,
-			$15, $16, $17,
-			$18, $19, $20, $21,
-			$22, $23,
-			$24, $25, $26,
-			$27,
-			$28, $29, $30, $31,
-			$32, $33, $34, $35, $36,
-			$37
+			$1, $2, $3, $4,
+			$5, $6, $7,
+			$8, $9, $10, $11, $12, $13,
+			$14, $15, $16,
+			$17, $18, $19, $20,
+			$21, $22,
+			$23, $24, $25,
+			$26,
+			$27, $28, $29, $30,
+			$31, $32, $33, $34, $35,
+			$36
 		)`,
-		d.ID, d.DecisionNumber, d.FundID, d.PortfolioID, d.ContractID,
+		d.ID, d.DecisionNumber, d.FundID, d.PortfolioID,
 		d.InstrumentID, nullableStr(d.InstrumentCode), d.BusinessDate,
 		nullableOrderSide(d.Side), d.Quantity, d.Amount, d.LimitPrice, d.Currency, d.Exchange,
 		d.ResearchReportID, d.ResearchReportNo, d.Rationale,
@@ -140,22 +140,22 @@ func (r *PostgresDecisionRepository) Create(ctx context.Context, tx pgx.Tx, d *e
 func (r *PostgresDecisionRepository) Update(ctx context.Context, tx pgx.Tx, d *entity.Decision) error {
 	_, err := tx.Exec(ctx, `
 		UPDATE investment__decisions SET
-			fund_id = $2, portfolio_id = $3, contract_id = $4,
-			instrument_id = $5, instrument_code = $6, business_date = $7,
-			side = $8, quantity = $9, amount = $10, limit_price = $11,
-			currency = $12, exchange = $13,
-			research_report_id = $14, research_report_no = $15, rationale = $16,
-			status = $17, approval_request_id = $18, approval_status = $19,
-			compliance_check_group_id = $20,
-			submitter_user_id = $21, submitted_at = $22,
-			cancelled_at = $23, cancelled_by = $24, cancellation_reason = $25,
-			ready_for_execution_at = $26,
-			updated_at = $27, updated_by = $28,
-			decision_type = $29, process_type = $30, product_type = $31,
-			strategy_code = $32, amendment_no = $33,
-			compliance_release_approval_request_id = $34
+			fund_id = $2, portfolio_id = $3,
+			instrument_id = $4, instrument_code = $5, business_date = $6,
+			side = $7, quantity = $8, amount = $9, limit_price = $10,
+			currency = $11, exchange = $12,
+			research_report_id = $13, research_report_no = $14, rationale = $15,
+			status = $16, approval_request_id = $17, approval_status = $18,
+			compliance_check_group_id = $19,
+			submitter_user_id = $20, submitted_at = $21,
+			cancelled_at = $22, cancelled_by = $23, cancellation_reason = $24,
+			ready_for_execution_at = $25,
+			updated_at = $26, updated_by = $27,
+			decision_type = $28, process_type = $29, product_type = $30,
+			strategy_code = $31, amendment_no = $32,
+			compliance_release_approval_request_id = $33
 		WHERE id = $1`,
-		d.ID, d.FundID, d.PortfolioID, d.ContractID,
+		d.ID, d.FundID, d.PortfolioID,
 		d.InstrumentID, nullableStr(d.InstrumentCode), d.BusinessDate,
 		nullableOrderSide(d.Side), d.Quantity, d.Amount, d.LimitPrice, d.Currency, d.Exchange,
 		d.ResearchReportID, d.ResearchReportNo, d.Rationale,
@@ -197,9 +197,6 @@ func (r *PostgresDecisionRepository) List(ctx context.Context, f domain.Decision
 	}
 	if f.PortfolioID != nil {
 		add("portfolio_id = $%d", *f.PortfolioID)
-	}
-	if f.ContractID != nil {
-		add("contract_id = $%d", *f.ContractID)
 	}
 	if f.BusinessDate != nil {
 		add("business_date = $%d", *f.BusinessDate)
@@ -360,7 +357,7 @@ func scanDecision(row rowScanner) (*entity.Decision, error) {
 		amendmentNo                        int
 	)
 	if err := row.Scan(
-		&d.ID, &d.DecisionNumber, &d.FundID, &d.PortfolioID, &d.ContractID,
+		&d.ID, &d.DecisionNumber, &d.FundID, &d.PortfolioID,
 		&instrument, &instrumentCode, &d.BusinessDate,
 		&sidePtr, &quantity, &amount, &limitPrice, &d.Currency, &exchange,
 		&researchReportID, &researchReportNo, &rationale,

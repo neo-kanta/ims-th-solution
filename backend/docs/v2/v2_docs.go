@@ -1824,9 +1824,6 @@ const docTemplatev2 = `{
                 "compliance_release_approval_request_id": {
                     "type": "string"
                 },
-                "contract_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1945,9 +1942,6 @@ const docTemplatev2 = `{
                     "type": "string"
                 },
                 "cancelled_at": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {
@@ -2277,9 +2271,6 @@ const docTemplatev2 = `{
                     "type": "string"
                 },
                 "confirmed_quantity": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {

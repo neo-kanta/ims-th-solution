@@ -115,7 +115,7 @@ func (h *TradeConfirmationHandler) ImportBatch(w http.ResponseWriter, r *http.Re
 	httputil.Created(w, resp)
 }
 
-// ListConfirmations supports filtering by execution_id or contract_id+business_date.
+// ListConfirmations supports filtering by execution_id or fund_id+business_date.
 func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if v := q.Get("execution_id"); v != "" {
@@ -136,10 +136,10 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 		httputil.OK(w, map[string]any{"items": out})
 		return
 	}
-	if v := q.Get("contract_id"); v != "" {
+	if v := q.Get("fund_id"); v != "" {
 		id, err := parseUUID(v)
 		if err != nil {
-			httputil.BadRequest(w, "invalid contract_id")
+			httputil.BadRequest(w, "invalid fund_id")
 			return
 		}
 		bd, err := parseDate(q.Get("business_date"))
@@ -147,7 +147,7 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 			httputil.BadRequest(w, "business_date required (YYYY-MM-DD)")
 			return
 		}
-		items, err := h.confirmations.ListByContractDate(r.Context(), id, bd)
+		items, err := h.confirmations.ListByFundDate(r.Context(), id, bd)
 		if err != nil {
 			httputil.InternalError(w, err.Error())
 			return
@@ -159,7 +159,7 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 		httputil.OK(w, map[string]any{"items": out})
 		return
 	}
-	httputil.BadRequest(w, "execution_id or (contract_id+business_date) is required")
+	httputil.BadRequest(w, "execution_id or (fund_id+business_date) is required")
 }
 
 func (h *TradeConfirmationHandler) GetConfirmation(w http.ResponseWriter, r *http.Request) {

@@ -18,7 +18,6 @@ type Execution struct {
 	DecisionID         uuid.UUID
 	FundID             uuid.UUID
 	PortfolioID        uuid.UUID
-	ContractID         uuid.UUID
 	InstrumentID       *uuid.UUID
 	InstrumentCode     string
 	BusinessDate       time.Time

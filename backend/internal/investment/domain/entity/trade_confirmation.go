@@ -19,7 +19,6 @@ type TradeConfirmation struct {
 	DecisionID        uuid.UUID
 	FundID            uuid.UUID
 	PortfolioID       uuid.UUID
-	ContractID        uuid.UUID
 	BusinessDate      time.Time
 	ConfirmedQuantity *decimal.Decimal
 	ConfirmedAmount   *decimal.Decimal

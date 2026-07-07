@@ -22,9 +22,9 @@ import (
 // row produces a PENDING_REVIEW trade-confirmation when validation passes.
 //
 // All decimal-looking fields are received as strings to preserve precision
-// from the broker file. ExecutionID is required; FundID / ContractID /
-// PortfolioID / BusinessDate / Side / Currency are taken from the resolved
-// execution row, so callers do not need to supply them.
+// from the broker file. ExecutionID is required; FundID / PortfolioID /
+// BusinessDate / Side / Currency are taken from the resolved execution row,
+// so callers do not need to supply them.
 type ConfirmationBatchImportRow struct {
 	ExecutionID       uuid.UUID `json:"execution_id"`
 	ConfirmedQuantity string    `json:"confirmed_quantity,omitempty"`
@@ -277,7 +277,6 @@ func (h *ConfirmationBatchImportHandler) processRow(
 		DecisionID:        exec.DecisionID,
 		FundID:            exec.FundID,
 		PortfolioID:       exec.PortfolioID,
-		ContractID:        exec.ContractID,
 		BusinessDate:      exec.BusinessDate,
 		ConfirmedQuantity: q,
 		ConfirmedAmount:   amt,

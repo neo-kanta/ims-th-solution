@@ -210,7 +210,6 @@ type CreateResearchReportRequest struct {
 type CreateDecisionRequest struct {
 	FundID           uuid.UUID  `json:"fund_id"            validate:"required"`
 	PortfolioID      uuid.UUID  `json:"portfolio_id"       validate:"required"`
-	ContractID       uuid.UUID  `json:"contract_id"        validate:"required"`
 	InstrumentID     *uuid.UUID `json:"instrument_id"`
 	InstrumentCode   string     `json:"instrument_code"    validate:"required,max=40"`
 	BusinessDate     string     `json:"business_date"      validate:"required"`

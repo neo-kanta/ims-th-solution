@@ -32,7 +32,6 @@ type Decision struct {
 	DecisionNumber string
 	FundID         uuid.UUID
 	PortfolioID    uuid.UUID
-	ContractID     uuid.UUID
 
 	// InstrumentID and InstrumentCode are nil/empty for BASKET_ORDER, REBALANCE,
 	// and SWITCH headers — the per-instrument detail lives in DecisionLines.

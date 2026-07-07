@@ -44,7 +44,7 @@ func (h *ExecutionHandler) SetPortfolioRepository(r domain.PortfolioRepository) 
 	}
 }
 
-// ListExecutions handles GET /investment/executions?decision_id=&contract_id=&business_date=.
+// ListExecutions handles GET /investment/executions?decision_id=&fund_id=&business_date=.
 func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if v := q.Get("decision_id"); v != "" {
@@ -65,10 +65,10 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 		httputil.OK(w, map[string]any{"items": out})
 		return
 	}
-	if v := q.Get("contract_id"); v != "" {
+	if v := q.Get("fund_id"); v != "" {
 		id, err := parseUUID(v)
 		if err != nil {
-			httputil.BadRequest(w, "invalid contract_id")
+			httputil.BadRequest(w, "invalid fund_id")
 			return
 		}
 		bd, err := parseDate(q.Get("business_date"))
@@ -76,7 +76,7 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 			httputil.BadRequest(w, "business_date required (YYYY-MM-DD)")
 			return
 		}
-		items, err := h.executions.ListByContractDate(r.Context(), id, bd)
+		items, err := h.executions.ListByFundDate(r.Context(), id, bd)
 		if err != nil {
 			httputil.InternalError(w, err.Error())
 			return
@@ -88,7 +88,7 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 		httputil.OK(w, map[string]any{"items": out})
 		return
 	}
-	httputil.BadRequest(w, "decision_id or (contract_id+business_date) is required")
+	httputil.BadRequest(w, "decision_id or (fund_id+business_date) is required")
 }
 
 func (h *ExecutionHandler) GetExecution(w http.ResponseWriter, r *http.Request) {

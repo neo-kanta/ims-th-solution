@@ -68,6 +68,9 @@ CREATE INDEX IF NOT EXISTS idx_inv_confirmation_execution
 CREATE INDEX IF NOT EXISTS idx_inv_confirmation_decision
     ON investment__trade_confirmations (decision_id);
 
+CREATE INDEX IF NOT EXISTS idx_inv_confirmation_fund_date
+    ON investment__trade_confirmations (fund_id, business_date DESC);
+
 CREATE INDEX IF NOT EXISTS idx_inv_confirmation_status
     ON investment__trade_confirmations (status);
 

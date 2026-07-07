@@ -4120,12 +4120,6 @@
                     },
                     {
                         "type": "string",
-                        "description": "Filter by contract UUID",
-                        "name": "contract_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Filter by business date YYYY-MM-DD",
                         "name": "business_date",
                         "in": "query"
@@ -11565,7 +11559,6 @@
             "type": "object",
             "required": [
                 "business_date",
-                "contract_id",
                 "currency",
                 "fund_id",
                 "instrument_code",
@@ -11577,9 +11570,6 @@
                     "type": "string"
                 },
                 "business_date": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "currency": {
@@ -12434,9 +12424,6 @@
                     "type": "string"
                 },
                 "compliance_release_approval_request_id": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {

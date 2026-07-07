@@ -70,7 +70,6 @@ func (h *DecisionHandler) SetApprovalStatusProvider(p contract.ApprovalStatusPro
 // @Param limit query int false "Page size (default 50, max 200)"
 // @Param fund_id query string false "Filter by fund UUID"
 // @Param portfolio_id query string false "Filter by portfolio UUID"
-// @Param contract_id query string false "Filter by contract UUID"
 // @Param business_date query string false "Filter by business date YYYY-MM-DD"
 // @Param status query string false "Filter by lifecycle status"
 // @Param instrument_code query string false "Filter by instrument code"
@@ -100,14 +99,6 @@ func (h *DecisionHandler) ListDecisions(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		filter.PortfolioID = &id
-	}
-	if v := strings.TrimSpace(q.Get("contract_id")); v != "" {
-		id, err := uuid.Parse(v)
-		if err != nil {
-			httputil.BadRequest(w, "invalid contract_id")
-			return
-		}
-		filter.ContractID = &id
 	}
 	if v := strings.TrimSpace(q.Get("business_date")); v != "" {
 		t, err := parseDate(v)
@@ -208,7 +199,6 @@ func (h *DecisionHandler) CreateDecision(w http.ResponseWriter, r *http.Request)
 	d, err := h.cmd.Create(r.Context(), command.CreateDecisionRequest{
 		FundID:           req.FundID,
 		PortfolioID:      req.PortfolioID,
-		ContractID:       req.ContractID,
 		InstrumentID:     req.InstrumentID,
 		InstrumentCode:   req.InstrumentCode,
 		BusinessDate:     bDate,

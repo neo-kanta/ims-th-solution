@@ -174,8 +174,6 @@ definitions:
         type: string
       compliance_release_approval_request_id:
         type: string
-      contract_id:
-        type: string
       created_at:
         type: string
       currency:
@@ -256,8 +254,6 @@ definitions:
       cancellation_reason:
         type: string
       cancelled_at:
-        type: string
-      contract_id:
         type: string
       created_at:
         type: string
@@ -476,8 +472,6 @@ definitions:
       confirmed_price:
         type: string
       confirmed_quantity:
-        type: string
-      contract_id:
         type: string
       created_at:
         type: string

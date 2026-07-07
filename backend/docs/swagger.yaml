@@ -670,8 +670,6 @@ definitions:
         type: string
       business_date:
         type: string
-      contract_id:
-        type: string
       currency:
         type: string
       exchange:
@@ -700,7 +698,6 @@ definitions:
         type: string
     required:
     - business_date
-    - contract_id
     - currency
     - fund_id
     - instrument_code
@@ -1281,8 +1278,6 @@ definitions:
       compliance_check_group_id:
         type: string
       compliance_release_approval_request_id:
-        type: string
-      contract_id:
         type: string
       created_at:
         type: string
@@ -7408,10 +7403,6 @@ paths:
       - description: Filter by portfolio UUID
         in: query
         name: portfolio_id
-        type: string
-      - description: Filter by contract UUID
-        in: query
-        name: contract_id
         type: string
       - description: Filter by business date YYYY-MM-DD
         in: query

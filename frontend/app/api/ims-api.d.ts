@@ -4763,8 +4763,6 @@ export interface paths {
                     fund_id?: string;
                     /** @description Filter by portfolio UUID */
                     portfolio_id?: string;
-                    /** @description Filter by contract UUID */
-                    contract_id?: string;
                     /** @description Filter by business date YYYY-MM-DD */
                     business_date?: string;
                     /** @description Filter by lifecycle status */
@@ -14644,7 +14642,6 @@ export interface components {
         CreateDecisionRequest: {
             amount?: string;
             business_date: string;
-            contract_id: string;
             currency: string;
             exchange?: string;
             fund_id: string;
@@ -14952,7 +14949,6 @@ export interface components {
             cancelled_at?: string;
             compliance_check_group_id?: string;
             compliance_release_approval_request_id?: string;
-            contract_id?: string;
             created_at?: string;
             currency?: string;
             current_approvers?: string[];
@@ -16818,7 +16814,6 @@ export interface components {
             business_date?: string;
             cancellation_reason?: string;
             cancelled_at?: string;
-            contract_id?: string;
             created_at?: string;
             currency?: string;
             decision_id?: string;
@@ -16863,7 +16858,6 @@ export interface components {
             confirmed_amount?: string;
             confirmed_price?: string;
             confirmed_quantity?: string;
-            contract_id?: string;
             created_at?: string;
             currency?: string;
             decision_id?: string;

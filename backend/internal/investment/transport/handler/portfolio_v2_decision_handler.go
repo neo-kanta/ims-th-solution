@@ -21,13 +21,11 @@ import (
 // docs/handoff/portfolio-v2-claude-implementation-prompt.md).
 //
 // Unlike Milestone 2/3's transactions, V1's request.CreateDecisionRequest
-// requires the client to supply fund_id, portfolio_id, and contract_id
-// directly (application/command/decision_lifecycle.go's
-// CreateDecisionRequest has no server-side derivation). So V2 create must
-// do real work here: resolve portfolioCode -> portfolio, then derive
-// FundID and ContractID from the portfolio (contract_id == fund_id, per the
-// Milestone 1 CHECK constraint) before calling the same
-// DecisionCommandHandler.Create used by V1.
+// requires the client to supply fund_id and portfolio_id directly
+// (application/command/decision_lifecycle.go's CreateDecisionRequest has no
+// server-side derivation). So V2 create must do real work here: resolve
+// portfolioCode -> portfolio, then derive FundID from the portfolio before
+// calling the same DecisionCommandHandler.Create used by V1.
 
 // loadOwnedDecision loads a decision by the {decisionId} path param and
 // verifies it belongs to portfolioID. Writes 404 and returns (nil, false)
@@ -141,12 +139,9 @@ func (h *DecisionHandler) CreateDecisionByCode(w http.ResponseWriter, r *http.Re
 	}
 
 	d, err := h.cmd.Create(r.Context(), command.CreateDecisionRequest{
-		// Derived from the resolved portfolio — never trusted from the
-		// client. contract_id == fund_id is enforced by the Milestone 1
-		// chk_inv_decisions_contract_is_fund CHECK constraint.
+		// Derived from the resolved portfolio — never trusted from the client.
 		FundID:           p.FundID,
 		PortfolioID:      p.ID,
-		ContractID:       p.FundID,
 		InstrumentID:     req.InstrumentID,
 		InstrumentCode:   req.InstrumentCode,
 		BusinessDate:     bDate,

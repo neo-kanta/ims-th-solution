@@ -6,11 +6,9 @@ import "github.com/google/uuid"
 // docs/handoff/portfolio-v2-claude-implementation-prompt.md).
 //
 // These mirror the V1 request shapes in requests.go with two differences:
-//   - fund_id / portfolio_id / contract_id are removed. The handler resolves
-//     the portfolio from the {portfolioCode} route param and derives
-//     FundID/ContractID from it (contract_id == fund_id, enforced by the
-//     Milestone 1 CHECK constraint) before calling the same V1 command
-//     handlers.
+//   - fund_id / portfolio_id are removed. The handler resolves the portfolio
+//     from the {portfolioCode} route param and derives FundID from it before
+//     calling the same V1 command handlers.
 //   - decision_id / execution_id are removed from the nested create
 //     requests (POST .../decisions/{decisionId}/executions and
 //     POST .../executions/{executionId}/confirmations) because the parent

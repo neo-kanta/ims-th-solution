@@ -112,7 +112,7 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 	// IsTradeAllowed, because execution is an operational act against an already-
 	// approved decision, not a new trade submission.
 	if h.workflow != nil {
-		locked, err := h.workflow.IsTransactionLocked(ctx, d.ContractID, d.BusinessDate)
+		locked, err := h.workflow.IsTransactionLocked(ctx, d.FundID, d.BusinessDate)
 		if err != nil {
 			return nil, fmt.Errorf("checking workflow transaction lock: %w", err)
 		}
@@ -138,7 +138,6 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 		DecisionID:      d.ID,
 		FundID:          d.FundID,
 		PortfolioID:     d.PortfolioID,
-		ContractID:      d.ContractID,
 		InstrumentID:    d.InstrumentID,
 		InstrumentCode:  d.InstrumentCode,
 		BusinessDate:    d.BusinessDate,

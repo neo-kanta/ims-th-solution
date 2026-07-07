@@ -95,7 +95,6 @@ func newDraftDec() *entity.Decision {
 		ID:              uuid.New(),
 		FundID:          uuid.New(),
 		PortfolioID:     uuid.New(),
-		ContractID:      uuid.New(),
 		InstrumentCode:  "PTT",
 		Side:            vo.OrderSideBuy,
 		Status:          vo.DecisionLifecycleDraft,

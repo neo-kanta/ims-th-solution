@@ -63,7 +63,7 @@ func (r *stubExecutionRepo) GetByID(_ context.Context, id uuid.UUID) (*entity.Ex
 func (r *stubExecutionRepo) ListByDecision(context.Context, uuid.UUID) ([]*entity.Execution, error) {
 	return nil, nil
 }
-func (r *stubExecutionRepo) ListByContractDate(context.Context, uuid.UUID, time.Time) ([]*entity.Execution, error) {
+func (r *stubExecutionRepo) ListByFundDate(context.Context, uuid.UUID, time.Time) ([]*entity.Execution, error) {
 	return nil, nil
 }
 
@@ -83,7 +83,7 @@ func (r *stubConfirmationRepo) GetByID(_ context.Context, id uuid.UUID) (*entity
 func (r *stubConfirmationRepo) ListByExecution(context.Context, uuid.UUID) ([]*entity.TradeConfirmation, error) {
 	return nil, nil
 }
-func (r *stubConfirmationRepo) ListByContractDate(context.Context, uuid.UUID, time.Time) ([]*entity.TradeConfirmation, error) {
+func (r *stubConfirmationRepo) ListByFundDate(context.Context, uuid.UUID, time.Time) ([]*entity.TradeConfirmation, error) {
 	return nil, nil
 }
 func (r *stubConfirmationRepo) GetByBrokerReference(context.Context, string) (*entity.TradeConfirmation, error) {

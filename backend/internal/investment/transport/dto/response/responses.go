@@ -465,7 +465,6 @@ type DecisionResponse struct {
 	DecisionNumber                     string     `json:"decision_number"`
 	FundID                             uuid.UUID  `json:"fund_id"`
 	PortfolioID                        uuid.UUID  `json:"portfolio_id"`
-	ContractID                         uuid.UUID  `json:"contract_id"`
 	InstrumentID                       *uuid.UUID `json:"instrument_id,omitempty"`
 	InstrumentCode                     string     `json:"instrument_code,omitempty"`
 	BusinessDate                       string     `json:"business_date"`
@@ -555,7 +554,6 @@ type ExecutionResponse struct {
 	DecisionID         uuid.UUID  `json:"decision_id"`
 	FundID             uuid.UUID  `json:"fund_id"`
 	PortfolioID        uuid.UUID  `json:"portfolio_id"`
-	ContractID         uuid.UUID  `json:"contract_id"`
 	InstrumentID       *uuid.UUID `json:"instrument_id,omitempty"`
 	InstrumentCode     string     `json:"instrument_code"`
 	BusinessDate       string     `json:"business_date"`
@@ -607,7 +605,6 @@ type TradeConfirmationResponse struct {
 	DecisionID        uuid.UUID  `json:"decision_id"`
 	FundID            uuid.UUID  `json:"fund_id"`
 	PortfolioID       uuid.UUID  `json:"portfolio_id"`
-	ContractID        uuid.UUID  `json:"contract_id"`
 	BusinessDate      string     `json:"business_date"`
 	ConfirmedQuantity string     `json:"confirmed_quantity,omitempty"`
 	ConfirmedAmount   string     `json:"confirmed_amount,omitempty"`

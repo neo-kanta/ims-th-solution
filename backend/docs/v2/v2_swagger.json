@@ -1822,9 +1822,6 @@
                 "compliance_release_approval_request_id": {
                     "type": "string"
                 },
-                "contract_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1943,9 +1940,6 @@
                     "type": "string"
                 },
                 "cancelled_at": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {
@@ -2275,9 +2269,6 @@
                     "type": "string"
                 },
                 "confirmed_quantity": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "created_at": {
