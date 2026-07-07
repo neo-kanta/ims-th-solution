@@ -1,9 +1,9 @@
 -- Table: investment__executions
 -- Source: 20260601000001_investment__create_decisions_executions_confirmations.up.sql,
---         updated by 20260703000001_investment__portfolio_v2_hardening.up.sql
+--         updated by 20260703000001_investment__portfolio_v2_hardening.up.sql,
+--         updated by 20260703000002_investment__drop_contract_id_from_operational_tables.up.sql
 -- Purpose: Execution record for an approved investment decision. Portfolio is the operational source of truth.
--- Identity: database links use portfolio_id. fund_id and contract_id are legacy compatibility fields
---           and must remain equal while they exist.
+-- Identity: database links use portfolio_id. fund_id is a legacy fund-wrapper compatibility field.
 CREATE TABLE IF NOT EXISTS investment__executions (
     -- Identity
     id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS investment__executions (
 
     -- Optional fund wrapper / legacy compatibility
     fund_id             UUID            NOT NULL REFERENCES investment__funds(id) ON DELETE RESTRICT,
-    contract_id         UUID            NOT NULL,
 
     -- Instrument / order
     instrument_id       UUID            REFERENCES investment__instruments(id) ON DELETE RESTRICT,
@@ -53,10 +52,7 @@ CREATE TABLE IF NOT EXISTS investment__executions (
 
     CONSTRAINT fk_inv_execution_portfolio_fund
         FOREIGN KEY (portfolio_id, fund_id)
-        REFERENCES investment__portfolios (id, fund_id),
-
-    CONSTRAINT chk_inv_executions_contract_is_fund
-        CHECK (contract_id = fund_id)
+        REFERENCES investment__portfolios (id, fund_id)
 );
 
 -- Indexes

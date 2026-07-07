@@ -3,10 +3,11 @@
 --         updated by 20260615000004_investment__add_decision_basket_fields.up.sql,
 --         updated by 20260618000002_investment__add_compliance_release_status.up.sql,
 --         updated by 20260618000003_investment__add_compliance_release_approval_id.up.sql,
---         updated by 20260703000001_investment__portfolio_v2_hardening.up.sql
+--         updated by 20260703000001_investment__portfolio_v2_hardening.up.sql,
+--         updated by 20260703000002_investment__drop_contract_id_from_operational_tables.up.sql
 -- Purpose: Investment decision aggregate, before execution. Portfolio is the operational source of truth.
 -- Identity: decision_number is the business identity; database links use portfolio_id.
---           fund_id and contract_id are legacy compatibility fields and must remain equal.
+--           fund_id is a legacy fund-wrapper compatibility field.
 CREATE TABLE IF NOT EXISTS investment__decisions (
     -- Identity
     id                                      UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,7 +16,6 @@ CREATE TABLE IF NOT EXISTS investment__decisions (
 
     -- Optional fund wrapper / legacy compatibility
     fund_id                                 UUID            NOT NULL REFERENCES investment__funds(id) ON DELETE RESTRICT,
-    contract_id                             UUID            NOT NULL,
 
     -- Instrument / order header
     instrument_id                           UUID            REFERENCES investment__instruments(id) ON DELETE RESTRICT,
@@ -93,10 +93,7 @@ CREATE TABLE IF NOT EXISTS investment__decisions (
 
     CONSTRAINT fk_inv_decision_portfolio_fund
         FOREIGN KEY (portfolio_id, fund_id)
-        REFERENCES investment__portfolios (id, fund_id),
-
-    CONSTRAINT chk_inv_decisions_contract_is_fund
-        CHECK (contract_id = fund_id)
+        REFERENCES investment__portfolios (id, fund_id)
 );
 
 -- Indexes
