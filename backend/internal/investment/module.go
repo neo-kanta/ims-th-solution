@@ -190,6 +190,9 @@ func NewModule(
 	if workflow != nil {
 		m.executionCmd.SetWorkflowStateProvider(workflow)
 	}
+	if compliance != nil {
+		m.executionCmd.SetComplianceChecker(compliance)
+	}
 
 	// ── Transport ─────────────────────────────────────────────────────────
 	// Intraday valuation handler ships without a quote provider; main.go
@@ -530,6 +533,28 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 				r.Post("/{portfolioCode}/confirmations/{confirmationId}/resolve", ch.ResolveConfirmationByCode)
 			})
 		}
+
+		// ── Portfolio Compliance V2 ──────────────────────────────────────
+		// Permission codes are the compliance module's own IRG_* catalog
+		// (see internal/compliance/module.go's RegisterRoutes for the V1
+		// mirror) — passed as literal strings rather than an invperm
+		// constant so investment does not import compliance's internal
+		// permission package.
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "IRG_VIEW_RULES"))
+			r.Get("/{portfolioCode}/compliance/rules", h.ListRulesByCode)
+			r.Get("/{portfolioCode}/compliance/breaches", h.ListBreachesByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "IRG_EDIT_BINDING"))
+			r.Post("/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings", h.BindRuleByCode)
+			r.Delete("/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings/{bindingID}", h.DeactivateRuleBindingByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "WORKFLOW_EXECUTE"))
+			r.Post("/{portfolioCode}/compliance/checks/pre-trade", h.RunPreTradeCheckByCode)
+			r.Post("/{portfolioCode}/compliance/checks/post-trade", h.RunPostTradeCheckByCode)
+		})
 	})
 }
 
@@ -603,6 +628,18 @@ func (m *Module) SetApprovalCanceller(c contract.ApprovalCanceller) {
 	if m.decisionCmd != nil {
 		m.decisionCmd.SetApprovalCanceller(c)
 	}
+}
+
+// SetPortfolioComplianceAdmin wires the Portfolio Compliance V2 contract
+// (checks, rule catalog, binding administration, breach listing) into the
+// V2 {portfolioCode} compliance handlers. Wired post-construction in
+// cmd/server/main.go — mirrors SetApprovalSubmitter's circular-dependency
+// avoidance.
+func (m *Module) SetPortfolioComplianceAdmin(c contract.PortfolioComplianceContract) {
+	if m == nil || m.handler == nil {
+		return
+	}
+	m.handler.SetPortfolioComplianceAdmin(c)
 }
 
 // ResearchReportSubjectValidator returns the approval subject validator for

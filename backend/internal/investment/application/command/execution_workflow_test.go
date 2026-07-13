@@ -152,6 +152,183 @@ func TestCreateExecution_WorkflowLocked_Blocked(t *testing.T) {
 	}
 }
 
+func TestCreateExecution_ComplianceBlock_Blocked(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictBlock,
+		Breaches: []contract.ProposedOrderBreach{
+			{RuleTypeID: "MAX_EXPOSURE", Message: "exceeds limit"},
+		},
+	}}
+	h.SetComplianceChecker(checker)
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err == nil {
+		t.Fatal("expected error when compliance returns BLOCK")
+	}
+	var ce *domain.ErrComplianceRejected
+	if !errors.As(err, &ce) {
+		t.Fatalf("expected *ErrComplianceRejected, got %T: %v", err, err)
+	}
+	if len(execRepo.created) != 0 {
+		t.Errorf("no execution must be created on BLOCK; got %d", len(execRepo.created))
+	}
+	if checker.calls != 1 {
+		t.Fatalf("expected compliance checker to be called once, got %d", checker.calls)
+	}
+	if checker.lastIn.PortfolioID != d.PortfolioID {
+		t.Errorf("expected compliance request portfolio_id %s, got %s", d.PortfolioID, checker.lastIn.PortfolioID)
+	}
+	if checker.lastIn.ContractID != d.FundID {
+		t.Errorf("expected compliance request contract_id (legacy fund_id) %s, got %s", d.FundID, checker.lastIn.ContractID)
+	}
+}
+
+func TestCreateExecution_CompliancePass_Proceeds(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	h.SetComplianceChecker(checker)
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("PASS verdict: execution must proceed: %v", err)
+	}
+	if len(execRepo.created) != 1 {
+		t.Fatalf("expected 1 execution created, got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ComplianceWarn_Proceeds(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictWarn,
+	}}
+	h.SetComplianceChecker(checker)
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("WARN verdict: execution must proceed: %v", err)
+	}
+	if len(execRepo.created) != 1 {
+		t.Fatalf("expected 1 execution created, got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ComplianceUsesActualOrderedAmount(t *testing.T) {
+	d := approvedDecision()
+	decisionLimitPrice := decimal.NewFromInt(35)
+	d.LimitPrice = &decisionLimitPrice
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	h.SetComplianceChecker(checker)
+
+	orderedQuantity := decimal.NewFromInt(40)
+	orderedAmount := decimal.NewFromInt(4_000)
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID:      d.ID,
+		ActorID:         uuid.New(),
+		OrderedQuantity: &orderedQuantity,
+		OrderedAmount:   &orderedAmount,
+	})
+	if err != nil {
+		t.Fatalf("execution with explicit notional must proceed on PASS: %v", err)
+	}
+	if !checker.lastIn.Quantity.Equal(orderedQuantity) {
+		t.Fatalf("compliance quantity = %s, want %s", checker.lastIn.Quantity, orderedQuantity)
+	}
+	wantEffectivePrice := orderedAmount.Div(orderedQuantity)
+	if !checker.lastIn.Price.Equal(wantEffectivePrice) {
+		t.Fatalf("compliance price = %s, want amount/quantity = %s", checker.lastIn.Price, wantEffectivePrice)
+	}
+	if checker.lastIn.Price.Equal(decisionLimitPrice) {
+		t.Fatalf("compliance must not reuse decision limit price %s when ordered_amount is explicit", decisionLimitPrice)
+	}
+	if len(execRepo.created) != 1 {
+		t.Fatalf("expected 1 execution created, got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ComplianceNilResult_Blocked(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	h.SetComplianceChecker(&fakeComplianceChecker{})
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err == nil {
+		t.Fatal("expected nil compliance result to fail closed")
+	}
+	if len(execRepo.created) != 0 {
+		t.Fatalf("nil compliance result must create no execution; got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ComplianceUnknownVerdict_Blocked(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	h.SetComplianceChecker(&fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdict("REVIEW"),
+	}})
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err == nil {
+		t.Fatal("expected unsupported compliance verdict to fail closed")
+	}
+	if len(execRepo.created) != 0 {
+		t.Fatalf("unsupported verdict must create no execution; got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ComplianceNil_Proceeds(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandler(d, execRepo)
+	// no compliance checker wired
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{
+		DecisionID: d.ID,
+		ActorID:    uuid.New(),
+	})
+	if err != nil {
+		t.Fatalf("nil compliance checker: execution must proceed: %v", err)
+	}
+	if len(execRepo.created) != 1 {
+		t.Fatalf("expected 1 execution created, got %d", len(execRepo.created))
+	}
+}
+
 func TestCreateExecution_DecisionNotApproved_Blocked(t *testing.T) {
 	d := approvedDecision()
 	d.Status = vo.DecisionLifecyclePendingApproval // not yet approved

@@ -11101,6 +11101,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
@@ -11399,6 +11400,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {

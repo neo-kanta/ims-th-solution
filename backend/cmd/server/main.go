@@ -164,6 +164,7 @@ func main() {
 	if chatModule != nil {
 		defer func() { _ = chatModule.Close() }()
 	}
+	investmentModule.SetPortfolioComplianceAdmin(complianceModule.PortfolioContractAdapter())
 	investmentModule.SetApprovalSubmitter(approvalModule)
 	investmentModule.SetApprovalStatusProvider(approvalModule)
 	investmentModule.SetApprovalBatchActor(approvalModule)

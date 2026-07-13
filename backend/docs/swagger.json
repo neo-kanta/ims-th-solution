@@ -11099,6 +11099,7 @@
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
@@ -11397,6 +11398,7 @@
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {

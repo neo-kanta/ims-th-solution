@@ -2,6 +2,8 @@ package contract
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -160,6 +162,14 @@ type ComplianceChecker interface {
 	CheckProposedOrder(ctx context.Context, req ProposedOrderCheck) (*ProposedOrderResult, error)
 }
 
+// ErrInvalidProposedOrder signals that a ProposedOrderCheck failed input
+// validation (missing/invalid field) rather than an infrastructure failure.
+// The compliance module wraps its internal validation error into this
+// sentinel before returning across the module boundary, so callers can
+// classify failures with errors.Is without importing internal/compliance —
+// same pattern as the Portfolio Compliance V2 binding sentinels below.
+var ErrInvalidProposedOrder = errors.New("compliance: invalid proposed order request")
+
 // ComplianceSimulator is an optional extension for callers that need the same
 // pre-trade verdict without persisting compliance check records or breaches.
 type ComplianceSimulator interface {
@@ -191,6 +201,116 @@ type PostTradeVerificationResult struct {
 // business day to TRANSACTION_CLOSED. Implemented by the compliance module.
 type PostTradeVerifier interface {
 	RunPostTradeVerification(ctx context.Context, contractID uuid.UUID, businessDate time.Time) (*PostTradeVerificationResult, error)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Portfolio Compliance V2 — portfolio-scoped compliance checks + rule
+// binding administration, keyed by portfolio_id alone (fund_id optional).
+// Implemented by the compliance module; consumed by investment's Portfolio V2
+// ({portfolioCode}) HTTP handlers so investment never imports compliance
+// internals and compliance never resolves portfolio codes itself.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PortfolioPostTradeRequest runs a post-trade compliance scan scoped to a
+// single portfolio. FundID is optional — uuid.Nil means the portfolio has no
+// fund_id and the scan runs at GLOBAL + PORTFOLIO scope only (no CONTRACT
+// scope bindings apply).
+type PortfolioPostTradeRequest struct {
+	PortfolioID  uuid.UUID
+	FundID       uuid.UUID // optional; uuid.Nil if the portfolio has no fund
+	BusinessDate time.Time
+	Actor        string
+}
+
+// PortfolioRuleBindingView describes an existing binding of a rule instance
+// to a portfolio.
+type PortfolioRuleBindingView struct {
+	BindingID     uuid.UUID  `json:"binding_id"`
+	Severity      string     `json:"severity"`
+	Priority      int        `json:"priority"`
+	IsActive      bool       `json:"is_active"`
+	EffectiveFrom time.Time  `json:"effective_from"`
+	EffectiveTo   *time.Time `json:"effective_to,omitempty"`
+}
+
+// PortfolioRuleCatalogEntry is one rule instance in the catalog, annotated
+// with its binding to a specific portfolio when one exists (Binding is nil
+// when the rule instance is not bound to that portfolio).
+type PortfolioRuleCatalogEntry struct {
+	RuleInstanceID uuid.UUID `json:"rule_instance_id"`
+	RuleTypeID     string    `json:"rule_type_id"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description,omitempty"`
+	IsActive       bool      `json:"is_active"`
+	// Parameters is the rule instance's current configured parameter set
+	// (e.g. {"asset_class":"EQUITY","max_percent_nav":60}), so the portfolio
+	// settings UI can render thresholds without a second round-trip.
+	Parameters json.RawMessage           `json:"parameters,omitempty" swaggertype:"object"`
+	Binding    *PortfolioRuleBindingView `json:"binding,omitempty"`
+}
+
+// PortfolioRuleBindingRequest binds a rule instance to a portfolio
+// (scope_type=PORTFOLIO, scope_id=PortfolioID).
+type PortfolioRuleBindingRequest struct {
+	PortfolioID    uuid.UUID
+	RuleInstanceID uuid.UUID
+	Severity       string
+	Priority       int // 0 = use the compliance module's default
+	EffectiveFrom  time.Time
+	EffectiveTo    *time.Time
+	ActorID        uuid.UUID
+}
+
+// PortfolioBreachFilter filters ListPortfolioBreaches.
+type PortfolioBreachFilter struct {
+	Status     *string
+	RuleTypeID string
+	DateFrom   *time.Time
+	DateTo     *time.Time
+	Offset     int
+	Limit      int
+}
+
+// PortfolioBreachView is a compact breach summary for the portfolio-code API.
+type PortfolioBreachView struct {
+	BreachID     uuid.UUID `json:"breach_id"`
+	RuleTypeID   string    `json:"rule_type_id"`
+	Severity     string    `json:"severity"`
+	Verdict      string    `json:"verdict"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message"`
+	BusinessDate time.Time `json:"business_date"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// Portfolio Compliance V2 error sentinels. The compliance module wraps its
+// internal domain errors into one of these before returning across the
+// module boundary (see internal/compliance/transport/portfolio_contract_adapter.go),
+// so investment's V2 handlers can classify failures with errors.Is without
+// importing internal/compliance.
+var (
+	ErrPortfolioRuleNotFound     = errors.New("compliance: rule instance not found")
+	ErrPortfolioRuleInactive     = errors.New("compliance: rule instance is not active")
+	ErrPortfolioBindingDuplicate = errors.New("compliance: an active binding already exists for this rule on this portfolio")
+	ErrPortfolioBindingInvalid   = errors.New("compliance: invalid rule binding request")
+	ErrPortfolioBindingNotFound  = errors.New("compliance: rule binding not found")
+)
+
+// PortfolioComplianceContract is the full Portfolio Compliance V2 surface:
+// pre/post-trade checks plus rule catalog and binding administration, all
+// keyed by portfolio_id with fund_id optional. Implemented by the compliance
+// module's portfolio contract adapter (transport/portfolio_contract_adapter.go).
+type PortfolioComplianceContract interface {
+	ComplianceChecker
+	ComplianceSimulator
+
+	RunPortfolioPostTradeCheck(ctx context.Context, req PortfolioPostTradeRequest) (*ProposedOrderResult, error)
+
+	ListPortfolioRules(ctx context.Context, portfolioID uuid.UUID) ([]PortfolioRuleCatalogEntry, error)
+	BindPortfolioRule(ctx context.Context, req PortfolioRuleBindingRequest) (*PortfolioRuleBindingView, error)
+	DeactivatePortfolioRuleBinding(ctx context.Context, portfolioID, bindingID uuid.UUID) error
+
+	ListPortfolioBreaches(ctx context.Context, portfolioID uuid.UUID, filter PortfolioBreachFilter) ([]PortfolioBreachView, error)
 }
 
 // AuditEntry represents a single audit log record.

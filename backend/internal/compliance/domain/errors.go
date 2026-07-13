@@ -91,6 +91,33 @@ func (e *ErrOverrideAlreadyExists) Error() string {
 	return fmt.Sprintf("compliance: override already exists for breach %s", e.BreachID)
 }
 
+// ErrRuleInstanceInactive indicates a rule instance exists but is not active
+// and therefore cannot be bound to a new scope.
+type ErrRuleInstanceInactive struct {
+	ID string
+}
+
+func (e *ErrRuleInstanceInactive) Error() string {
+	return fmt.Sprintf("compliance: rule instance %s is not active", e.ID)
+}
+
+// ErrDuplicateActiveBinding indicates an active binding already exists for
+// the same rule instance + scope. Surfaced either by the application-layer
+// pre-check or the DB unique index (compliance_rule_bindings, PORTFOLIO scope
+// only — migration 20260707000002).
+type ErrDuplicateActiveBinding struct {
+	RuleInstanceID string
+	ScopeType      string
+	ScopeID        string
+}
+
+func (e *ErrDuplicateActiveBinding) Error() string {
+	return fmt.Sprintf(
+		"compliance: an active binding already exists for rule instance %s at scope %s/%s",
+		e.RuleInstanceID, e.ScopeType, e.ScopeID,
+	)
+}
+
 // ErrInvalidOverrideRequest indicates the override request failed input
 // validation (missing/empty required field). Client-fixable → HTTP 400.
 // Distinct from internal errors (DB failures, tx errors) which must surface as 500.
@@ -104,4 +131,16 @@ func (e *ErrInvalidOverrideRequest) Error() string {
 		return fmt.Sprintf("compliance: invalid override request: %s: %s", e.Field, e.Detail)
 	}
 	return fmt.Sprintf("compliance: invalid override request: %s is required", e.Field)
+}
+
+// ErrInvalidPreTradeRequest indicates a pre-trade check request failed input
+// validation (missing/invalid field on the proposed order). Client-fixable →
+// HTTP 400. Distinct from internal errors (DB failures, pipeline errors)
+// which must surface as 500.
+type ErrInvalidPreTradeRequest struct {
+	Detail string
+}
+
+func (e *ErrInvalidPreTradeRequest) Error() string {
+	return fmt.Sprintf("compliance: invalid pre-trade request: %s", e.Detail)
 }

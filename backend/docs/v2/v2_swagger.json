@@ -156,6 +156,483 @@
                 }
             }
         },
+        "/portfolios/{portfolioCode}/compliance/breaches": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List compliance breaches for a portfolio resolved by business code.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "List Compliance Breaches For Portfolio (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Breach status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Rule type ID",
+                        "name": "rule_type_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start business date (YYYY-MM-DD)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End business date (YYYY-MM-DD)",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PortfolioBreachView"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/compliance/checks/post-trade": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Evaluate compliance rules for a portfolio resolved by business code. fund_id is used only if the portfolio has one.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Run Portfolio Post-Trade Compliance Check (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Post-trade check payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioPostTradeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ProposedOrderResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/compliance/checks/pre-trade": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Evaluate compliance rules for a proposed order against a portfolio resolved by business code. fund_id is used only if the portfolio has one.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Run Portfolio Pre-Trade Compliance Check (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Pre-trade check payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioPreTradeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ProposedOrderResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/compliance/rules": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List the active rule catalog, annotated with each rule's binding to this portfolio when one exists.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "List Compliance Rules For Portfolio (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/PortfolioRuleCatalogEntry"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Bind an existing rule instance to this portfolio (scope_type=PORTFOLIO).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Bind Compliance Rule To Portfolio (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Rule instance UUID",
+                        "name": "ruleInstanceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Binding payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/BindRuleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/PortfolioRuleBindingView"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings/{bindingID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deactivate a rule binding on this portfolio. Bindings owned by another portfolio are reported as 404.",
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Deactivate Portfolio Compliance Rule Binding (V2)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Rule instance UUID (unused for lookup; kept for a stable REST shape)",
+                        "name": "ruleInstanceID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Binding UUID",
+                        "name": "bindingID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve": {
             "post": {
                 "security": [
@@ -1560,6 +2037,26 @@
         }
     },
     "definitions": {
+        "BindRuleRequest": {
+            "type": "object",
+            "properties": {
+                "effective_from": {
+                    "description": "\"2006-01-02\"",
+                    "type": "string"
+                },
+                "effective_to": {
+                    "description": "\"2006-01-02\" or null",
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "severity": {
+                    "description": "BLOCK | WARN | REQUIRE_APPROVAL | MONITOR",
+                    "type": "string"
+                }
+            }
+        },
         "CancelDecisionRequest": {
             "type": "object",
             "required": [
@@ -1660,6 +2157,19 @@
                     "type": "string"
                 }
             }
+        },
+        "ComplianceVerdict": {
+            "type": "string",
+            "enum": [
+                "PASS",
+                "WARN",
+                "BLOCK"
+            ],
+            "x-enum-varnames": [
+                "ComplianceVerdictPass",
+                "ComplianceVerdictWarn",
+                "ComplianceVerdictBlock"
+            ]
         },
         "CreateDecisionV2Request": {
             "type": "object",
@@ -2044,6 +2554,77 @@
                 }
             }
         },
+        "PortfolioBreachView": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "type": "string"
+                }
+            }
+        },
+        "PortfolioPostTradeRequest": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "PortfolioPreTradeRequest": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "description": "\"2006-01-02\"",
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "exchange": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "side": {
+                    "description": "BUY | SELL",
+                    "type": "string"
+                },
+                "ticker": {
+                    "type": "string"
+                }
+            }
+        },
         "PortfolioResponse": {
             "type": "object",
             "properties": {
@@ -2106,6 +2687,56 @@
                 },
                 "version": {
                     "type": "integer"
+                }
+            }
+        },
+        "PortfolioRuleBindingView": {
+            "type": "object",
+            "properties": {
+                "binding_id": {
+                    "type": "string"
+                },
+                "effective_from": {
+                    "type": "string"
+                },
+                "effective_to": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "severity": {
+                    "type": "string"
+                }
+            }
+        },
+        "PortfolioRuleCatalogEntry": {
+            "type": "object",
+            "properties": {
+                "binding": {
+                    "$ref": "#/definitions/PortfolioRuleBindingView"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parameters": {
+                    "description": "Parameters is the rule instance's current configured parameter set\n(e.g. {\"asset_class\":\"EQUITY\",\"max_percent_nav\":60}), so the portfolio\nsettings UI can render thresholds without a second round-trip.",
+                    "type": "object"
+                },
+                "rule_instance_id": {
+                    "type": "string"
+                },
+                "rule_type_id": {
+                    "type": "string"
                 }
             }
         },
@@ -2193,6 +2824,49 @@
                 },
                 "transaction_type": {
                     "type": "string"
+                }
+            }
+        },
+        "ProposedOrderBreach": {
+            "type": "object",
+            "properties": {
+                "breach_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "overridable": {
+                    "type": "boolean"
+                },
+                "rule_type_id": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "$ref": "#/definitions/ComplianceVerdict"
+                }
+            }
+        },
+        "ProposedOrderResult": {
+            "type": "object",
+            "properties": {
+                "breaches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ProposedOrderBreach"
+                    }
+                },
+                "checkGroupID": {
+                    "type": "string"
+                },
+                "rulesEvaluated": {
+                    "type": "integer"
+                },
+                "verdict": {
+                    "$ref": "#/definitions/ComplianceVerdict"
                 }
             }
         },

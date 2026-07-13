@@ -55,6 +55,22 @@ type InvestmentHandler struct {
 	fundNAVQuery   *query.GetLatestFundNAVHandler
 	fundAllocQuery *query.GetFundAllocationHandler
 	fundNAVHistory *query.GetFundNAVHistoryHandler
+
+	// compliance is the Portfolio Compliance V2 surface (checks, rule catalog,
+	// binding administration, breach listing). Wired post-construction via
+	// SetPortfolioComplianceAdmin to avoid a circular construction dependency
+	// between investment and compliance — nil until the setter runs, so every
+	// handler in portfolio_v2_compliance_handler.go checks for nil first.
+	compliance contract.PortfolioComplianceContract
+}
+
+// SetPortfolioComplianceAdmin wires the Portfolio Compliance V2 contract.
+// Mirrors the existing post-construction setter pattern used for approval
+// and market-data cross-module wiring (see Module.SetApprovalSubmitter etc.).
+func (h *InvestmentHandler) SetPortfolioComplianceAdmin(c contract.PortfolioComplianceContract) {
+	if h != nil {
+		h.compliance = c
+	}
 }
 
 // NewInvestmentHandler wires every command/query for the investment module.

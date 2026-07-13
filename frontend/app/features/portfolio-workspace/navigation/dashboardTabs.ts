@@ -33,6 +33,12 @@ export const portfolioWorkspaceDashboardTabs: DashboardTabProvider = {
           to: `/portfolios/${code}/ledger`,
           icon: "decision",
         },
+        {
+          key: "compliance",
+          label: t("portfolio.workspaceTabs.compliance"),
+          to: `/portfolios/${code}/compliance`,
+          icon: "compliance",
+        },
       ];
     });
 

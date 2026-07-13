@@ -12627,6 +12627,560 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portfolios/{portfolioCode}/compliance/breaches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Compliance Breaches For Portfolio (V2)
+         * @description List compliance breaches for a portfolio resolved by business code.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Breach status */
+                    status?: string;
+                    /** @description Rule type ID */
+                    rule_type_id?: string;
+                    /** @description Start business date (YYYY-MM-DD) */
+                    date_from?: string;
+                    /** @description End business date (YYYY-MM-DD) */
+                    date_to?: string;
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioBreachView"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/compliance/checks/post-trade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Portfolio Post-Trade Compliance Check (V2)
+         * @description Evaluate compliance rules for a portfolio resolved by business code. fund_id is used only if the portfolio has one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                };
+                cookie?: never;
+            };
+            /** @description Post-trade check payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PortfolioPostTradeRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProposedOrderResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/compliance/checks/pre-trade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Portfolio Pre-Trade Compliance Check (V2)
+         * @description Evaluate compliance rules for a proposed order against a portfolio resolved by business code. fund_id is used only if the portfolio has one.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                };
+                cookie?: never;
+            };
+            /** @description Pre-trade check payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PortfolioPreTradeRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProposedOrderResult"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/compliance/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Compliance Rules For Portfolio (V2)
+         * @description List the active rule catalog, annotated with each rule's binding to this portfolio when one exists.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioRuleCatalogEntry"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bind Compliance Rule To Portfolio (V2)
+         * @description Bind an existing rule instance to this portfolio (scope_type=PORTFOLIO).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                    /** @description Rule instance UUID */
+                    ruleInstanceID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Binding payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BindRuleRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PortfolioRuleBindingView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings/{bindingID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Deactivate Portfolio Compliance Rule Binding (V2)
+         * @description Deactivate a rule binding on this portfolio. Bindings owned by another portfolio are reported as 404.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                    /** @description Rule instance UUID (unused for lookup; kept for a stable REST shape) */
+                    ruleInstanceID: string;
+                    /** @description Binding UUID */
+                    bindingID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "*/*": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve": {
         parameters: {
             query?: never;
@@ -14438,6 +14992,7 @@ export interface components {
             businessDate?: string;
             checkGroupID?: string;
             checkRecordID?: string;
+            /** @description nil for portfolio-only checks (no fund_id) */
             contractID?: string;
             createdAt?: string;
             evidence?: Record<string, never>;
@@ -14580,6 +15135,7 @@ export interface components {
             checkedAt?: string;
             /** @description actor ID or "system" */
             checkedBy?: string;
+            /** @description nil for portfolio-only checks (no fund_id) */
             contractID?: string;
             createdAt?: string;
             /** @description SHA-256 of the DataBundle used */
@@ -16787,9 +17343,20 @@ export interface components {
             id?: string;
             username?: string;
         };
+        BindRuleRequest: {
+            /** @description "2006-01-02" */
+            effective_from?: string;
+            /** @description "2006-01-02" or null */
+            effective_to?: string;
+            priority?: number;
+            /** @description BLOCK | WARN | REQUIRE_APPROVAL | MONITOR */
+            severity?: string;
+        };
         CancelExecutionRequest: {
             reason: string;
         };
+        /** @enum {string} */
+        ComplianceVerdict: "PASS" | "WARN" | "BLOCK";
         CreateDecisionV2Request: {
             amount?: string;
             business_date: string;
@@ -16839,6 +17406,68 @@ export interface components {
             executed_quantity?: string;
             execution_price?: string;
             status?: string;
+        };
+        PortfolioBreachView: {
+            breach_id?: string;
+            business_date?: string;
+            created_at?: string;
+            message?: string;
+            rule_type_id?: string;
+            severity?: string;
+            status?: string;
+            verdict?: string;
+        };
+        PortfolioPostTradeRequest: {
+            business_date?: string;
+        };
+        PortfolioPreTradeRequest: {
+            /** @description "2006-01-02" */
+            business_date?: string;
+            currency?: string;
+            exchange?: string;
+            fees?: string;
+            order_id?: string;
+            price?: string;
+            quantity?: string;
+            /** @description BUY | SELL */
+            side?: string;
+            ticker?: string;
+        };
+        PortfolioRuleBindingView: {
+            binding_id?: string;
+            effective_from?: string;
+            effective_to?: string;
+            is_active?: boolean;
+            priority?: number;
+            severity?: string;
+        };
+        PortfolioRuleCatalogEntry: {
+            binding?: components["schemas"]["PortfolioRuleBindingView"];
+            description?: string;
+            is_active?: boolean;
+            name?: string;
+            /**
+             * @description Parameters is the rule instance's current configured parameter set
+             *     (e.g. {"asset_class":"EQUITY","max_percent_nav":60}), so the portfolio
+             *     settings UI can render thresholds without a second round-trip.
+             */
+            parameters?: Record<string, never>;
+            rule_instance_id?: string;
+            rule_type_id?: string;
+        };
+        ProposedOrderBreach: {
+            breach_id?: string;
+            message?: string;
+            overridable?: boolean;
+            rule_type_id?: string;
+            severity?: string;
+            verdict?: components["schemas"]["ComplianceVerdict"];
+        };
+        ProposedOrderResult: {
+            breaches?: components["schemas"]["ProposedOrderBreach"][];
+            checkGroupID?: string;
+            rulesEvaluated?: number;
+            verdict?: components["schemas"]["ComplianceVerdict"];
         };
         RecordConfirmationV2Request: {
             broker_reference?: string;

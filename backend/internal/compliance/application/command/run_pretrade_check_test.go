@@ -3,6 +3,7 @@ package command_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -26,11 +27,17 @@ import (
 // ─── fakes ───────────────────────────────────────────────────────────────────
 
 // pretradeBindingRepo returns a fixed binding slice and counts ResolveApplicable calls.
+// It also records the scopes it was called with, so tests can assert on
+// buildScopes' output (e.g. CONTRACT scope omitted when ContractID is nil).
 type pretradeBindingRepo struct {
-	bindings []domain.ResolvedBinding
+	bindings      []domain.ResolvedBinding
+	lastScopes    []vo.Scope
+	resolveCalled int
 }
 
-func (r *pretradeBindingRepo) ResolveApplicable(_ context.Context, _ []vo.Scope, _ time.Time) ([]domain.ResolvedBinding, error) {
+func (r *pretradeBindingRepo) ResolveApplicable(_ context.Context, scopes []vo.Scope, _ time.Time) ([]domain.ResolvedBinding, error) {
+	r.lastScopes = scopes
+	r.resolveCalled++
 	return r.bindings, nil
 }
 func (r *pretradeBindingRepo) Create(_ context.Context, _ *entity.RuleBinding) error {
@@ -147,6 +154,22 @@ func buildPreTradeHandler(bindings []domain.ResolvedBinding) (
 	breachRepo = &pretradeBreachRepo{}
 
 	// Nil-port Fetcher: safe because amount.minimum_trade declares no DataDependencies.
+	fetcher := engine.NewFetcher(nil, nil, nil, nil, nil, nil, nil, nil)
+	pipeline := engine.NewPipeline(spi.GlobalRegistry(), bindingRepo, checkRepo, breachRepo, fetcher)
+	h = command.NewRunPreTradeCheckHandler(pipeline, spi.GlobalRegistry())
+	return
+}
+
+// buildPreTradeHandlerCapturingScopes is like buildPreTradeHandler but also
+// returns the binding repo, so tests can assert on the scopes buildScopes()
+// passed to ResolveApplicable.
+func buildPreTradeHandlerCapturingScopes(bindings []domain.ResolvedBinding) (
+	h *command.RunPreTradeCheckHandler,
+	bindingRepo *pretradeBindingRepo,
+) {
+	bindingRepo = &pretradeBindingRepo{bindings: bindings}
+	checkRepo := &pretradeCheckRepo{}
+	breachRepo := &pretradeBreachRepo{}
 	fetcher := engine.NewFetcher(nil, nil, nil, nil, nil, nil, nil, nil)
 	pipeline := engine.NewPipeline(spi.GlobalRegistry(), bindingRepo, checkRepo, breachRepo, fetcher)
 	h = command.NewRunPreTradeCheckHandler(pipeline, spi.GlobalRegistry())
@@ -355,5 +378,96 @@ func TestPreTradeCheck_NoRules(t *testing.T) {
 	}
 	if len(resp.Breaches) != 0 {
 		t.Errorf("breaches: got %d, want 0", len(resp.Breaches))
+	}
+}
+
+// ─── Portfolio Compliance V2: scope building ───────────────────────────────
+
+// TestPreTradeCheck_InvalidSideRejected verifies an unknown order side fails
+// validation before any rule resolution can treat it as BUY or SELL.
+func TestPreTradeCheck_InvalidSideRejected(t *testing.T) {
+	t.Parallel()
+
+	h, _, _ := buildPreTradeHandler(nil)
+	req := basePreTradeReq(1, 1)
+	req.Side = vo.OrderSide("HOLD")
+
+	_, err := h.HandleDryRun(context.Background(), req)
+	var invalid *domain.ErrInvalidPreTradeRequest
+	if !errors.As(err, &invalid) {
+		t.Fatalf("expected ErrInvalidPreTradeRequest, got %T: %v", err, err)
+	}
+	if !strings.Contains(invalid.Error(), "side must be BUY or SELL") {
+		t.Fatalf("unexpected validation error: %v", invalid)
+	}
+}
+
+// TestPreTradeCheck_NilContractID_SkipsContractScope verifies that a
+// portfolio-only check (ContractID left as uuid.Nil, the Portfolio Compliance
+// V2 case for a portfolio with no fund_id) resolves bindings at GLOBAL +
+// PORTFOLIO scope only — no CONTRACT scope is queried.
+func TestPreTradeCheck_NilContractID_SkipsContractScope(t *testing.T) {
+	t.Parallel()
+
+	h, bindingRepo := buildPreTradeHandlerCapturingScopes(nil)
+	req := basePreTradeReq(1, 1)
+	req.ContractID = uuid.Nil // no fund_id
+
+	if _, err := h.HandleDryRun(context.Background(), req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if bindingRepo.resolveCalled != 1 {
+		t.Fatalf("expected ResolveApplicable called once, got %d", bindingRepo.resolveCalled)
+	}
+	var sawGlobal, sawPortfolio, sawContract bool
+	for _, s := range bindingRepo.lastScopes {
+		switch s.Type {
+		case vo.ScopeGlobal:
+			sawGlobal = true
+		case vo.ScopePortfolio:
+			sawPortfolio = true
+			if s.ID == nil || *s.ID != req.PortfolioID {
+				t.Errorf("PORTFOLIO scope ID = %v, want %s", s.ID, req.PortfolioID)
+			}
+		case vo.ScopeContract:
+			sawContract = true
+		}
+	}
+	if !sawGlobal {
+		t.Error("expected GLOBAL scope to always be present")
+	}
+	if !sawPortfolio {
+		t.Error("expected PORTFOLIO scope to be present (portfolio_id is always required)")
+	}
+	if sawContract {
+		t.Error("CONTRACT scope must be skipped when contract_id/fund_id is nil")
+	}
+}
+
+// TestPreTradeCheck_WithContractID_IncludesContractScope verifies V1
+// contract-scoped behavior is unchanged: when ContractID is set, CONTRACT
+// scope is resolved alongside GLOBAL + PORTFOLIO.
+func TestPreTradeCheck_WithContractID_IncludesContractScope(t *testing.T) {
+	t.Parallel()
+
+	h, bindingRepo := buildPreTradeHandlerCapturingScopes(nil)
+	req := basePreTradeReq(1, 1) // basePreTradeReq sets a non-nil ContractID
+
+	if _, err := h.HandleDryRun(context.Background(), req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var sawContract bool
+	for _, s := range bindingRepo.lastScopes {
+		if s.Type == vo.ScopeContract {
+			sawContract = true
+			if s.ID == nil || *s.ID != req.ContractID {
+				t.Errorf("CONTRACT scope ID = %v, want %s", s.ID, req.ContractID)
+			}
+		}
+	}
+	if !sawContract {
+		t.Error("CONTRACT scope must be present when contract_id/fund_id is set (V1 compatibility)")
 	}
 }

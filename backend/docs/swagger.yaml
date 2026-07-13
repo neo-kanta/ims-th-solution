@@ -339,6 +339,7 @@ definitions:
       checkRecordID:
         type: string
       contractID:
+        description: nil for portfolio-only checks (no fund_id)
         type: string
       createdAt:
         type: string
@@ -558,6 +559,7 @@ definitions:
         description: actor ID or "system"
         type: string
       contractID:
+        description: nil for portfolio-only checks (no fund_id)
         type: string
       createdAt:
         type: string

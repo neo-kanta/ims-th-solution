@@ -8,12 +8,14 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/application/command"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/engine"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/spi"
@@ -109,7 +111,7 @@ func (a *ComplianceContractAdapter) checkProposedOrder(
 		resp, err = a.preTrade.HandleDryRun(ctx, internalReq)
 	}
 	if err != nil {
-		return nil, err
+		return nil, mapPreTradeError(err)
 	}
 
 	out := &contract.ProposedOrderResult{
@@ -196,6 +198,18 @@ func (a *ComplianceContractAdapter) RunPostTradeVerification(
 // ─────────────────────────────────────────────────────────────────────────────
 // mapping helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+// mapPreTradeError translates the internal/compliance validation error type
+// into the exported pkg/contract sentinel so callers across the module
+// boundary (investment) can classify pre-trade failures with errors.Is
+// without importing internal/compliance — same pattern as mapBindingError.
+func mapPreTradeError(err error) error {
+	var invalid *domain.ErrInvalidPreTradeRequest
+	if errors.As(err, &invalid) {
+		return fmt.Errorf("%w: %s", contract.ErrInvalidProposedOrder, err.Error())
+	}
+	return err
+}
 
 func mapOrderSideFromContract(s contract.ComplianceOrderSide) vo.OrderSide {
 	switch s {

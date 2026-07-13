@@ -18,8 +18,8 @@ type CheckRecord struct {
 	Timing              vo.CheckTiming `swaggertype:"string"`
 	OrderID             *uuid.UUID     // nil for periodic checks
 	PortfolioID         uuid.UUID
-	ContractID          uuid.UUID
-	Ticker              string // empty for portfolio-wide periodic checks
+	ContractID          *uuid.UUID // nil for portfolio-only checks (no fund_id)
+	Ticker              string     // empty for portfolio-wide periodic checks
 	RuleTypeID          string
 	RuleInstanceID      uuid.UUID
 	RuleInstanceVersion int

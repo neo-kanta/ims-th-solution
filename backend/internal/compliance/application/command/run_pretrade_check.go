@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
+	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/engine"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/spi"
@@ -77,7 +78,7 @@ func (h *RunPreTradeCheckHandler) HandleDryRun(ctx context.Context, req PreTrade
 
 func (h *RunPreTradeCheckHandler) handle(ctx context.Context, req PreTradeCheckRequest, persist bool) (*PreTradeCheckResponse, error) {
 	if err := validatePreTradeRequest(req); err != nil {
-		return nil, fmt.Errorf("invalid pre-trade request: %w", err)
+		return nil, err
 	}
 
 	checkGroupID := req.CheckGroupID
@@ -146,25 +147,29 @@ func (h *RunPreTradeCheckHandler) handle(ctx context.Context, req PreTradeCheckR
 
 func validatePreTradeRequest(req PreTradeCheckRequest) error {
 	if req.PortfolioID == uuid.Nil {
-		return fmt.Errorf("portfolio_id is required")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "portfolio_id is required"}
 	}
-	if req.ContractID == uuid.Nil {
-		return fmt.Errorf("contract_id is required")
-	}
+	// contract_id is optional: Portfolio Compliance V2 runs on portfolio_id
+	// alone when the portfolio has no fund_id. V1 HTTP callers still require
+	// contract_id — that requirement is enforced at the transport layer
+	// (compliance_handler.go RunPreTradeCheck parses it before calling here).
 	if req.Ticker == "" {
-		return fmt.Errorf("ticker is required")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "ticker is required"}
+	}
+	if !req.Side.IsValid() {
+		return &domain.ErrInvalidPreTradeRequest{Detail: "side must be BUY or SELL"}
 	}
 	if req.Quantity.IsZero() || req.Quantity.IsNegative() {
-		return fmt.Errorf("quantity must be positive")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "quantity must be positive"}
 	}
 	if req.Price.IsZero() || req.Price.IsNegative() {
-		return fmt.Errorf("price must be positive")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "price must be positive"}
 	}
 	if req.Fees.IsNegative() {
-		return fmt.Errorf("fees must be non-negative")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "fees must be non-negative"}
 	}
 	if req.BusinessDate.IsZero() {
-		return fmt.Errorf("business_date is required")
+		return &domain.ErrInvalidPreTradeRequest{Detail: "business_date is required"}
 	}
 	return nil
 }

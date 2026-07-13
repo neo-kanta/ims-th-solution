@@ -121,6 +121,15 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 	var records []entity.CheckRecord
 	var breaches []entity.Breach
 
+	// contractID is nil for portfolio-only checks (no fund_id) so
+	// compliance_check_records/compliance_breaches persist NULL rather than a
+	// zero-UUID sentinel.
+	var contractID *uuid.UUID
+	if input.ContractID != uuid.Nil {
+		c := input.ContractID
+		contractID = &c
+	}
+
 	for _, rb := range resolved {
 		ruleStart := time.Now()
 		record := p.evaluateOne(ctx, input, rb, bundle, dataHash, ruleStart)
@@ -133,7 +142,7 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 				CheckRecordID:  record.ID,
 				CheckGroupID:   input.CheckGroupID,
 				PortfolioID:    input.PortfolioID,
-				ContractID:     input.ContractID,
+				ContractID:     contractID,
 				RuleTypeID:     record.RuleTypeID,
 				RuleInstanceID: record.RuleInstanceID,
 				Severity:       record.EffectiveSeverity,
@@ -212,12 +221,20 @@ func (p *Pipeline) evaluateOne(
 	now := time.Now().UTC()
 	recordID := uuid.New()
 
+	// nil for portfolio-only checks (no fund_id) so compliance_check_records
+	// persists NULL rather than a zero-UUID sentinel.
+	var contractID *uuid.UUID
+	if input.ContractID != uuid.Nil {
+		c := input.ContractID
+		contractID = &c
+	}
+
 	base := entity.CheckRecord{
 		ID:                  recordID,
 		CheckGroupID:        input.CheckGroupID,
 		Timing:              input.Timing,
 		PortfolioID:         input.PortfolioID,
-		ContractID:          input.ContractID,
+		ContractID:          contractID,
 		RuleTypeID:          rb.RuleInstance.RuleTypeID,
 		RuleInstanceID:      rb.RuleInstance.ID,
 		RuleInstanceVersion: rb.CurrentVersion.VersionNumber,
