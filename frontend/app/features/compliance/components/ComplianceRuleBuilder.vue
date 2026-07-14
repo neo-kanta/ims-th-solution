@@ -6,6 +6,7 @@ import AppButton from "~/shared/ui/AppButton.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 
 import { useComplianceRuleCreate } from "../composables/useComplianceRules";
+import { RULE_PARAMETER_SAMPLES } from "../lib/ruleParameterSamples";
 import { RULE_CATALOG, lookupRuleCatalog } from "../lib/ruleTypeCatalog";
 import type { ComplianceCreateRuleInstanceRequest } from "../services/complianceApi";
 
@@ -15,31 +16,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const mutation = useComplianceRuleCreate();
-
-// Sample parameter scaffolds per backend rule package. The user can edit the
-// JSON freely; the backend will reject it if it doesn't satisfy the rule
-// type's ParameterSchema.
-const SAMPLE_PARAMS: Record<string, string> = {
-  "concentration.single_issuer": JSON.stringify(
-    { max_pct: 10, exempt_government: false },
-    null,
-    2,
-  ),
-  "ratio.sector_exposure": JSON.stringify(
-    { max_pct: 30, sector_code: "FINANCIALS" },
-    null,
-    2,
-  ),
-  "cash.availability": JSON.stringify({ min_balance: 0 }, null, 2),
-  "credit.min_rating": JSON.stringify({ min_rating: "BBB-" }, null, 2),
-  "quantity.min_trading_unit": JSON.stringify({ min_units: 100 }, null, 2),
-  "quantity.sell_available": JSON.stringify({}, null, 2),
-  "restriction.blacklist": JSON.stringify({ list_code: "DEFAULT" }, null, 2),
-  "restriction.whitelist": JSON.stringify({ list_code: "DEFAULT" }, null, 2),
-  "restriction.list_enforcement": JSON.stringify({ list_code: "DEFAULT" }, null, 2),
-  "credit_rating.minimum": JSON.stringify({ min_rating: "BBB-" }, null, 2),
-  "regulatory.thai_sec": JSON.stringify({}, null, 2),
-};
 
 const STEPS = [
   { key: "identity", labelKey: "compliance.builder.steps.identity" },
@@ -89,10 +65,10 @@ const form = reactive<FormState>({
 
 function pickRuleType(typeId: string) {
   form.ruleTypeId = typeId;
-  const sample = SAMPLE_PARAMS[typeId];
+  const sample = RULE_PARAMETER_SAMPLES[typeId];
   if (sample) form.parametersJson = sample;
   const entry = lookupRuleCatalog(typeId);
-  if (entry && !form.name) form.name = entry.label;
+  if (entry && !form.name) form.name = t(entry.labelKey);
 }
 
 const jsonError = computed<string | null>(() => {
@@ -191,8 +167,13 @@ async function submit() {
           </span>
           <select class="form-control" :value="form.ruleTypeId" @change="(e: Event) => pickRuleType((e.target as HTMLSelectElement).value)">
             <option value="" disabled>Select a rule type…</option>
-            <option v-for="entry in RULE_CATALOG" :key="entry.typeId" :value="entry.typeId">
-              {{ entry.label }} — {{ entry.typeId }}
+            <option
+              v-for="entry in RULE_CATALOG"
+              :key="entry.typeId"
+              :value="entry.typeId"
+              :disabled="!entry.selectable"
+            >
+              {{ t(entry.labelKey) }} — {{ entry.typeId }}
             </option>
           </select>
           <small class="builder__hint">

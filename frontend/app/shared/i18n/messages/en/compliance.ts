@@ -158,6 +158,149 @@ export const enComplianceMessages = {
       },
     },
 
+    // Rule type catalog — stable technical metadata (rule_type_id, category,
+    // parameter keys) lives in lib/ruleTypeCatalog.ts; only the translated
+    // presentation copy lives here. Unknown rule types fall back to the raw
+    // rule_type_id and the backend message rather than guessed copy.
+    catalog: {
+      allocation: {
+        asset_class_max: {
+          label: "Maximum asset-class allocation",
+          explanation:
+            "Portfolio exposure to the configured asset class after this order would exceed the maximum percentage of NAV.",
+          suggestedCorrection:
+            "Reduce the order or rebalance other holdings so asset-class exposure stays within the configured ceiling.",
+        },
+        asset_class_min: {
+          label: "Minimum asset-class allocation",
+          explanation:
+            "Portfolio exposure to the configured asset class is below the minimum percentage of NAV required by the mandate.",
+          suggestedCorrection:
+            "Increase exposure to the asset class, or confirm the mandate permits a temporary shortfall.",
+        },
+      },
+      amount: {
+        minimum_trade: {
+          label: "Minimum trade amount",
+          explanation:
+            "The proposed order's notional value is below the minimum trade amount configured for this mandate.",
+          suggestedCorrection:
+            "Increase the order quantity or price so the notional value meets the minimum trade amount.",
+        },
+      },
+      cash: {
+        availability: {
+          label: "Available cash check",
+          explanation:
+            "Buy order requires more cash than is available in the portfolio for the business date.",
+          suggestedCorrection:
+            "Reduce order quantity, raise cash (sell other positions), or stage the order for after settlement.",
+        },
+      },
+      concentration: {
+        single_issuer: {
+          label: "Maximum single-issuer exposure",
+          explanation:
+            "Combined exposure to the issuer (and any grouped parent entity) exceeds the configured % of NAV.",
+          suggestedCorrection:
+            "Reduce the order so total issuer exposure stays below the configured cap, or rebalance other positions first.",
+        },
+      },
+      credit: {
+        min_rating: {
+          label: "Minimum credit rating",
+          explanation:
+            "Instrument's credit rating is below the minimum permitted for this portfolio or mandate.",
+          suggestedCorrection:
+            "Choose an instrument that meets the minimum rating, or request a written mandate exception before execution.",
+        },
+      },
+      credit_rating: {
+        minimum: {
+          label: "Minimum credit rating (stub)",
+          explanation:
+            "Stub credit-rating rule — instrument rating does not satisfy the configured threshold. This rule type is not yet enforced by the backend.",
+          suggestedCorrection:
+            "This rule type is not yet enforced. Pick a rating-compliant instrument as a precaution, or request an exception with risk acknowledgement.",
+        },
+      },
+      exposure: {
+        max_order_percent_aum: {
+          label: "Maximum order size (% of AUM)",
+          explanation:
+            "The proposed order's trade value exceeds the configured maximum percentage of portfolio AUM for a single order.",
+          suggestedCorrection:
+            "Reduce the order size, or split it into multiple orders across business dates within the configured limit.",
+        },
+      },
+      quantity: {
+        min_trading_unit: {
+          label: "Minimum trading unit",
+          explanation:
+            "Order quantity is below the venue's minimum lot or the configured trading-unit floor.",
+          suggestedCorrection:
+            "Increase the order quantity to a multiple of the minimum lot size for this market.",
+        },
+        sell_available: {
+          label: "Available-to-sell quantity",
+          explanation:
+            "Sell order exceeds the position currently available to sell (after pending sells / settlement holds).",
+          suggestedCorrection:
+            "Lower the sell quantity to the available-to-sell figure, or wait for pending sells to settle.",
+        },
+      },
+      ratio: {
+        sector_exposure: {
+          label: "Maximum sector exposure",
+          explanation:
+            "Sector exposure after the order would exceed the configured percentage of NAV.",
+          suggestedCorrection:
+            "Reduce the order, switch to a different sector, or rebalance prior holdings to free up sector capacity.",
+        },
+      },
+      regulatory: {
+        thai_sec: {
+          label: "Thai SEC regulatory check (stub)",
+          explanation:
+            "Stub regulatory check — order violates a configured Thai SEC parameter. This rule type is not yet enforced by the backend and always returns a warning.",
+          suggestedCorrection:
+            "This rule type is not yet enforced. Review the SEC parameter list with compliance before re-submitting, as a precaution.",
+        },
+      },
+      restriction: {
+        blacklist: {
+          label: "Restricted security blacklist",
+          explanation:
+            "Ticker is on the active blacklist (sanctions, banned issuers, internal blocks).",
+          suggestedCorrection:
+            "Select an unrestricted ticker. Blacklist entries are not overridable from the trading desk.",
+        },
+        whitelist: {
+          label: "Whitelist-only investment",
+          explanation:
+            "Mandate permits only whitelisted securities, and the proposed ticker is not on the list.",
+          suggestedCorrection:
+            "Pick a ticker from the mandate whitelist, or request an exception to add it.",
+        },
+        list_enforcement: {
+          label: "Restricted-list enforcement",
+          explanation:
+            "Combined restricted-list rules (whitelist + blacklist) flagged this order.",
+          suggestedCorrection:
+            "Check both the whitelist and blacklist; pick a permitted ticker or seek a compliance exception.",
+        },
+      },
+      valuation: {
+        min_nav: {
+          label: "Minimum portfolio NAV",
+          explanation:
+            "Portfolio NAV has fallen below the configured floor; further trading is restricted until NAV recovers or the mandate is revised.",
+          suggestedCorrection:
+            "Escalate to the portfolio manager and compliance before proceeding; this order will not be permitted while NAV remains below the floor.",
+        },
+      },
+    },
+
     // Pre-trade simulator
     preTrade: {
       title: "Pre-trade compliance simulator",

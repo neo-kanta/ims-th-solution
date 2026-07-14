@@ -26,7 +26,7 @@ onMounted(() => {
 
 const status = computed(() => deriveRuleStatus(props.rule));
 const displayName = computed(
-  () => props.rule.name || ruleLabel(props.rule.ruleTypeID),
+  () => props.rule.name || ruleLabel(props.rule.ruleTypeID, t),
 );
 const ownerLabel = computed(() => users.labelFor(props.rule.createdBy));
 

@@ -308,7 +308,7 @@ function hasAnyEvidence(id: string): boolean {
         >
           <header class="breach-card__head">
             <div class="breach-card__title">
-              {{ ruleLabel(breach.rule_type_id) }}
+              {{ ruleLabel(breach.rule_type_id, t) }}
             </div>
             <div class="breach-card__badges">
               <ComplianceVerdictBadge :verdict="breach.verdict" />
@@ -318,7 +318,7 @@ function hasAnyEvidence(id: string): boolean {
 
           <p class="breach-card__explanation">
             <strong>{{ t("compliance.preTrade.result.explanationLabel") }}:</strong>
-            {{ ruleExplanation(breach.rule_type_id, breach.message) }}
+            {{ ruleExplanation(breach.rule_type_id, breach.message, t) }}
           </p>
 
           <div
@@ -372,13 +372,13 @@ function hasAnyEvidence(id: string): boolean {
           </p>
 
           <p
-            v-if="ruleSuggestedCorrection(breach.rule_type_id)"
+            v-if="ruleSuggestedCorrection(breach.rule_type_id, t)"
             class="breach-card__correction"
           >
             <strong>
               {{ t("compliance.preTrade.result.suggestedCorrection") }}:
             </strong>
-            {{ ruleSuggestedCorrection(breach.rule_type_id) }}
+            {{ ruleSuggestedCorrection(breach.rule_type_id, t) }}
           </p>
 
           <footer class="breach-card__actions">

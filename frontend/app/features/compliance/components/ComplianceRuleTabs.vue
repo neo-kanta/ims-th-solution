@@ -81,9 +81,9 @@ function activate(key: string) {
 
         <template v-if="catalogEntry">
           <h3 class="rule-tabs__section-title">Why it matters</h3>
-          <p class="rule-tabs__body">{{ catalogEntry.explanation }}</p>
+          <p class="rule-tabs__body">{{ t(catalogEntry.explanationKey) }}</p>
           <h3 class="rule-tabs__section-title">Typical correction</h3>
-          <p class="rule-tabs__body">{{ catalogEntry.suggestedCorrection }}</p>
+          <p class="rule-tabs__body">{{ t(catalogEntry.suggestedCorrectionKey) }}</p>
         </template>
       </AppCard>
 

@@ -7,6 +7,12 @@ import { useI18n } from "~/composables/useI18n";
 import PortfolioWorkspaceHeader from "./components/PortfolioWorkspaceHeader.vue";
 import { usePortfolioContext } from "./composables/usePortfolioContext";
 import {
+  buildBindRulePayload,
+  deriveBindingState,
+  isSubmissionInFlight,
+  type BindDraft,
+} from "./lib/complianceBindingState";
+import {
   portfolioComplianceApi,
   type ApiPortfolioRuleCatalogEntry,
 } from "./services/portfolioComplianceApi";
@@ -31,11 +37,6 @@ const rulesError = ref<string | null>(null);
 // Per-rule bind-form state, keyed by rule_instance_id. Opening the form for
 // one rule does not affect any other row.
 const openBindForm = ref<Record<string, boolean>>({});
-type BindDraft = {
-  severity: string;
-  effectiveFrom: string;
-  effectiveTo: string;
-};
 
 const bindDrafts = ref<Record<string, BindDraft>>({});
 const bindingBusy = ref<Record<string, boolean>>({});
@@ -77,12 +78,45 @@ function formatDate(value?: string | null): string {
   return value.slice(0, 10);
 }
 
+// Safe boundary normalizer: PortfolioRuleCatalogEntry.parameters is typed
+// Record<string, never> by the generated client (backend/pkg/contract/
+// contracts.go's `swaggertype:"object"` gives swaggo no shape info — see
+// docs/MANAGER/TASKS.md P2 follow-up). We accept `unknown` here and validate
+// a plain, non-array object at the boundary instead of casting the drifted
+// generated type further.
+function asParameterRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
 function formatParameters(entry: ApiPortfolioRuleCatalogEntry): string {
-  const params = entry.parameters as Record<string, unknown> | undefined;
-  if (!params || Object.keys(params).length === 0) return "—";
+  const params = asParameterRecord(entry.parameters);
+  if (Object.keys(params).length === 0) return "—";
   return Object.entries(params)
     .map(([key, value]) => `${key}: ${String(value)}`)
     .join(", ");
+}
+
+// The workspace exposes no authoritative backend business date, so "today"
+// is the browser's local date, always shown next to an explicit "as of"
+// label rather than implied as the backend's business date.
+const todayIso = computed(() => new Date().toISOString().slice(0, 10));
+
+function bindingStateLabel(state: ReturnType<typeof deriveBindingState>): string {
+  switch (state) {
+    case "SCHEDULED":
+      return t("portfolio.compliance.state.scheduled", "Scheduled");
+    case "EFFECTIVE":
+      return t("portfolio.compliance.state.effective", "Currently effective");
+    case "EXPIRED":
+      return t("portfolio.compliance.state.expired", "Expired");
+    case "DEACTIVATED":
+      return t("portfolio.compliance.state.deactivated", "Deactivated");
+    default:
+      return "—";
+  }
 }
 
 function toggleBindForm(entry: ApiPortfolioRuleCatalogEntry) {
@@ -122,15 +156,16 @@ async function submitBind(entry: ApiPortfolioRuleCatalogEntry) {
   if (!id) return;
   const draft = bindDrafts.value[id];
   if (!draft) return;
+  if (isSubmissionInFlight(bindingBusy.value, id)) return;
 
   bindingBusy.value = { ...bindingBusy.value, [id]: true };
   bindError.value = { ...bindError.value, [id]: null };
   try {
-    await portfolioComplianceApi.bindRule(props.portfolioCode, id, {
-      severity: draft.severity,
-      effective_from: draft.effectiveFrom,
-      effective_to: draft.effectiveTo || undefined,
-    });
+    await portfolioComplianceApi.bindRule(
+      props.portfolioCode,
+      id,
+      buildBindRulePayload(draft),
+    );
     openBindForm.value = { ...openBindForm.value, [id]: false };
     await loadRules();
   } catch (err) {
@@ -147,6 +182,7 @@ async function deactivate(entry: ApiPortfolioRuleCatalogEntry) {
   const id = entry.rule_instance_id ?? "";
   const bindingId = entry.binding?.binding_id;
   if (!id || !bindingId) return;
+  if (isSubmissionInFlight(bindingBusy.value, id)) return;
   bindingBusy.value = { ...bindingBusy.value, [id]: true };
   try {
     await portfolioComplianceApi.deactivateBinding(props.portfolioCode, id, bindingId);
@@ -178,7 +214,7 @@ const unboundRules = computed(() => rules.value.filter((r) => !r.binding?.is_act
 
       <AppCard
         :title="t('portfolio.compliance.boundTitle', 'Bound Compliance Rules')"
-        :subtitle="t('portfolio.compliance.boundSubtitle', 'Rules currently enforced for this portfolio.')"
+        :subtitle="t('portfolio.compliance.boundSubtitle', 'Rules bound to this portfolio. Effective status is evaluated against the as-of date below, not just the active flag.')"
       >
         <div v-if="loadingRules" class="portfolio-compliance__card-notice">
           {{ t("portfolio.compliance.loading", "Loading rules…") }}
@@ -187,13 +223,18 @@ const unboundRules = computed(() => rules.value.filter((r) => !r.binding?.is_act
         <div v-else-if="boundRules.length === 0" class="portfolio-compliance__card-notice">
           {{ t("portfolio.compliance.noneBound", "No compliance rules are bound to this portfolio yet.") }}
         </div>
-        <table v-else class="portfolio-compliance__table">
+        <template v-else>
+          <p class="portfolio-compliance__as-of">
+            {{ t("portfolio.compliance.asOfLabel", { date: todayIso }, "As of {date} (your device's local date)") }}
+          </p>
+          <table class="portfolio-compliance__table">
           <thead>
             <tr>
               <th>{{ t("portfolio.compliance.columns.rule", "Rule") }}</th>
               <th>{{ t("portfolio.compliance.columns.parameters", "Parameters") }}</th>
               <th>{{ t("portfolio.compliance.columns.severity", "Severity") }}</th>
               <th>{{ t("portfolio.compliance.columns.effective", "Effective") }}</th>
+              <th>{{ t("portfolio.compliance.columns.status", "Status") }}</th>
               <th class="text-right">{{ t("portfolio.compliance.columns.actions", "Actions") }}</th>
             </tr>
           </thead>
@@ -213,6 +254,14 @@ const unboundRules = computed(() => rules.value.filter((r) => !r.binding?.is_act
                 {{ formatDate(entry.binding?.effective_from) }} –
                 {{ entry.binding?.effective_to ? formatDate(entry.binding.effective_to) : t("portfolio.compliance.indefinite", "indefinite") }}
               </td>
+              <td>
+                <span
+                  class="portfolio-compliance__state-pill"
+                  :data-state="deriveBindingState(entry.binding, todayIso)"
+                >
+                  {{ bindingStateLabel(deriveBindingState(entry.binding, todayIso)) }}
+                </span>
+              </td>
               <td class="text-right">
                 <button
                   type="button"
@@ -225,7 +274,8 @@ const unboundRules = computed(() => rules.value.filter((r) => !r.binding?.is_act
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+        </template>
       </AppCard>
 
       <AppCard
@@ -325,6 +375,42 @@ const unboundRules = computed(() => rules.value.filter((r) => !r.binding?.is_act
   border-radius: 6px;
   color: var(--alert-danger-text, #cf222e);
   font-size: 12px;
+}
+
+.portfolio-compliance__as-of {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--text-tertiary, #6e7781);
+}
+
+.portfolio-compliance__state-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-card-muted, #f1f3f4);
+  border: 1px solid var(--border-subtle, #d0d7de);
+  color: var(--text-secondary, #5f6368);
+}
+
+.portfolio-compliance__state-pill[data-state="EFFECTIVE"] {
+  background: #e6f4ea;
+  color: #1e7e34;
+  border-color: #b7dfc0;
+}
+
+.portfolio-compliance__state-pill[data-state="SCHEDULED"] {
+  background: #e8f0fe;
+  color: #1a56db;
+  border-color: #c3d7fb;
+}
+
+.portfolio-compliance__state-pill[data-state="EXPIRED"],
+.portfolio-compliance__state-pill[data-state="DEACTIVATED"] {
+  background: #fef7e0;
+  color: #b25e00;
+  border-color: #fce1a6;
 }
 
 .portfolio-compliance__table {

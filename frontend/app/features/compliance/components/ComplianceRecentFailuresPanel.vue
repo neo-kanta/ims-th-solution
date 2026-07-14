@@ -86,7 +86,7 @@ function tonePill(verdict: ComplianceBreach["verdict"]): string {
         <span :class="tonePill(b.verdict)">{{ b.verdict }}</span>
         <div class="recent__copy">
           <div class="recent__rule">
-            {{ ruleLabel(b.ruleTypeID) }} ·
+            {{ ruleLabel(b.ruleTypeID, t) }} ·
             <span class="recent__msg">{{ b.message || "—" }}</span>
           </div>
           <div class="recent__meta">

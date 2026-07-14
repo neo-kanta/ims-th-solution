@@ -81,7 +81,15 @@ export const enPortfolioMessages = {
     },
     compliance: {
       boundTitle: "Bound Compliance Rules",
-      boundSubtitle: "Rules currently enforced for this portfolio.",
+      boundSubtitle:
+        "Rules bound to this portfolio. Effective status is evaluated against the as-of date below, not just the active flag.",
+      asOfLabel: "As of {date} (your device's local date)",
+      state: {
+        scheduled: "Scheduled",
+        effective: "Currently effective",
+        expired: "Expired",
+        deactivated: "Deactivated",
+      },
       availableTitle: "Available Compliance Rules",
       availableSubtitle: "Bind an existing rule instance to this portfolio.",
       loading: "Loading rules…",
@@ -92,6 +100,7 @@ export const enPortfolioMessages = {
         parameters: "Parameters",
         severity: "Severity",
         effective: "Effective",
+        status: "Status",
         actions: "Actions",
       },
       deactivate: "Deactivate",

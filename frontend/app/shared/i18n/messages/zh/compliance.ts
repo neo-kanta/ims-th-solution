@@ -157,6 +157,144 @@ export const zhComplianceMessages = {
       },
     },
 
+    // Rule type catalog — technical metadata lives in lib/ruleTypeCatalog.ts;
+    // this section holds only translated presentation copy.
+    catalog: {
+      allocation: {
+        asset_class_max: {
+          label: "資產類別配置上限",
+          explanation:
+            "此委託單成交後，投資組合對該資產類別的曝險將超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，或調整其他持倉以使該資產類別曝險維持在設定上限內。",
+        },
+        asset_class_min: {
+          label: "資產類別配置下限",
+          explanation:
+            "投資組合對該資產類別的曝險低於授權要求的淨值（NAV）百分比下限。",
+          suggestedCorrection:
+            "增加該資產類別的曝險，或確認授權是否允許暫時低於下限。",
+        },
+      },
+      amount: {
+        minimum_trade: {
+          label: "最低交易金額",
+          explanation: "此委託單的名目價值低於此授權設定的最低交易金額。",
+          suggestedCorrection:
+            "提高委託單的數量或價格，使名目價值達到最低交易金額要求。",
+        },
+      },
+      cash: {
+        availability: {
+          label: "可用現金檢查",
+          explanation:
+            "買入委託單所需現金超過投資組合於此交易日可用的現金。",
+          suggestedCorrection:
+            "減少委託數量、變現其他部位以增加現金，或將委託延後至結算後再送出。",
+        },
+      },
+      concentration: {
+        single_issuer: {
+          label: "單一發行人集中度上限",
+          explanation:
+            "對該發行人（含同集團母公司）的合計曝險超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，使發行人合計曝險維持在設定上限內，或先調整其他持倉。",
+        },
+      },
+      credit: {
+        min_rating: {
+          label: "最低信用評等",
+          explanation:
+            "此商品的信用評等低於此投資組合或授權所允許的最低評等。",
+          suggestedCorrection:
+            "選擇符合最低評等要求的商品，或在下單前以書面方式申請授權例外。",
+        },
+      },
+      credit_rating: {
+        minimum: {
+          label: "最低信用評等（原型，尚未啟用）",
+          explanation:
+            "信用評等原型規則 — 商品評等未達設定門檻。此規則類型後端尚未實際強制執行。",
+          suggestedCorrection:
+            "此規則尚未實際生效。建議先行選擇符合評等要求的商品，或申請例外並確認風險。",
+        },
+      },
+      exposure: {
+        max_order_percent_aum: {
+          label: "單筆委託佔資產管理規模（AUM）上限",
+          explanation:
+            "此委託單的交易金額超過設定的單筆委託佔投資組合資產管理規模（AUM）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，或將委託分拆為多筆、於多個交易日內送出，以符合設定上限。",
+        },
+      },
+      quantity: {
+        min_trading_unit: {
+          label: "最低交易單位",
+          explanation:
+            "委託數量低於市場最低交易單位（板塊單位）或設定的交易單位下限。",
+          suggestedCorrection: "將委託數量提高至此市場最低交易單位的整數倍。",
+        },
+        sell_available: {
+          label: "可賣出數量",
+          explanation:
+            "賣出委託超過目前可賣出的部位數量（已扣除待處理賣單／結算保留）。",
+          suggestedCorrection:
+            "將賣出數量降低至可賣出數量以內，或等待待處理賣單完成結算。",
+        },
+      },
+      ratio: {
+        sector_exposure: {
+          label: "產業曝險上限",
+          explanation:
+            "此委託單成交後，對該產業的曝險將超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模、改投其他產業，或調整既有持倉以釋出該產業的曝險額度。",
+        },
+      },
+      regulatory: {
+        thai_sec: {
+          label: "泰國證交會（Thai SEC）法規檢查（原型，尚未啟用）",
+          explanation:
+            "法規原型規則 — 委託單違反設定的泰國證交會（Thai SEC）參數。此規則類型後端尚未實際強制執行，且固定回傳警告。",
+          suggestedCorrection:
+            "此規則尚未實際生效。建議先與合規部門確認證交會相關參數，再重新送出委託以求審慎。",
+        },
+      },
+      restriction: {
+        blacklist: {
+          label: "受限商品黑名單",
+          explanation:
+            "此證券代碼列於現行黑名單（制裁名單、禁止發行人或內部限制）。",
+          suggestedCorrection:
+            "請改選未受限制的證券代碼。黑名單項目無法由交易部門自行核准放行。",
+        },
+        whitelist: {
+          label: "僅限白名單投資",
+          explanation:
+            "授權僅允許投資白名單內的證券，而此委託提出的證券代碼未列於白名單中。",
+          suggestedCorrection: "請從授權白名單中選擇證券代碼，或申請例外將其加入名單。",
+        },
+        list_enforcement: {
+          label: "限制清單綜合強制執行",
+          explanation:
+            "綜合限制清單規則（白名單＋黑名單）判定此委託單觸發限制。",
+          suggestedCorrection:
+            "請同時檢查白名單與黑名單，改選允許的證券代碼，或向合規部門申請例外。",
+        },
+      },
+      valuation: {
+        min_nav: {
+          label: "投資組合最低淨值（Min NAV）",
+          explanation:
+            "投資組合淨值（NAV）已低於設定下限，在淨值回升或授權條件修訂前，將限制後續交易。",
+          suggestedCorrection:
+            "請先知會投資組合經理與合規部門後再行處理；在淨值仍低於下限期間，此委託將不被允許執行。",
+        },
+      },
+    },
+
     // Pre-trade simulator
     preTrade: {
       title: "前置交易合規模擬器 (Pre-Trade)",

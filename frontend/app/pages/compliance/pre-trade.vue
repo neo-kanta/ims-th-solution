@@ -53,7 +53,7 @@ const prefilledRuleTypeId = computed(() =>
     : null,
 );
 const prefilledRuleLabel = computed(() =>
-  prefilledRuleTypeId.value ? ruleLabel(prefilledRuleTypeId.value) : null,
+  prefilledRuleTypeId.value ? ruleLabel(prefilledRuleTypeId.value, t) : null,
 );
 
 // Query-string deep link for contract context.

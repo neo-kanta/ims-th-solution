@@ -45,7 +45,7 @@ const { t } = useI18n();
           class="hr-item__link"
         >
           <code class="hr-item__code">{{ r.ruleTypeID }}</code>
-          <span class="hr-item__name">· {{ r.name || ruleLabel(r.ruleTypeID) }}</span>
+          <span class="hr-item__name">· {{ r.name || ruleLabel(r.ruleTypeID, t) }}</span>
         </NuxtLink>
       </li>
     </ul>

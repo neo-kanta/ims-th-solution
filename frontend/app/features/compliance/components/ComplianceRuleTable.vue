@@ -38,7 +38,7 @@ const rows = computed(() =>
   props.items.map((rule) => ({
     rule,
     derivedStatus: deriveRuleStatus(rule),
-    label: ruleLabel(rule.ruleTypeID),
+    label: ruleLabel(rule.ruleTypeID, t),
   })),
 );
 

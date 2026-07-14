@@ -73,7 +73,7 @@ function shortenId(id: string | null | undefined, len = 8): string {
             }"
           >
             <div class="audit-item__head">
-              <div class="audit-item__title">{{ ruleLabel(r.ruleTypeID) }}</div>
+              <div class="audit-item__title">{{ ruleLabel(r.ruleTypeID, t) }}</div>
               <div class="audit-item__badges">
                 <ComplianceVerdictBadge :verdict="r.finalVerdict" />
                 <ComplianceSeverityBadge :severity="r.effectiveSeverity" />
@@ -139,7 +139,7 @@ function shortenId(id: string | null | undefined, len = 8): string {
             }"
           >
             <div class="audit-item__head">
-              <div class="audit-item__title">{{ ruleLabel(b.ruleTypeID) }}</div>
+              <div class="audit-item__title">{{ ruleLabel(b.ruleTypeID, t) }}</div>
               <div class="audit-item__badges">
                 <ComplianceVerdictBadge :verdict="b.verdict" />
                 <ComplianceSeverityBadge :severity="b.severity" />

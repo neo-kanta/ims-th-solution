@@ -92,7 +92,7 @@ function shortenId(id: string, len = 8): string {
       <tbody>
         <tr v-for="b in items" :key="b.id">
           <td>
-            <div class="inbox__rule">{{ ruleLabel(b.ruleTypeID) }}</div>
+            <div class="inbox__rule">{{ ruleLabel(b.ruleTypeID, t) }}</div>
             <code class="inbox__code">{{ b.ruleTypeID }}</code>
           </td>
           <td>

@@ -81,7 +81,15 @@ export const thPortfolioMessages = {
     },
     compliance: {
       boundTitle: "กฎการปฏิบัติตามที่ผูกไว้",
-      boundSubtitle: "กฎที่บังคับใช้กับพอร์ตนี้ในปัจจุบัน",
+      boundSubtitle:
+        "กฎที่ผูกกับพอร์ตนี้ สถานะการมีผลบังคับใช้จะประเมินตามวันที่อ้างอิงด้านล่าง ไม่ใช่พิจารณาจากสถานะเปิดใช้งานเพียงอย่างเดียว",
+      asOfLabel: "ข้อมูล ณ วันที่ {date} (วันที่ตามอุปกรณ์ของคุณ)",
+      state: {
+        scheduled: "รอถึงกำหนดมีผล",
+        effective: "มีผลบังคับใช้ในปัจจุบัน",
+        expired: "หมดอายุแล้ว",
+        deactivated: "ปิดการใช้งานแล้ว",
+      },
       availableTitle: "กฎการปฏิบัติตามที่มีอยู่",
       availableSubtitle: "ผูกกฎที่มีอยู่เข้ากับพอร์ตนี้",
       loading: "กำลังโหลดกฎ…",
@@ -92,6 +100,7 @@ export const thPortfolioMessages = {
         parameters: "พารามิเตอร์",
         severity: "ระดับความรุนแรง",
         effective: "ช่วงเวลาบังคับใช้",
+        status: "สถานะ",
         actions: "การดำเนินการ",
       },
       deactivate: "ยกเลิกการใช้งาน",
