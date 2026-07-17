@@ -33,23 +33,26 @@ const catalogWorkflows = ref([
   {
     code: "OP-01",
     title: "BUY/SELL Single Securities",
-    description: "Place new single security investment decisions for mapped fund portfolios.",
+    description: "Pick a portfolio and place a new buy or sell investment decision.",
     status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/operation/new`,
+    requiresFund: false,
+    routePath: () => `/investment/operator/decision/new`,
   },
   {
     code: "OP-02",
     title: "Execution & Approvals",
-    description: "Query API database for pending decisions, inspect rules, and authorize execution in batch.",
+    description: "Query a decision number, inspect its approval stage, and approve or reject it before execution.",
     status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/operation`,
+    requiresFund: false,
+    routePath: () => `/investment/decision`,
   },
   {
     code: "OP-03",
     title: "Review & Print Summary",
     description: "Search and inspect processed decisions, and generate print-ready decision summary reports.",
     status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/decisions`,
+    requiresFund: true,
+    routePath: (fundId: string) => `/investment/operator/${fundId}/decisions`,
   },
 ]);
 
@@ -86,7 +89,8 @@ function onFundChange(event: Event) {
 }
 
 function openWorkflow(op: any) {
-  if (op.status !== "Ready" || !activeFundId.value) return;
+  if (op.status !== "Ready") return;
+  if (op.requiresFund && !activeFundId.value) return;
   const path = op.routePath(activeFundId.value);
   void router.push(path);
 }

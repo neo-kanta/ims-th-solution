@@ -98,7 +98,7 @@ export const zhCommonMessages = {
     subtitle: "管理日常工作流操作和营业日启动流程。",
     indexNotConfiguredTitle: "工作流操作以基金为单位进行管理",
     indexNotConfiguredCopy:
-      "请从「我的基金」打开基金,查看其当前工作流状态并执行状态转移(Day Start、Manager Approval、Transaction Closing、Accounting Closing)。后端的每个状态转移都绑定到该基金的合约,不存在全局工作流操作面板。",
+      "请从投资运营(Operator)页面打开基金,查看其当前工作流状态并执行状态转移(Day Start、Manager Approval、Transaction Closing、Accounting Closing)。后端的每个状态转移都绑定到该基金的合约,不存在全局工作流操作面板。",
     tabs: {
       overview: "概览",
       audit: "审批记录",

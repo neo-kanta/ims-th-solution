@@ -5,10 +5,13 @@ const labelMap: Record<string, string> = {
   DRAFT: "Draft",
   SUBMITTED: "Submitted",
   PENDING_APPROVAL: "Pending Approval",
+  PENDING_COMPLIANCE_RELEASE: "Pending Compliance Release",
   APPROVED: "Approved",
   BLOCKED: "Blocked",
+  REJECTED: "Rejected",
   CANCELLED: "Cancelled",
   READY_FOR_EXECUTION: "Ready for Execution",
+  EXECUTED: "Executed",
 };
 
 const label = computed(() => labelMap[props.status ?? ""] ?? props.status ?? "â€”");
@@ -65,5 +68,20 @@ const label = computed(() => labelMap[props.status ?? ""] ?? props.status ?? "â€
 .status-badge[data-status="READY_FOR_EXECUTION"] {
   background: rgba(130, 80, 223, 0.15);
   color: #8250df;
+}
+
+.status-badge[data-status="PENDING_COMPLIANCE_RELEASE"] {
+  background: rgba(154, 103, 0, 0.15);
+  color: var(--state-warning, #9a6700);
+}
+
+.status-badge[data-status="REJECTED"] {
+  background: rgba(207, 34, 46, 0.15);
+  color: var(--state-danger, #cf222e);
+}
+
+.status-badge[data-status="EXECUTED"] {
+  background: rgba(26, 127, 55, 0.15);
+  color: var(--state-success, #1a7f37);
 }
 </style>

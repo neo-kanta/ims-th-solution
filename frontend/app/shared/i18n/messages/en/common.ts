@@ -98,7 +98,7 @@ export const enCommonMessages = {
     subtitle: "Manage daily workflow operations and day-start procedures.",
     indexNotConfiguredTitle: "Workflow operations are managed per fund",
     indexNotConfiguredCopy:
-      "Open a fund from My Funds to see its current workflow state and run transitions (Day Start, Manager Approval, Transaction Closing, Accounting Closing). The backend gates every transition on the fund's contract — there is no global workflow operation surface.",
+      "Open a fund from the investment operator page to see its current workflow state and run transitions (Day Start, Manager Approval, Transaction Closing, Accounting Closing). The backend gates every transition on the fund's contract — there is no global workflow operation surface.",
     tabs: {
       overview: "Overview",
       audit: "Audit Trail",

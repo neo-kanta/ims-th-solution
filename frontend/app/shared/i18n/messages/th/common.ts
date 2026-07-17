@@ -98,7 +98,7 @@ export const thCommonMessages = {
     subtitle: "จัดการงานประจำวันของเวิร์กโฟลว์และขั้นตอนเริ่มต้นวันทำการ",
     indexNotConfiguredTitle: "การดำเนินการ Workflow ทำที่ระดับกองทุน",
     indexNotConfiguredCopy:
-      "เปิดกองทุนจากเมนู My Funds เพื่อดูสถานะ Workflow ปัจจุบันและทำการเปลี่ยนสถานะ (Day Start, Manager Approval, Transaction Closing, Accounting Closing) แบ็กเอนด์ผูกการเปลี่ยนสถานะกับสัญญาของกองทุนนั้นเสมอ ไม่มีหน้าจัดการ Workflow แบบรวมศูนย์",
+      "เปิดกองทุนจากหน้า Operator เพื่อดูสถานะ Workflow ปัจจุบันและทำการเปลี่ยนสถานะ (Day Start, Manager Approval, Transaction Closing, Accounting Closing) แบ็กเอนด์ผูกการเปลี่ยนสถานะกับสัญญาของกองทุนนั้นเสมอ ไม่มีหน้าจัดการ Workflow แบบรวมศูนย์",
     tabs: {
       overview: "ภาพรวม",
       audit: "ประวัติการอนุมัติ",

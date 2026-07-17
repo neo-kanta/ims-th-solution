@@ -259,8 +259,132 @@ func TestSubmit_CompliancePass_ContinuesToApproval(t *testing.T) {
 	if result.ComplianceCheckGroupID == nil || *result.ComplianceCheckGroupID != checkGroupID {
 		t.Errorf("ComplianceCheckGroupID must be stored; got %v", result.ComplianceCheckGroupID)
 	}
+	if d.LimitPrice == nil || !checker.lastIn.Price.Equal(*d.LimitPrice) {
+		t.Fatalf("quantity-only compliance price = %s, want decision limit price %v", checker.lastIn.Price, d.LimitPrice)
+	}
 	if submitter.calls != 1 {
 		t.Fatalf("expected 1 approval submission on PASS, got %d", submitter.calls)
+	}
+}
+
+func TestSubmit_ComplianceUsesAmountAsProposedNotional(t *testing.T) {
+	d := newDraftDec()
+	quantity := decimal.NewFromInt(1)
+	amount := decimal.NewFromInt(11)
+	d.Quantity = &quantity
+	d.Amount = &amount
+	d.LimitPrice = nil
+
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	decRepo := newFakeDecisionRepo(d)
+	submitter := &fakeApprovalSubmitter{result: defaultApprovalResult()}
+	h := handlerWithCompliance(decRepo, checker, submitter)
+
+	_, err := h.Submit(context.Background(), d.ID, uuid.New())
+	if err != nil {
+		t.Fatalf("quantity + amount without limit price must submit on PASS: %v", err)
+	}
+	if !checker.lastIn.Quantity.Equal(quantity) {
+		t.Fatalf("compliance quantity = %s, want %s", checker.lastIn.Quantity, quantity)
+	}
+	wantPrice := amount.Div(quantity)
+	if !checker.lastIn.Price.Equal(wantPrice) {
+		t.Fatalf("compliance price = %s, want amount/quantity = %s", checker.lastIn.Price, wantPrice)
+	}
+	if !checker.lastIn.Quantity.Mul(checker.lastIn.Price).Equal(amount) {
+		t.Fatalf("compliance notional = %s, want entered amount %s", checker.lastIn.Quantity.Mul(checker.lastIn.Price), amount)
+	}
+}
+
+func TestSubmit_ComplianceExplicitAmountOverridesLimitPrice(t *testing.T) {
+	d := newDraftDec()
+	quantity := decimal.NewFromInt(40)
+	amount := decimal.NewFromInt(4_000)
+	limitPrice := decimal.NewFromInt(35)
+	d.Quantity = &quantity
+	d.Amount = &amount
+	d.LimitPrice = &limitPrice
+
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	h := handlerWithCompliance(
+		newFakeDecisionRepo(d),
+		checker,
+		&fakeApprovalSubmitter{result: defaultApprovalResult()},
+	)
+
+	if _, err := h.Submit(context.Background(), d.ID, uuid.New()); err != nil {
+		t.Fatalf("quantity + amount with limit price must submit on PASS: %v", err)
+	}
+	wantPrice := amount.Div(quantity)
+	if !checker.lastIn.Price.Equal(wantPrice) {
+		t.Fatalf("compliance price = %s, want amount/quantity = %s", checker.lastIn.Price, wantPrice)
+	}
+	if checker.lastIn.Price.Equal(limitPrice) {
+		t.Fatalf("compliance must not reuse limit price %s when amount is explicit", limitPrice)
+	}
+}
+
+func TestSubmit_ComplianceAmountOnlyFailsClosedBeforeChecker(t *testing.T) {
+	d := newDraftDec()
+	amount := decimal.NewFromInt(11)
+	d.Quantity = nil
+	d.Amount = &amount
+	d.LimitPrice = nil
+
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	submitter := &fakeApprovalSubmitter{result: defaultApprovalResult()}
+	h := handlerWithCompliance(newFakeDecisionRepo(d), checker, submitter)
+
+	_, err := h.Submit(context.Background(), d.ID, uuid.New())
+	if err == nil {
+		t.Fatal("amount-only decision must fail closed before compliance evaluation")
+	}
+	var invalid *domain.ErrInvalidDecisionRequest
+	if !errors.As(err, &invalid) || invalid.Field != "quantity" {
+		t.Fatalf("expected quantity ErrInvalidDecisionRequest, got %T: %v", err, err)
+	}
+	if checker.calls != 0 {
+		t.Fatalf("invalid amount-only decision must not reach compliance; got %d calls", checker.calls)
+	}
+	if submitter.calls != 0 {
+		t.Fatalf("invalid amount-only decision must not reach approval; got %d calls", submitter.calls)
+	}
+}
+
+func TestSubmit_ComplianceQuantityWithoutAmountOrLimitFailsClosedBeforeChecker(t *testing.T) {
+	d := newDraftDec()
+	d.Amount = nil
+	d.LimitPrice = nil
+
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	submitter := &fakeApprovalSubmitter{result: defaultApprovalResult()}
+	h := handlerWithCompliance(newFakeDecisionRepo(d), checker, submitter)
+
+	_, err := h.Submit(context.Background(), d.ID, uuid.New())
+	if err == nil {
+		t.Fatal("quantity-only decision without limit price must fail closed")
+	}
+	var invalid *domain.ErrInvalidDecisionRequest
+	if !errors.As(err, &invalid) || invalid.Field != "limit_price" {
+		t.Fatalf("expected limit_price ErrInvalidDecisionRequest, got %T: %v", err, err)
+	}
+	if checker.calls != 0 {
+		t.Fatalf("invalid quantity-only decision must not reach compliance; got %d calls", checker.calls)
+	}
+	if submitter.calls != 0 {
+		t.Fatalf("invalid quantity-only decision must not reach approval; got %d calls", submitter.calls)
 	}
 }
 
@@ -631,5 +755,52 @@ func TestSubmit_ComplianceBlock_AllReleasable_ApprovalFails_DecisionStaysInDraft
 	current, _ := tr.GetByID(context.Background(), d.ID)
 	if current.Status != vo.DecisionLifecycleDraft {
 		t.Errorf("decision must remain DRAFT when approval submission fails; got %s", current.Status)
+	}
+}
+
+func TestValidateCreateDecisionRejectsNonPositiveNumericFields(t *testing.T) {
+	positive := decimal.NewFromInt(1)
+	base := func() CreateDecisionRequest {
+		return CreateDecisionRequest{
+			ActorID:        uuid.New(),
+			FundID:         uuid.New(),
+			PortfolioID:    uuid.New(),
+			BusinessDate:   time.Date(2026, 7, 16, 0, 0, 0, 0, time.UTC),
+			Side:           vo.OrderSideBuy,
+			InstrumentCode: "AOT",
+			Currency:       "THB",
+			Quantity:       &positive,
+		}
+	}
+
+	tests := []struct {
+		name  string
+		field string
+		set   func(*CreateDecisionRequest)
+	}{
+		{name: "zero quantity", field: "quantity", set: func(req *CreateDecisionRequest) {
+			zero := decimal.Zero
+			req.Quantity = &zero
+		}},
+		{name: "negative amount", field: "amount", set: func(req *CreateDecisionRequest) {
+			negative := decimal.NewFromInt(-1)
+			req.Amount = &negative
+		}},
+		{name: "zero limit price", field: "limit_price", set: func(req *CreateDecisionRequest) {
+			zero := decimal.Zero
+			req.LimitPrice = &zero
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := base()
+			tt.set(&req)
+			err := validateCreateDecision(req)
+			var invalid *domain.ErrInvalidDecisionRequest
+			if !errors.As(err, &invalid) || invalid.Field != tt.field {
+				t.Fatalf("expected %s ErrInvalidDecisionRequest, got %T: %v", tt.field, err, err)
+			}
+		})
 	}
 }

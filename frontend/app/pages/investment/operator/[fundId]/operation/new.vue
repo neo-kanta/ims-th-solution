@@ -1,11 +1,15 @@
 <script setup lang="ts">
 /**
- * Legacy fund-scoped "new decision" route. Portfolio V2
+ * Legacy fund-scoped "new decision" route (the exact URL/layout captured in
+ * the original product screenshot: DecisionCockpit, V1 fund_id+portfolio_id
+ * body, static "Instructions" column). Portfolio V2
  * (docs/frontend/portfolio-v2-frontend-ddd.md) replaces this screen with a
- * portfolio-scoped decision form at /portfolios/{portfolioCode}/decisions/new
- * so there is exactly one decision form, not two divergent ones. This shell
- * resolves the fund's portfolio(s) and forwards the user there instead of
- * rendering its own form.
+ * single portfolio-scoped decision form at
+ * /portfolios/{portfolioCode}/decisions/new. This shell no longer renders a
+ * V1 form — it resolves the fund's accessible portfolio(s) and forwards the
+ * user there, mirroring
+ * frontend/app/pages/investment/funds/[fundId]/operation/new.vue exactly via
+ * the shared resolveLegacyFundRedirect helper.
  */
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "~/composables/useI18n";

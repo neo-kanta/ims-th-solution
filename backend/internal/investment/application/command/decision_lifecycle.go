@@ -418,12 +418,9 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 	// For BASKET_ORDER / REBALANCE / SWITCH the Ticker field is empty — the
 	// compliance engine evaluates header-level rules only (per-line checks are Phase 2).
 	if h.compliance != nil {
-		var qty, price decimal.Decimal
-		if d.Quantity != nil {
-			qty = *d.Quantity
-		}
-		if d.LimitPrice != nil {
-			price = *d.LimitPrice
+		qty, price, err := decisionComplianceOrderValues(d)
+		if err != nil {
+			return nil, err
 		}
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
 			PortfolioID:  d.PortfolioID,
@@ -825,5 +822,51 @@ func validateCreateDecision(req CreateDecisionRequest) error {
 	if req.Quantity == nil && req.Amount == nil {
 		return &domain.ErrInvalidDecisionRequest{Field: "quantity", Detail: "quantity or amount is required"}
 	}
+	if req.Quantity != nil && !req.Quantity.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "quantity", Detail: "must be positive"}
+	}
+	if req.Amount != nil && !req.Amount.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "amount", Detail: "must be positive"}
+	}
+	if req.LimitPrice != nil && !req.LimitPrice.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "limit_price", Detail: "must be positive"}
+	}
 	return nil
+}
+
+// decisionComplianceOrderValues converts the decision ticket into the
+// quantity + unit-price shape required by the compliance contract.
+//
+// An explicit amount is the authoritative proposed notional. When quantity
+// is also available, amount/quantity is therefore the effective unit price;
+// this keeps Quantity*Price equal to the amount the operator entered. A
+// quantity-only decision falls back to its positive limit price. Amount-only
+// decisions fail closed because quantity-based rules cannot be evaluated
+// safely without units.
+func decisionComplianceOrderValues(d *entity.Decision) (decimal.Decimal, decimal.Decimal, error) {
+	if d.Quantity == nil || !d.Quantity.IsPositive() {
+		return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+			Field:  "quantity",
+			Detail: "a positive quantity is required for pre-trade compliance",
+		}
+	}
+
+	qty := *d.Quantity
+	if d.Amount != nil {
+		if !d.Amount.IsPositive() {
+			return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+				Field:  "amount",
+				Detail: "must be positive",
+			}
+		}
+		return qty, d.Amount.Div(qty), nil
+	}
+
+	if d.LimitPrice == nil || !d.LimitPrice.IsPositive() {
+		return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+			Field:  "limit_price",
+			Detail: "a positive limit price or amount is required for pre-trade compliance",
+		}
+	}
+	return qty, *d.LimitPrice, nil
 }

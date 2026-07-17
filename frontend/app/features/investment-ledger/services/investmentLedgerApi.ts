@@ -173,4 +173,13 @@ export const investmentLedgerApi = {
     });
     return unwrapOpenApiResponse<ApiInstrumentList>(response);
   },
+
+  /** Fetch one instrument by its canonical ID (used to enrich holdings, which only carry instrument_id). */
+  async getInstrument(id: string): Promise<ApiInstrument> {
+    const client = useOpenApiClient();
+    const response = await client.GET("/investment/instruments/{id}", {
+      params: { path: { id } },
+    });
+    return unwrapOpenApiResponse<ApiInstrument>(response);
+  },
 };
