@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import { useState } from "#imports";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import { useI18n } from "~/composables/useI18n";
@@ -9,6 +10,15 @@ import { portfolioApi, type ApiCashBalanceV2 } from "./services/portfolioApi";
 
 const props = defineProps<{ portfolioCode: string }>();
 const { t } = useI18n();
+
+const pageTitle = useState<string>("page-title", () => "");
+watch(
+  () => t("portfolio.workspaceTabs.cash", "Cash"),
+  (newTitle) => {
+    pageTitle.value = newTitle || "";
+  },
+  { immediate: true }
+);
 const ctx = usePortfolioContext(() => props.portfolioCode);
 
 const balances = ref<ApiCashBalanceV2[]>([]);

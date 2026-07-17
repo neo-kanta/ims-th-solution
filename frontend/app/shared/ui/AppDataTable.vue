@@ -21,6 +21,7 @@ interface Props {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   rowClickable?: boolean;
+  selectable?: boolean;
   selectedIds?: any[];
   density?: "compact" | "comfortable";
 }
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
   sortBy: "",
   sortOrder: "asc",
   rowClickable: false,
+  selectable: false,
   selectedIds: () => [],
   density: "comfortable",
 });
@@ -96,11 +98,12 @@ function handleRowClick(item: any) {
         <thead>
           <tr>
             <!-- Multi-select checkbox column -->
-            <th v-if="selectedIds.length > 0 || $slots['select-all']" class="app-table__checkbox-col">
+            <th v-if="selectable" class="app-table__checkbox-col">
               <input
                 type="checkbox"
                 class="checkbox"
                 :checked="isAllSelected"
+                aria-label="Select all rows"
                 @change="toggleSelectAll"
               />
             </th>
@@ -136,14 +139,14 @@ function handleRowClick(item: any) {
         <tbody>
           <!-- Loading Row -->
           <tr v-if="loading">
-            <td :colspan="columns.length + (selectedIds.length > 0 ? 1 : 0)" class="app-table__state-row">
+            <td :colspan="columns.length + (selectable ? 1 : 0)" class="app-table__state-row">
               <AppLoadingState message="Fetching data..." />
             </td>
           </tr>
 
           <!-- Empty Row -->
           <tr v-else-if="items.length === 0">
-            <td :colspan="columns.length + (selectedIds.length > 0 ? 1 : 0)" class="app-table__state-row">
+            <td :colspan="columns.length + (selectable ? 1 : 0)" class="app-table__state-row">
               <AppEmptyState :title="emptyText" icon="table" />
             </td>
           </tr>
@@ -159,11 +162,12 @@ function handleRowClick(item: any) {
               }"
               @click="handleRowClick(item)"
             >
-              <td v-if="selectedIds.length > 0" class="app-table__checkbox-col" @click.stop>
+              <td v-if="selectable" class="app-table__checkbox-col" @click.stop>
                 <input
                   type="checkbox"
                   class="checkbox"
                   :checked="selectedIds.includes(item.id)"
+                  :aria-label="`Select row ${idx + 1}`"
                   @change="toggleSelectRow(item.id)"
                 />
               </td>

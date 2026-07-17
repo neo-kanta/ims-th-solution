@@ -48,12 +48,6 @@ export function buildDashboardNavigation(
           requiredPermissions: ["INVESTMENT_PORTFOLIO_VIEW"],
         },
         {
-          label: t("holdings.page.myFunds", "My funds"),
-          to: "/investment/funds",
-          icon: "analysis",
-          requiredPermissions: ["INVESTMENT_FUND_VIEW"],
-        },
-        {
           label: t("navigation.investmentResearch"),
           to: "/investment/analysis",
           icon: "analysis",
@@ -98,24 +92,6 @@ export function buildDashboardNavigation(
           label: t("compliance.nav.rules", "Rule library"),
           to: "/compliance/rules",
           icon: "list",
-          requiredPermissions: ["IRG_VIEW_RULES"],
-        },
-        {
-          label: t("compliance.nav.preTrade", "Pre-trade simulator"),
-          to: "/compliance/pre-trade",
-          icon: "shield",
-          requiredPermissions: ["IRG_VIEW_RULES"],
-        },
-        {
-          label: t("compliance.nav.postTrade", "Post-trade breaches"),
-          to: "/compliance/post-trade",
-          icon: "warning",
-          requiredPermissions: ["IRG_VIEW_RULES"],
-        },
-        {
-          label: t("compliance.nav.exceptions", "Pre-trade exceptions"),
-          to: "/compliance/exceptions",
-          icon: "approval",
           requiredPermissions: ["IRG_VIEW_RULES"],
         },
         {

@@ -34,6 +34,12 @@ export const portfolioWorkspaceDashboardTabs: DashboardTabProvider = {
           icon: "decision",
         },
         {
+          key: "decisions",
+          label: t("portfolio.workspaceTabs.decisions"),
+          to: `/portfolios/${code}/decisions`,
+          icon: "decision",
+        },
+        {
           key: "compliance",
           label: t("portfolio.workspaceTabs.compliance"),
           to: `/portfolios/${code}/compliance`,

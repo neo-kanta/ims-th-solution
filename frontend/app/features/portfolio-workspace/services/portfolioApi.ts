@@ -23,6 +23,8 @@ export type ApiCashBalanceV2 = components["schemas"]["CashBalanceResponse"];
 export type ApiTransactionV2 = components["schemas"]["TransactionResponse"];
 export type ApiTransactionListV2 =
   components["schemas"]["TransactionListResponse"];
+export type ApiValuationV2 = components["schemas"]["ValuationResponse"];
+export type ApiValuationListV2 = components["schemas"]["ValuationListResponse"];
 
 export const portfolioApi = {
   /** Resolve a portfolio by its business code. Throws on 404. */
@@ -50,6 +52,34 @@ export const portfolioApi = {
       params: { path: { portfolioCode } },
     });
     return unwrapOpenApiResponse<ApiCashBalanceV2[]>(response);
+  },
+
+  /** Latest authoritative valuation snapshot, resolved by business code. */
+  async getLatestValuation(portfolioCode: string): Promise<ApiValuationV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/valuations/latest",
+      { params: { path: { portfolioCode } } },
+    );
+    return unwrapOpenApiResponse<ApiValuationV2>(response);
+  },
+
+  /** Official valuation history used by the portfolio overview sparkline. */
+  async listValuations(
+    portfolioCode: string,
+    query: {
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<ApiValuationListV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/valuations",
+      { params: { path: { portfolioCode }, query } },
+    );
+    return unwrapOpenApiResponse<ApiValuationListV2>(response);
   },
 
   /** Ledger transactions for a portfolio, resolved by business code. */
