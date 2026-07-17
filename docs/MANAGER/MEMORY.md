@@ -3,7 +3,7 @@ type: manager-memory
 project: IMS Thailand
 owner: Kanta
 status: active
-last_verified: 2026-07-15
+last_verified: 2026-07-17
 stability: durable
 ---
 
@@ -128,6 +128,22 @@ Important details:
 
 - Preserve an immutable, attributable audit trail for financial decisions,
   compliance checks, overrides, executions, and state changes.
+- Company-level AUM and P&L use a configuration-controlled reporting currency;
+  the current configured value is `THB`. Application/domain aggregation and
+  frontend formatting must not hard-code that value. Production startup must
+  reject missing or invalid reporting-currency configuration rather than
+  silently choosing a currency.
+- Cross-currency reporting may use only an authoritative executable-code FX
+  source for the applicable business date. Never fabricate a rate, assume 1:1,
+  omit a currency silently, or add unlike currencies. Missing or stale rates
+  make the aggregate unavailable/incomplete with explicit coverage evidence.
+- A `LIVE` portfolio with no active and effective compliance rule binding on
+  the business date is not compliant. Return a typed not-configured result and
+  block decision submission and execution creation without a false PASS record.
+- Missing required asset classification for an existing holding or proposed
+  instrument is a typed compliance-unavailable result for a `LIVE` portfolio;
+  asset-allocation rules must not silently skip it. Do not change the policy for
+  `SIMULATION` or `MODEL` portfolios without a separate approved decision.
 - Fail closed when a mandatory production compliance or workflow dependency is
   unavailable. Nil dependencies may be tolerated only where existing unit-test
   construction explicitly relies on them.

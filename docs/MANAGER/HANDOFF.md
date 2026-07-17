@@ -4,13 +4,253 @@ project: IMS Thailand
 owner: Kanta
 status: active
 last_updated: 2026-07-17
-current_goal: IMS-UAT-20260717 remains IN PROGRESS and blocked at the documentation gate. A 2026-07-17 independent merge-readiness review also found unresolved P0/P1 authorization, compliance, financial-reporting, audit, and frontend correctness defects in feature/investment, so neo-develop must not be fast-forwarded yet. IMS-REG-TH-SEC remains gated pending approval of the applicable product regime and source-to-rule matrix.
+current_goal: IMS-PR3-20260717 is COMPLETE locally on feature/investment. Exactly the configured reporting-currency AUM, LIVE compliance fail-closed, and EN/TH/ZH plus branch TypeScript defects were fixed. The earlier UAT documentation gate and other merge blockers remain, so neo-develop must not be fast-forwarded.
 ---
 
 # Manager Handoff
 
 This file is the current-instance snapshot. Verify every Git claim at the start
 of a new session because branch and worktree state can change after this update.
+
+## Session: Three Production-Readiness Defects (2026-07-17, IMS-PR3-20260717)
+
+**Status:** COMPLETE LOCALLY; DO NOT MERGE. Work ran from 13:30 through final
+integration on `feature/investment`. The owner-authorized scope was exactly
+three fixes. No push, merge, migration, seed, deployment, live-database write,
+or stash operation occurred.
+
+**Local commits:**
+
+- `216c600783ff15270fbaaf29e3f81a38f260904a` - configured reporting-currency
+  AUM/P&L and business-date FX.
+- `e80f08688f24f07a9c023876b077b2d74f238655` - LIVE compliance fail-closed
+  behavior and audit-correlated typed 422 results.
+- `350fe19` - portfolio/dashboard/operator EN/TH/ZH, generated-contract
+  consumption, branch TypeScript cleanup, and honest directory KPIs.
+- `790a2f7` - reproducible generated V1/V2 Swagger and TypeScript contracts.
+
+**Fix 1 - reporting currency:** production now requires a valid uppercase ISO
+4217 `REPORTING_CURRENCY`; environment templates configure `THB`, but business
+logic contains no THB default. Official company and mine totals include active
+`LIVE` portfolios only. Conversion uses persisted direct `FX_<BASE><QUOTE>`
+quotes for the exact valuation business date; same-currency values use identity.
+Missing, stale, wrong-date, wrong-symbol, wrong-quote-currency, zero, or negative
+FX and stale/inconsistent valuations produce `INCOMPLETE` with stable coverage
+and exclusions and no partial numeric total. Today's P&L includes local P&L and
+FX movement; external flows use the documented closing-FX convention.
+
+**Fix 2 - compliance:** the cross-module contract now carries typed
+`COMPLIANCE_EVALUATED`, `COMPLIANCE_NOT_CONFIGURED`, and
+`COMPLIANCE_UNAVAILABLE` states. A `LIVE` portfolio with no active/effective
+rule or missing existing/proposed asset classification blocks before decision,
+approval, or execution persistence, returns a correlated typed HTTP 422, and
+writes a strict control-gap audit event. Nil/unknown statuses and verdicts also
+fail closed. `SIMULATION` and `MODEL` preserve their prior policy. Real
+effective-window tests cover zero, inactive, future, expired, and valid rules.
+
+**Fix 3 - frontend:** dashboard and portfolio-directory AUM, Today's P&L, and
+percentage consume only the backend reporting-currency summary. No client
+cross-currency aggregation remains. `AVAILABLE`, `NO_DATA`, `INCOMPLETE`, and
+transport-error states withhold unavailable money and retain currency,
+business-date, as-of, coverage, and exclusion evidence. Open-breach pagination
+is exhaustive and fails honest if metadata changes or a page is incomplete.
+EN/TH/ZH catalogs have structural parity, genuine localized workflow copy,
+interpolation/raw-key tests, and no retained English fallback literals. Changed
+UI labels resolve business names/codes or an explicit unavailable marker rather
+than exposing UUIDs.
+
+**Independent reviews:** the financial reviewer found and closed the economic
+P&L formula issue; the backend/security reviewer found and closed severity,
+portfolio-type, unknown-result, SIM/MODEL, and audit-correlation fail-open paths.
+The frontend reviewer reported no P0/P1 and three P2s (truncated breach counts,
+nested keyboard navigation, and two English fallbacks); all three were fixed and
+narrowly re-reviewed with no remaining P0/P1/P2.
+
+**Integrated verification:**
+
+- Backend: `go test ./... -count=1` passed in 49.4s; `go vet ./...` passed in
+  25.4s; `go build ./...` passed in 27.6s; E2E-tag compile passed in 11.6s;
+  all 43 changed Go files are gofmt-clean.
+- Frontend: focused contract/i18n/pagination tests passed 4 files/30 tests;
+  full Vitest passed 46 files/497 tests; Nuxt production build passed with only
+  dependency `DEP0155` warnings.
+- TypeScript: exact `neo-develop` baseline is 123 diagnostics in 23 files;
+  pre-fix `feature/investment` was 166 in 21. Final is 97 in 10 legacy
+  approval/chat/settings/watchlist files, with zero diagnostics intersecting
+  the 249 frontend files changed or generated-contract-affected by the branch.
+- Contract generation: `make api-client` passed and a second generation changed
+  zero SHA-256 hashes across all seven generated files.
+- Static checks: diff/whitespace, staged secret patterns, added unsafe
+  TypeScript, added mojibake, and raw-ID-label checks passed.
+- Browser: the built UI loaded with zero console warnings/errors and protected
+  `/portfolios` redirected to
+  `/auth/login?reason=token_expired&redirect=/portfolios`. The local session was
+  expired, so authenticated portfolio responsive/theme/locale visual UAT is not
+  claimed.
+
+**Residual risks/non-goals:** the branch remains DO NOT MERGE because earlier
+Portfolio V2 data-scope authorization, production demo memberships,
+fill-validation, binding-audit, regulatory, and UAT blockers remain. The
+reporting implementation uses closing-date FX for external flows and does not
+claim GIPS/transaction-time precision. `previousInternalSnapshot` still reads a
+small source-agnostic latest-before set, which can hide an older INTERNAL
+baseline behind enough newer non-INTERNAL rows; address with a source-filtered
+repository query before high-volume production history. The 97 unrelated
+TypeScript diagnostics and authenticated browser UAT remain follow-up work.
+
+**Final safety state:** `neo-develop` and `origin/neo-develop` remain
+`6ba5dc7ac67426b0d22df41e8570797c485d4b62`. All 71 pre-existing stashes remain;
+`stash@{0}` is still `ef36adc3b5bd3a69e209e46fefafc3ee9ce62b19`.
+`fund_id` remains required. No database was started or mutated.
+
+**Exact implementation file inventory:**
+
+`216c600` (17 files):
+
+```text
+backend/cmd/server/main.go
+backend/internal/integration/application/query/get_valuation_summary.go
+backend/internal/integration/application/query/get_valuation_summary_test.go
+backend/internal/integration/domain/valuation_summary.go
+backend/internal/integration/transport/dto/response/valuation_summary_response.go
+backend/internal/integration/transport/handler/dashboard_handler.go
+backend/internal/integration/transport/handler/dashboard_handler_test.go
+backend/internal/investment/infrastructure/adapter/valuation_summary_adapter.go
+backend/internal/investment/infrastructure/adapter/valuation_summary_adapter_test.go
+backend/internal/investment/module.go
+backend/pkg/contract/valuation_summary.go
+backend/platform/config/config.go
+backend/platform/config/config_test.go
+infra/env/.env.development
+infra/env/.env.e2e.example
+infra/env/.env.example
+infra/env/.env.production
+```
+
+`e80f086` (29 files):
+
+```text
+backend/internal/compliance/application/command/allocation_unavailable_test.go
+backend/internal/compliance/application/command/run_pretrade_check.go
+backend/internal/compliance/application/command/run_pretrade_check_test.go
+backend/internal/compliance/domain/valueobject/compliance_status.go
+backend/internal/compliance/engine/pipeline.go
+backend/internal/compliance/engine/pipeline_unavailable_test.go
+backend/internal/compliance/infrastructure/adapter/investment_data_adapters.go
+backend/internal/compliance/infrastructure/adapter/nop_adapters.go
+backend/internal/compliance/rules/allocation/asset_class.go
+backend/internal/compliance/rules/allocation/asset_class_test.go
+backend/internal/compliance/spi/data_bundle.go
+backend/internal/compliance/spi/result.go
+backend/internal/compliance/transport/contract_adapter.go
+backend/internal/compliance/transport/contract_adapter_test.go
+backend/internal/investment/application/command/compliance_gate.go
+backend/internal/investment/application/command/compliance_gate_test.go
+backend/internal/investment/application/command/decision_compliance_test.go
+backend/internal/investment/application/command/decision_lifecycle.go
+backend/internal/investment/application/command/execution.go
+backend/internal/investment/application/command/execution_workflow_test.go
+backend/internal/investment/module.go
+backend/internal/investment/transport/handler/compliance_error.go
+backend/internal/investment/transport/handler/compliance_status_handler_test.go
+backend/internal/investment/transport/handler/decision_handler.go
+backend/internal/investment/transport/handler/execution_handler.go
+backend/internal/investment/transport/handler/portfolio_v2_decision_handler.go
+backend/internal/investment/transport/handler/portfolio_v2_execution_handler.go
+backend/internal/investment/transport/handler/portfolio_v2_handler_test.go
+backend/pkg/contract/contracts.go
+```
+
+`350fe19` (71 files):
+
+```text
+frontend/app/features/compliance/components/ComplianceAuditTimeline.vue
+frontend/app/features/compliance/components/ComplianceBreachInbox.vue
+frontend/app/features/compliance/components/ComplianceExceptionTimeline.vue
+frontend/app/features/compliance/components/CompliancePermissionMatrix.vue
+frontend/app/features/compliance/components/ComplianceRuleBuilder.vue
+frontend/app/features/compliance/components/ComplianceRuleDetailHeader.vue
+frontend/app/features/compliance/components/ComplianceRuleDetailRail.vue
+frontend/app/features/compliance/components/ComplianceRuleTable.vue
+frontend/app/features/compliance/components/ComplianceRuleTabs.vue
+frontend/app/features/compliance/components/ComplianceSectionTabs.vue
+frontend/app/features/compliance/composables/useCompliancePortfolioDirectory.ts
+frontend/app/features/compliance/composables/useComplianceUserDirectory.ts
+frontend/app/features/dashboard/components/DashboardApprovalPanel.vue
+frontend/app/features/dashboard/components/DashboardOverviewScreen.vue
+frontend/app/features/dashboard/components/DashboardTaskFeed.vue
+frontend/app/features/dashboard/lib/dashboard.ts
+frontend/app/features/dashboard/lib/valuationSummaryMapping.ts
+frontend/app/features/dashboard/types.ts
+frontend/app/features/investment-decision/components/DecisionStatusBadge.vue
+frontend/app/features/portfolio-decision/PortfolioDecisionDetailView.vue
+frontend/app/features/portfolio-decision/PortfolioDecisionNewView.vue
+frontend/app/features/portfolio-decision/PortfolioDecisionsListView.vue
+frontend/app/features/portfolio-decision/components/DecisionListTable.vue
+frontend/app/features/portfolio-decision/components/DecisionWorkflowPanel.vue
+frontend/app/features/portfolio-decision/components/InstrumentCombobox.vue
+frontend/app/features/portfolio-decision/composables/useDecisionLifecycle.ts
+frontend/app/features/portfolio-decision/lib/decisionFormat.ts
+frontend/app/features/portfolio-decision/lib/decisionValidation.ts
+frontend/app/features/portfolio-decision/lib/legacyEntry.ts
+frontend/app/features/portfolio-workspace/PortfolioCashView.vue
+frontend/app/features/portfolio-workspace/PortfolioComplianceView.vue
+frontend/app/features/portfolio-workspace/PortfolioDirectoryView.vue
+frontend/app/features/portfolio-workspace/PortfolioHoldingsView.vue
+frontend/app/features/portfolio-workspace/PortfolioLedgerView.vue
+frontend/app/features/portfolio-workspace/PortfolioOverviewView.vue
+frontend/app/features/portfolio-workspace/components/PortfolioAllocationDonut.vue
+frontend/app/features/portfolio-workspace/components/PortfolioFilterToolbar.vue
+frontend/app/features/portfolio-workspace/components/PortfolioKpiStrip.vue
+frontend/app/features/portfolio-workspace/components/PortfolioRoleActionMenu.vue
+frontend/app/features/portfolio-workspace/components/PortfolioSummaryCard.vue
+frontend/app/features/portfolio-workspace/composables/useMyPortfolios.ts
+frontend/app/features/portfolio-workspace/lib/directoryKpis.ts
+frontend/app/features/portfolio-workspace/lib/valuationHistory.ts
+frontend/app/features/portfolio-workspace/types.ts
+frontend/app/features/workflow/store/useWorkflowStore.ts
+frontend/app/pages/investment/operator/[fundId]/decisions/index.vue
+frontend/app/pages/investment/operator/[fundId]/operation/[decisionId].vue
+frontend/app/pages/investment/operator/[fundId]/operation/index.vue
+frontend/app/pages/investment/operator/index.vue
+frontend/app/shared/i18n/messages/en/compliance.ts
+frontend/app/shared/i18n/messages/en/dashboard.ts
+frontend/app/shared/i18n/messages/en/index.ts
+frontend/app/shared/i18n/messages/en/operator.ts
+frontend/app/shared/i18n/messages/en/portfolio.ts
+frontend/app/shared/i18n/messages/th/compliance.ts
+frontend/app/shared/i18n/messages/th/dashboard.ts
+frontend/app/shared/i18n/messages/th/index.ts
+frontend/app/shared/i18n/messages/th/operator.ts
+frontend/app/shared/i18n/messages/th/portfolio.ts
+frontend/app/shared/i18n/messages/zh/compliance.ts
+frontend/app/shared/i18n/messages/zh/dashboard.ts
+frontend/app/shared/i18n/messages/zh/index.ts
+frontend/app/shared/i18n/messages/zh/operator.ts
+frontend/app/shared/i18n/messages/zh/portfolio.ts
+frontend/tests/dashboard-valuation-summary.test.ts
+frontend/tests/i18n-messages.test.ts
+frontend/tests/portfolio-decision-draft.test.ts
+frontend/tests/portfolio-decision-errors-format.test.ts
+frontend/tests/portfolio-decision-lifecycle.test.ts
+frontend/tests/portfolio-decision-validation.test.ts
+frontend/tests/portfolio-directory-kpis.test.ts
+```
+
+`790a2f7` (7 generated files):
+
+```text
+backend/docs/docs.go
+backend/docs/swagger.json
+backend/docs/swagger.yaml
+backend/docs/v2/v2_docs.go
+backend/docs/v2/v2_swagger.json
+backend/docs/v2/v2_swagger.yaml
+frontend/app/api/ims-api.d.ts
+```
+
+Manager evidence files: `docs/MANAGER/HANDOFF.md`,
+`docs/MANAGER/MEMORY.md`, and `docs/MANAGER/TASKS.md`.
 
 ## Session: neo-develop Merge-Readiness Review (2026-07-17)
 

@@ -12,7 +12,66 @@ Only one task may be `IN PROGRESS`. A new AI instance must verify the repository
 before changing a status. Completed work belongs in the completion log, not in
 the active queue.
 
-## P0 - IN PROGRESS - Production Readiness and UAT
+## P0 - COMPLETED LOCALLY - Three Production-Readiness Defects (IMS-PR3-20260717)
+
+Goal: fix exactly three defects on `feature/investment` without merging or
+pushing: configured reporting-currency AUM/P&L, LIVE compliance fail-closed
+behavior for missing classification/rules, and complete EN/TH/ZH plus
+branch-introduced TypeScript cleanup. This task does not make the branch
+merge-ready; authorization, demo-permission migration, fill-validation, audit,
+and other documented blockers remain outside scope.
+
+Manager checklist:
+
+- [x] Read manager state, repository instructions, relevant domain/frontend/API
+      documentation, and verify live Git/stash state before edits.
+- [x] Create three isolated worktrees from `ebef93b` with non-overlapping
+      backend AUM, backend compliance, and frontend ownership.
+- [x] Accept an executable business-date-aware FX source or document a precise
+      blocker; never invent FX or omit currencies.
+- [x] Integrate reporting-currency config, honest coverage semantics, and
+      authoritative backend totals for `company` and `mine`.
+- [x] Integrate typed LIVE compliance-not-configured and missing-classification
+      failure behavior through decision/execution and real handler boundaries.
+- [x] Establish `feature/investment` versus isolated `neo-develop` typecheck
+      baselines; remove all branch/contract regressions.
+- [x] Prove genuine EN/TH/ZH parity, interpolation, no fallback/raw keys, and no
+      UUID business labels for the new workflows.
+- [x] Regenerate Swagger and `frontend/app/api/ims-api.d.ts` from authoritative
+      source when the accepted API contract changes; never hand-edit generated
+      files.
+- [x] Obtain independent backend financial/security and frontend/i18n reviews;
+      resolve all P0/P1 findings and record lower-priority residuals.
+- [x] Run focused plus full backend/frontend gates, E2E-tag compile, complete
+      diff/whitespace/generated/secret checks, then create scoped local commits.
+- [x] Update this task and `HANDOFF.md` with exact evidence and safety state.
+
+Worker tracking:
+
+- `IMS-PR3-AUM` — completed and integrated as `216c600`; independent financial
+  review has no remaining P0/P1.
+- `IMS-PR3-COMPLIANCE` — completed and integrated as `e80f086`; independent
+  backend/security review has no remaining P0/P1.
+- `IMS-PR3-FRONTEND` — completed and integrated as `350fe19`; all independent
+  P2 findings were fixed and narrowly re-reviewed. Generated contracts are
+  `790a2f7`.
+
+Acceptance criteria are the observable requirements in the owner's 2026-07-17
+brief: honest reporting-currency conversion/coverage; LIVE fail-closed behavior
+with no financial persistence; exact EN/TH/ZH proof; zero branch-introduced or
+generated-contract TypeScript diagnostics; full validation evidence; local-only
+commits; unchanged `neo-develop`, remotes, live databases, and existing stashes.
+
+Completion evidence and the exact 123-file implementation inventory (124 commit
+entries because `backend/internal/investment/module.go` appears in two scoped
+commits) are recorded in `HANDOFF.md`. This completion does not clear the
+overall DO NOT MERGE verdict.
+Residual work includes Portfolio V2 data-scope enforcement, production demo
+membership cleanup, fill validation, binding audit, authenticated responsive
+locale/theme UAT, 97 unrelated TypeScript diagnostics, a source-filtered prior
+INTERNAL valuation query, and higher-precision transaction-time FX if required.
+
+## P0 - GATED - Production Readiness and UAT
 
 ### Documentation-First Overnight Production-Readiness Program (IMS-UAT-20260717)
 
