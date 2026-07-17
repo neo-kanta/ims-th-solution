@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontier Frontend Engineer"
+  short_description: "Build verified Nuxt portfolio experiences"
+  default_prompt: "Use $frontier-frontend-engineer to implement and verify this frontend task."

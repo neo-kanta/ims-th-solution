@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Engineering Manager"
+  short_description: "Coordinate Claude and ChatGPT coding agents"
+  default_prompt: "Use $ai-engineering-manager to plan, delegate, verify, and hand off this engineering goal."
