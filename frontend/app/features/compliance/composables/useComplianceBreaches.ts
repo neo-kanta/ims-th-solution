@@ -32,9 +32,12 @@ export function useComplianceBreachesList() {
   const offset = ref(0);
   const limit = ref(50);
   const loading = ref(false);
+  const loaded = ref(false);
   const error = ref<string | null>(null);
+  let requestId = 0;
 
   async function fetchList(filters: ComplianceBreachListFilters = {}) {
+    const currentRequest = ++requestId;
     loading.value = true;
     error.value = null;
     try {
@@ -43,16 +46,21 @@ export function useComplianceBreachesList() {
         limit: limit.value,
         ...filters,
       });
+      if (currentRequest !== requestId) return;
       items.value = payload.breaches ?? [];
       total.value = payload.total ?? 0;
       offset.value = payload.offset ?? offset.value;
       limit.value = payload.limit ?? limit.value;
     } catch (err) {
+      if (currentRequest !== requestId) return;
       error.value = extractErrorMessage(err, "Failed to load compliance breaches.");
       items.value = [];
       total.value = 0;
     } finally {
-      loading.value = false;
+      if (currentRequest === requestId) {
+        loading.value = false;
+        loaded.value = true;
+      }
     }
   }
 
@@ -62,6 +70,7 @@ export function useComplianceBreachesList() {
     offset,
     limit,
     loading,
+    loaded,
     error,
     fetchList,
   };

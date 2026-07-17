@@ -102,6 +102,24 @@ func (e *ErrCodeAlreadyExists) Error() string {
 	return fmt.Sprintf("%s code %q already exists", e.Resource, e.Code)
 }
 
+// ErrAmbiguousPortfolioCode is raised by PortfolioRepository.GetByCode when
+// more than one alive portfolio shares the requested code. The DB only
+// enforces code uniqueness per fund today (uq_inv_portfolios_fund_code_alive)
+// — Portfolio V2 (docs/api/portfolio-v2-api-ddd.md) assumes code is globally
+// unique, so until a global constraint lands, GetByCode must refuse to guess
+// which portfolio the caller means rather than silently returning one.
+type ErrAmbiguousPortfolioCode struct {
+	Code  string
+	Count int
+}
+
+func (e *ErrAmbiguousPortfolioCode) Error() string {
+	return fmt.Sprintf(
+		"portfolio code %q is ambiguous: %d alive portfolios share it; global code uniqueness is not yet enforced",
+		e.Code, e.Count,
+	)
+}
+
 // ErrFundHasActivePortfolios prevents soft-deleting a fund that still owns
 // active portfolios.
 type ErrFundHasActivePortfolios struct {

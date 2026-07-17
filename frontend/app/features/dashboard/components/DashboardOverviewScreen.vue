@@ -13,15 +13,28 @@ import DashboardActivityPanel from "./DashboardActivityPanel.vue";
 
 import { useDashboardData } from "../composables/useDashboardData";
 import { useDashboardTasks } from "../composables/useDashboardTasks";
+import { useDashboardApprovals } from "../composables/useDashboardApprovals";
+import { useDashboardCounts } from "../composables/useDashboardCounts";
+import { useDashboardValuationSummary } from "../composables/useDashboardValuationSummary";
 import { useWorkflowDaily } from "~/features/workflow/composables/useWorkflowDaily";
-import { formatDashboardHeadlineDate, formatDashboardTime } from "../lib/dashboard";
+import {
+  buildAumMetric,
+  buildPnlMetric,
+  buildScopeOptions,
+  defaultAumScope,
+  formatDashboardHeadlineDate,
+} from "../lib/dashboard";
 import type {
+  DashboardOverviewMetric,
   DashboardTodoAction,
   DashboardTodoFilter,
   TaskDTO,
+  ValuationScope,
 } from "../types";
 
-const { t } = useI18n();
+type DisplayMetric = DashboardOverviewMetric & { loading: boolean };
+
+const { t, locale } = useI18n();
 const { payload, fetchDashboardData } = useDashboardData();
 const {
   snapshot,
@@ -37,6 +50,55 @@ const {
   businessDate: workflowBusinessDate,
   fetchState: refreshWorkflowState,
 } = useWorkflowDaily();
+
+const {
+  items: pendingApprovals,
+  total: approvalsTotal,
+  loading: approvalsLoading,
+  error: approvalsError,
+  fetchApprovals,
+} = useDashboardApprovals();
+
+const {
+  activeContractsCount,
+  pendingApprovalsCount,
+  loading: countsLoading,
+  fetchCounts,
+} = useDashboardCounts();
+
+const {
+  summary: valuationSummary,
+  loading: valuationLoading,
+  error: valuationError,
+  fetchValuationSummary,
+} = useDashboardValuationSummary();
+
+// "Entire company AUM" is only offered when the caller's data scope is the
+// "*" wildcard (see permissions.contracts, populated from the JWT/session at
+// login) — otherwise a restricted user would see a "company" scope that is
+// silently just their own subset, which is misleading labelling.
+const canViewCompanyAum = computed(() => authStore.hasContract("*"));
+const aumScope = ref<ValuationScope>(defaultAumScope(canViewCompanyAum.value));
+
+const scopeSelectOptions = computed(() =>
+  buildScopeOptions(canViewCompanyAum.value, t).map((option) => ({
+    value: option.key,
+    label: option.label,
+  })),
+);
+
+function onScopeChange(scope: string) {
+  aumScope.value = scope === "company" ? "company" : "mine";
+  void fetchValuationSummary(aumScope.value);
+}
+
+// Two-way adapter for AppSelect's v-model — keeps onScopeChange as the single
+// place that also triggers the refetch, so selecting from the combo box and
+// any future programmatic scope change both go through the same path.
+const aumScopeSelectValue = computed<string>({
+  get: () => aumScope.value,
+  set: (value) => onScopeChange(value),
+});
 
 const isRefreshing = ref(false);
 const toastVisible = ref(false);
@@ -64,62 +126,52 @@ const lastRefreshSource = computed(
 );
 
 const taskSourceLabel = computed(() => {
-  if (tasksLoading.value) return "Tasks: loading integration source";
-  if (tasksError.value) return "Tasks: API source unavailable";
-  if (snapshot.value) return "Tasks: integration API source";
-  return "Tasks: waiting for integration source";
+  if (tasksLoading.value) return t("dashboardOverview.taskSourceLoading");
+  if (tasksError.value) return t("dashboardOverview.taskSourceUnavailable");
+  if (snapshot.value) return t("dashboardOverview.taskSourceApi");
+  return t("dashboardOverview.taskSourceWaiting");
 });
 
 const todoTotal = computed(() => snapshot.value?.summary.total ?? 0);
 
-// High-fidelity operational metrics fallback
-const displayMetrics = computed(() => {
-  if (payload.value?.metrics?.length) {
-    return payload.value.metrics;
-  }
-  return [
-    {
-      id: "1",
-      label: "AUM Today",
-      value: "฿14.24B",
-      changeLabel: "+2.4%",
-      changeTone: "success",
-      helperText: "Across 12 contracts",
-      icon: "portfolio",
-      tone: "primary",
-    },
-    {
-      id: "2",
-      label: "Active Contracts",
-      value: "12",
-      changeLabel: "+1",
-      changeTone: "success",
-      helperText: "3 pending decisions",
-      icon: "decision",
-      tone: "info",
-    },
-    {
-      id: "3",
-      label: "Pending Approvals",
-      value: "2",
-      changeLabel: "Due before 16:30",
-      changeTone: "danger",
-      helperText: "2 urgent approvals",
-      icon: "approval",
-      tone: "danger",
-    },
-    {
-      id: "4",
-      label: "Today's P&L",
-      value: "+฿5.82M",
-      changeLabel: "+0.38%",
-      changeTone: "success",
-      helperText: "vs prior close",
-      icon: "analysis",
-      tone: "success",
-    },
-  ];
-});
+// AUM Today / Today's P&L: derivation (value formatting, sign/tone, and the
+// explicit not-available/load-error states) lives in lib/dashboard.ts as
+// pure functions so it can be unit tested without mounting this screen.
+const aumMetric = computed(() => ({
+  ...buildAumMetric(valuationSummary.value, Boolean(valuationError.value), t, locale.value),
+  loading: valuationLoading.value,
+}));
+const pnlMetric = computed(() => ({
+  ...buildPnlMetric(valuationSummary.value, Boolean(valuationError.value), t, locale.value),
+  loading: valuationLoading.value,
+}));
+
+const displayMetrics = computed<DisplayMetric[]>(() => [
+  aumMetric.value,
+  {
+    id: "contracts",
+    loading: countsLoading.value,
+    label: t("dashboardOverview.metricContractsLabel"),
+    value: String(activeContractsCount.value),
+    changeLabel: "",
+    changeTone: "neutral" as const,
+    helperText: t("dashboardOverview.metricContractsHelper", { count: activeContractsCount.value }),
+    icon: "decision",
+    tone: "info" as const,
+  },
+  {
+    id: "approvals",
+    loading: countsLoading.value,
+    label: t("dashboardOverview.metricApprovalsLabel"),
+    value: String(pendingApprovalsCount.value),
+    changeLabel: pendingApprovalsCount.value > 0 ? t("dashboardOverview.actionRequired") : "",
+    changeTone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("neutral" as const),
+    helperText: t("dashboardOverview.metricApprovalsHelper", { count: pendingApprovalsCount.value }),
+    icon: "approval",
+    tone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("info" as const),
+  },
+  pnlMetric.value,
+]);
 
 const workflowTimestamps = computed(() => {
   const ws = workflowState.value;
@@ -146,72 +198,6 @@ const workflowTimestamps = computed(() => {
   return result;
 });
 
-// High-fidelity pending approvals fallback
-const displayPendingApprovals = computed(() => {
-  if (payload.value?.pendingApprovals?.length) {
-    return payload.value.pendingApprovals;
-  }
-  return [
-    {
-      id: "1",
-      contractCode: "KBANK-EQ-001",
-      valueLabel: "฿150M · Buy Order",
-      dueLabel: "20m left",
-      isUrgent: true,
-    },
-    {
-      id: "2",
-      contractCode: "PTT-FI-002",
-      valueLabel: "฿320M · Bond Issue",
-      dueLabel: "1h 45m left",
-      isUrgent: false,
-    },
-    {
-      id: "3",
-      contractCode: "SCC-EQ-004",
-      valueLabel: "฿75M · Sell Order",
-      dueLabel: "2h left",
-      isUrgent: false,
-    },
-  ];
-});
-
-// High-fidelity activity log feed fallback
-const displayActivityFeed = computed(() => {
-  if (payload.value?.activityFeed?.length) {
-    return payload.value.activityFeed;
-  }
-  return [
-    {
-      id: "1",
-      actor: "IRG Ops",
-      message: "cleared overnight controls",
-      timeLabel: "10m ago",
-      tone: "success",
-    },
-    {
-      id: "2",
-      actor: "neo-kanta",
-      message: "approved analysis for KBANK-EQ-001",
-      timeLabel: "25m ago",
-      tone: "info",
-    },
-    {
-      id: "3",
-      actor: "System",
-      message: "auto-escalated PTT-FI-002",
-      timeLabel: "1h ago",
-      tone: "warning",
-    },
-    {
-      id: "4",
-      actor: "admin",
-      message: "executed trade for SCC-EQ-004",
-      timeLabel: "2h ago",
-      tone: "teal",
-    },
-  ];
-});
 
 async function refreshDashboard() {
   if (isRefreshing.value) return;
@@ -222,6 +208,9 @@ async function refreshDashboard() {
       fetchDashboardData(),
       fetchTasks(),
       refreshWorkflowState(),
+      fetchApprovals(),
+      fetchCounts(),
+      fetchValuationSummary(aumScope.value),
     ]);
   } finally {
     isRefreshing.value = false;
@@ -242,11 +231,11 @@ function onAssistantPreviewSubmit(query: string) {
 
 function onTaskAction(action: DashboardTodoAction, _task: TaskDTO) {
   if (action === "more") {
-    showToast("Task action menu is not connected yet.");
+    showToast(t("dashboardOverview.taskActionMenuNotConnected"));
     return;
   }
 
-  showToast("Task actions are not connected yet.");
+  showToast(t("dashboardOverview.taskActionsNotConnected"));
 }
 
 onMounted(() => {
@@ -266,6 +255,7 @@ onMounted(() => {
     />
 
     <DashboardLayerSidebar
+      id="dashboard-layer-sidebar"
       v-model:active-filter="activeFilter"
       class="dashboard-layered__sidebar"
       :snapshot="snapshot"
@@ -285,11 +275,13 @@ onMounted(() => {
         <button
           class="dashboard-mobile-actions__toggle"
           type="button"
+          aria-controls="dashboard-layer-sidebar"
+          :aria-expanded="isSidebarOpenOnMobile"
           @click="isSidebarOpenOnMobile = true"
         >
           <AppIcon name="list" size="xs" />
           <span>{{
-            t("dashboardOverview.showLayers" as any, "Task Layers & Contracts")
+            t("dashboardOverview.showLayers")
           }}</span>
         </button>
       </div>
@@ -299,11 +291,24 @@ onMounted(() => {
         :timestamps="workflowTimestamps"
       />
 
+      <div v-if="scopeSelectOptions.length > 1" class="dashboard-scope-row">
+        <label class="dashboard-scope-row__label" for="dashboard-aum-scope-select">{{ t("dashboardOverview.scopeSelectorLabel") }}</label>
+        <AppSelect
+          id="dashboard-aum-scope-select"
+          v-model="aumScopeSelectValue"
+          :options="scopeSelectOptions"
+          placeholder=""
+          :aria-label="t('dashboardOverview.scopeSelectorLabel')"
+          class="dashboard-scope-row__select"
+        />
+      </div>
+
       <section class="dashboard-metrics-grid">
         <DashboardMetricCard
           v-for="metric in displayMetrics"
-          :key="metric.label"
-          :metric="metric as any"
+          :key="metric.id"
+          :metric="metric"
+          :loading="metric.loading"
         />
       </section>
 
@@ -320,17 +325,21 @@ onMounted(() => {
 
     </main>
 
-    <aside class="dashboard-layered__rail" aria-label="Dashboard context">
-      <DashboardApprovalPanel :items="displayPendingApprovals as any" />
+    <aside class="dashboard-layered__rail" :aria-label="t('dashboardOverview.contextLabel')">
+      <DashboardApprovalPanel
+        :items="pendingApprovals"
+        :loading="approvalsLoading"
+        :error="approvalsError"
+      />
 
-      <DashboardActivityPanel :items="displayActivityFeed as any" />
+      <DashboardActivityPanel :items="[]" :loading="false" />
 
       <section class="dashboard-rail__panel">
-        <h2 class="dashboard-rail__title">System notes</h2>
+        <h2 class="dashboard-rail__title">{{ t("dashboardOverview.systemNotes") }}</h2>
         <ul class="dashboard-rail__notes">
           <li>
             <span class="dashboard-rail__note-dot is-preview" />
-            <span>AI assistant: Preview</span>
+            <span>{{ t("dashboardOverview.aiAssistantPreview") }}</span>
           </li>
           <li>
             <span class="dashboard-rail__note-dot" />
@@ -338,7 +347,7 @@ onMounted(() => {
           </li>
           <li>
             <span class="dashboard-rail__note-dot is-muted" />
-            <span>{{ todoTotal }} task records in current source</span>
+            <span>{{ t("dashboardOverview.taskRecordsCount", { count: todoTotal }) }}</span>
           </li>
         </ul>
       </section>
@@ -401,6 +410,25 @@ onMounted(() => {
   display: grid;
   gap: var(--space-5);
   align-content: start;
+}
+
+.dashboard-scope-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-scope-row__label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.dashboard-scope-row__select {
+  width: auto;
+  min-width: 12rem;
+  max-width: 16rem;
 }
 
 .dashboard-metrics-grid {
@@ -533,7 +561,9 @@ onMounted(() => {
     top: var(--header-height);
     left: 0;
     bottom: 0;
-    width: 280px;
+    width: min(320px, calc(100vw - var(--space-6)));
+    max-width: 100%;
+    height: auto;
     z-index: var(--z-sidebar);
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-subtle);
@@ -541,6 +571,7 @@ onMounted(() => {
     transform: translateX(-100%);
     transition: transform var(--transition-base);
     box-shadow: var(--shadow-lg);
+    overscroll-behavior: contain;
   }
 
   .is-mobile-sidebar-open .dashboard-layered__sidebar {
@@ -571,6 +602,12 @@ onMounted(() => {
 @media (max-width: 640px) {
   .dashboard-metrics-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-layered__sidebar {
+    transition: none;
   }
 }
 </style>

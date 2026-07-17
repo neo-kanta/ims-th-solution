@@ -3962,6 +3962,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/integration/dashboard/valuation-summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns official LIVE-portfolio AUM and today's P\u0026L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Integration"
+                ],
+                "summary": "Dashboard AUM / P\u0026L summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "company (default) or mine",
+                        "name": "scope",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ValuationSummaryDTO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/integration/tasks/my": {
             "get": {
                 "security": [
@@ -4118,12 +4181,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter by portfolio UUID",
                         "name": "portfolio_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by contract UUID",
-                        "name": "contract_id",
                         "in": "query"
                     },
                     {
@@ -4692,6 +4749,87 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/executions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Opens an execution against an APPROVED decision and reruns pre-trade compliance using the actual ordered values.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Executions"
+                ],
+                "summary": "Create Investment Execution",
+                "parameters": [
+                    {
+                        "description": "Execution fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateExecutionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -11107,6 +11245,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
@@ -11405,6 +11544,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contractID": {
+                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
@@ -11567,7 +11707,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "business_date",
-                "contract_id",
                 "currency",
                 "fund_id",
                 "instrument_code",
@@ -11579,9 +11718,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "business_date": {
-                    "type": "string"
-                },
-                "contract_id": {
                     "type": "string"
                 },
                 "currency": {
@@ -11621,6 +11757,26 @@ const docTemplate = `{
                         "BUY",
                         "SELL"
                     ]
+                }
+            }
+        },
+        "CreateExecutionRequest": {
+            "type": "object",
+            "required": [
+                "decision_id"
+            ],
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
                 }
             }
         },
@@ -11848,6 +12004,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "portfolio_type": {
+                    "type": "string"
                 },
                 "risk_profile": {
                     "type": "string"
@@ -12435,9 +12594,6 @@ const docTemplate = `{
                 "compliance_release_approval_request_id": {
                     "type": "string"
                 },
-                "contract_id": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -12733,6 +12889,77 @@ const docTemplate = `{
                 "zeroTransactionAttestation": {
                     "description": "ZeroTransactionAttestation must be true when approving a day with no\ninvestment transactions. Ignored for all other actions.",
                     "type": "boolean"
+                }
+            }
+        },
+        "ExecutionResponse": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cancellation_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "executed_amount": {
+                    "type": "string"
+                },
+                "executed_at": {
+                    "type": "string"
+                },
+                "executed_quantity": {
+                    "type": "string"
+                },
+                "execution_price": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trader_user_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -14357,6 +14584,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "portfolio_type": {
+                    "type": "string"
+                },
                 "risk_profile": {
                     "type": "string"
                 },
@@ -14553,6 +14783,9 @@ const docTemplate = `{
                 },
                 "rules_evaluated": {
                     "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "total_duration_ms": {
                     "type": "integer"
@@ -17040,6 +17273,119 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "valuation_ccy": {
+                    "type": "string"
+                }
+            }
+        },
+        "ValuationSummaryCoverageDTO": {
+            "type": "object",
+            "properties": {
+                "excluded_business_dates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "excluded_currencies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "excluded_fund_count": {
+                    "type": "integer"
+                },
+                "excluded_portfolio_count": {
+                    "type": "integer"
+                },
+                "exclusion_reasons": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclusions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ValuationSummaryExclusionDTO"
+                    }
+                },
+                "included_fund_count": {
+                    "type": "integer"
+                },
+                "included_portfolio_count": {
+                    "type": "integer"
+                },
+                "total_fund_count": {
+                    "type": "integer"
+                },
+                "total_portfolio_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ValuationSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "as_of": {
+                    "type": "string"
+                },
+                "aum_today": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "coverage": {
+                    "$ref": "#/definitions/ValuationSummaryCoverageDTO"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "data_available": {
+                    "type": "boolean"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "AVAILABLE",
+                        "NO_DATA",
+                        "INCOMPLETE"
+                    ]
+                },
+                "today_pnl": {
+                    "type": "string"
+                },
+                "today_pnl_percent": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "ValuationSummaryExclusionDTO": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "portfolio_code": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "required_business_date": {
                     "type": "string"
                 }
             }

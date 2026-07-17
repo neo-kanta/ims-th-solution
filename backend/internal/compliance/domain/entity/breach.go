@@ -23,7 +23,7 @@ type Breach struct {
 	CheckRecordID  uuid.UUID
 	CheckGroupID   uuid.UUID
 	PortfolioID    uuid.UUID
-	ContractID     uuid.UUID
+	ContractID     *uuid.UUID // nil for portfolio-only checks (no fund_id)
 	RuleTypeID     string
 	RuleInstanceID uuid.UUID
 	Severity       vo.Severity  `swaggertype:"string"`

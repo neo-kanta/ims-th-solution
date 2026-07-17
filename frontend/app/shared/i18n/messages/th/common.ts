@@ -57,6 +57,8 @@ export const thCommonMessages = {
     personalSettings: "การตั้งค่าส่วนบุคคล",
     investment: "การลงทุน",
     investmentResearch: "บทวิเคราะห์การลงทุน",
+    operatorPage: "หน้าเจ้าหน้าที่ปฏิบัติการ",
+    operations: "การดำเนินการ",
     marketData: "ข้อมูลตลาด",
     marketDataTabs: {
       watchlist: "ข้อมูล",
@@ -96,7 +98,7 @@ export const thCommonMessages = {
     subtitle: "จัดการงานประจำวันของเวิร์กโฟลว์และขั้นตอนเริ่มต้นวันทำการ",
     indexNotConfiguredTitle: "การดำเนินการ Workflow ทำที่ระดับกองทุน",
     indexNotConfiguredCopy:
-      "เปิดกองทุนจากเมนู My Funds เพื่อดูสถานะ Workflow ปัจจุบันและทำการเปลี่ยนสถานะ (Day Start, Manager Approval, Transaction Closing, Accounting Closing) แบ็กเอนด์ผูกการเปลี่ยนสถานะกับสัญญาของกองทุนนั้นเสมอ ไม่มีหน้าจัดการ Workflow แบบรวมศูนย์",
+      "เปิดกองทุนจากหน้า Operator เพื่อดูสถานะ Workflow ปัจจุบันและทำการเปลี่ยนสถานะ (Day Start, Manager Approval, Transaction Closing, Accounting Closing) แบ็กเอนด์ผูกการเปลี่ยนสถานะกับสัญญาของกองทุนนั้นเสมอ ไม่มีหน้าจัดการ Workflow แบบรวมศูนย์",
     tabs: {
       overview: "ภาพรวม",
       audit: "ประวัติการอนุมัติ",
@@ -133,8 +135,11 @@ export const thCommonMessages = {
       CANCEL_MANAGER_APPROVAL: "ยกเลิกการอนุมัติของผู้จัดการ",
       CLOSE_TRANSACTION: "ปิดการทำรายการ",
       CANCEL_TRANSACTION_CLOSE: "ยกเลิกการปิดทำรายการ",
-      CLOSE_ACCOUNTING: "ปิดบัญชีประจำวัน",
+      CLOSE_ACCOUNTING: "ปิดบัญชี",
       CANCEL_ACCOUNTING_CLOSE: "ยกเลิกการปิดบัญชีประจำวัน",
+      OPEN_DAY: "เริ่มต้นวันลงทุน",
+      APPROVE: "อนุมัติโดยผู้จัดการ",
+      CLOSE_TRANSACTIONS: "ปิดธุรกรรม",
     },
     modules: {
       approval: "โมดูลการอนุมัติ",

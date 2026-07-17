@@ -57,6 +57,8 @@ export const zhCommonMessages = {
     personalSettings: "个人设置",
     investment: "投资",
     investmentResearch: "投资研究",
+    operatorPage: "操作员页面",
+    operations: "运营",
     marketData: "市场数据",
     marketDataTabs: {
       watchlist: "数据",
@@ -96,7 +98,7 @@ export const zhCommonMessages = {
     subtitle: "管理日常工作流操作和营业日启动流程。",
     indexNotConfiguredTitle: "工作流操作以基金为单位进行管理",
     indexNotConfiguredCopy:
-      "请从「我的基金」打开基金,查看其当前工作流状态并执行状态转移(Day Start、Manager Approval、Transaction Closing、Accounting Closing)。后端的每个状态转移都绑定到该基金的合约,不存在全局工作流操作面板。",
+      "请从投资运营(Operator)页面打开基金,查看其当前工作流状态并执行状态转移(Day Start、Manager Approval、Transaction Closing、Accounting Closing)。后端的每个状态转移都绑定到该基金的合约,不存在全局工作流操作面板。",
     tabs: {
       overview: "概览",
       audit: "审批记录",
@@ -133,8 +135,11 @@ export const zhCommonMessages = {
       CANCEL_MANAGER_APPROVAL: "撤销经理审批",
       CLOSE_TRANSACTION: "关闭交易",
       CANCEL_TRANSACTION_CLOSE: "撤销交易关闭",
-      CLOSE_ACCOUNTING: "会计结账",
+      CLOSE_ACCOUNTING: "会计结算",
       CANCEL_ACCOUNTING_CLOSE: "撤销会计结账",
+      OPEN_DAY: "投资日开始",
+      APPROVE: "经理审批",
+      CLOSE_TRANSACTIONS: "交易结算",
     },
     modules: {
       approval: "审批模块",

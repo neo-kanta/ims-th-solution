@@ -26,14 +26,41 @@ export const enComplianceMessages = {
     dashboard: {
       title: "Compliance",
       description:
-        "Investment restriction and guideline overview. The pre-trade simulator stops bad orders before they become trade, settlement, or audit problems.",
-      restrictedHint: "Restricted",
+        "Monitor configured compliance rules, triage open breach records, and move directly into each portfolio's compliance workspace.",
+      asOfLabel: "As of {date} (your device's local date)",
       headerActions: {
-        recentChanges: "Recent changes",
+        refresh: "Refresh",
         openBreaches: "Open breaches",
         newRule: "New rule",
       },
+      indicators: {
+        groupLabel: "Compliance indicators",
+      },
+      errors: {
+        rulesTitle: "Rule list:",
+      },
+      breachQueue: {
+        title: "Open breach queue",
+        description: "Newest open records available to your compliance role, prioritised by severity within this page.",
+        errorTitle: "Failed to load open breaches",
+        empty: "No open breaches.",
+        emptyDescription: "The compliance service returned no open breach records for this role.",
+        severitySr: "Severity: {severity}",
+        portfolioUnavailable: "Portfolio unavailable",
+        review: "Review",
+        truncated: "Showing {shown} of {total} open breaches.",
+      },
+      finder: {
+        title: "Find a portfolio",
+        description: "Jump to a portfolio's compliance workspace by its code or name.",
+        inputLabel: "Portfolio code or name",
+        placeholder: "e.g. PF-1024 or Growth Fund",
+        noMatches: "No portfolios match this search.",
+        permissionUnavailable:
+          "Portfolio search is unavailable because this account does not have portfolio-view permission.",
+      },
       tabs: {
+        label: "Compliance sections",
         overview: "Overview",
         library: "Library",
         approvals: "Approvals",
@@ -43,82 +70,46 @@ export const enComplianceMessages = {
         settings: "Settings",
       },
       kpi: {
-        activeRules: "Active rules",
-        activeRulesSub: "published, in effect",
-        draft: "Draft",
-        draftSub: "not yet submitted",
-        draftHint:
-          "Backend has no Draft state today; this counts inactive rules with a future effective_from.",
-        pendingReview: "Pending review",
-        pendingReviewSub: "awaiting approval",
-        pendingReviewHint:
-          "Approval flow is not yet supported by the backend.",
-        disabled: "Disabled",
-        disabledSub: "recently retired",
-        expired: "Expired",
-        expiredSub: "effective_to lapsed",
-        highRisk: "High-risk rules",
-        highRiskSub: "severity = BLOCK",
-        // Legacy keys still consumed by some demos
-        totalRules: "Total rules",
-        inactiveRules: "Inactive / scheduled",
-        recentBreaches: "Recent breaches",
-        trendUnavailable:
-          "Week-over-week trend not available — no historical KPI snapshot endpoint yet.",
-      },
-      recentChanges: {
-        title: "Recent rule changes",
-        viewAll: "View all →",
-        empty: "No rule change history available yet.",
-      },
-      recentFailures: {
-        title: "Recent compliance failures",
-        description: "Latest open or recently-resolved breach records.",
-        empty: "No compliance failures recorded yet.",
-        inboxLink: "Open breaches inbox →",
-        reviewCta: "Review",
-        preTrade: "pre-trade",
-        postTrade: "post-trade",
-      },
-      search: {
-        placeholder: "Search rules: name, code, parameter…",
-        filterFund: "Fund",
-        filterAssetClass: "Asset class",
-        filterRuleType: "Rule type",
-        filterStatus: "Status",
-        filterSeverity: "Severity",
-        filterEffective: "Effective ▼",
-        filterOwner: "Owner",
-        filterApproval: "Approval ▼",
-        backendNote:
-          "Backend supports filter by rule_type_id + is_active only. Other facets need extensions to GET /compliance/rules.",
+        activeRules: "Active definitions",
+        activeRulesSub: "configured and locally in date",
+        highRisk: "Block-by-default",
+        highRiskSub: "rule type default = BLOCK",
+        scheduledRules: "Scheduled definitions",
+        scheduledRulesSub: "configured for a future date",
+        openBreaches: "Open breaches",
+        openBreachesSub: "role-visible records",
       },
       categories: {
         title: "Categories",
         empty: "No categorised rules to summarise yet.",
-      },
-      highRiskRules: {
-        title: "High-risk rules",
-        seeAll: "See all →",
-        empty: "No rules with default severity BLOCK.",
+        items: {
+          MANDATE: "Mandate",
+          RATIO: "Ratio / exposure",
+          RESTRICTION: "Restriction lists",
+          REGULATORY: "Regulatory",
+          HOUSE: "House rules",
+          CLIENT: "Client mandate",
+          TEMPORAL: "Temporal",
+          BEHAVIORAL: "Behavioural",
+          UNKNOWN: "Uncategorised",
+        },
       },
       truncatedNotice:
         "Showing the first {shown} of {total} rules — derived counts are computed on this window only.",
-      goToSimulator: "Run pre-trade simulator",
       goToRules: "Open rule library",
     },
 
     // Empty states
     emptyState: {
-      noRulesTitle: "No active compliance rules configured",
-      noRulesSubtitle: "There is nothing to evaluate orders against.",
+      noRulesTitle: "No compliance rule definitions configured",
+      noRulesSubtitle: "There is no configured rule definition to evaluate yet.",
       noRulesIntro:
-        "Compliance checks need at least one configured rule instance. Until rules are seeded, the pre-trade simulator cannot return a meaningful verdict.",
+        "Compliance checks need at least one configured rule instance before they can return a meaningful verdict.",
       setupChecklist: "Setup checklist",
       step1:
         "Confirm migration 20260417000001_compliance__create_rules_tables has been applied (make migrate-up).",
       step2:
-        "Create at least one rule via POST /compliance/rules using the swagger payload. The Rule Builder UI ships in Phase 2.",
+        "Create at least one rule from New rule or through POST /compliance/rules.",
       step3:
         "Confirm your user holds IRG_VIEW_RULES and WORKFLOW_EXECUTE permissions.",
       noRulesEvaluatedTitle: "Pre-trade check evaluated 0 rules",
@@ -155,6 +146,149 @@ export const enComplianceMessages = {
         inactiveOnly: "Inactive only",
         apply: "Apply filters",
         reset: "Reset",
+      },
+    },
+
+    // Rule type catalog — stable technical metadata (rule_type_id, category,
+    // parameter keys) lives in lib/ruleTypeCatalog.ts; only the translated
+    // presentation copy lives here. Unknown rule types fall back to the raw
+    // rule_type_id and the backend message rather than guessed copy.
+    catalog: {
+      allocation: {
+        asset_class_max: {
+          label: "Maximum asset-class allocation",
+          explanation:
+            "Portfolio exposure to the configured asset class after this order would exceed the maximum percentage of NAV.",
+          suggestedCorrection:
+            "Reduce the order or rebalance other holdings so asset-class exposure stays within the configured ceiling.",
+        },
+        asset_class_min: {
+          label: "Minimum asset-class allocation",
+          explanation:
+            "Portfolio exposure to the configured asset class is below the minimum percentage of NAV required by the mandate.",
+          suggestedCorrection:
+            "Increase exposure to the asset class, or confirm the mandate permits a temporary shortfall.",
+        },
+      },
+      amount: {
+        minimum_trade: {
+          label: "Minimum trade amount",
+          explanation:
+            "The proposed order's notional value is below the minimum trade amount configured for this mandate.",
+          suggestedCorrection:
+            "Increase the order quantity or price so the notional value meets the minimum trade amount.",
+        },
+      },
+      cash: {
+        availability: {
+          label: "Available cash check",
+          explanation:
+            "Buy order requires more cash than is available in the portfolio for the business date.",
+          suggestedCorrection:
+            "Reduce order quantity, raise cash (sell other positions), or stage the order for after settlement.",
+        },
+      },
+      concentration: {
+        single_issuer: {
+          label: "Maximum single-issuer exposure",
+          explanation:
+            "Combined exposure to the issuer (and any grouped parent entity) exceeds the configured % of NAV.",
+          suggestedCorrection:
+            "Reduce the order so total issuer exposure stays below the configured cap, or rebalance other positions first.",
+        },
+      },
+      credit: {
+        min_rating: {
+          label: "Minimum credit rating",
+          explanation:
+            "Instrument's credit rating is below the minimum permitted for this portfolio or mandate.",
+          suggestedCorrection:
+            "Choose an instrument that meets the minimum rating, or request a written mandate exception before execution.",
+        },
+      },
+      credit_rating: {
+        minimum: {
+          label: "Minimum credit rating (stub)",
+          explanation:
+            "Stub credit-rating rule — instrument rating does not satisfy the configured threshold. This rule type is not yet enforced by the backend.",
+          suggestedCorrection:
+            "This rule type is not yet enforced. Pick a rating-compliant instrument as a precaution, or request an exception with risk acknowledgement.",
+        },
+      },
+      exposure: {
+        max_order_percent_aum: {
+          label: "Maximum order size (% of AUM)",
+          explanation:
+            "The proposed order's trade value exceeds the configured maximum percentage of portfolio AUM for a single order.",
+          suggestedCorrection:
+            "Reduce the order size, or split it into multiple orders across business dates within the configured limit.",
+        },
+      },
+      quantity: {
+        min_trading_unit: {
+          label: "Minimum trading unit",
+          explanation:
+            "Order quantity is below the venue's minimum lot or the configured trading-unit floor.",
+          suggestedCorrection:
+            "Increase the order quantity to a multiple of the minimum lot size for this market.",
+        },
+        sell_available: {
+          label: "Available-to-sell quantity",
+          explanation:
+            "Sell order exceeds the position currently available to sell (after pending sells / settlement holds).",
+          suggestedCorrection:
+            "Lower the sell quantity to the available-to-sell figure, or wait for pending sells to settle.",
+        },
+      },
+      ratio: {
+        sector_exposure: {
+          label: "Maximum sector exposure",
+          explanation:
+            "Sector exposure after the order would exceed the configured percentage of NAV.",
+          suggestedCorrection:
+            "Reduce the order, switch to a different sector, or rebalance prior holdings to free up sector capacity.",
+        },
+      },
+      regulatory: {
+        thai_sec: {
+          label: "Thai SEC regulatory check (stub)",
+          explanation:
+            "Stub regulatory check — order violates a configured Thai SEC parameter. This rule type is not yet enforced by the backend and always returns a warning.",
+          suggestedCorrection:
+            "This rule type is not yet enforced. Review the SEC parameter list with compliance before re-submitting, as a precaution.",
+        },
+      },
+      restriction: {
+        blacklist: {
+          label: "Restricted security blacklist",
+          explanation:
+            "Ticker is on the active blacklist (sanctions, banned issuers, internal blocks).",
+          suggestedCorrection:
+            "Select an unrestricted ticker. Blacklist entries are not overridable from the trading desk.",
+        },
+        whitelist: {
+          label: "Whitelist-only investment",
+          explanation:
+            "Mandate permits only whitelisted securities, and the proposed ticker is not on the list.",
+          suggestedCorrection:
+            "Pick a ticker from the mandate whitelist, or request an exception to add it.",
+        },
+        list_enforcement: {
+          label: "Restricted-list enforcement",
+          explanation:
+            "Combined restricted-list rules (whitelist + blacklist) flagged this order.",
+          suggestedCorrection:
+            "Check both the whitelist and blacklist; pick a permitted ticker or seek a compliance exception.",
+        },
+      },
+      valuation: {
+        min_nav: {
+          label: "Minimum portfolio NAV",
+          explanation:
+            "Portfolio NAV has fallen below the configured floor; further trading is restricted until NAV recovers or the mandate is revised.",
+          suggestedCorrection:
+            "Escalate to the portfolio manager and compliance before proceeding; this order will not be permitted while NAV remains below the floor.",
+        },
       },
     },
 
@@ -295,6 +429,7 @@ export const enComplianceMessages = {
         submit: "Confirm override",
         submitting: "Submitting…",
         success: "Override recorded.",
+        permissionRequired: "IRG_OVERRIDE_BREACH permission required.",
         notOverridable:
           "This breach is not OPEN. Only OPEN breaches can be overridden.",
       },
@@ -321,6 +456,10 @@ export const enComplianceMessages = {
         settings: "Settings",
       },
       header: {
+        updated: "Updated",
+        owner: "Owner",
+        edit: "Edit",
+        disable: "Disable",
         editUnavailable:
           "Edit is not yet supported by the backend.",
         disableUnavailable:
@@ -506,6 +645,20 @@ export const enComplianceMessages = {
       },
       records: "Check records",
       breaches: "Breach records",
+      noBreaches: "No breaches in this check group.",
+      fields: {
+        timing: "Timing",
+        businessDate: "Business date",
+        checkedAt: "Checked at",
+        checkedBy: "Checked by",
+        order: "Order",
+        ticker: "Ticker",
+        portfolio: "Portfolio",
+        ruleVersion: "Rule version",
+        dataHash: "Data hash",
+        breach: "Breach",
+        created: "Created",
+      },
       export: {
         label: "Export CSV",
         disabled:
@@ -523,6 +676,9 @@ export const enComplianceMessages = {
       action: "Action",
       code: "Permission code",
       held: "Held",
+      planned: "Planned · backend not wired yet",
+      yes: "Yes",
+      no: "No",
       table: {
         viewRules: "View compliance rules",
         createRule: "Create rule instance",

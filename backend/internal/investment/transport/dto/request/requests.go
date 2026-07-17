@@ -52,6 +52,7 @@ type DeleteFundRequest struct {
 // CreatePortfolioRequest is the JSON body for POST /investment/portfolios.
 type CreatePortfolioRequest struct {
 	FundID            uuid.UUID  `json:"fund_id"            validate:"required"`
+	PortfolioType     string     `json:"portfolio_type"`
 	Code              string     `json:"code"               validate:"required,max=40"`
 	Name              string     `json:"name"               validate:"required,max=255"`
 	Description       string     `json:"description"`
@@ -209,7 +210,6 @@ type CreateResearchReportRequest struct {
 type CreateDecisionRequest struct {
 	FundID           uuid.UUID  `json:"fund_id"            validate:"required"`
 	PortfolioID      uuid.UUID  `json:"portfolio_id"       validate:"required"`
-	ContractID       uuid.UUID  `json:"contract_id"        validate:"required"`
 	InstrumentID     *uuid.UUID `json:"instrument_id"`
 	InstrumentCode   string     `json:"instrument_code"    validate:"required,max=40"`
 	BusinessDate     string     `json:"business_date"      validate:"required"`

@@ -10,8 +10,11 @@ import type {
   TaskDTO,
   TaskListDTO,
   TaskSummaryDTO,
+  ValuationScope,
+  ValuationSummaryDTO,
   WorkflowStateDTO,
 } from "../types";
+import { normalizeValuationSummary } from "../lib/valuationSummaryMapping";
 
 // The IMS backend wraps every dashboard response in {data: …, message?: …}
 // (see httputil.OK). openapi-typescript faithfully models that envelope on
@@ -34,6 +37,8 @@ type TaskListEnvelope =
   paths["/integration/tasks/my"]["get"]["responses"][200]["content"]["application/json"];
 type SummaryEnvelope =
   paths["/integration/tasks/my/summary"]["get"]["responses"][200]["content"]["application/json"];
+type ValuationSummaryEnvelope =
+  paths["/integration/dashboard/valuation-summary"]["get"]["responses"][200]["content"]["application/json"];
 
 const TASK_TYPES = ["RESEARCH_REVIEW", "WORKFLOW_PENDING", "COMPLIANCE_BREACH"] as const;
 const TASK_PRIORITIES = ["HIGH", "MEDIUM", "LOW", "INFO"] as const;
@@ -176,5 +181,14 @@ export const dashboardApi = {
     const response = await client.GET("/integration/tasks/my/summary");
 
     return normalizeSummary(unwrapEnvelope<SummaryEnvelope>(response));
+  },
+
+  async valuationSummary(scope: ValuationScope): Promise<ValuationSummaryDTO> {
+    const client = useOpenApiClient();
+    const response = await client.GET("/integration/dashboard/valuation-summary", {
+      params: { query: { scope } },
+    });
+
+    return normalizeValuationSummary(unwrapEnvelope<ValuationSummaryEnvelope>(response));
   },
 };

@@ -1,9 +1,8 @@
 import type { DashboardTabProvider } from "./types";
 import { approvalDashboardTabs } from "~/features/approval/navigation/dashboardTabs";
 import { complianceDashboardTabs } from "~/features/compliance/navigation/dashboardTabs";
-import { investmentDecisionDashboardTabs } from "~/features/investment-decision/navigation/dashboardTabs";
-import { investmentWorkspaceDashboardTabs } from "~/features/investment-workspace/navigation/dashboardTabs";
 import { marketDataDashboardTabs } from "~/features/market-data/navigation/dashboardTabs";
+import { portfolioWorkspaceDashboardTabs } from "~/features/portfolio-workspace/navigation/dashboardTabs";
 import { workflowDashboardTabs } from "~/features/workflow/navigation/dashboardTabs";
 
 // To add tabs for a new feature: create a DashboardTabProvider in your feature's
@@ -11,8 +10,8 @@ import { workflowDashboardTabs } from "~/features/workflow/navigation/dashboardT
 export const dashboardTabRegistry: DashboardTabProvider[] = [
   approvalDashboardTabs,
   complianceDashboardTabs,
-  investmentDecisionDashboardTabs,
-  investmentWorkspaceDashboardTabs,
   marketDataDashboardTabs,
+  portfolioWorkspaceDashboardTabs,
   workflowDashboardTabs,
 ];
+

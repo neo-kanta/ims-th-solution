@@ -26,14 +26,41 @@ export const zhComplianceMessages = {
     dashboard: {
       title: "合規管理",
       description:
-        "投資限制與準則總覽。前置交易模擬器能在不良委託單轉化為交易、結算或審計問題之前，及時予以攔截。",
-      restrictedHint: "受限存取",
+        "監控已設定的合規規則、處理未結違規記錄，並直接進入各投資組合的合規工作區。",
+      asOfLabel: "資料時間點：{date}（您裝置的本機日期）",
       headerActions: {
-        recentChanges: "最近變更",
+        refresh: "重新整理",
         openBreaches: "未處理違規",
         newRule: "新建規則",
       },
+      indicators: {
+        groupLabel: "合規指標",
+      },
+      errors: {
+        rulesTitle: "規則清單：",
+      },
+      breachQueue: {
+        title: "未處理違規",
+        description: "此合規角色可存取的最新未處理記錄，並在本頁內依嚴重程度排序。",
+        errorTitle: "載入未處理違規失敗",
+        empty: "目前沒有未處理的違規。",
+        emptyDescription: "合規服務未傳回此角色可見的未處理違規記錄。",
+        severitySr: "嚴重程度：{severity}",
+        portfolioUnavailable: "投資組合資料無法取得",
+        review: "審查",
+        truncated: "顯示 {shown} 筆，共 {total} 筆未處理違規。",
+      },
+      finder: {
+        permissionUnavailable:
+          "此帳戶沒有投資組合檢視權限，因此無法使用投資組合搜尋。",
+        title: "尋找投資組合",
+        description: "以投資組合代碼或名稱前往其合規工作區。",
+        inputLabel: "投資組合代碼或名稱",
+        placeholder: "例如 PF-1024 或 Growth Fund",
+        noMatches: "沒有符合此搜尋的投資組合。",
+      },
       tabs: {
+        label: "合规分区",
         overview: "總覽",
         library: "規則庫",
         approvals: "審批",
@@ -43,81 +70,46 @@ export const zhComplianceMessages = {
         settings: "設置",
       },
       kpi: {
-        activeRules: "生效中規則",
-        activeRulesSub: "已發佈且有效",
-        draft: "草稿",
-        draftSub: "尚未提交",
-        draftHint:
-          "目前後端不支援草稿（Draft）狀態；此處統計包含 effective_from 設在未來的未啟用規則。",
-        pendingReview: "待審核",
-        pendingReviewSub: "等待審批",
-        pendingReviewHint:
-          "目前後端不支援審批流程（Approval Flow）。",
-        disabled: "已禁用",
-        disabledSub: "近期停用",
-        expired: "已過期",
-        expiredSub: "已超過有效期限",
-        highRisk: "高風險規則",
-        highRiskSub: "嚴重程度 = BLOCK",
-        totalRules: "規則總計",
-        inactiveRules: "未啟用 / 排程中",
-        recentBreaches: "最近違規",
-        trendUnavailable:
-          "無法提供週對週趨勢分析 — 目前缺乏歷史 KPI 記錄端點。",
-      },
-      recentChanges: {
-        title: "最近規則變更",
-        viewAll: "查看全部 →",
-        empty: "目前無規則變更歷史紀錄。",
-      },
-      recentFailures: {
-        title: "最近合規違規",
-        description: "最新未處理或近期已解決的違規記錄。",
-        empty: "目前無合規違規記錄。",
-        inboxLink: "打開違規收件匣 →",
-        reviewCta: "審查",
-        preTrade: "前置交易",
-        postTrade: "後置交易",
-      },
-      search: {
-        placeholder: "搜尋規則：名稱、代碼、參數…",
-        filterFund: "基金",
-        filterAssetClass: "資產類別",
-        filterRuleType: "規則類型",
-        filterStatus: "狀態",
-        filterSeverity: "嚴重程度",
-        filterEffective: "生效時間 ▼",
-        filterOwner: "擁有者",
-        filterApproval: "審批狀態 ▼",
-        backendNote:
-          "後端僅支援篩選 rule_type_id + is_active。其餘Facet需待端點 GET /compliance/rules 擴展後支援。",
+        activeRules: "啟用中的規則定義",
+        activeRulesSub: "已設定且依本機日期在有效期間內",
+        highRisk: "預設為 BLOCK",
+        highRiskSub: "規則類型預設值 = BLOCK",
+        scheduledRules: "排程中的規則定義",
+        scheduledRulesSub: "已設定於未來日期生效",
+        openBreaches: "未處理違規",
+        openBreachesSub: "此角色可見的記錄",
       },
       categories: {
         title: "類別",
         empty: "目前尚無分類規則摘要。",
-      },
-      highRiskRules: {
-        title: "高風險規則",
-        seeAll: "查看全部 →",
-        empty: "無預設嚴重程度為 BLOCK 的規則。",
+        items: {
+          MANDATE: "投資規範",
+          RATIO: "比率 / 曝險",
+          RESTRICTION: "限制清單",
+          REGULATORY: "監管規則",
+          HOUSE: "內部規則",
+          CLIENT: "客戶規範",
+          TEMPORAL: "時效性規則",
+          BEHAVIORAL: "交易行為",
+          UNKNOWN: "未分類",
+        },
       },
       truncatedNotice:
         "顯示規則 1-{shown}（共 {total} 條）— 導出之統計數據僅基於此視窗內計算。",
-      goToSimulator: "運行前置交易模擬器",
       goToRules: "打開規則庫",
     },
 
     // Empty states
     emptyState: {
-      noRulesTitle: "未配置任何啟用的合規規則",
-      noRulesSubtitle: "尚無可用於評估委託單的規則。",
+      noRulesTitle: "尚未設定任何合規規則定義",
+      noRulesSubtitle: "目前沒有可供評估的已設定規則定義。",
       noRulesIntro:
-        "合規檢查需至少配置一個啟用的規則實例。在設定規則前，前置交易模擬器無法提供有效的判斷結果。",
+        "合規檢查至少需要一個已設定的規則實例，才能提供有意義的判斷結果。",
       setupChecklist: "設定檢查清單",
       step1:
         "確認已執行資料庫遷移 20260417000001_compliance__create_rules_tables (make migrate-up)。",
       step2:
-        "請先透過 Swagger 格式的 API POST /compliance/rules 建立規則實例（規則生成介面將在第二階段上線）。",
+        "請從「新建規則」或透過 POST /compliance/rules 建立至少一個規則。",
       step3:
         "確認您的帳戶已具備 IRG_VIEW_RULES 與 WORKFLOW_EXECUTE 權限。",
       noRulesEvaluatedTitle: "前置交易檢查評估了 0 條規則",
@@ -154,6 +146,144 @@ export const zhComplianceMessages = {
         inactiveOnly: "僅未啟用",
         apply: "套用篩選",
         reset: "重設",
+      },
+    },
+
+    // Rule type catalog — technical metadata lives in lib/ruleTypeCatalog.ts;
+    // this section holds only translated presentation copy.
+    catalog: {
+      allocation: {
+        asset_class_max: {
+          label: "資產類別配置上限",
+          explanation:
+            "此委託單成交後，投資組合對該資產類別的曝險將超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，或調整其他持倉以使該資產類別曝險維持在設定上限內。",
+        },
+        asset_class_min: {
+          label: "資產類別配置下限",
+          explanation:
+            "投資組合對該資產類別的曝險低於授權要求的淨值（NAV）百分比下限。",
+          suggestedCorrection:
+            "增加該資產類別的曝險，或確認授權是否允許暫時低於下限。",
+        },
+      },
+      amount: {
+        minimum_trade: {
+          label: "最低交易金額",
+          explanation: "此委託單的名目價值低於此授權設定的最低交易金額。",
+          suggestedCorrection:
+            "提高委託單的數量或價格，使名目價值達到最低交易金額要求。",
+        },
+      },
+      cash: {
+        availability: {
+          label: "可用現金檢查",
+          explanation:
+            "買入委託單所需現金超過投資組合於此交易日可用的現金。",
+          suggestedCorrection:
+            "減少委託數量、變現其他部位以增加現金，或將委託延後至結算後再送出。",
+        },
+      },
+      concentration: {
+        single_issuer: {
+          label: "單一發行人集中度上限",
+          explanation:
+            "對該發行人（含同集團母公司）的合計曝險超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，使發行人合計曝險維持在設定上限內，或先調整其他持倉。",
+        },
+      },
+      credit: {
+        min_rating: {
+          label: "最低信用評等",
+          explanation:
+            "此商品的信用評等低於此投資組合或授權所允許的最低評等。",
+          suggestedCorrection:
+            "選擇符合最低評等要求的商品，或在下單前以書面方式申請授權例外。",
+        },
+      },
+      credit_rating: {
+        minimum: {
+          label: "最低信用評等（原型，尚未啟用）",
+          explanation:
+            "信用評等原型規則 — 商品評等未達設定門檻。此規則類型後端尚未實際強制執行。",
+          suggestedCorrection:
+            "此規則尚未實際生效。建議先行選擇符合評等要求的商品，或申請例外並確認風險。",
+        },
+      },
+      exposure: {
+        max_order_percent_aum: {
+          label: "單筆委託佔資產管理規模（AUM）上限",
+          explanation:
+            "此委託單的交易金額超過設定的單筆委託佔投資組合資產管理規模（AUM）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模，或將委託分拆為多筆、於多個交易日內送出，以符合設定上限。",
+        },
+      },
+      quantity: {
+        min_trading_unit: {
+          label: "最低交易單位",
+          explanation:
+            "委託數量低於市場最低交易單位（板塊單位）或設定的交易單位下限。",
+          suggestedCorrection: "將委託數量提高至此市場最低交易單位的整數倍。",
+        },
+        sell_available: {
+          label: "可賣出數量",
+          explanation:
+            "賣出委託超過目前可賣出的部位數量（已扣除待處理賣單／結算保留）。",
+          suggestedCorrection:
+            "將賣出數量降低至可賣出數量以內，或等待待處理賣單完成結算。",
+        },
+      },
+      ratio: {
+        sector_exposure: {
+          label: "產業曝險上限",
+          explanation:
+            "此委託單成交後，對該產業的曝險將超過設定的淨值（NAV）百分比上限。",
+          suggestedCorrection:
+            "縮減委託單規模、改投其他產業，或調整既有持倉以釋出該產業的曝險額度。",
+        },
+      },
+      regulatory: {
+        thai_sec: {
+          label: "泰國證交會（Thai SEC）法規檢查（原型，尚未啟用）",
+          explanation:
+            "法規原型規則 — 委託單違反設定的泰國證交會（Thai SEC）參數。此規則類型後端尚未實際強制執行，且固定回傳警告。",
+          suggestedCorrection:
+            "此規則尚未實際生效。建議先與合規部門確認證交會相關參數，再重新送出委託以求審慎。",
+        },
+      },
+      restriction: {
+        blacklist: {
+          label: "受限商品黑名單",
+          explanation:
+            "此證券代碼列於現行黑名單（制裁名單、禁止發行人或內部限制）。",
+          suggestedCorrection:
+            "請改選未受限制的證券代碼。黑名單項目無法由交易部門自行核准放行。",
+        },
+        whitelist: {
+          label: "僅限白名單投資",
+          explanation:
+            "授權僅允許投資白名單內的證券，而此委託提出的證券代碼未列於白名單中。",
+          suggestedCorrection: "請從授權白名單中選擇證券代碼，或申請例外將其加入名單。",
+        },
+        list_enforcement: {
+          label: "限制清單綜合強制執行",
+          explanation:
+            "綜合限制清單規則（白名單＋黑名單）判定此委託單觸發限制。",
+          suggestedCorrection:
+            "請同時檢查白名單與黑名單，改選允許的證券代碼，或向合規部門申請例外。",
+        },
+      },
+      valuation: {
+        min_nav: {
+          label: "投資組合最低淨值（Min NAV）",
+          explanation:
+            "投資組合淨值（NAV）已低於設定下限，在淨值回升或授權條件修訂前，將限制後續交易。",
+          suggestedCorrection:
+            "請先知會投資組合經理與合規部門後再行處理；在淨值仍低於下限期間，此委託將不被允許執行。",
+        },
       },
     },
 
@@ -294,6 +424,7 @@ export const zhComplianceMessages = {
         submit: "確認跳過",
         submitting: "正在保存數據…",
         success: "違規已跳過並記錄。",
+        permissionRequired: "需要 IRG_OVERRIDE_BREACH 權限。",
         notOverridable:
           "該項目並非處於 OPEN 狀態。只有 OPEN 狀態的違規事項才允許執行跳過操作。",
       },
@@ -320,6 +451,10 @@ export const zhComplianceMessages = {
         settings: "設置",
       },
       header: {
+        updated: "更新時間",
+        owner: "負責人",
+        edit: "編輯",
+        disable: "停用",
         editUnavailable:
           "後端目前尚不支援編輯規則操作。",
         disableUnavailable:
@@ -505,6 +640,20 @@ export const zhComplianceMessages = {
       },
       records: "檢核記錄",
       breaches: "合規違規佐證資料",
+      noBreaches: "此檢查群組中沒有違規記錄。",
+      fields: {
+        timing: "檢查時點",
+        businessDate: "業務日期",
+        checkedAt: "檢查時間",
+        checkedBy: "檢查人員",
+        order: "訂單",
+        ticker: "證券代碼",
+        portfolio: "投資組合",
+        ruleVersion: "規則版本",
+        dataHash: "資料雜湊",
+        breach: "違規記錄",
+        created: "建立時間",
+      },
       export: {
         label: "導出為 CSV 檔",
         disabled:
@@ -522,6 +671,9 @@ export const zhComplianceMessages = {
       action: "模組權限 / 操作功能",
       code: "權限項目編號",
       held: "具備該權限",
+      planned: "已規劃 · 後端尚未接入",
+      yes: "是",
+      no: "否",
       table: {
         viewRules: "檢視合規規則清單",
         createRule: "建立規則實例項目",

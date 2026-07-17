@@ -54,37 +54,40 @@ const hasTasks = computed(() => filteredTasks.value.length > 0);
 const activeFilterLabel = computed(() => {
   switch (props.activeFilter) {
     case "approvals":
-      return "Review approvals";
+      return t("dashboard.layers.approvalsLabel");
     case "workflow":
-      return "Business-day flow";
+      return t("dashboard.layers.workflowLabel");
     case "alerts":
-      return "Compliance alerts";
+      return t("dashboard.layers.alertsLabel");
     case "done":
-      return "Completed archive";
+      return t("dashboard.layers.doneLabel");
     case "my":
     default:
-      return "My task queue";
+      return t("dashboard.layers.myLabel");
   }
 });
 
 const scopeLabel = computed(() => {
-  if (props.loading && !props.snapshot) return "Loading selected layer";
-  return `${activeFilterLabel.value} - ${filteredTasks.value.length} matching items`;
+  if (props.loading && !props.snapshot) return t("dashboard.taskFeed.loadingSelectedLayer");
+  return t("dashboard.taskFeed.scopeLabel", {
+    filter: activeFilterLabel.value,
+    count: filteredTasks.value.length,
+  });
 });
 
 const stateTitle = computed(() => {
-  if (props.activeFilter === "done") return "No completed tasks yet";
-  if (props.activeFilter === "approvals") return "No review tasks";
-  if (props.activeFilter === "workflow") return "No workflow tasks";
-  if (props.activeFilter === "alerts") return "No alert tasks";
-  return "No pending tasks";
+  if (props.activeFilter === "done") return t("dashboard.taskFeed.noCompletedTasks");
+  if (props.activeFilter === "approvals") return t("dashboard.taskFeed.noReviewTasks");
+  if (props.activeFilter === "workflow") return t("dashboard.taskFeed.noWorkflowTasks");
+  if (props.activeFilter === "alerts") return t("dashboard.taskFeed.noAlertTasks");
+  return t("dashboard.taskFeed.noPending");
 });
 
 const stateCopy = computed(() => {
   if (props.activeFilter === "my") {
-    return t("dashboard.taskFeed.empty", "No pending tasks - all clear.");
+    return t("dashboard.taskFeed.empty");
   }
-  return "This filter has no matching tasks from the integration task source.";
+  return t("dashboard.taskFeed.emptyFilter");
 });
 </script>
 
@@ -92,15 +95,15 @@ const stateCopy = computed(() => {
   <section class="task-feed" aria-labelledby="dashboard-todos-title">
     <div class="task-feed__header">
       <div>
-        <p class="task-feed__eyebrow">Feed</p>
+        <p class="task-feed__eyebrow">{{ t("dashboard.taskFeed.eyebrow") }}</p>
         <h2 id="dashboard-todos-title" class="task-feed__title">
-          Task queue
+          {{ t("dashboard.taskFeed.queueTitle") }}
         </h2>
         <p class="task-feed__scope">{{ scopeLabel }}</p>
       </div>
       <span v-if="highPriorityCount > 0" class="task-feed__urgent-chip">
         {{ highPriorityCount }}
-        {{ t("dashboard.taskFeed.urgent", "urgent") }}
+        {{ t("dashboard.taskFeed.urgent") }}
       </span>
     </div>
 
@@ -130,11 +133,11 @@ const stateCopy = computed(() => {
     <div v-else-if="error" class="task-feed__state task-feed__state--error">
       <AppIcon name="warning" size="sm" />
       <div>
-        <strong>Task source unavailable</strong>
+        <strong>{{ t("dashboard.taskFeed.sourceUnavailable") }}</strong>
         <span>{{ error }}</span>
       </div>
       <AppButton variant="ghost" size="sm" @click="emit('retry')">
-        {{ t("dashboard.taskFeed.retry", "Retry") }}
+        {{ t("dashboard.taskFeed.retry") }}
       </AppButton>
     </div>
 

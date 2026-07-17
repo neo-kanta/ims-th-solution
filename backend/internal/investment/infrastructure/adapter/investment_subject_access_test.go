@@ -183,7 +183,7 @@ func TestInvestmentSubjectAccessor_DecisionWithContract_IAMAllows(t *testing.T) 
 	t.Parallel()
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		stubIAM{ok: true},
 	)
 	if err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "INVESTMENT_DECISION", uuid.New()); err != nil {
@@ -210,7 +210,7 @@ func TestInvestmentSubjectAccessor_Portfolio_Unsupported_Denies(t *testing.T) {
 	// because resolveContractID hits the default arm and returns "unsupported subject type".
 	a := NewInvestmentSubjectAccessor(
 		&stubResearchRepo{report: &entity.ResearchReport{ApplicableContractID: contractPtr(uuid.New())}},
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		stubIAM{ok: true},
 	)
 	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "PORTFOLIO", uuid.New())
@@ -271,7 +271,7 @@ func TestComplianceRelease_CanAct_BothPermissions_Allowed(t *testing.T) {
 	t.Parallel()
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		iamWithFuncPerm{dataOK: true, funcOK: true},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err != nil {
@@ -284,7 +284,7 @@ func TestComplianceRelease_CanAct_DataPermissionOnly_Denied(t *testing.T) {
 	// Has data permission but NOT the compliance release function permission — must deny.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		iamWithFuncPerm{dataOK: true, funcOK: false},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err == nil {
@@ -297,7 +297,7 @@ func TestComplianceRelease_CanAct_NoDataPermission_Denied(t *testing.T) {
 	// Has function permission but not data permission — must deny.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		iamWithFuncPerm{dataOK: false, funcOK: true},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err == nil {
@@ -311,7 +311,7 @@ func TestComplianceRelease_CanView_DataPermissionOnly_Allowed(t *testing.T) {
 	// only act (approve/reject) does. Viewing is gated by data permission only.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{ContractID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
 		iamWithFuncPerm{dataOK: true, funcOK: false}, // no function perm
 	)
 	if err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New()); err != nil {

@@ -7,10 +7,7 @@
  * authoritative. Keep this file the single source of truth for WORKFLOW_*
  * strings used in templates and stores.
  */
-import type {
-  WorkflowAction,
-  WorkflowDialogTone,
-} from "./types";
+import type { WorkflowAction, WorkflowDialogTone } from "./types";
 
 import type { AppTranslationKey } from "~/shared/i18n/messages";
 

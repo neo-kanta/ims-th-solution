@@ -47,13 +47,15 @@ func (a *ConfirmationGateAdapter) EvaluateClose(
 	}
 	out := &contract.ConfirmationGateResult{}
 
-	// Load executions for the (contract, business_date) tuple.
-	execs, err := a.executions.ListByContractDate(ctx, contractID, businessDate)
+	// contract_id == fund_id (DB-enforced while contract_id existed; investment
+	// dropped the column and now keys these tables by fund_id only).
+	// Load executions for the (fund, business_date) tuple.
+	execs, err := a.executions.ListByFundDate(ctx, contractID, businessDate)
 	if err != nil {
 		return nil, err
 	}
 	// Load confirmations once and key by execution_id.
-	confs, err := a.confirmations.ListByContractDate(ctx, contractID, businessDate)
+	confs, err := a.confirmations.ListByFundDate(ctx, contractID, businessDate)
 	if err != nil {
 		return nil, err
 	}

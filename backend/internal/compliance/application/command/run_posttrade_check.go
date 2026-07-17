@@ -47,9 +47,10 @@ func (h *RunPostTradeCheckHandler) Handle(ctx context.Context, req PostTradeChec
 	if req.PortfolioID == uuid.Nil {
 		return nil, fmt.Errorf("portfolio_id is required")
 	}
-	if req.ContractID == uuid.Nil {
-		return nil, fmt.Errorf("contract_id is required")
-	}
+	// contract_id is optional: Portfolio Compliance V2 runs on portfolio_id
+	// alone when the portfolio has no fund_id. V1 HTTP callers still require
+	// contract_id — that requirement is enforced at the transport layer
+	// (compliance_handler.go RunPostTradeCheck parses it before calling here).
 	if req.BusinessDate.IsZero() {
 		return nil, fmt.Errorf("business_date is required")
 	}

@@ -1,14 +1,27 @@
 /**
  * Compliance HTTP service — Phase 1.
  *
- * Wraps the real backend `/compliance/*` endpoints through the project's
- * standard `useApi().apiFetch` composable so auth headers, base URL, and
- * 401 cleanup all behave identically to other features.
+ * Dashboard reads use the generated OpenAPI client. A small set of older
+ * compliance mutations still uses `useApi()` because their generated schemas
+ * currently erase JSON object fields as `Record<string, never>`; those are
+ * intentionally kept separate from the dashboard's accepted read contract.
  *
  * The backend returns successful responses as `{ data, message }`; we unwrap
  * `.data` once here so callers always work in domain types.
  */
+import { unwrapOpenApiResponse, useOpenApiClient } from "~/api/openapi";
+import type { components, paths } from "~/api/ims-api";
 import { useApi } from "~/composables/useApi";
+
+import {
+  normalizeComplianceBreach,
+  normalizeCompliancePortfolio,
+  normalizeComplianceRule,
+} from "../lib/formatters";
+import {
+  collectNumberedPages,
+  collectOffsetPages,
+} from "../lib/pagination";
 
 import type {
   ComplianceBreachListFilters,
@@ -53,6 +66,40 @@ interface SuccessEnvelope<T> {
   message?: string;
 }
 
+type ApiBreachList = components["schemas"]["ListBreachesResult"];
+type ApiPortfolioList = components["schemas"]["PortfolioListResponse"];
+type ApiRuleList = components["schemas"]["ListRuleInstancesResult"];
+type BreachListQuery = NonNullable<
+  paths["/compliance/breaches"]["get"]["parameters"]["query"]
+>;
+type PortfolioListQuery = NonNullable<
+  paths["/investment/portfolios"]["get"]["parameters"]["query"]
+>;
+type RuleListQuery = NonNullable<
+  paths["/compliance/rules"]["get"]["parameters"]["query"]
+>;
+
+function paginationNumber(
+  value: number | undefined,
+  field: string,
+): number {
+  if (!Number.isSafeInteger(value) || (value ?? -1) < 0) {
+    throw new Error(`The API response is missing valid ${field} pagination metadata.`);
+  }
+  return value as number;
+}
+
+function definedQuery<T extends Record<string, unknown>>(
+  source: T,
+): T {
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => {
+      if (value === undefined || value === null) return false;
+      return typeof value !== "string" || value.trim() !== "";
+    }),
+  ) as T;
+}
+
 function unwrap<T>(envelope: SuccessEnvelope<T>): T {
   return envelope.data;
 }
@@ -78,21 +125,51 @@ export const complianceApi = {
   async listRules(
     filters: ComplianceRuleListFilters = {},
   ): Promise<ComplianceRuleListResponse> {
-    const { apiFetch } = useApi();
-    const response = await apiFetch<SuccessEnvelope<ComplianceRuleListResponse>>(
-      `/compliance/rules${buildQuery(filters)}`,
+    const client = useOpenApiClient();
+    const query = definedQuery<RuleListQuery>({ ...filters });
+    const response = await client.GET("/compliance/rules", {
+      params: { query },
+    });
+    const payload = unwrapOpenApiResponse<ApiRuleList>(response);
+    return {
+      instances: (payload.instances ?? []).map(normalizeComplianceRule),
+      total: paginationNumber(payload.total, "total"),
+      offset: paginationNumber(payload.offset, "offset"),
+      limit: paginationNumber(payload.limit, "limit"),
+    };
+  },
+
+  async listAllRules(): Promise<ComplianceRuleListResponse> {
+    const result = await collectOffsetPages((offset, limit) =>
+      complianceApi.listRules({ offset, limit }).then((page) => ({
+        items: page.instances,
+        total: page.total,
+        offset: page.offset,
+      })),
     );
-    return unwrap(response);
+    return {
+      instances: result.items,
+      total: result.total,
+      offset: 0,
+      limit: result.items.length,
+    };
   },
 
   async listBreaches(
     filters: ComplianceBreachListFilters = {},
   ): Promise<ComplianceBreachListResponse> {
-    const { apiFetch } = useApi();
-    const response = await apiFetch<
-      SuccessEnvelope<ComplianceBreachListResponse>
-    >(`/compliance/breaches${buildQuery(filters)}`);
-    return unwrap(response);
+    const client = useOpenApiClient();
+    const query = definedQuery<BreachListQuery>({ ...filters });
+    const response = await client.GET("/compliance/breaches", {
+      params: { query },
+    });
+    const payload = unwrapOpenApiResponse<ApiBreachList>(response);
+    return {
+      breaches: (payload.breaches ?? []).map(normalizeComplianceBreach),
+      total: paginationNumber(payload.total, "total"),
+      offset: paginationNumber(payload.offset, "offset"),
+      limit: paginationNumber(payload.limit, "limit"),
+    };
   },
 
   async runPreTradeCheck(
@@ -117,11 +194,34 @@ export const complianceApi = {
   async listPortfolios(
     filters: { fund_id?: string; status?: string; page?: number; limit?: number } = {},
   ): Promise<CompliancePortfolioListResponse> {
-    const { apiFetch } = useApi();
-    const response = await apiFetch<
-      SuccessEnvelope<CompliancePortfolioListResponse>
-    >(`/investment/portfolios${buildQuery(filters)}`);
-    return unwrap(response);
+    const client = useOpenApiClient();
+    const query = definedQuery<PortfolioListQuery>({ ...filters });
+    const response = await client.GET("/investment/portfolios", {
+      params: { query },
+    });
+    const payload = unwrapOpenApiResponse<ApiPortfolioList>(response);
+    return {
+      items: (payload.items ?? []).map(normalizeCompliancePortfolio),
+      total: paginationNumber(payload.total, "total"),
+      page: paginationNumber(payload.page, "page"),
+      limit: paginationNumber(payload.limit, "limit"),
+    };
+  },
+
+  async listAllPortfolios(): Promise<CompliancePortfolioListResponse> {
+    const result = await collectNumberedPages((page, limit) =>
+      complianceApi.listPortfolios({ page, limit }).then((payload) => ({
+        items: payload.items,
+        total: payload.total,
+        page: payload.page,
+      })),
+    );
+    return {
+      items: result.items,
+      total: result.total,
+      page: 1,
+      limit: result.items.length,
+    };
   },
 
   /**

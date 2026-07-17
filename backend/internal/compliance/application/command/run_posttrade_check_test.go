@@ -148,7 +148,12 @@ func TestPostTradeCheck_CheckGroupIDGeneratedWhenAbsent(t *testing.T) {
 }
 
 // TestPostTradeCheck_RequiredFieldValidation verifies that Handle returns an
-// error when any required field is absent (portfolio_id, contract_id, business_date).
+// error when a required field is absent (portfolio_id, business_date).
+// contract_id is intentionally NOT required at this layer — Portfolio
+// Compliance V2 invokes this handler with ContractID left as uuid.Nil when
+// the portfolio has no fund_id (see TestPostTradeCheck_MissingContractID_Allowed).
+// V1's HTTP handler still requires contract_id; that is enforced at the
+// transport layer, not here.
 func TestPostTradeCheck_RequiredFieldValidation(t *testing.T) {
 	t.Parallel()
 
@@ -162,13 +167,6 @@ func TestPostTradeCheck_RequiredFieldValidation(t *testing.T) {
 			name: "missing portfolio_id",
 			req: command.PostTradeCheckRequest{
 				ContractID:   uuid.New(),
-				BusinessDate: time.Date(2026, 6, 12, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		{
-			name: "missing contract_id",
-			req: command.PostTradeCheckRequest{
-				PortfolioID:  uuid.New(),
 				BusinessDate: time.Date(2026, 6, 12, 0, 0, 0, 0, time.UTC),
 			},
 		},
@@ -190,6 +188,25 @@ func TestPostTradeCheck_RequiredFieldValidation(t *testing.T) {
 				t.Errorf("expected error for %s, got nil", tc.name)
 			}
 		})
+	}
+}
+
+// TestPostTradeCheck_MissingContractID_Allowed verifies that a portfolio-only
+// post-trade check (no fund_id) succeeds — the Portfolio Compliance V2 case.
+func TestPostTradeCheck_MissingContractID_Allowed(t *testing.T) {
+	t.Parallel()
+
+	h, _, _ := buildPostTradeHandler(nil)
+	req := command.PostTradeCheckRequest{
+		PortfolioID:  uuid.New(),
+		BusinessDate: time.Date(2026, 6, 12, 0, 0, 0, 0, time.UTC),
+	}
+	resp, err := h.Handle(context.Background(), req)
+	if err != nil {
+		t.Fatalf("portfolio-only post-trade check must not require contract_id: %v", err)
+	}
+	if resp.CheckGroupID == uuid.Nil {
+		t.Error("CheckGroupID: got uuid.Nil, want a generated UUID")
 	}
 }
 

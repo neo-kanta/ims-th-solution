@@ -412,6 +412,9 @@ func (r postPortfolioRepo) GetByID(context.Context, uuid.UUID) (*entity.Portfoli
 func (r postPortfolioRepo) GetByFundCode(context.Context, uuid.UUID, string) (*entity.Portfolio, error) {
 	return nil, nil
 }
+func (r postPortfolioRepo) GetByCode(context.Context, string) (*entity.Portfolio, error) {
+	return nil, nil
+}
 func (r postPortfolioRepo) List(context.Context, domain.PortfolioListFilter) ([]*entity.Portfolio, int, error) {
 	return nil, 0, nil
 }

@@ -276,6 +276,56 @@ export interface TaskListDTO {
 }
 
 // ---------------------------------------------------------------------------
+// Valuation summary — GET /integration/dashboard/valuation-summary
+// ---------------------------------------------------------------------------
+
+export type ValuationScope = "company" | "mine";
+export type ValuationSummaryStatus = "AVAILABLE" | "NO_DATA" | "INCOMPLETE";
+
+export interface ValuationSummaryExclusionDTO {
+  readonly businessDate: string | null;
+  readonly currency: string | null;
+  readonly fundCode: string | null;
+  readonly portfolioCode: string | null;
+  readonly reason: string;
+  readonly requiredBusinessDate: string | null;
+}
+
+export interface ValuationSummaryCoverageDTO {
+  readonly totalFundCount: number;
+  readonly includedFundCount: number;
+  readonly excludedFundCount: number;
+  readonly totalPortfolioCount: number;
+  readonly includedPortfolioCount: number;
+  readonly excludedPortfolioCount: number;
+  readonly excludedCurrencies: readonly string[];
+  readonly excludedBusinessDates: readonly string[];
+  readonly exclusionReasons: readonly string[];
+  readonly exclusions: readonly ValuationSummaryExclusionDTO[];
+}
+
+/**
+ * Normalized read model for the "AUM Today" / "Today's P&L" cards.
+ * Amounts stay as decimal strings — the frontend only formats them, it never
+ * recomputes authoritative figures. When dataAvailable is false every
+ * numeric field is empty and MUST render as an explicit "not available"
+ * state, never a zero.
+ */
+export interface ValuationSummaryDTO {
+  readonly scope: ValuationScope;
+  readonly username: string | null;
+  readonly status: ValuationSummaryStatus;
+  readonly businessDate: string | null;
+  readonly currency: string;
+  readonly aumToday: string | null;
+  readonly todayPnl: string | null;
+  readonly todayPnlPercent: string | null;
+  readonly asOf: string | null;
+  readonly dataAvailable: boolean;
+  readonly coverage: ValuationSummaryCoverageDTO;
+}
+
+// ---------------------------------------------------------------------------
 // AI command bar — disabled/mock-ready state only in Phase 1
 // ---------------------------------------------------------------------------
 

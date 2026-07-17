@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import type { DashboardOverviewMetric } from "../types";
 
-defineProps<{
+withDefaults(defineProps<{
   metric: DashboardOverviewMetric;
-}>();
+  loading?: boolean;
+}>(), {
+  loading: false,
+});
 </script>
 
 <template>
   <article class="dashboard-metric-card" :class="`tone-${metric.tone}`">
     <div class="dashboard-metric-card__content">
       <div class="dashboard-metric-card__copy">
-        <div class="dashboard-metric-card__value">{{ metric.value }}</div>
+        <div class="dashboard-metric-card__value">
+          <span v-if="loading" class="dashboard-metric-card__skeleton" />
+          <template v-else>{{ metric.value }}</template>
+        </div>
         <div class="dashboard-metric-card__label">{{ metric.label }}</div>
 
         <div class="dashboard-metric-card__meta">
@@ -157,5 +163,19 @@ defineProps<{
   .dashboard-metric-card__value {
     font-size: 1.5rem;
   }
+}
+
+.dashboard-metric-card__skeleton {
+  display: block;
+  width: 4rem;
+  height: 1.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-muted);
+  animation: metric-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes metric-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 </style>

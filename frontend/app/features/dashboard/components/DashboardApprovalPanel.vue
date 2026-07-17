@@ -3,21 +3,37 @@ import type { DashboardOverviewPendingApproval } from "../types";
 
 const { t } = useI18n();
 
-defineProps<{
-  items: DashboardOverviewPendingApproval[];
-}>();
+withDefaults(defineProps<{
+  items: readonly DashboardOverviewPendingApproval[];
+  loading?: boolean;
+  error?: string | null;
+}>(), {
+  loading: false,
+  error: null,
+});
 </script>
 
 <template>
   <section class="dashboard-side-panel">
     <div class="dashboard-side-panel__header">
       <h2 class="dashboard-side-panel__title">
-        {{ t("dashboardOverview.pendingApprovalsTitle", "Pending Approvals") }}
+        {{ t("dashboardOverview.pendingApprovalsTitle") }}
       </h2>
       <span class="dashboard-side-panel__count">{{ items.length }}</span>
     </div>
 
-    <div class="approval-list">
+    <AppLoadingState v-if="loading" :message="t('dashboardOverview.loadingApprovals')" />
+
+    <p v-else-if="error" class="approval-panel__error">{{ error }}</p>
+
+    <AppEmptyState
+      v-else-if="items.length === 0"
+      :title="t('dashboardOverview.noPendingApprovals')"
+      :description="t('dashboardOverview.allCaughtUp')"
+      icon="folder"
+    />
+
+    <div v-else class="approval-list">
       <article
         v-for="item in items"
         :key="item.id"
@@ -42,6 +58,13 @@ defineProps<{
 </template>
 
 <style scoped>
+.approval-panel__error {
+  margin: 0;
+  padding: 0 var(--space-5) var(--space-5);
+  color: var(--state-danger);
+  font-size: var(--font-size-xs);
+}
+
 .dashboard-side-panel {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);

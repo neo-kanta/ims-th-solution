@@ -57,6 +57,8 @@ export const enCommonMessages = {
     personalSettings: "Personal settings",
     investment: "Investment",
     investmentResearch: "Investment research",
+    operatorPage: "Operator page",
+    operations: "Operations",
     marketData: "Market data",
     marketDataTabs: {
       watchlist: "Data",
@@ -96,7 +98,7 @@ export const enCommonMessages = {
     subtitle: "Manage daily workflow operations and day-start procedures.",
     indexNotConfiguredTitle: "Workflow operations are managed per fund",
     indexNotConfiguredCopy:
-      "Open a fund from My Funds to see its current workflow state and run transitions (Day Start, Manager Approval, Transaction Closing, Accounting Closing). The backend gates every transition on the fund's contract — there is no global workflow operation surface.",
+      "Open a fund from the investment operator page to see its current workflow state and run transitions (Day Start, Manager Approval, Transaction Closing, Accounting Closing). The backend gates every transition on the fund's contract — there is no global workflow operation surface.",
     tabs: {
       overview: "Overview",
       audit: "Audit Trail",
@@ -132,9 +134,12 @@ export const enCommonMessages = {
       MANAGER_APPROVE: "Manager Approve",
       CANCEL_MANAGER_APPROVAL: "Cancel Manager Approval",
       CLOSE_TRANSACTION: "Close Transactions",
-      CANCEL_TRANSACTION_CLOSE: "Cancel Transaction Close",
-      CLOSE_ACCOUNTING: "Close Accounting",
-      CANCEL_ACCOUNTING_CLOSE: "Cancel Accounting Close",
+      CANCEL_TRANSACTION_CLOSE: "Cancel Transaction Closing",
+      CLOSE_ACCOUNTING: "Accounting Closing",
+      CANCEL_ACCOUNTING_CLOSE: "Cancel Accounting Closing",
+      OPEN_DAY: "Day Start",
+      APPROVE: "Manager Approval",
+      CLOSE_TRANSACTIONS: "Transaction Closing",
     },
     modules: {
       approval: "Approval module",

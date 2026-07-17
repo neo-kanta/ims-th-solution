@@ -137,7 +137,7 @@ func (a *InvestmentSubjectAccessor) resolveContractID(ctx context.Context, subje
 		if d == nil {
 			return uuid.Nil, errors.New("investment decision not found")
 		}
-		return d.ContractID, nil
+		return d.FundID, nil
 
 	default:
 		return uuid.Nil, errors.New("unsupported subject type: " + subjectType)

@@ -125,6 +125,7 @@
   --bg-sidebar-subtle: var(--color-neutral-0);
   --bg-card: var(--color-neutral-0);
   --bg-card-hover: var(--color-neutral-50);
+  --bg-elevated: var(--color-neutral-0);
   --bg-card-muted: var(--color-neutral-0);
   --bg-overlay: rgba(36, 41, 47, 0.48);
   --bg-selected: var(--color-neutral-50);
@@ -349,6 +350,7 @@
   --bg-sidebar-subtle: #292929;
   --bg-card: #2b2b2b;
   --bg-card-hover: #343434;
+  --bg-elevated: #2b2b2b;
   --bg-card-muted: #303030;
   --bg-overlay: rgba(0, 0, 0, 0.68);
   --bg-selected: rgba(88, 166, 255, 0.14);
@@ -463,6 +465,7 @@
     --bg-sidebar-subtle: #292929;
     --bg-card: #2b2b2b;
     --bg-card-hover: #343434;
+    --bg-elevated: #2b2b2b;
     --bg-card-muted: #303030;
     --bg-overlay: rgba(0, 0, 0, 0.68);
     --bg-selected: rgba(88, 166, 255, 0.14);

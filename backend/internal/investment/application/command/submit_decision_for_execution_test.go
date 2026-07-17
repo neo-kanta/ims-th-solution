@@ -72,7 +72,7 @@ func (r *fakeDecisionRepo) FindDecisionSubjectRefByNumber(_ context.Context, dec
 			return &domain.DecisionSubjectRef{
 				DecisionID:        d.ID,
 				DecisionNumber:    d.DecisionNumber,
-				ContractID:        d.ContractID,
+				FundID:            d.FundID,
 				ApprovalRequestID: d.ApprovalRequestID,
 			}, nil
 		}
@@ -161,7 +161,6 @@ func draftDecision() *entity.Decision {
 		ID:             uuid.New(),
 		FundID:         uuid.New(),
 		PortfolioID:    uuid.New(),
-		ContractID:     uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,
 		Quantity:       &qty,

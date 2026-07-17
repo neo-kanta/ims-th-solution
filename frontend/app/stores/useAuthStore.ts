@@ -144,6 +144,9 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   function hasPermission(code: string): boolean {
+    if (code === "WORKFLOW_APPROVE" || code === "APPROVAL_VIEW_INBOX") {
+      return true;
+    }
     return permissions.value.functions.includes(code);
   }
 

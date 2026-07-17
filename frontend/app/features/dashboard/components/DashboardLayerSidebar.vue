@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+const { t } = useI18n();
+
 import type {
   DashboardSnapshotDTO,
   DashboardTodoFilter,
@@ -32,32 +34,6 @@ interface LayerItem {
 const searchQuery = ref("");
 const tasks = computed(() => props.snapshot?.tasks ?? []);
 
-const contractSearchQuery = ref("");
-const contracts = ref([
-  { id: "1", code: "KBANK-EQ-001" },
-  { id: "2", code: "PTT-FI-002" },
-  { id: "3", code: "SCC-EQ-004" },
-  { id: "4", code: "ADVANC-EQ-003" },
-  { id: "5", code: "LH-RE-005" },
-  { id: "6", code: "AOT-EQ-006" },
-  { id: "7", code: "CPALL-EQ-007" },
-]);
-
-const filteredContracts = computed(() => {
-  const term = contractSearchQuery.value.trim().toLowerCase();
-  if (!term) return contracts.value;
-  return contracts.value.filter((c) => c.code.toLowerCase().includes(term));
-});
-
-const router = useRouter();
-function handleNewContract() {
-  void router.push("/investment/funds");
-}
-
-function selectContract(code: string) {
-  void router.push(`/investment/funds/${code.toLowerCase()}/holdings`);
-}
-
 function countBy(predicate: (task: TaskDTO) => boolean): number {
   return tasks.value.filter(predicate).length;
 }
@@ -65,36 +41,36 @@ function countBy(predicate: (task: TaskDTO) => boolean): number {
 const layers = computed<LayerItem[]>(() => [
   {
     value: "my",
-    label: "My task queue",
-    description: "Open items assigned to this session",
+    label: t("dashboard.layers.myLabel", "My task queue"),
+    description: t("dashboard.layers.myDesc", "Open items assigned to this session"),
     icon: "list",
     count: countBy((task) => task.status !== "COMPLETED"),
   },
   {
     value: "approvals",
-    label: "Review approvals",
-    description: "Research and manager review work",
+    label: t("dashboard.layers.approvalsLabel", "Review approvals"),
+    description: t("dashboard.layers.approvalsDesc", "Research and manager review work"),
     icon: "approval",
     count: countBy((task) => task.type === "RESEARCH_REVIEW"),
   },
   {
     value: "workflow",
-    label: "Business-day flow",
-    description: "Investment day and closing steps",
+    label: t("dashboard.layers.workflowLabel", "Business-day flow"),
+    description: t("dashboard.layers.workflowDesc", "Investment day and closing steps"),
     icon: "workflow",
     count: countBy((task) => task.type === "WORKFLOW_PENDING"),
   },
   {
     value: "alerts",
-    label: "Compliance alerts",
-    description: "Exceptions requiring attention",
+    label: t("dashboard.layers.alertsLabel", "Compliance alerts"),
+    description: t("dashboard.layers.alertsDesc", "Exceptions requiring attention"),
     icon: "warning",
     count: countBy((task) => task.type === "COMPLIANCE_BREACH"),
   },
   {
     value: "done",
-    label: "Completed archive",
-    description: "Resolved items from the task source",
+    label: t("dashboard.layers.doneLabel", "Completed archive"),
+    description: t("dashboard.layers.doneDesc", "Resolved items from the task source"),
     icon: "check",
     count: countBy((task) => task.status === "COMPLETED"),
   },
@@ -112,10 +88,10 @@ const filteredLayers = computed(() => {
 });
 
 const sourceLabel = computed(() => {
-  if (props.loading) return "Loading task source";
-  if (props.error) return "Task source unavailable";
-  if (props.snapshot) return "Integration task API";
-  return "Waiting for task source";
+  if (props.loading) return t("dashboard.layers.loadingSource", "Loading task source");
+  if (props.error) return t("dashboard.layers.sourceUnavailable", "Task source unavailable");
+  if (props.snapshot) return t("dashboard.layers.integrationApi", "Integration task API");
+  return t("dashboard.layers.waitingSource", "Waiting for task source");
 });
 
 function selectLayer(layer: DashboardTodoFilter) {
@@ -135,15 +111,15 @@ function resetLayers() {
         <AppIcon name="portfolio" size="sm" />
       </span>
       <div class="layer-sidebar__heading">
-        <p class="layer-sidebar__eyebrow">Fund manager home</p>
+        <p class="layer-sidebar__eyebrow">{{ t("dashboard.layers.fundManagerHome", "Fund manager home") }}</p>
         <h2 id="dashboard-layer-sidebar-title" class="layer-sidebar__title">
-          Task layers
+          {{ t("dashboard.layers.taskLayers", "Task layers") }}
         </h2>
       </div>
     </div>
 
     <label class="layer-sidebar__search-label" for="dashboard-layer-search">
-      Find a layer
+      {{ t("dashboard.layers.findLayer", "Find a layer") }}
     </label>
     <div class="layer-sidebar__search">
       <AppIcon name="search" size="xs" />
@@ -151,7 +127,7 @@ function resetLayers() {
         id="dashboard-layer-search"
         v-model="searchQuery"
         type="search"
-        placeholder="Find a task layer..."
+        :placeholder="t('dashboard.layers.findLayerPlaceholder', 'Find a task layer...')"
         autocomplete="off"
       />
     </div>
@@ -180,44 +156,15 @@ function resetLayers() {
       </button>
 
       <div v-if="filteredLayers.length === 0" class="layer-sidebar__empty">
-        No matching layers
+        {{ t("dashboard.layers.noMatchingLayers", "No matching layers") }}
       </div>
     </nav>
 
     <button class="layer-sidebar__reset" type="button" @click="resetLayers">
-      Show primary queue
+      {{ t("dashboard.layers.showPrimaryQueue", "Show primary queue") }}
     </button>
 
     <hr class="layer-sidebar__separator" />
-
-    <div class="layer-sidebar__contracts-section">
-      <div class="layer-sidebar__contracts-header">
-        <h3 class="layer-sidebar__contracts-title">Top Contracts</h3>
-        <button class="layer-sidebar__new-btn" type="button" @click="handleNewContract">
-          <AppIcon name="plus" size="xs" />
-          <span>New</span>
-        </button>
-      </div>
-
-      <div class="layer-sidebar__search">
-        <AppIcon name="search" size="xs" />
-        <input
-          v-model="contractSearchQuery"
-          type="search"
-          placeholder="Find a contract..."
-          autocomplete="off"
-        />
-      </div>
-
-      <ul class="layer-sidebar__contracts-list">
-        <li v-for="contract in filteredContracts" :key="contract.id">
-          <a href="#" class="layer-sidebar__contract-link" @click.prevent="selectContract(contract.code)">
-            <AppIcon name="portfolio" size="xs" class="layer-sidebar__contract-icon" />
-            <span class="layer-sidebar__contract-code">{{ contract.code }}</span>
-          </a>
-        </li>
-      </ul>
-    </div>
 
     <div class="layer-sidebar__source">
       <span class="layer-sidebar__source-dot" :class="{ 'is-error': error }" />
@@ -447,18 +394,21 @@ function resetLayers() {
   .layer-sidebar {
     padding: var(--space-6) var(--space-4);
     border-right: 0;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 0;
     height: auto;
+    align-content: start;
+    overflow-y: auto;
   }
 
   .layer-sidebar__nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 640px) {
-  .layer-sidebar__nav {
-    grid-template-columns: 1fr;
+  .layer-sidebar {
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-3);
   }
 }
 
@@ -466,75 +416,5 @@ function resetLayers() {
   border: 0;
   border-top: 1px solid var(--border-subtle);
   margin: var(--space-4) 0;
-}
-
-.layer-sidebar__contracts-section {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.layer-sidebar__contracts-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.layer-sidebar__contracts-title {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.layer-sidebar__new-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 4px 8px;
-  background: var(--state-success);
-  color: #fff;
-  border-radius: var(--radius-md);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast);
-}
-
-.layer-sidebar__new-btn:hover {
-  filter: brightness(0.9);
-}
-
-.layer-sidebar__contracts-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-1);
-}
-
-.layer-sidebar__contract-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.layer-sidebar__contract-link:hover {
-  color: var(--text-primary);
-  background: var(--bg-row-hover);
-  text-decoration: none;
-}
-
-.layer-sidebar__contract-icon {
-  color: var(--text-tertiary);
-}
-
-.layer-sidebar__contract-code {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  font-family: var(--font-family-mono);
 }
 </style>

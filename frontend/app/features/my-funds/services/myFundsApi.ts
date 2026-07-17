@@ -11,7 +11,11 @@
  *   GET  /workflow/day-states/{contractId}?businessDate=YYYY-MM-DD
  *   GET  /compliance/breaches?contract_id=<uuid>&status=OPEN
  */
-import { OpenApiRequestError, unwrapOpenApiResponse, useOpenApiClient } from "~/api/openapi";
+import {
+  OpenApiRequestError,
+  unwrapOpenApiResponse,
+  useOpenApiClient,
+} from "~/api/openapi";
 import type { components } from "~/api/ims-api";
 
 import type {
@@ -29,19 +33,26 @@ export type ApiHolding = components["schemas"]["HoldingResponse"];
 export type ApiInstrument = components["schemas"]["InstrumentResponse"];
 export type ApiAssetClass = components["schemas"]["AssetClass"];
 export type FundAllocation = components["schemas"]["FundAllocationResponse"];
-export type AllocationBucket = components["schemas"]["AllocationBucketResponse"];
+export type AllocationBucket =
+  components["schemas"]["AllocationBucketResponse"];
 export type FundNavHistory = components["schemas"]["FundNAVHistoryResponse"];
 export type NavHistoryPoint = components["schemas"]["NAVHistoryPointResponse"];
+export type IntradayFundValuation =
+  components["schemas"]["IntradayValuationResponse"];
+export type FundMarketDataStatus =
+  components["schemas"]["MarketDataStatusResponse"];
 
 export type FundNavHistoryRange = "1M" | "3M" | "6M" | "1Y" | "5Y" | "YTD";
 
-export type CreateFundPayload = components["schemas"]["CreateFundRequest"];
-export type ApiFundCategory = components["schemas"]["FundCategory"];
-export type PostTransactionPayload = components["schemas"]["PostTransactionRequest"];
+export type PostTransactionPayload =
+  components["schemas"]["PostTransactionRequest"];
 export type ApiTransaction = components["schemas"]["TransactionResponse"];
-export type ApiPreTradeResponse = components["schemas"]["PreTradeCheckResponse"];
-export type ApiTransactionSimulation = components["schemas"]["TransactionSimulationResponse"];
-export type ApiCompliancePreview = components["schemas"]["CompliancePreviewResponse"];
+export type ApiPreTradeResponse =
+  components["schemas"]["PreTradeCheckResponse"];
+export type ApiTransactionSimulation =
+  components["schemas"]["TransactionSimulationResponse"];
+export type ApiCompliancePreview =
+  components["schemas"]["CompliancePreviewResponse"];
 export type ApiBreachSummary = components["schemas"]["BreachSummary"];
 
 type FundsListResponse = {
@@ -66,38 +77,6 @@ type BreachListResponse = {
 };
 
 export const myFundsApi = {
-  /**
-   * Create a new fund. Requires INVESTMENT_FUND_MANAGE.
-   * The caller is responsible for collecting all required fields including
-   * `fund_category_id` (resolved via {@link listFundCategories}).
-   */
-  async createFund(payload: CreateFundPayload): Promise<ApiFund> {
-    const client = useOpenApiClient();
-    const response = await client.POST("/investment/funds", { body: payload });
-    return unwrapOpenApiResponse<ApiFund>(response);
-  },
-
-  /** Active fund categories — used to populate the Create Fund category dropdown. */
-  async listFundCategories(): Promise<ApiFundCategory[]> {
-    const client = useOpenApiClient();
-    const response = await client.GET("/investment/reference/fund-categories");
-    const raw = unwrapOpenApiResponse<unknown[]>(response);
-    return (raw ?? []).map((entry) => {
-      const e = entry as Record<string, unknown>;
-      return {
-        id: (e.id ?? e.ID) as string | undefined,
-        code: (e.code ?? e.Code) as string | undefined,
-        name: (e.name ?? e.Name) as string | undefined,
-        assetClassID: (e.assetClassID ?? e.AssetClassID ?? e.asset_class_id) as
-          | string
-          | undefined,
-        isActive: (e.isActive ?? e.IsActive) as boolean | undefined,
-        createdAt: (e.createdAt ?? e.CreatedAt) as string | undefined,
-        updatedAt: (e.updatedAt ?? e.UpdatedAt) as string | undefined,
-      } satisfies ApiFundCategory;
-    });
-  },
-
   /**
    * Run a pre-trade simulation against a portfolio. Hits
    * POST /investment/portfolios/{id}/transactions/simulate. Returns per-rule
@@ -189,6 +168,50 @@ export const myFundsApi = {
   },
 
   /**
+   * Read-only live fund valuation. The backend owns price selection, FX,
+   * estimated AUM, unit NAV, and stale-data rules; the frontend only renders
+   * the returned accounting and market-data fields.
+   */
+  async getFundIntradayValuation(
+    fundId: string,
+    businessDate?: string,
+  ): Promise<IntradayFundValuation | null> {
+    const client = useOpenApiClient();
+    try {
+      const response = await client.GET(
+        "/investment/funds/{id}/holdings/valuation",
+        {
+          params: {
+            path: { id: fundId },
+            query: businessDate ? { business_date: businessDate } : undefined,
+          },
+        },
+      );
+      return unwrapOpenApiResponse<IntradayFundValuation>(response);
+    } catch (err) {
+      if (err instanceof OpenApiRequestError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  /** Read-only provider health for freshness and stale-position evidence. */
+  async getFundMarketDataStatus(
+    fundId: string,
+  ): Promise<FundMarketDataStatus | null> {
+    const client = useOpenApiClient();
+    try {
+      const response = await client.GET(
+        "/investment/funds/{id}/market-data/status",
+        { params: { path: { id: fundId } } },
+      );
+      return unwrapOpenApiResponse<FundMarketDataStatus>(response);
+    } catch (err) {
+      if (err instanceof OpenApiRequestError && err.status === 404) return null;
+      throw err;
+    }
+  },
+
+  /**
    * Latest aggregated position list (qty + avg cost + cost basis) for one
    * portfolio. The backend returns rows projected from the immutable ledger.
    * 404 is mapped to an empty array since a brand-new portfolio has none.
@@ -223,15 +246,23 @@ export const myFundsApi = {
 
   /**
    * Fund-level allocation breakdowns — by asset class, sector, country and
-   * currency — computed from positions × latest prices server-side. 404
-   * (returned when the fund has no positions or valuations) is mapped to
-   * null so the UI can render an empty-state card.
+   * currency — computed from the same per-instrument mark-to-market values as
+   * the holdings valuation (same business_date, same price-selection tier),
+   * so the two pages never disagree. 404 (returned when the fund has no
+   * positions or valuations) is mapped to null so the UI can render an
+   * empty-state card.
    */
-  async getFundAllocation(fundId: string): Promise<FundAllocation | null> {
+  async getFundAllocation(
+    fundId: string,
+    businessDate?: string,
+  ): Promise<FundAllocation | null> {
     const client = useOpenApiClient();
     try {
       const response = await client.GET("/investment/funds/{id}/allocation", {
-        params: { path: { id: fundId } },
+        params: {
+          path: { id: fundId },
+          query: businessDate ? { business_date: businessDate } : undefined,
+        },
       });
       return unwrapOpenApiResponse<FundAllocation>(response);
     } catch (err) {
@@ -290,10 +321,9 @@ export const myFundsApi = {
 
   async listCash(portfolioId: string): Promise<ApiCashBalance[]> {
     const client = useOpenApiClient();
-    const response = await client.GET(
-      "/investment/portfolios/{id}/cash",
-      { params: { path: { id: portfolioId } } },
-    );
+    const response = await client.GET("/investment/portfolios/{id}/cash", {
+      params: { path: { id: portfolioId } },
+    });
     return unwrapOpenApiResponse<ApiCashBalance[]>(response);
   },
 

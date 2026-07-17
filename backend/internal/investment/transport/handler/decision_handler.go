@@ -24,10 +24,20 @@ type DecisionHandler struct {
 	cmd           *command.DecisionCommandHandler
 	batchApproval *command.DecisionBatchApprovalHandler
 	approvalStage contract.ApprovalStatusProvider
+	portfolios    domain.PortfolioRepository
 }
 
 func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCommandHandler) *DecisionHandler {
 	return &DecisionHandler{decisions: repo, cmd: cmd}
+}
+
+// SetPortfolioRepository wires the portfolio repository post-construction so
+// the Portfolio V2 (portfolioCode) routes in portfolio_v2_decision_handler.go
+// can resolve portfolioCode -> portfolio_id.
+func (h *DecisionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = r
+	}
 }
 
 // SetDecisionLineRepository wires the line repository post-construction.
@@ -60,7 +70,6 @@ func (h *DecisionHandler) SetApprovalStatusProvider(p contract.ApprovalStatusPro
 // @Param limit query int false "Page size (default 50, max 200)"
 // @Param fund_id query string false "Filter by fund UUID"
 // @Param portfolio_id query string false "Filter by portfolio UUID"
-// @Param contract_id query string false "Filter by contract UUID"
 // @Param business_date query string false "Filter by business date YYYY-MM-DD"
 // @Param status query string false "Filter by lifecycle status"
 // @Param instrument_code query string false "Filter by instrument code"
@@ -90,14 +99,6 @@ func (h *DecisionHandler) ListDecisions(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		filter.PortfolioID = &id
-	}
-	if v := strings.TrimSpace(q.Get("contract_id")); v != "" {
-		id, err := uuid.Parse(v)
-		if err != nil {
-			httputil.BadRequest(w, "invalid contract_id")
-			return
-		}
-		filter.ContractID = &id
 	}
 	if v := strings.TrimSpace(q.Get("business_date")); v != "" {
 		t, err := parseDate(v)
@@ -198,7 +199,6 @@ func (h *DecisionHandler) CreateDecision(w http.ResponseWriter, r *http.Request)
 	d, err := h.cmd.Create(r.Context(), command.CreateDecisionRequest{
 		FundID:           req.FundID,
 		PortfolioID:      req.PortfolioID,
-		ContractID:       req.ContractID,
 		InstrumentID:     req.InstrumentID,
 		InstrumentCode:   req.InstrumentCode,
 		BusinessDate:     bDate,
@@ -300,6 +300,7 @@ func (h *DecisionHandler) UpdateDecision(w http.ResponseWriter, r *http.Request)
 // @Failure 403 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection"
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /investment/decisions/{id}/submit [post]
 func (h *DecisionHandler) SubmitDecision(w http.ResponseWriter, r *http.Request) {
@@ -626,6 +627,8 @@ func writeDecisionError(w http.ResponseWriter, err error) {
 		referenceB  *domain.ErrDecisionReferenceInvalid
 		number      *domain.ErrDecisionNumberConflict
 		compBlocked *domain.ErrComplianceRejected
+		compMissing *command.ErrComplianceNotConfigured
+		compDown    *command.ErrComplianceUnavailable
 	)
 	switch {
 	case errors.As(err, &invalid):
@@ -640,6 +643,10 @@ func writeDecisionError(w http.ResponseWriter, err error) {
 		httputil.Conflict(w, err.Error())
 	case errors.As(err, &compBlocked):
 		httputil.UnprocessableEntity(w, err.Error())
+	case errors.As(err, &compMissing):
+		writeComplianceStatusError(w, command.ComplianceErrorCodeNotConfigured, compMissing.Error(), compMissing.CheckGroupID)
+	case errors.As(err, &compDown):
+		writeComplianceStatusError(w, command.ComplianceErrorCodeUnavailable, compDown.Error(), compDown.CheckGroupID)
 	default:
 		httputil.InternalError(w, err.Error())
 	}

@@ -49,7 +49,7 @@ export function useCompliancePortfolioDirectory(): {
   async function load() {
     state.value = { ...state.value, loading: true, error: null };
     try {
-      const payload = await complianceApi.listPortfolios({ limit: 200 });
+      const payload = await complianceApi.listAllPortfolios();
       state.value = {
         items: payload.items ?? [],
         loaded: true,
@@ -85,11 +85,11 @@ export function useCompliancePortfolioDirectory(): {
   );
 
   function labelFor(id: string | null | undefined): string {
-    if (!id) return "—";
+    if (!id) return "";
     const hit = byId.value.get(id);
-    if (!hit) return id;
+    if (!hit) return "";
     const parts = [hit.code, hit.name].filter(Boolean);
-    return parts.length > 0 ? parts.join(" — ") : id;
+    return parts.join(" — ");
   }
 
   return {

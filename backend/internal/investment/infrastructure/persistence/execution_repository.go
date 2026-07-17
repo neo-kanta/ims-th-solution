@@ -25,7 +25,7 @@ func NewPostgresExecutionRepository(pool *pgxpool.Pool) *PostgresExecutionReposi
 }
 
 const executionSelect = `
-	SELECT id, decision_id, fund_id, portfolio_id, contract_id,
+	SELECT id, decision_id, fund_id, portfolio_id,
 	       instrument_id, instrument_code, business_date,
 	       side, ordered_quantity, ordered_amount, executed_quantity, executed_amount, execution_price,
 	       currency, status, trader_user_id, broker_reference,
@@ -36,21 +36,21 @@ const executionSelect = `
 func (r *PostgresExecutionRepository) Create(ctx context.Context, tx pgx.Tx, e *entity.Execution) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO investment__executions (
-			id, decision_id, fund_id, portfolio_id, contract_id,
+			id, decision_id, fund_id, portfolio_id,
 			instrument_id, instrument_code, business_date,
 			side, ordered_quantity, ordered_amount, executed_quantity, executed_amount, execution_price,
 			currency, status, trader_user_id, broker_reference,
 			executed_at, cancelled_at, cancelled_by, cancellation_reason,
 			created_at, created_by, updated_at, updated_by
 		) VALUES (
-			$1, $2, $3, $4, $5,
-			$6, $7, $8,
-			$9, $10, $11, $12, $13, $14,
-			$15, $16, $17, $18,
-			$19, $20, $21, $22,
-			$23, $24, $25, $26
+			$1, $2, $3, $4,
+			$5, $6, $7,
+			$8, $9, $10, $11, $12, $13,
+			$14, $15, $16, $17,
+			$18, $19, $20, $21,
+			$22, $23, $24, $25
 		)`,
-		e.ID, e.DecisionID, e.FundID, e.PortfolioID, e.ContractID,
+		e.ID, e.DecisionID, e.FundID, e.PortfolioID,
 		e.InstrumentID, e.InstrumentCode, e.BusinessDate,
 		string(e.Side), e.OrderedQuantity, e.OrderedAmount, e.ExecutedQuantity, e.ExecutedAmount, e.ExecutionPrice,
 		e.Currency, string(e.Status), e.TraderUserID, e.BrokerReference,
@@ -111,12 +111,12 @@ func (r *PostgresExecutionRepository) ListByDecision(ctx context.Context, decisi
 	return out, rows.Err()
 }
 
-func (r *PostgresExecutionRepository) ListByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) ([]*entity.Execution, error) {
+func (r *PostgresExecutionRepository) ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.Execution, error) {
 	rows, err := r.pool.Query(ctx,
-		executionSelect+` WHERE contract_id = $1 AND business_date = $2 ORDER BY created_at`,
-		contractID, businessDate)
+		executionSelect+` WHERE fund_id = $1 AND business_date = $2 ORDER BY created_at`,
+		fundID, businessDate)
 	if err != nil {
-		return nil, fmt.Errorf("list executions by contract: %w", err)
+		return nil, fmt.Errorf("list executions by fund: %w", err)
 	}
 	defer rows.Close()
 	out := []*entity.Execution{}
@@ -144,7 +144,7 @@ func scanExecution(row rowScanner) (*entity.Execution, error) {
 		cancellationReason                          string
 	)
 	if err := row.Scan(
-		&e.ID, &e.DecisionID, &e.FundID, &e.PortfolioID, &e.ContractID,
+		&e.ID, &e.DecisionID, &e.FundID, &e.PortfolioID,
 		&instrument, &e.InstrumentCode, &e.BusinessDate,
 		&side, &ordQty, &ordAmt, &execQty, &execAmt, &execPrice,
 		&e.Currency, &status, &trader, &broker,

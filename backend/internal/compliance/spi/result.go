@@ -4,9 +4,10 @@ import vo "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/doma
 
 // EvalResult is the output of a single rule evaluation.
 type EvalResult struct {
-	Verdict  vo.Verdict  `json:"verdict"`
-	Message  string      `json:"message"`
-	Evidence vo.Evidence `json:"evidence"`
+	Status   vo.ComplianceStatus `json:"status"`
+	Verdict  vo.Verdict          `json:"verdict"`
+	Message  string              `json:"message"`
+	Evidence vo.Evidence         `json:"evidence"`
 }
 
 // NotImplementedResult returns a standard PASS result for Phase 2 stubs.

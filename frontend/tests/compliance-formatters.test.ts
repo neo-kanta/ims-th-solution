@@ -9,6 +9,7 @@ import {
   ruleStatusLabel,
   ruleStatusTone,
   severityLabel,
+  severityRank,
   severityTone,
   verdictLabel,
   verdictTone,
@@ -59,6 +60,25 @@ describe("severity helpers", () => {
   });
 });
 
+describe("severityRank", () => {
+  it("ranks BLOCK strictly above WARN and REQUIRE_APPROVAL", () => {
+    expect(severityRank("BLOCK")).toBeGreaterThan(severityRank("WARN"));
+    expect(severityRank("BLOCK")).toBeGreaterThan(severityRank("REQUIRE_APPROVAL"));
+  });
+
+  it("ranks WARN and REQUIRE_APPROVAL equally — both cap a BLOCK verdict identically", () => {
+    expect(severityRank("WARN")).toBe(severityRank("REQUIRE_APPROVAL"));
+  });
+
+  it("ranks MONITOR below WARN/REQUIRE_APPROVAL", () => {
+    expect(severityRank("MONITOR")).toBeLessThan(severityRank("WARN"));
+  });
+
+  it("ranks an unknown value at the bottom, below MONITOR", () => {
+    expect(severityRank("UNKNOWN" as never)).toBeLessThan(severityRank("MONITOR"));
+  });
+});
+
 describe("deriveRuleStatus", () => {
   // Frozen "today" for deterministic effective-window comparisons.
   const NOW = new Date("2026-05-22T00:00:00Z");
@@ -88,6 +108,13 @@ describe("deriveRuleStatus", () => {
   it("returns ACTIVE when the window straddles today", () => {
     const rule = makeRule({
       effectiveWindow: { from: "2026-01-01", to: "2099-01-01" },
+    });
+    expect(deriveRuleStatus(rule, NOW)).toBe("ACTIVE");
+  });
+
+  it("treats an ISO timestamp starting today as active, not scheduled", () => {
+    const rule = makeRule({
+      effectiveWindow: { from: "2026-05-22T00:00:00Z", to: null },
     });
     expect(deriveRuleStatus(rule, NOW)).toBe("ACTIVE");
   });

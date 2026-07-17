@@ -19,22 +19,26 @@ import (
 	platformmw "github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 
 	// Self-registering rule packages — must be blank-imported to run init().
+	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/allocation"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/amount"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/cash"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/concentration"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/credit"
+	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/exposure"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/quantity"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/ratio"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/restriction"
 	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/stub"
+	_ "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/rules/valuation"
 )
 
 // Module owns the IRG compliance pipeline, rule administration, and breach management.
 type Module struct {
-	handler           *handler.ComplianceHandler
-	registry          *spi.RuleRegistry
-	permissionChecker platformmw.PermissionChecker
-	contractAdapter   *transport.ComplianceContractAdapter
+	handler                  *handler.ComplianceHandler
+	registry                 *spi.RuleRegistry
+	permissionChecker        platformmw.PermissionChecker
+	contractAdapter          *transport.ComplianceContractAdapter
+	portfolioContractAdapter *transport.PortfolioContractAdapter
 }
 
 // NewModule constructs the full compliance module with Postgres-backed
@@ -69,6 +73,8 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 	postTradeCmd := command.NewRunPostTradeCheckHandler(pipeline, registry)
 	overrideCmd := command.NewOverrideBreachHandler(overrideRepo)
 	createInstanceCmd := command.NewCreateRuleInstanceHandler(instanceRepo, registry)
+	createBindingCmd := command.NewCreateRuleBindingHandler(bindingRepo, instanceRepo)
+	deactivateBindingCmd := command.NewDeactivateRuleBindingHandler(bindingRepo)
 
 	// Application layer — queries
 	checkGroupQry := query.NewGetCheckGroupHandler(checkRepo, breachRepo)
@@ -89,11 +95,26 @@ func NewModule(pool *pgxpool.Pool, permChecker platformmw.PermissionChecker) *Mo
 	// Cross-module contract adapter (investment OMS, workflow close gate).
 	contractAdapter := transport.NewComplianceContractAdapter(preTradeCmd, pipeline, registry)
 
+	// Portfolio Compliance V2 contract adapter (investment Portfolio V2
+	// {portfolioCode} handlers). Embeds contractAdapter for the pre-trade
+	// check/simulate methods and adds portfolio-scoped post-trade checks,
+	// rule catalog, binding administration, and breach listing.
+	portfolioContractAdapter := transport.NewPortfolioContractAdapter(
+		contractAdapter,
+		postTradeCmd,
+		instanceRepo,
+		bindingRepo,
+		breachRepo,
+		createBindingCmd,
+		deactivateBindingCmd,
+	)
+
 	return &Module{
-		handler:           h,
-		registry:          registry,
-		permissionChecker: permChecker,
-		contractAdapter:   contractAdapter,
+		handler:                  h,
+		registry:                 registry,
+		permissionChecker:        permChecker,
+		contractAdapter:          contractAdapter,
+		portfolioContractAdapter: portfolioContractAdapter,
 	}
 }
 
@@ -153,4 +174,14 @@ func (m *Module) ContractAdapter() *transport.ComplianceContractAdapter {
 		return nil
 	}
 	return m.contractAdapter
+}
+
+// PortfolioContractAdapter returns the Portfolio Compliance V2 contract
+// adapter. Consumed by the investment module's Portfolio V2 ({portfolioCode})
+// handlers via pkg/contract.PortfolioComplianceContract only.
+func (m *Module) PortfolioContractAdapter() *transport.PortfolioContractAdapter {
+	if m == nil {
+		return nil
+	}
+	return m.portfolioContractAdapter
 }

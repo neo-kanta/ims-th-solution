@@ -346,14 +346,14 @@ func (a *InvestmentPortfolioMetadataAdapter) GetMetadata(
 
 	meta := &spi.PortfolioMetadata{PortfolioID: portfolioID, Jurisdiction: "TH"}
 	err := a.pool.QueryRow(ctx, `
-		SELECT p.fund_id, p.base_currency, p.inception_date, COALESCE(fc.code, '')
+		SELECT p.fund_id, p.portfolio_type, p.base_currency, p.inception_date, COALESCE(fc.code, '')
 		FROM investment__portfolios p
 		LEFT JOIN investment__funds f ON f.id = p.fund_id
 		LEFT JOIN investment__fund_categories fc ON fc.id = f.fund_category_id
 		WHERE p.id = $1
 		  AND p.deleted_at IS NULL`,
 		portfolioID,
-	).Scan(&meta.ContractID, &meta.BaseCurrency, &meta.InceptionDate, &meta.MandateType)
+	).Scan(&meta.ContractID, &meta.PortfolioType, &meta.BaseCurrency, &meta.InceptionDate, &meta.MandateType)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("portfolio %s not found", portfolioID)

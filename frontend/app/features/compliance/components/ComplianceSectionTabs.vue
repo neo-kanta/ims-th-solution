@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppTabs, { type TabItem } from "~/shared/ui/AppTabs.vue";
 
 interface TabCount {
@@ -16,9 +16,7 @@ interface Props {
     | "library"
     | "approvals"
     | "breaches"
-    | "exceptions"
-    | "audit"
-    | "settings";
+    | "audit";
   counts: {
     library: TabCount;
     approvals: TabCount;
@@ -35,7 +33,7 @@ const { t } = useI18n();
 interface TabDef {
   key: Props["active"];
   to: string;
-  labelKey: string;
+  labelKey: AppTranslationKey;
   icon: string;
   count?: TabCount;
 }
@@ -69,31 +67,18 @@ const tabs = computed<TabDef[]>(() => [
     count: props.counts.breaches,
   },
   {
-    key: "exceptions",
-    to: "/compliance/exceptions",
-    labelKey: "compliance.dashboard.tabs.exceptions",
-    icon: "approval",
-    count: props.counts.exceptions,
-  },
-  {
     key: "audit",
     to: "/compliance/audit",
     labelKey: "compliance.dashboard.tabs.audit",
     icon: "audit",
     count: props.counts.audit,
   },
-  {
-    key: "settings",
-    to: "/compliance/permissions",
-    labelKey: "compliance.dashboard.tabs.settings",
-    icon: "shield",
-  },
 ]);
 
 const tabItems = computed<TabItem[]>(() =>
   tabs.value.map((tab) => ({
     key: tab.key,
-    label: t(tab.labelKey as any),
+    label: t(tab.labelKey),
     to: tab.to,
     icon: tab.icon,
     count: tab.count
@@ -106,7 +91,11 @@ const tabItems = computed<TabItem[]>(() =>
 </script>
 
 <template>
-  <AppTabs :items="tabItems" :model-value="active" aria-label="Compliance sections" />
+  <AppTabs
+    :items="tabItems"
+    :model-value="active"
+    :aria-label="t('compliance.dashboard.tabs.label')"
+  />
 </template>
 
 <style scoped>

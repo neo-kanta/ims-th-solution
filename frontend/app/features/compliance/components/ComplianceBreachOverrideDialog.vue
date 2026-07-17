@@ -79,7 +79,7 @@ function submit() {
         </header>
 
         <section class="override-modal__breach">
-          <div class="override-modal__rule">{{ ruleLabel(breach.ruleTypeID) }}</div>
+          <div class="override-modal__rule">{{ ruleLabel(breach.ruleTypeID, t) }}</div>
           <div class="override-modal__badges">
             <ComplianceVerdictBadge :verdict="breach.verdict" />
             <ComplianceSeverityBadge :severity="breach.severity" />

@@ -17,7 +17,7 @@ import (
 type DecisionSubjectRef struct {
 	DecisionID        uuid.UUID
 	DecisionNumber    string
-	ContractID        uuid.UUID
+	FundID            uuid.UUID
 	ApprovalRequestID *uuid.UUID
 }
 
@@ -26,7 +26,6 @@ type DecisionSubjectRef struct {
 type DecisionListFilter struct {
 	FundID           *uuid.UUID
 	PortfolioID      *uuid.UUID
-	ContractID       *uuid.UUID
 	BusinessDate     *time.Time
 	BusinessDateFrom *time.Time
 	BusinessDateTo   *time.Time
@@ -55,7 +54,7 @@ type DecisionRepository interface {
 	GetByDecisionNumber(ctx context.Context, decisionNumber string) (*entity.Decision, error)
 
 	// FindDecisionSubjectRefByNumber returns the minimal authorisation
-	// projection for a decision number: only id, contract_id, and
+	// projection for a decision number: only id, fund_id, and
 	// approval_request_id are populated — no amount, rationale, or status.
 	// Returns nil when the decision number is not found.
 	FindDecisionSubjectRefByNumber(ctx context.Context, decisionNumber string) (*DecisionSubjectRef, error)
@@ -109,7 +108,7 @@ type ExecutionRepository interface {
 	Update(ctx context.Context, tx pgx.Tx, e *entity.Execution) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Execution, error)
 	ListByDecision(ctx context.Context, decisionID uuid.UUID) ([]*entity.Execution, error)
-	ListByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) ([]*entity.Execution, error)
+	ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.Execution, error)
 }
 
 // TradeConfirmationRepository persists TradeConfirmation rows.
@@ -118,7 +117,7 @@ type TradeConfirmationRepository interface {
 	Update(ctx context.Context, tx pgx.Tx, c *entity.TradeConfirmation) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.TradeConfirmation, error)
 	ListByExecution(ctx context.Context, executionID uuid.UUID) ([]*entity.TradeConfirmation, error)
-	ListByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) ([]*entity.TradeConfirmation, error)
+	ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.TradeConfirmation, error)
 
 	// GetByBrokerReference returns the existing confirmation for a broker
 	// reference string, or nil. Used by the batch importer to dedupe rows

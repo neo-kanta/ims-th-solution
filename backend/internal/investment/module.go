@@ -187,9 +187,14 @@ func NewModule(
 		m.decisionCmd.SetComplianceChecker(compliance)
 	}
 	m.decisionCmd.SetFundRepository(m.funds)
+	m.decisionCmd.SetPortfolioRepository(m.portfolios)
 	if workflow != nil {
 		m.executionCmd.SetWorkflowStateProvider(workflow)
 	}
+	if compliance != nil {
+		m.executionCmd.SetComplianceChecker(compliance)
+	}
+	m.executionCmd.SetPortfolioRepository(m.portfolios)
 
 	// ── Transport ─────────────────────────────────────────────────────────
 	// Intraday valuation handler ships without a quote provider; main.go
@@ -214,9 +219,14 @@ func NewModule(
 	m.decisionHandler = handler.NewDecisionHandler(m.decisions, m.decisionCmd)
 	m.decisionHandler.SetDecisionLineRepository(m.decisionLines)
 	m.decisionHandler.SetBatchApprovalHandler(m.decisionBatchCmd)
+	m.decisionHandler.SetPortfolioRepository(m.portfolios)
 	m.executionHandler = handler.NewExecutionHandler(m.executions, m.executionCmd)
+	m.executionHandler.SetDecisionRepository(m.decisions)
+	m.executionHandler.SetPortfolioRepository(m.portfolios)
 	m.confirmationHandler = handler.NewTradeConfirmationHandler(m.confirmations, m.confirmationCmd)
 	m.confirmationHandler.SetBatchImportHandler(m.confirmationImportCmd)
+	m.confirmationHandler.SetExecutionRepository(m.executions)
+	m.confirmationHandler.SetPortfolioRepository(m.portfolios)
 
 	return m
 }
@@ -448,6 +458,108 @@ func (m *Module) RegisterRoutes(r chi.Router) {
 	})
 }
 
+// RegisterRoutesV2 mounts the investment module's Portfolio V2 HTTP routes
+// (docs/api/portfolio-v2-api-ddd.md) onto the given authenticated router.
+// Expected to be called inside an r.Route("/api/v2", ...) block that already
+// has auth middleware applied. Additive only — V1 routes registered by
+// RegisterRoutes are untouched and keep serving.
+func (m *Module) RegisterRoutesV2(r chi.Router) {
+	if m == nil || m.handler == nil || m.middlewarePerm == nil {
+		return
+	}
+	pc := m.middlewarePerm
+	h := m.handler
+
+	r.Route("/portfolios", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodePortfolioView))
+			r.Get("/{portfolioCode}", h.GetPortfolioByCode)
+			r.Get("/{portfolioCode}/holdings", h.GetHoldingsByCode)
+			r.Get("/{portfolioCode}/cash", h.GetCashByCode)
+			r.Get("/{portfolioCode}/transactions", h.ListTransactionsByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationView))
+			r.Get("/{portfolioCode}/valuations", h.ListValuationsByCode)
+			r.Get("/{portfolioCode}/valuations/latest", h.GetLatestValuationByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerSimulate))
+			r.Post("/{portfolioCode}/transactions/simulate", h.SimulateTransactionByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerPost))
+			r.Post("/{portfolioCode}/transactions", h.PostTransactionByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerReverse))
+			r.Post("/{portfolioCode}/transactions/{transactionId}/reverse", h.ReverseTransactionByCode)
+		})
+
+		// ── Decisions (Milestone 5) ────────────────────────────────────
+		if dh := m.decisionHandler; dh != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionView))
+				r.Get("/{portfolioCode}/decisions", dh.ListDecisionsByCode)
+				r.Get("/{portfolioCode}/decisions/{decisionId}", dh.GetDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionManage))
+				r.Post("/{portfolioCode}/decisions", dh.CreateDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionSubmit))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/submit", dh.SubmitDecisionByCode)
+			})
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeDecisionCancel))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/cancel", dh.CancelDecisionByCode)
+			})
+		}
+
+		// ── Executions (Milestone 5) ────────────────────────────────────
+		if eh := m.executionHandler; eh != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeExecutionManage))
+				r.Post("/{portfolioCode}/decisions/{decisionId}/executions", eh.CreateExecutionByCode)
+				r.Post("/{portfolioCode}/executions/{executionId}/fill", eh.FillExecutionByCode)
+				r.Post("/{portfolioCode}/executions/{executionId}/cancel", eh.CancelExecutionByCode)
+			})
+		}
+
+		// ── Trade confirmations (Milestone 5) ───────────────────────────
+		if ch := m.confirmationHandler; ch != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeConfirmationManage))
+				r.Post("/{portfolioCode}/executions/{executionId}/confirmations", ch.RecordConfirmationByCode)
+				r.Post("/{portfolioCode}/confirmations/{confirmationId}/resolve", ch.ResolveConfirmationByCode)
+			})
+		}
+
+		// ── Portfolio Compliance V2 ──────────────────────────────────────
+		// Permission codes are the compliance module's own IRG_* catalog
+		// (see internal/compliance/module.go's RegisterRoutes for the V1
+		// mirror) — passed as literal strings rather than an invperm
+		// constant so investment does not import compliance's internal
+		// permission package.
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "IRG_VIEW_RULES"))
+			r.Get("/{portfolioCode}/compliance/rules", h.ListRulesByCode)
+			r.Get("/{portfolioCode}/compliance/breaches", h.ListBreachesByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "IRG_EDIT_BINDING"))
+			r.Post("/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings", h.BindRuleByCode)
+			r.Delete("/{portfolioCode}/compliance/rules/{ruleInstanceID}/bindings/{bindingID}", h.DeactivateRuleBindingByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, "WORKFLOW_EXECUTE"))
+			r.Post("/{portfolioCode}/compliance/checks/pre-trade", h.RunPreTradeCheckByCode)
+			r.Post("/{portfolioCode}/compliance/checks/post-trade", h.RunPostTradeCheckByCode)
+		})
+	})
+}
+
 // SubmitDecisionHandler returns the Decision-submit command handler. Kept
 // for the existing pre-trade tests; persistence wiring will land in a
 // follow-up batch once the Decision repo is implemented.
@@ -518,6 +630,18 @@ func (m *Module) SetApprovalCanceller(c contract.ApprovalCanceller) {
 	if m.decisionCmd != nil {
 		m.decisionCmd.SetApprovalCanceller(c)
 	}
+}
+
+// SetPortfolioComplianceAdmin wires the Portfolio Compliance V2 contract
+// (checks, rule catalog, binding administration, breach listing) into the
+// V2 {portfolioCode} compliance handlers. Wired post-construction in
+// cmd/server/main.go — mirrors SetApprovalSubmitter's circular-dependency
+// avoidance.
+func (m *Module) SetPortfolioComplianceAdmin(c contract.PortfolioComplianceContract) {
+	if m == nil || m.handler == nil {
+		return
+	}
+	m.handler.SetPortfolioComplianceAdmin(c)
 }
 
 // ResearchReportSubjectValidator returns the approval subject validator for
@@ -662,4 +786,17 @@ func (m *Module) PortfolioScopeResolver() contract.PortfolioScopeResolver {
 		return nil
 	}
 	return adapter.NewPortfolioScopeAdapter(m.portfolios, m.funds)
+}
+
+// ValuationSummaryProvider returns an adapter consumed by the integration
+// module's dashboard valuation-summary endpoint to aggregate today's AUM and
+// P&L across a scoped set of funds.
+func (m *Module) ValuationSummaryProvider(
+	reportingCurrency string,
+	quotes contract.MarketQuoteProvider,
+) contract.ValuationSummaryProvider {
+	if m == nil || m.funds == nil || m.portfolios == nil || m.valuation == nil {
+		return nil
+	}
+	return adapter.NewValuationSummaryAdapter(m.funds, m.portfolios, m.valuation, reportingCurrency, quotes)
 }

@@ -19,9 +19,6 @@ http:
     - name: portfolio_id
       value: "{{investment-portfolio-id}}"
       type: query
-    - name: contract_id
-      value: "{{workflow-contract-id}}"
-      type: query
     - name: business_date
       value: "{{investment-business-date}}"
       type: query

@@ -25,7 +25,7 @@ func NewPostgresTradeConfirmationRepository(pool *pgxpool.Pool) *PostgresTradeCo
 }
 
 const confirmationSelect = `
-	SELECT id, execution_id, decision_id, fund_id, portfolio_id, contract_id, business_date,
+	SELECT id, execution_id, decision_id, fund_id, portfolio_id, business_date,
 	       confirmed_quantity, confirmed_amount, confirmed_price, currency,
 	       broker_reference, import_batch_id,
 	       status, discrepancy_reason,
@@ -36,21 +36,21 @@ const confirmationSelect = `
 func (r *PostgresTradeConfirmationRepository) Create(ctx context.Context, tx pgx.Tx, c *entity.TradeConfirmation) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO investment__trade_confirmations (
-			id, execution_id, decision_id, fund_id, portfolio_id, contract_id, business_date,
+			id, execution_id, decision_id, fund_id, portfolio_id, business_date,
 			confirmed_quantity, confirmed_amount, confirmed_price, currency,
 			broker_reference, import_batch_id,
 			status, discrepancy_reason,
 			reviewed_at, reviewed_by,
 			created_at, created_by, updated_at, updated_by
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11,
-			$12, $13,
-			$14, $15,
-			$16, $17,
-			$18, $19, $20, $21
+			$1, $2, $3, $4, $5, $6,
+			$7, $8, $9, $10,
+			$11, $12,
+			$13, $14,
+			$15, $16,
+			$17, $18, $19, $20
 		)`,
-		c.ID, c.ExecutionID, c.DecisionID, c.FundID, c.PortfolioID, c.ContractID, c.BusinessDate,
+		c.ID, c.ExecutionID, c.DecisionID, c.FundID, c.PortfolioID, c.BusinessDate,
 		c.ConfirmedQuantity, c.ConfirmedAmount, c.ConfirmedPrice, c.Currency,
 		c.BrokerReference, c.ImportBatchID,
 		string(c.Status), c.DiscrepancyReason,
@@ -111,12 +111,12 @@ func (r *PostgresTradeConfirmationRepository) ListByExecution(ctx context.Contex
 	return out, rows.Err()
 }
 
-func (r *PostgresTradeConfirmationRepository) ListByContractDate(ctx context.Context, contractID uuid.UUID, businessDate time.Time) ([]*entity.TradeConfirmation, error) {
+func (r *PostgresTradeConfirmationRepository) ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.TradeConfirmation, error) {
 	rows, err := r.pool.Query(ctx,
-		confirmationSelect+` WHERE contract_id = $1 AND business_date = $2 ORDER BY created_at`,
-		contractID, businessDate)
+		confirmationSelect+` WHERE fund_id = $1 AND business_date = $2 ORDER BY created_at`,
+		fundID, businessDate)
 	if err != nil {
-		return nil, fmt.Errorf("list confirmations by contract: %w", err)
+		return nil, fmt.Errorf("list confirmations by fund: %w", err)
 	}
 	defer rows.Close()
 	out := []*entity.TradeConfirmation{}
@@ -164,7 +164,7 @@ func scanConfirmation(row rowScanner) (*entity.TradeConfirmation, error) {
 		reviewedBy                  *uuid.UUID
 	)
 	if err := row.Scan(
-		&c.ID, &c.ExecutionID, &c.DecisionID, &c.FundID, &c.PortfolioID, &c.ContractID, &c.BusinessDate,
+		&c.ID, &c.ExecutionID, &c.DecisionID, &c.FundID, &c.PortfolioID, &c.BusinessDate,
 		&confQty, &confAmt, &confPrice, &c.Currency,
 		&broker, &batch,
 		&status, &discrepancy,

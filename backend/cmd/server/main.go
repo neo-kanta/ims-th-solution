@@ -42,6 +42,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 
 	_ "github.com/neo-kanta/ims-th-solution/backend/docs"
+	_ "github.com/neo-kanta/ims-th-solution/backend/docs/v2"
 )
 
 // @title           IMS Thailand API
@@ -117,7 +118,11 @@ func main() {
 	)
 	referenceDataModule := referencedata.NewModule(pool)
 	marketDataModule := marketdata.NewModule(pool, cfg, redisClient, referenceDataModule.Resolver())
-	integrationModule := integration.NewModule(pool, iamModule)
+	integrationModule := integration.NewModule(
+		pool,
+		iamModule,
+		investmentModule.ValuationSummaryProvider(cfg.ReportingCurrency, marketDataModule.QuoteProvider()),
+	)
 	permissionsModule := permissions.NewModule(pool, iamModule)
 	notificationModule := notification.NewModule(pool, cfg, iamModule)
 	approvalModule := approval.NewModule(pool, iamModule, auditModule.Recorder(), notificationModule.ApprovalNotifier(), approvaladapter.NewPostgresDelegateResolver(pool), nil)
@@ -163,6 +168,7 @@ func main() {
 	if chatModule != nil {
 		defer func() { _ = chatModule.Close() }()
 	}
+	investmentModule.SetPortfolioComplianceAdmin(complianceModule.PortfolioContractAdapter())
 	investmentModule.SetApprovalSubmitter(approvalModule)
 	investmentModule.SetApprovalStatusProvider(approvalModule)
 	investmentModule.SetApprovalBatchActor(approvalModule)
@@ -241,6 +247,14 @@ func main() {
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 
+	// Portfolio V2 has its own Swagger spec (basePath /api/v2) because
+	// Swagger 2.0 only supports one basePath per spec — see
+	// cmd/server/swagger_v2_docs.go for why.
+	r.Get("/swagger/v2/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/v2/doc.json"),
+		httpSwagger.InstanceName("v2"),
+	))
+
 	r.Route("/api/v1", func(r chi.Router) {
 		iamModule.SetupRoutes(r)
 
@@ -260,6 +274,19 @@ func main() {
 			if chatModule != nil {
 				chatModule.RegisterRoutes(r)
 			}
+		})
+	})
+
+	// Portfolio V2 (docs/api/portfolio-v2-api-ddd.md): additive, portfolio-code
+	// routes alongside the V1 API above. Only the investment module exposes V2
+	// routes so far — this grows as other modules migrate to portfolio-code
+	// identity. Documented at /swagger/v2/*, not /swagger/* (see
+	// swagger_v2_docs.go).
+	r.Route("/api/v2", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(iamModule.AuthMiddleware())
+
+			investmentModule.RegisterRoutesV2(r)
 		})
 	})
 

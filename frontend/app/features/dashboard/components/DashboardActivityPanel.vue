@@ -3,9 +3,12 @@ import type { DashboardOverviewActivityItem } from "../types";
 
 const { t } = useI18n();
 
-defineProps<{
+withDefaults(defineProps<{
   items: DashboardOverviewActivityItem[];
-}>();
+  loading?: boolean;
+}>(), {
+  loading: false,
+});
 </script>
 
 <template>
@@ -16,7 +19,16 @@ defineProps<{
       </h2>
     </div>
 
-    <ol class="activity-feed">
+    <AppLoadingState v-if="loading" :message="t('dashboardOverview.loadingActivity', 'Loading activity...')" />
+
+    <AppEmptyState
+      v-else-if="items.length === 0"
+      :title="t('dashboardOverview.noRecentActivity', 'No recent activity')"
+      :description="t('dashboardOverview.activityDescription', 'Activity will appear here as events occur.')"
+      icon="table"
+    />
+
+    <ol v-else class="activity-feed">
       <li v-for="item in items" :key="item.id" class="activity-feed__item">
         <span class="activity-feed__rail" aria-hidden="true" />
         <span class="activity-feed__dot" :class="`is-${item.tone}`" />

@@ -186,9 +186,10 @@ func (a *NopPortfolioMetadataAdapter) GetMetadata(
 	portfolioID uuid.UUID,
 ) (*spi.PortfolioMetadata, error) {
 	return &spi.PortfolioMetadata{
-		PortfolioID:  portfolioID,
-		BaseCurrency: "THB",
-		Jurisdiction: "TH",
-		MandateType:  "EQUITY",
+		PortfolioID:   portfolioID,
+		PortfolioType: "LIVE",
+		BaseCurrency:  "THB",
+		Jurisdiction:  "TH",
+		MandateType:   "EQUITY",
 	}, nil
 }
