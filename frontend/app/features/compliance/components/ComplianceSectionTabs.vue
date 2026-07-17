@@ -16,9 +16,7 @@ interface Props {
     | "library"
     | "approvals"
     | "breaches"
-    | "exceptions"
-    | "audit"
-    | "settings";
+    | "audit";
   counts: {
     library: TabCount;
     approvals: TabCount;
@@ -69,24 +67,11 @@ const tabs = computed<TabDef[]>(() => [
     count: props.counts.breaches,
   },
   {
-    key: "exceptions",
-    to: "/compliance/exceptions",
-    labelKey: "compliance.dashboard.tabs.exceptions",
-    icon: "approval",
-    count: props.counts.exceptions,
-  },
-  {
     key: "audit",
     to: "/compliance/audit",
     labelKey: "compliance.dashboard.tabs.audit",
     icon: "audit",
     count: props.counts.audit,
-  },
-  {
-    key: "settings",
-    to: "/compliance/permissions",
-    labelKey: "compliance.dashboard.tabs.settings",
-    icon: "shield",
   },
 ]);
 

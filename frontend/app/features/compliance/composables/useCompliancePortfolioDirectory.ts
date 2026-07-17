@@ -49,7 +49,7 @@ export function useCompliancePortfolioDirectory(): {
   async function load() {
     state.value = { ...state.value, loading: true, error: null };
     try {
-      const payload = await complianceApi.listPortfolios({ limit: 200 });
+      const payload = await complianceApi.listAllPortfolios();
       state.value = {
         items: payload.items ?? [],
         loaded: true,

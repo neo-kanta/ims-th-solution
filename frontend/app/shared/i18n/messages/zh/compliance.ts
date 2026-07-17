@@ -26,12 +26,38 @@ export const zhComplianceMessages = {
     dashboard: {
       title: "合規管理",
       description:
-        "投資限制與準則總覽。前置交易模擬器能在不良委託單轉化為交易、結算或審計問題之前，及時予以攔截。",
-      restrictedHint: "受限存取",
+        "監控已設定的合規規則、處理未結違規記錄，並直接進入各投資組合的合規工作區。",
+      asOfLabel: "資料時間點：{date}（您裝置的本機日期）",
       headerActions: {
-        recentChanges: "最近變更",
+        refresh: "重新整理",
         openBreaches: "未處理違規",
         newRule: "新建規則",
+      },
+      indicators: {
+        groupLabel: "合規指標",
+      },
+      errors: {
+        rulesTitle: "規則清單：",
+      },
+      breachQueue: {
+        title: "未處理違規",
+        description: "此合規角色可存取的最新未處理記錄，並在本頁內依嚴重程度排序。",
+        errorTitle: "載入未處理違規失敗",
+        empty: "目前沒有未處理的違規。",
+        emptyDescription: "合規服務未傳回此角色可見的未處理違規記錄。",
+        severitySr: "嚴重程度：{severity}",
+        portfolioUnavailable: "投資組合資料無法取得",
+        review: "審查",
+        truncated: "顯示 {shown} 筆，共 {total} 筆未處理違規。",
+      },
+      finder: {
+        permissionUnavailable:
+          "此帳戶沒有投資組合檢視權限，因此無法使用投資組合搜尋。",
+        title: "尋找投資組合",
+        description: "以投資組合代碼或名稱前往其合規工作區。",
+        inputLabel: "投資組合代碼或名稱",
+        placeholder: "例如 PF-1024 或 Growth Fund",
+        noMatches: "沒有符合此搜尋的投資組合。",
       },
       tabs: {
         overview: "總覽",
@@ -43,81 +69,46 @@ export const zhComplianceMessages = {
         settings: "設置",
       },
       kpi: {
-        activeRules: "生效中規則",
-        activeRulesSub: "已發佈且有效",
-        draft: "草稿",
-        draftSub: "尚未提交",
-        draftHint:
-          "目前後端不支援草稿（Draft）狀態；此處統計包含 effective_from 設在未來的未啟用規則。",
-        pendingReview: "待審核",
-        pendingReviewSub: "等待審批",
-        pendingReviewHint:
-          "目前後端不支援審批流程（Approval Flow）。",
-        disabled: "已禁用",
-        disabledSub: "近期停用",
-        expired: "已過期",
-        expiredSub: "已超過有效期限",
-        highRisk: "高風險規則",
-        highRiskSub: "嚴重程度 = BLOCK",
-        totalRules: "規則總計",
-        inactiveRules: "未啟用 / 排程中",
-        recentBreaches: "最近違規",
-        trendUnavailable:
-          "無法提供週對週趨勢分析 — 目前缺乏歷史 KPI 記錄端點。",
-      },
-      recentChanges: {
-        title: "最近規則變更",
-        viewAll: "查看全部 →",
-        empty: "目前無規則變更歷史紀錄。",
-      },
-      recentFailures: {
-        title: "最近合規違規",
-        description: "最新未處理或近期已解決的違規記錄。",
-        empty: "目前無合規違規記錄。",
-        inboxLink: "打開違規收件匣 →",
-        reviewCta: "審查",
-        preTrade: "前置交易",
-        postTrade: "後置交易",
-      },
-      search: {
-        placeholder: "搜尋規則：名稱、代碼、參數…",
-        filterFund: "基金",
-        filterAssetClass: "資產類別",
-        filterRuleType: "規則類型",
-        filterStatus: "狀態",
-        filterSeverity: "嚴重程度",
-        filterEffective: "生效時間 ▼",
-        filterOwner: "擁有者",
-        filterApproval: "審批狀態 ▼",
-        backendNote:
-          "後端僅支援篩選 rule_type_id + is_active。其餘Facet需待端點 GET /compliance/rules 擴展後支援。",
+        activeRules: "啟用中的規則定義",
+        activeRulesSub: "已設定且依本機日期在有效期間內",
+        highRisk: "預設為 BLOCK",
+        highRiskSub: "規則類型預設值 = BLOCK",
+        scheduledRules: "排程中的規則定義",
+        scheduledRulesSub: "已設定於未來日期生效",
+        openBreaches: "未處理違規",
+        openBreachesSub: "此角色可見的記錄",
       },
       categories: {
         title: "類別",
         empty: "目前尚無分類規則摘要。",
-      },
-      highRiskRules: {
-        title: "高風險規則",
-        seeAll: "查看全部 →",
-        empty: "無預設嚴重程度為 BLOCK 的規則。",
+        items: {
+          MANDATE: "投資規範",
+          RATIO: "比率 / 曝險",
+          RESTRICTION: "限制清單",
+          REGULATORY: "監管規則",
+          HOUSE: "內部規則",
+          CLIENT: "客戶規範",
+          TEMPORAL: "時效性規則",
+          BEHAVIORAL: "交易行為",
+          UNKNOWN: "未分類",
+        },
       },
       truncatedNotice:
         "顯示規則 1-{shown}（共 {total} 條）— 導出之統計數據僅基於此視窗內計算。",
-      goToSimulator: "運行前置交易模擬器",
       goToRules: "打開規則庫",
     },
 
     // Empty states
     emptyState: {
-      noRulesTitle: "未配置任何啟用的合規規則",
-      noRulesSubtitle: "尚無可用於評估委託單的規則。",
+      noRulesTitle: "尚未設定任何合規規則定義",
+      noRulesSubtitle: "目前沒有可供評估的已設定規則定義。",
       noRulesIntro:
-        "合規檢查需至少配置一個啟用的規則實例。在設定規則前，前置交易模擬器無法提供有效的判斷結果。",
+        "合規檢查至少需要一個已設定的規則實例，才能提供有意義的判斷結果。",
       setupChecklist: "設定檢查清單",
       step1:
         "確認已執行資料庫遷移 20260417000001_compliance__create_rules_tables (make migrate-up)。",
       step2:
-        "請先透過 Swagger 格式的 API POST /compliance/rules 建立規則實例（規則生成介面將在第二階段上線）。",
+        "請從「新建規則」或透過 POST /compliance/rules 建立至少一個規則。",
       step3:
         "確認您的帳戶已具備 IRG_VIEW_RULES 與 WORKFLOW_EXECUTE 權限。",
       noRulesEvaluatedTitle: "前置交易檢查評估了 0 條規則",

@@ -26,12 +26,38 @@ export const enComplianceMessages = {
     dashboard: {
       title: "Compliance",
       description:
-        "Investment restriction and guideline overview. The pre-trade simulator stops bad orders before they become trade, settlement, or audit problems.",
-      restrictedHint: "Restricted",
+        "Monitor configured compliance rules, triage open breach records, and move directly into each portfolio's compliance workspace.",
+      asOfLabel: "As of {date} (your device's local date)",
       headerActions: {
-        recentChanges: "Recent changes",
+        refresh: "Refresh",
         openBreaches: "Open breaches",
         newRule: "New rule",
+      },
+      indicators: {
+        groupLabel: "Compliance indicators",
+      },
+      errors: {
+        rulesTitle: "Rule list:",
+      },
+      breachQueue: {
+        title: "Open breach queue",
+        description: "Newest open records available to your compliance role, prioritised by severity within this page.",
+        errorTitle: "Failed to load open breaches",
+        empty: "No open breaches.",
+        emptyDescription: "The compliance service returned no open breach records for this role.",
+        severitySr: "Severity: {severity}",
+        portfolioUnavailable: "Portfolio unavailable",
+        review: "Review",
+        truncated: "Showing {shown} of {total} open breaches.",
+      },
+      finder: {
+        title: "Find a portfolio",
+        description: "Jump to a portfolio's compliance workspace by its code or name.",
+        inputLabel: "Portfolio code or name",
+        placeholder: "e.g. PF-1024 or Growth Fund",
+        noMatches: "No portfolios match this search.",
+        permissionUnavailable:
+          "Portfolio search is unavailable because this account does not have portfolio-view permission.",
       },
       tabs: {
         overview: "Overview",
@@ -43,82 +69,46 @@ export const enComplianceMessages = {
         settings: "Settings",
       },
       kpi: {
-        activeRules: "Active rules",
-        activeRulesSub: "published, in effect",
-        draft: "Draft",
-        draftSub: "not yet submitted",
-        draftHint:
-          "Backend has no Draft state today; this counts inactive rules with a future effective_from.",
-        pendingReview: "Pending review",
-        pendingReviewSub: "awaiting approval",
-        pendingReviewHint:
-          "Approval flow is not yet supported by the backend.",
-        disabled: "Disabled",
-        disabledSub: "recently retired",
-        expired: "Expired",
-        expiredSub: "effective_to lapsed",
-        highRisk: "High-risk rules",
-        highRiskSub: "severity = BLOCK",
-        // Legacy keys still consumed by some demos
-        totalRules: "Total rules",
-        inactiveRules: "Inactive / scheduled",
-        recentBreaches: "Recent breaches",
-        trendUnavailable:
-          "Week-over-week trend not available — no historical KPI snapshot endpoint yet.",
-      },
-      recentChanges: {
-        title: "Recent rule changes",
-        viewAll: "View all →",
-        empty: "No rule change history available yet.",
-      },
-      recentFailures: {
-        title: "Recent compliance failures",
-        description: "Latest open or recently-resolved breach records.",
-        empty: "No compliance failures recorded yet.",
-        inboxLink: "Open breaches inbox →",
-        reviewCta: "Review",
-        preTrade: "pre-trade",
-        postTrade: "post-trade",
-      },
-      search: {
-        placeholder: "Search rules: name, code, parameter…",
-        filterFund: "Fund",
-        filterAssetClass: "Asset class",
-        filterRuleType: "Rule type",
-        filterStatus: "Status",
-        filterSeverity: "Severity",
-        filterEffective: "Effective ▼",
-        filterOwner: "Owner",
-        filterApproval: "Approval ▼",
-        backendNote:
-          "Backend supports filter by rule_type_id + is_active only. Other facets need extensions to GET /compliance/rules.",
+        activeRules: "Active definitions",
+        activeRulesSub: "configured and locally in date",
+        highRisk: "Block-by-default",
+        highRiskSub: "rule type default = BLOCK",
+        scheduledRules: "Scheduled definitions",
+        scheduledRulesSub: "configured for a future date",
+        openBreaches: "Open breaches",
+        openBreachesSub: "role-visible records",
       },
       categories: {
         title: "Categories",
         empty: "No categorised rules to summarise yet.",
-      },
-      highRiskRules: {
-        title: "High-risk rules",
-        seeAll: "See all →",
-        empty: "No rules with default severity BLOCK.",
+        items: {
+          MANDATE: "Mandate",
+          RATIO: "Ratio / exposure",
+          RESTRICTION: "Restriction lists",
+          REGULATORY: "Regulatory",
+          HOUSE: "House rules",
+          CLIENT: "Client mandate",
+          TEMPORAL: "Temporal",
+          BEHAVIORAL: "Behavioural",
+          UNKNOWN: "Uncategorised",
+        },
       },
       truncatedNotice:
         "Showing the first {shown} of {total} rules — derived counts are computed on this window only.",
-      goToSimulator: "Run pre-trade simulator",
       goToRules: "Open rule library",
     },
 
     // Empty states
     emptyState: {
-      noRulesTitle: "No active compliance rules configured",
-      noRulesSubtitle: "There is nothing to evaluate orders against.",
+      noRulesTitle: "No compliance rule definitions configured",
+      noRulesSubtitle: "There is no configured rule definition to evaluate yet.",
       noRulesIntro:
-        "Compliance checks need at least one configured rule instance. Until rules are seeded, the pre-trade simulator cannot return a meaningful verdict.",
+        "Compliance checks need at least one configured rule instance before they can return a meaningful verdict.",
       setupChecklist: "Setup checklist",
       step1:
         "Confirm migration 20260417000001_compliance__create_rules_tables has been applied (make migrate-up).",
       step2:
-        "Create at least one rule via POST /compliance/rules using the swagger payload. The Rule Builder UI ships in Phase 2.",
+        "Create at least one rule from New rule or through POST /compliance/rules.",
       step3:
         "Confirm your user holds IRG_VIEW_RULES and WORKFLOW_EXECUTE permissions.",
       noRulesEvaluatedTitle: "Pre-trade check evaluated 0 rules",
