@@ -4,13 +4,79 @@ project: IMS Thailand
 owner: Kanta
 status: active
 last_updated: 2026-07-17
-current_goal: IMS-UAT-20260717 remains IN PROGRESS and blocked at the documentation gate because the external corpus contains a zero-byte DOCX and page rendering is unavailable. Existing reviewed application work has been organized into local commits on feature/investment without pushing. IMS-REG-TH-SEC remains gated pending approval of the applicable product regime and source-to-rule matrix.
+current_goal: IMS-UAT-20260717 remains IN PROGRESS and blocked at the documentation gate. A 2026-07-17 independent merge-readiness review also found unresolved P0/P1 authorization, compliance, financial-reporting, audit, and frontend correctness defects in feature/investment, so neo-develop must not be fast-forwarded yet. IMS-REG-TH-SEC remains gated pending approval of the applicable product regime and source-to-rule matrix.
 ---
 
 # Manager Handoff
 
 This file is the current-instance snapshot. Verify every Git claim at the start
 of a new session because branch and worktree state can change after this update.
+
+## Session: neo-develop Merge-Readiness Review (2026-07-17)
+
+**Verdict:** DO NOT MERGE. `neo-develop` is an exact ancestor of
+`feature/investment` (`6ba5dc7..226a9fb`, 30 commits / 425 files), so the Git
+operation would be a conflict-free fast-forward, but the integrated behavior is
+not release-safe. Three independent read-only reviews covered backend/security,
+frontend/UX, and cross-layer integration. No merge, push, migration, seed,
+service restart, or production action occurred.
+
+**Merge-blocking findings:**
+
+- Portfolio V2 decision, execution, and confirmation handlers resolve a
+  portfolio code while passing a nil fund data-scope checker. Function
+  permission alone can therefore disclose or mutate another fund's portfolio
+  when its code is known.
+- Three production migrations assign runtime permissions/roles directly to the
+  demo usernames `ben` and `green`. Environment-specific memberships belong in
+  development seeds or explicit provisioning, not universal migrations.
+- Asset-class rules omit unclassified holdings/orders, zero applicable rules
+  returns PASS for a LIVE portfolio, and actual fill quantity/amount can exceed
+  the values checked when the execution was opened. These paths can bypass the
+  intended compliance boundary.
+- Compliance binding creation/deactivation has no immutable actor-attributed
+  audit event.
+- Company and portfolio-directory AUM/P&L combine or omit currencies without
+  an approved reporting-currency/FX policy, producing materially misleading
+  financial totals.
+- Portfolio directory breach-fetch failures are converted to an empty list and
+  displayed as compliance `Clear`; route switches can also retain or race stale
+  decisions/compliance from the previous portfolio.
+- Newly reachable holdings, ledger, operator-detail, and print screens expose
+  raw instrument, portfolio, or fund UUIDs instead of business codes/names.
+- The new portfolio workflow is not EN/TH/ZH complete. Nuxt typecheck reports
+  166 diagnostics, including 65 in changed files; missing typed portfolio keys
+  cause Thai/Chinese users to receive English fallbacks, and multiple new views
+  contain hard-coded English.
+
+**Additional compatibility gaps:** removed fund routes lack general redirect
+shells; the V2 execution Swagger contract omits its real HTTP 422 response;
+the generated rule-parameter type remains `Record<string, never>`; frontend CI
+does not run Vitest; and the new Portfolio V2 E2E lifecycle is not in the CI
+target.
+
+**Validation evidence:** exact committed tree passed backend
+`go test ./... -count=1`, `go build ./...`, and independent `go vet ./...`;
+the E2E-tagged package compiled without executing tests. Frontend
+`npm run test` passed 45 files / 488 tests and `npm run build` passed. Scoped
+code diff/whitespace checks and credential-pattern scans passed. Full database
+migrations, seeds, authenticated browser/mobile/theme/three-locale UAT, and
+live runtime proof were not run. Passing unit/build checks do not override the
+source-proven blockers above.
+
+**Safety state:** before review, the three remaining local edits were saved in
+dedicated stash commit `ef36adc3b5bd3a69e209e46fefafc3ee9ce62b19`
+(`pre-neo-develop-merge-20260717-110007`). It contains only
+`portfolio_crud.go` and the two Bruno health requests. Do not reapply the
+fund-validation removal without an explicit reversal of the owner decision.
+`neo-develop` and `origin/neo-develop` remained at `6ba5dc7`.
+
+**Next action:** Kanta decides whether to authorize a dedicated merge-blocker
+remediation program. Security/data-scope, demo migration grants, compliance
+fail-closed policy, fill validation, and auditability must be resolved before
+frontend correctness and compatibility fixes are integrated and the complete
+gate is rerun. The reporting-currency/FX behavior and mandatory-rule policy
+require explicit owner/compliance decisions.
 
 ## Session: Local Commit Cleanup (2026-07-17)
 

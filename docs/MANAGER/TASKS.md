@@ -57,6 +57,33 @@ Current evidence and safety state:
   `portfolio_crud.go` is deliberately excluded because fund-less portfolios
   are an explicit owner non-goal. Bruno health URL edits remain uncommitted
   pending environment-intent confirmation.
+- Independent backend, frontend, and integration reviews of the proposed
+  `feature/investment` -> `neo-develop` fast-forward returned DO NOT MERGE.
+  Source-proven P0/P1 blockers include Portfolio V2 data-scope bypass,
+  production migrations granting demo identities, compliance fail-open/fill
+  gaps, missing binding audit attribution, misleading cross-currency totals,
+  false `Clear` compliance UX, stale portfolio-route races, UUID exposure, and
+  incomplete EN/TH/ZH/typecheck coverage. `neo-develop` remains unchanged.
+
+Merge-readiness remediation checklist (not started; requires owner approval):
+
+- [ ] Enforce fund data scope on every Portfolio V2 decision, execution, and
+      confirmation read/write route, fail closed, and prove cross-scope denial.
+- [ ] Move `ben`/`green` memberships out of production migrations into
+      environment-specific seeds or explicit provisioning.
+- [ ] Fail closed for missing asset classification and missing mandatory LIVE
+      portfolio rule configuration; validate/recheck actual fills.
+- [ ] Add actor-attributed immutable audit events for compliance binding create
+      and deactivate operations.
+- [ ] Approve and implement a reporting-currency/FX or per-currency display
+      policy; never present omitted/mixed currency subtotals as company AUM.
+- [ ] Preserve compliance-unavailable state, prevent cross-portfolio response
+      races, remove raw UUID presentation, and complete typed EN/TH/ZH copy.
+- [ ] Restore legacy-route compatibility where required, correct Swagger/client
+      drift, and add frontend plus Portfolio V2 lifecycle tests to CI.
+- [ ] Rerun backend tests/build/vet, frontend tests/build/typecheck, migrations
+      on a disposable database, and authenticated responsive/theme/locale UAT
+      before reconsidering the fast-forward.
 
 Checklist:
 
