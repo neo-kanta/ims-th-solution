@@ -1102,6 +1102,12 @@ const docTemplatev2 = `{
                             "$ref": "#/definitions/ErrorResponse"
                         }
                     },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -1169,6 +1175,12 @@ const docTemplatev2 = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -2160,6 +2172,19 @@ const docTemplatev2 = `{
                 }
             }
         },
+        "ComplianceStatus": {
+            "type": "string",
+            "enum": [
+                "COMPLIANCE_EVALUATED",
+                "COMPLIANCE_NOT_CONFIGURED",
+                "COMPLIANCE_UNAVAILABLE"
+            ],
+            "x-enum-varnames": [
+                "ComplianceStatusEvaluated",
+                "ComplianceStatusNotConfigured",
+                "ComplianceStatusUnavailable"
+            ]
+        },
         "ComplianceVerdict": {
             "type": "string",
             "enum": [
@@ -2866,6 +2891,9 @@ const docTemplatev2 = `{
                 },
                 "rulesEvaluated": {
                     "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/ComplianceStatus"
                 },
                 "verdict": {
                     "$ref": "#/definitions/ComplianceVerdict"

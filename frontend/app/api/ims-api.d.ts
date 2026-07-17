@@ -4625,7 +4625,7 @@ export interface paths {
         };
         /**
          * Dashboard AUM / P&L summary
-         * @description Returns aggregate AUM and today's P&L for the "AUM Today" and "Today's P&L" dashboard cards. scope=company aggregates every fund the caller is authorized to see; scope=mine restricts to funds the authenticated caller manages, resolved from the JWT — a client-supplied username is never accepted. Returns data_available=false (not a misleading zero) when no valuation snapshot exists yet for the resolved scope.
+         * @description Returns official LIVE-portfolio AUM and today's P&L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
          */
         get: {
             parameters: {
@@ -5479,6 +5479,113 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/investment/executions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Investment Execution
+         * @description Opens an execution against an APPROVED decision and reruns pre-trade compliance using the actual ordered values.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Execution fields */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreateExecutionRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExecutionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -13783,6 +13890,15 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
+                /** @description COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
                 /** @description Internal Server Error */
                 500: {
                     headers: {
@@ -13865,6 +13981,15 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection */
+                422: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -15282,6 +15407,12 @@ export interface components {
             /** @enum {string} */
             side: "BUY" | "SELL";
         };
+        CreateExecutionRequest: {
+            broker_reference?: string;
+            decision_id: string;
+            ordered_amount?: string;
+            ordered_quantity?: string;
+        };
         CreateFundRequest: {
             base_currency: string;
             benchmark?: string;
@@ -15704,6 +15835,30 @@ export interface components {
              *     investment transactions. Ignored for all other actions.
              */
             zeroTransactionAttestation?: boolean;
+        };
+        ExecutionResponse: {
+            broker_reference?: string;
+            business_date?: string;
+            cancellation_reason?: string;
+            cancelled_at?: string;
+            created_at?: string;
+            currency?: string;
+            decision_id?: string;
+            executed_amount?: string;
+            executed_at?: string;
+            executed_quantity?: string;
+            execution_price?: string;
+            fund_id?: string;
+            id?: string;
+            instrument_code?: string;
+            instrument_id?: string;
+            ordered_amount?: string;
+            ordered_quantity?: string;
+            portfolio_id?: string;
+            side?: string;
+            status?: string;
+            trader_user_id?: string;
+            updated_at?: string;
         };
         FundAllocationResponse: {
             as_of?: string;
@@ -16321,6 +16476,7 @@ export interface components {
             breaches?: components["schemas"]["BreachSummary"][];
             check_group_id?: string;
             rules_evaluated?: number;
+            status?: string;
             total_duration_ms?: number;
             verdict?: string;
         };
@@ -17199,16 +17355,39 @@ export interface components {
             unrealised_pnl?: string;
             valuation_ccy?: string;
         };
+        ValuationSummaryCoverageDTO: {
+            excluded_business_dates?: string[];
+            excluded_currencies?: string[];
+            excluded_fund_count?: number;
+            excluded_portfolio_count?: number;
+            exclusion_reasons?: string[];
+            exclusions?: components["schemas"]["ValuationSummaryExclusionDTO"][];
+            included_fund_count?: number;
+            included_portfolio_count?: number;
+            total_fund_count?: number;
+            total_portfolio_count?: number;
+        };
         ValuationSummaryDTO: {
             as_of?: string;
             aum_today?: string;
             business_date?: string;
+            coverage?: components["schemas"]["ValuationSummaryCoverageDTO"];
             currency?: string;
             data_available?: boolean;
             scope?: string;
+            /** @enum {string} */
+            status?: "AVAILABLE" | "NO_DATA" | "INCOMPLETE";
             today_pnl?: string;
             today_pnl_percent?: string;
             username?: string;
+        };
+        ValuationSummaryExclusionDTO: {
+            business_date?: string;
+            currency?: string;
+            fund_code?: string;
+            portfolio_code?: string;
+            reason?: string;
+            required_business_date?: string;
         };
         WatchlistItemResponse: {
             created_at?: string;
@@ -17438,6 +17617,8 @@ export interface components {
             reason: string;
         };
         /** @enum {string} */
+        ComplianceStatus: "COMPLIANCE_EVALUATED" | "COMPLIANCE_NOT_CONFIGURED" | "COMPLIANCE_UNAVAILABLE";
+        /** @enum {string} */
         ComplianceVerdict: "PASS" | "WARN" | "BLOCK";
         CreateDecisionV2Request: {
             amount?: string;
@@ -17457,30 +17638,6 @@ export interface components {
             broker_reference?: string;
             ordered_amount?: string;
             ordered_quantity?: string;
-        };
-        ExecutionResponse: {
-            broker_reference?: string;
-            business_date?: string;
-            cancellation_reason?: string;
-            cancelled_at?: string;
-            created_at?: string;
-            currency?: string;
-            decision_id?: string;
-            executed_amount?: string;
-            executed_at?: string;
-            executed_quantity?: string;
-            execution_price?: string;
-            fund_id?: string;
-            id?: string;
-            instrument_code?: string;
-            instrument_id?: string;
-            ordered_amount?: string;
-            ordered_quantity?: string;
-            portfolio_id?: string;
-            side?: string;
-            status?: string;
-            trader_user_id?: string;
-            updated_at?: string;
         };
         FillExecutionRequest: {
             broker_reference?: string;
@@ -17549,6 +17706,7 @@ export interface components {
             breaches?: components["schemas"]["ProposedOrderBreach"][];
             checkGroupID?: string;
             rulesEvaluated?: number;
+            status?: components["schemas"]["ComplianceStatus"];
             verdict?: components["schemas"]["ComplianceVerdict"];
         };
         RecordConfirmationV2Request: {

@@ -3967,7 +3967,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns aggregate AUM and today's P\u0026L for the \"AUM Today\" and \"Today's P\u0026L\" dashboard cards. scope=company aggregates every fund the caller is authorized to see; scope=mine restricts to funds the authenticated caller manages, resolved from the JWT — a client-supplied username is never accepted. Returns data_available=false (not a misleading zero) when no valuation snapshot exists yet for the resolved scope.",
+                "description": "Returns official LIVE-portfolio AUM and today's P\u0026L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.",
                 "produces": [
                     "application/json"
                 ],
@@ -4747,6 +4747,87 @@
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/investment/executions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Opens an execution against an APPROVED decision and reruns pre-trade compliance using the actual ordered values.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Executions"
+                ],
+                "summary": "Create Investment Execution",
+                "parameters": [
+                    {
+                        "description": "Execution fields",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateExecutionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }
@@ -11677,6 +11758,26 @@
                 }
             }
         },
+        "CreateExecutionRequest": {
+            "type": "object",
+            "required": [
+                "decision_id"
+            ],
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateFundRequest": {
             "type": "object",
             "required": [
@@ -12786,6 +12887,77 @@
                 "zeroTransactionAttestation": {
                     "description": "ZeroTransactionAttestation must be true when approving a day with no\ninvestment transactions. Ignored for all other actions.",
                     "type": "boolean"
+                }
+            }
+        },
+        "ExecutionResponse": {
+            "type": "object",
+            "properties": {
+                "broker_reference": {
+                    "type": "string"
+                },
+                "business_date": {
+                    "type": "string"
+                },
+                "cancellation_reason": {
+                    "type": "string"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decision_id": {
+                    "type": "string"
+                },
+                "executed_amount": {
+                    "type": "string"
+                },
+                "executed_at": {
+                    "type": "string"
+                },
+                "executed_quantity": {
+                    "type": "string"
+                },
+                "execution_price": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instrument_code": {
+                    "type": "string"
+                },
+                "instrument_id": {
+                    "type": "string"
+                },
+                "ordered_amount": {
+                    "type": "string"
+                },
+                "ordered_quantity": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "side": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "trader_user_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -14609,6 +14781,9 @@
                 },
                 "rules_evaluated": {
                     "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "total_duration_ms": {
                     "type": "integer"
@@ -17100,6 +17275,53 @@
                 }
             }
         },
+        "ValuationSummaryCoverageDTO": {
+            "type": "object",
+            "properties": {
+                "excluded_business_dates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "excluded_currencies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "excluded_fund_count": {
+                    "type": "integer"
+                },
+                "excluded_portfolio_count": {
+                    "type": "integer"
+                },
+                "exclusion_reasons": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclusions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ValuationSummaryExclusionDTO"
+                    }
+                },
+                "included_fund_count": {
+                    "type": "integer"
+                },
+                "included_portfolio_count": {
+                    "type": "integer"
+                },
+                "total_fund_count": {
+                    "type": "integer"
+                },
+                "total_portfolio_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "ValuationSummaryDTO": {
             "type": "object",
             "properties": {
@@ -17112,6 +17334,9 @@
                 "business_date": {
                     "type": "string"
                 },
+                "coverage": {
+                    "$ref": "#/definitions/ValuationSummaryCoverageDTO"
+                },
                 "currency": {
                     "type": "string"
                 },
@@ -17121,6 +17346,14 @@
                 "scope": {
                     "type": "string"
                 },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "AVAILABLE",
+                        "NO_DATA",
+                        "INCOMPLETE"
+                    ]
+                },
                 "today_pnl": {
                     "type": "string"
                 },
@@ -17128,6 +17361,29 @@
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "ValuationSummaryExclusionDTO": {
+            "type": "object",
+            "properties": {
+                "business_date": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fund_code": {
+                    "type": "string"
+                },
+                "portfolio_code": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "required_business_date": {
                     "type": "string"
                 }
             }
