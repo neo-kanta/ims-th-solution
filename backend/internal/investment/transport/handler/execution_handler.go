@@ -223,11 +223,12 @@ func writeExecutionError(w http.ResponseWriter, err error) {
 		return
 	}
 	var (
-		invalid   *domain.ErrInvalidDecisionRequest
-		decision  *domain.ErrDecisionNotFound
-		lifecycle *domain.ErrDecisionLifecycle
-		execNot   *domain.ErrExecutionNotFound
-		execLife  *domain.ErrExecutionLifecycle
+		invalid     *domain.ErrInvalidDecisionRequest
+		decision    *domain.ErrDecisionNotFound
+		lifecycle   *domain.ErrDecisionLifecycle
+		execNot     *domain.ErrExecutionNotFound
+		execLife    *domain.ErrExecutionLifecycle
+		compBlocked *domain.ErrComplianceRejected
 	)
 	switch {
 	case errors.As(err, &invalid):
@@ -236,6 +237,8 @@ func writeExecutionError(w http.ResponseWriter, err error) {
 		httputil.NotFound(w, err.Error())
 	case errors.As(err, &lifecycle), errors.As(err, &execLife):
 		httputil.Conflict(w, err.Error())
+	case errors.As(err, &compBlocked):
+		httputil.UnprocessableEntity(w, err.Error())
 	default:
 		httputil.InternalError(w, err.Error())
 	}
