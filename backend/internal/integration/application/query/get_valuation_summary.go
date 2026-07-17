@@ -23,14 +23,23 @@ var ErrInvalidValuationScope = errors.New(`invalid scope: must be "company" or "
 // contract.ValuationSummaryProvider) — this handler only resolves identity
 // and data scope from the authenticated session and maps the result.
 type GetValuationSummaryHandler struct {
-	iam       IAMPort
-	valuation contract.ValuationSummaryProvider
+	iam               IAMPort
+	valuation         contract.ValuationSummaryProvider
+	reportingCurrency string
+}
+
+type reportingCurrencyProvider interface {
+	ReportingCurrency() string
 }
 
 // NewGetValuationSummaryHandler wires the handler. valuation may be nil in
 // tests that only exercise the permission/no-data paths.
 func NewGetValuationSummaryHandler(iam IAMPort, valuation contract.ValuationSummaryProvider) *GetValuationSummaryHandler {
-	return &GetValuationSummaryHandler{iam: iam, valuation: valuation}
+	h := &GetValuationSummaryHandler{iam: iam, valuation: valuation}
+	if provider, ok := valuation.(reportingCurrencyProvider); ok {
+		h.reportingCurrency = provider.ReportingCurrency()
+	}
+	return h
 }
 
 // Execute resolves the caller's data scope and returns the aggregate
@@ -62,8 +71,11 @@ func (h *GetValuationSummaryHandler) Execute(
 	if err != nil {
 		return nil, err
 	}
-	if !ok || h.valuation == nil {
-		return &domain.ValuationSummary{Scope: scope, Username: resolvedUsername, DataAvailable: false}, nil
+	if !ok {
+		return unavailableValuationSummary(scope, resolvedUsername, contract.ValuationSummaryStatusNoData, h.reportingCurrency), nil
+	}
+	if h.valuation == nil {
+		return unavailableValuationSummary(scope, resolvedUsername, contract.ValuationSummaryStatusIncomplete, h.reportingCurrency), nil
 	}
 
 	uid, err := uuid.Parse(userID)
@@ -84,21 +96,49 @@ func (h *GetValuationSummaryHandler) Execute(
 	if err != nil {
 		return nil, err
 	}
-	if res == nil || !res.DataAvailable {
-		return &domain.ValuationSummary{Scope: scope, Username: resolvedUsername, DataAvailable: false}, nil
+	if res == nil {
+		return unavailableValuationSummary(scope, resolvedUsername, contract.ValuationSummaryStatusIncomplete, h.reportingCurrency), nil
+	}
+	status := res.Status
+	if status == "" {
+		status = contract.ValuationSummaryStatusNoData
+		if res.DataAvailable {
+			status = contract.ValuationSummaryStatusAvailable
+		}
+	}
+	currency := res.Currency
+	if currency == "" {
+		currency = h.reportingCurrency
 	}
 
 	return &domain.ValuationSummary{
 		Scope:           scope,
 		Username:        resolvedUsername,
+		Status:          status,
 		BusinessDate:    res.BusinessDate,
-		Currency:        res.Currency,
+		Currency:        currency,
 		AUM:             res.AUM,
 		TodayPnL:        res.TodayPnL,
 		TodayPnLPercent: res.TodayPnLPercent,
 		AsOf:            res.AsOf,
-		DataAvailable:   true,
+		DataAvailable:   res.DataAvailable,
+		Coverage:        res.Coverage,
 	}, nil
+}
+
+func unavailableValuationSummary(
+	scope domain.ValuationScope,
+	username string,
+	status contract.ValuationSummaryStatus,
+	reportingCurrency string,
+) *domain.ValuationSummary {
+	return &domain.ValuationSummary{
+		Scope:         scope,
+		Username:      username,
+		Status:        status,
+		Currency:      reportingCurrency,
+		DataAvailable: false,
+	}
 }
 
 // accessibleFundIDs converts the caller's data-scope contract list into fund

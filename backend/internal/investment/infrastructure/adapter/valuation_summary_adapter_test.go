@@ -24,7 +24,22 @@ func newFund(ccy string, manager *uuid.UUID) *entity.Fund {
 }
 
 func newPortfolio(fundID uuid.UUID) *entity.Portfolio {
-	return &entity.Portfolio{ID: uuid.New(), FundID: fundID, Status: vo.PortfolioStatusActive, BaseCurrency: "THB", ValuationCurrency: "THB"}
+	return &entity.Portfolio{
+		ID:                uuid.New(),
+		FundID:            fundID,
+		PortfolioType:     vo.PortfolioTypeLive,
+		Status:            vo.PortfolioStatusActive,
+		BaseCurrency:      "THB",
+		ValuationCurrency: "THB",
+	}
+}
+
+func newTestValuationSummaryAdapter(
+	funds domain.FundRepository,
+	portfolios domain.PortfolioRepository,
+	valuation domain.ValuationRepository,
+) *ValuationSummaryAdapter {
+	return NewValuationSummaryAdapter(funds, portfolios, valuation, "THB", nil)
 }
 
 // snapshotPair seeds today's and yesterday's INTERNAL snapshot for a
@@ -34,13 +49,22 @@ func snapshotPair(portfolioID uuid.UUID, today time.Time, todayAUM, todayUPnL, t
 	return []*entity.ValuationSnapshot{
 		{
 			PortfolioID: portfolioID, BusinessDate: today, AUM: todayAUM,
-			UnrealisedPnL: todayUPnL, RealisedPnL: todayRPnL, Source: vo.ValuationSourceInternal, CreatedAt: today,
+			ValuationCcy: "THB", UnrealisedPnL: todayUPnL, RealisedPnL: todayRPnL,
+			Source: vo.ValuationSourceInternal, CreatedAt: today,
 		},
 		{
 			PortfolioID: portfolioID, BusinessDate: today.AddDate(0, 0, -1), AUM: prevAUM,
-			UnrealisedPnL: prevUPnL, RealisedPnL: prevRPnL, Source: vo.ValuationSourceInternal, CreatedAt: today.AddDate(0, 0, -1),
+			ValuationCcy: "THB", UnrealisedPnL: prevUPnL, RealisedPnL: prevRPnL,
+			Source: vo.ValuationSourceInternal, CreatedAt: today.AddDate(0, 0, -1),
 		},
 	}
+}
+
+func withValuationCurrency(snapshots []*entity.ValuationSnapshot, currency string) []*entity.ValuationSnapshot {
+	for _, snapshot := range snapshots {
+		snapshot.ValuationCcy = currency
+	}
+	return snapshots
 }
 
 // ─── tests ──────────────────────────────────────────────────────────────────
@@ -58,7 +82,7 @@ func TestGetValuationSummary_CompanyScopeAggregatesAcrossFunds(t *testing.T) {
 		pA.ID: snapshotPair(pA.ID, today, decimal.NewFromInt(1000), decimal.NewFromInt(50), decimal.NewFromInt(10), decimal.NewFromInt(940), decimal.NewFromInt(40), decimal.NewFromInt(5)),
 		pB.ID: snapshotPair(pB.ID, today, decimal.NewFromInt(2000), decimal.NewFromInt(80), decimal.NewFromInt(0), decimal.NewFromInt(1985), decimal.NewFromInt(70), decimal.NewFromInt(0)),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fundA, fundB}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{pA, pB}},
 		valRepo,
@@ -73,7 +97,7 @@ func TestGetValuationSummary_CompanyScopeAggregatesAcrossFunds(t *testing.T) {
 	require.True(t, decimal.NewFromInt(3000).Equal(res.AUM), "got %s", res.AUM)
 	// portfolio A day pnl: (50+10)-(40+5)=15 ; portfolio B: (80+0)-(70+0)=10 → 25
 	require.True(t, decimal.NewFromInt(25).Equal(res.TodayPnL), "got %s", res.TodayPnL)
-	require.Equal(t, 2, res.FundCount)
+	require.Equal(t, 2, res.Coverage.IncludedFundCount)
 	require.NotNil(t, res.TodayPnLPercent)
 }
 
@@ -92,7 +116,7 @@ func TestGetValuationSummary_MineScopeFiltersByManager(t *testing.T) {
 		pMine.ID:  snapshotPair(pMine.ID, today, decimal.NewFromInt(500), decimal.NewFromInt(5), decimal.Zero, decimal.NewFromInt(490), decimal.NewFromInt(3), decimal.Zero),
 		pOther.ID: snapshotPair(pOther.ID, today, decimal.NewFromInt(9000), decimal.NewFromInt(500), decimal.Zero, decimal.NewFromInt(8000), decimal.NewFromInt(100), decimal.Zero),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fundMine, fundOther}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{pMine, pOther}},
 		valRepo,
@@ -104,7 +128,7 @@ func TestGetValuationSummary_MineScopeFiltersByManager(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, res.DataAvailable)
-	require.Equal(t, 1, res.FundCount)
+	require.Equal(t, 1, res.Coverage.IncludedFundCount)
 	require.True(t, decimal.NewFromInt(500).Equal(res.AUM), "must only include the manager's own fund, got %s", res.AUM)
 }
 
@@ -121,7 +145,7 @@ func TestGetValuationSummary_DataScopeRestrictsAccessibleFunds(t *testing.T) {
 		pAllowed.ID: snapshotPair(pAllowed.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(100), decimal.Zero, decimal.Zero),
 		pBlocked.ID: snapshotPair(pBlocked.ID, today, decimal.NewFromInt(999999), decimal.Zero, decimal.Zero, decimal.NewFromInt(999999), decimal.Zero, decimal.Zero),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fundAllowed, fundBlocked}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{pAllowed, pBlocked}},
 		valRepo,
@@ -133,7 +157,7 @@ func TestGetValuationSummary_DataScopeRestrictsAccessibleFunds(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, res.DataAvailable)
-	require.Equal(t, 1, res.FundCount)
+	require.Equal(t, 1, res.Coverage.IncludedFundCount)
 	require.True(t, decimal.NewFromInt(100).Equal(res.AUM), "data scope must exclude funds outside AccessibleFundIDs, got %s", res.AUM)
 }
 
@@ -142,7 +166,7 @@ func TestGetValuationSummary_NoDataReturnsUnavailable(t *testing.T) {
 
 	t.Run("no funds in scope", func(t *testing.T) {
 		t.Parallel()
-		a := NewValuationSummaryAdapter(
+		a := newTestValuationSummaryAdapter(
 			&fakeFundRepo{},
 			&fakePortfolioRepo{},
 			&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{}},
@@ -152,13 +176,15 @@ func TestGetValuationSummary_NoDataReturnsUnavailable(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.False(t, res.DataAvailable)
+		require.Equal(t, contract.ValuationSummaryStatusNoData, res.Status)
+		require.Equal(t, 0, res.Coverage.TotalFundCount)
 	})
 
 	t.Run("funds exist but no valuation snapshot yet", func(t *testing.T) {
 		t.Parallel()
 		fund := newFund("THB", nil)
 		p := newPortfolio(fund.ID)
-		a := NewValuationSummaryAdapter(
+		a := newTestValuationSummaryAdapter(
 			&fakeFundRepo{funds: []*entity.Fund{fund}},
 			&fakePortfolioRepo{portfolios: []*entity.Portfolio{p}},
 			&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{}},
@@ -168,7 +194,15 @@ func TestGetValuationSummary_NoDataReturnsUnavailable(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.False(t, res.DataAvailable)
+		require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
 		require.True(t, res.AUM.IsZero(), "unavailable result must not report a numeric AUM")
+		require.Equal(t, 1, res.Coverage.TotalFundCount)
+		require.Equal(t, 0, res.Coverage.IncludedFundCount)
+		require.Equal(t, 1, res.Coverage.ExcludedFundCount)
+		require.Equal(t, 1, res.Coverage.TotalPortfolioCount)
+		require.Equal(t, 0, res.Coverage.IncludedPortfolioCount)
+		require.Equal(t, 1, res.Coverage.ExcludedPortfolioCount)
+		require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingValuation}, res.Coverage.ExclusionReasons)
 	})
 }
 
@@ -181,10 +215,11 @@ func TestGetValuationSummary_DayPnLNoBaselineUsesFullCumulative(t *testing.T) {
 	// Only one snapshot exists — no prior business day to diff against.
 	only := &entity.ValuationSnapshot{
 		PortfolioID: p.ID, BusinessDate: today, AUM: decimal.NewFromInt(1000),
+		ValuationCcy:  "THB",
 		UnrealisedPnL: decimal.NewFromInt(60), RealisedPnL: decimal.NewFromInt(15),
 		Source: vo.ValuationSourceInternal, CreatedAt: today,
 	}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fund}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{p}},
 		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{p.ID: {only}}},
@@ -197,7 +232,7 @@ func TestGetValuationSummary_DayPnLNoBaselineUsesFullCumulative(t *testing.T) {
 	require.NotNil(t, res.TodayPnLPercent, "percent should fall back to today's AUM as the denominator")
 }
 
-func TestGetValuationSummary_MixedCurrencyExcludesMinority(t *testing.T) {
+func TestGetValuationSummary_MixedCurrencyConvertsAtExactSnapshotDates(t *testing.T) {
 	t.Parallel()
 	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
 
@@ -206,24 +241,138 @@ func TestGetValuationSummary_MixedCurrencyExcludesMinority(t *testing.T) {
 	usdFund := newFund("USD", nil)
 	pThbA := newPortfolio(thbFundA.ID)
 	pThbB := newPortfolio(thbFundB.ID)
-	pUsd := &entity.Portfolio{ID: uuid.New(), FundID: usdFund.ID, Status: vo.PortfolioStatusActive, BaseCurrency: "USD", ValuationCurrency: "USD"}
+	pUsd := &entity.Portfolio{ID: uuid.New(), FundID: usdFund.ID, PortfolioType: vo.PortfolioTypeLive, Status: vo.PortfolioStatusActive, BaseCurrency: "USD", ValuationCurrency: "USD"}
 
 	valRepo := &fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
 		pThbA.ID: snapshotPair(pThbA.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(100), decimal.Zero, decimal.Zero),
 		pThbB.ID: snapshotPair(pThbB.ID, today, decimal.NewFromInt(200), decimal.Zero, decimal.Zero, decimal.NewFromInt(200), decimal.Zero, decimal.Zero),
-		pUsd.ID:  snapshotPair(pUsd.ID, today, decimal.NewFromInt(999999), decimal.Zero, decimal.Zero, decimal.NewFromInt(999999), decimal.Zero, decimal.Zero),
+		pUsd.ID: withValuationCurrency(
+			snapshotPair(pUsd.ID, today, decimal.NewFromInt(10), decimal.NewFromInt(2), decimal.Zero, decimal.NewFromInt(8), decimal.NewFromInt(1), decimal.Zero),
+			"USD",
+		),
+	}}
+	previousDate := today.AddDate(0, 0, -1)
+	fx := &fakeQuoteProvider{quotes: map[string]*contract.MarketQuote{
+		fxQuoteKey("FX_USDTHB", today):        exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(36)),
+		fxQuoteKey("FX_USDTHB", previousDate): exactFXQuote("FX_USDTHB", "THB", previousDate, decimal.NewFromInt(35)),
 	}}
 	a := NewValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{thbFundA, thbFundB, usdFund}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{pThbA, pThbB, pUsd}},
 		valRepo,
+		"THB",
+		fx,
 	)
 
 	res, err := a.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
 	require.NoError(t, err)
 	require.True(t, res.DataAvailable)
-	require.Equal(t, "THB", res.Currency, "THB funds outnumber the single USD fund")
-	require.True(t, decimal.NewFromInt(300).Equal(res.AUM), "USD fund must be excluded from the THB aggregate, got %s", res.AUM)
+	require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
+	require.Equal(t, "THB", res.Currency)
+	require.True(t, decimal.NewFromInt(660).Equal(res.AUM), "got %s", res.AUM)
+	require.True(t, decimal.NewFromInt(44).Equal(res.TodayPnL), "got %s", res.TodayPnL)
+	require.NotNil(t, res.TodayPnLPercent)
+	require.True(t, decimal.RequireFromString("7.5862").Equal(*res.TodayPnLPercent), "got %s", res.TodayPnLPercent)
+	require.Equal(t, 3, res.Coverage.TotalFundCount)
+	require.Equal(t, 3, res.Coverage.IncludedFundCount)
+	require.Equal(t, 3, res.Coverage.TotalPortfolioCount)
+	require.Equal(t, 3, res.Coverage.IncludedPortfolioCount)
+	require.Empty(t, res.Coverage.Exclusions)
+	require.Equal(t, []quoteCall{
+		{Symbol: "FX_USDTHB", BusinessDate: today},
+		{Symbol: "FX_USDTHB", BusinessDate: previousDate},
+	}, fx.calls, "current and previous values must use direct, exact-date persisted FX")
+}
+
+func TestGetValuationSummary_FXMovementOnOpeningAssetsIsEconomicPnL(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	previousDate := today.AddDate(0, 0, -1)
+	fund := newFund("USD", nil)
+	portfolio := &entity.Portfolio{
+		ID:                uuid.New(),
+		FundID:            fund.ID,
+		PortfolioType:     vo.PortfolioTypeLive,
+		Status:            vo.PortfolioStatusActive,
+		BaseCurrency:      "USD",
+		ValuationCurrency: "USD",
+	}
+	valuations := withValuationCurrency(
+		snapshotPair(portfolio.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(100), decimal.Zero, decimal.Zero),
+		"USD",
+	)
+	fx := &fakeQuoteProvider{quotes: map[string]*contract.MarketQuote{
+		fxQuoteKey("FX_USDTHB", today):        exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(36)),
+		fxQuoteKey("FX_USDTHB", previousDate): exactFXQuote("FX_USDTHB", "THB", previousDate, decimal.NewFromInt(35)),
+	}}
+	a := NewValuationSummaryAdapter(
+		&fakeFundRepo{funds: []*entity.Fund{fund}},
+		&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{portfolio.ID: valuations}},
+		"THB",
+		fx,
+	)
+
+	res, err := a.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
+	require.True(t, decimal.NewFromInt(3600).Equal(res.AUM), "got AUM %s", res.AUM)
+	require.True(t, decimal.NewFromInt(100).Equal(res.TodayPnL), "unchanged local assets must capture the THB FX gain; got %s", res.TodayPnL)
+	require.NotNil(t, res.TodayPnLPercent)
+	require.True(t, decimal.RequireFromString("2.8571").Equal(*res.TodayPnLPercent), "got %s", res.TodayPnLPercent)
+}
+
+func TestGetValuationSummary_ExternalFlowsUseClosingFXConvention(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	previousDate := today.AddDate(0, 0, -1)
+
+	for _, tt := range []struct {
+		name       string
+		currentAUM decimal.Decimal
+	}{
+		{name: "cash in", currentAUM: decimal.NewFromInt(125)},
+		{name: "cash out", currentAUM: decimal.NewFromInt(75)},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fund := newFund("USD", nil)
+			portfolio := &entity.Portfolio{
+				ID:                uuid.New(),
+				FundID:            fund.ID,
+				PortfolioType:     vo.PortfolioTypeLive,
+				Status:            vo.PortfolioStatusActive,
+				BaseCurrency:      "USD",
+				ValuationCurrency: "USD",
+			}
+			// Cumulative local P&L is unchanged while AUM moves by an external
+			// flow. The flow is excluded at today's closing FX, leaving only
+			// the FX movement on the USD 100 opening net assets.
+			valuations := withValuationCurrency(
+				snapshotPair(portfolio.ID, today, tt.currentAUM, decimal.NewFromInt(10), decimal.Zero, decimal.NewFromInt(100), decimal.NewFromInt(10), decimal.Zero),
+				"USD",
+			)
+			fx := &fakeQuoteProvider{quotes: map[string]*contract.MarketQuote{
+				fxQuoteKey("FX_USDTHB", today):        exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(36)),
+				fxQuoteKey("FX_USDTHB", previousDate): exactFXQuote("FX_USDTHB", "THB", previousDate, decimal.NewFromInt(35)),
+			}}
+			a := NewValuationSummaryAdapter(
+				&fakeFundRepo{funds: []*entity.Fund{fund}},
+				&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+				&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{portfolio.ID: valuations}},
+				"THB",
+				fx,
+			)
+
+			res, err := a.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+			require.NoError(t, err)
+			require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
+			require.True(t, decimal.NewFromInt(100).Equal(res.TodayPnL), "flow must not be reported as P&L; got %s", res.TodayPnL)
+			require.NotNil(t, res.TodayPnLPercent)
+			require.True(t, decimal.RequireFromString("2.8571").Equal(*res.TodayPnLPercent), "got %s", res.TodayPnLPercent)
+		})
+	}
 }
 
 func TestGetValuationSummary_PreviousSnapshotErrorPropagates(t *testing.T) {
@@ -234,7 +383,7 @@ func TestGetValuationSummary_PreviousSnapshotErrorPropagates(t *testing.T) {
 	p := newPortfolio(fund.ID)
 	wantErr := errors.New("db down")
 
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fund}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{p}},
 		&fakeValuationRepo{
@@ -248,7 +397,7 @@ func TestGetValuationSummary_PreviousSnapshotErrorPropagates(t *testing.T) {
 	require.ErrorIs(t, err, wantErr)
 }
 
-func TestGetValuationSummary_StalePortfolioExcludedFromInconsistentBusinessDate(t *testing.T) {
+func TestGetValuationSummary_InconsistentBusinessDateIsIncomplete(t *testing.T) {
 	t.Parallel()
 	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
 	stale := today.AddDate(0, 0, -3)
@@ -264,7 +413,7 @@ func TestGetValuationSummary_StalePortfolioExcludedFromInconsistentBusinessDate(
 		// summed into a total labelled with today's business date.
 		pStale.ID: snapshotPair(pStale.ID, stale, decimal.NewFromInt(999999), decimal.NewFromInt(999), decimal.Zero, decimal.NewFromInt(999999), decimal.NewFromInt(999), decimal.Zero),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fundFresh, fundStale}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{pFresh, pStale}},
 		valRepo,
@@ -272,10 +421,210 @@ func TestGetValuationSummary_StalePortfolioExcludedFromInconsistentBusinessDate(
 
 	res, err := a.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
 	require.NoError(t, err)
-	require.True(t, res.DataAvailable)
+	require.False(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
 	require.True(t, today.Equal(res.BusinessDate))
-	require.True(t, decimal.NewFromInt(1000).Equal(res.AUM), "the stale portfolio's AUM must not be mixed into a total dated today, got %s", res.AUM)
-	require.True(t, decimal.NewFromInt(15).Equal(res.TodayPnL), "got %s", res.TodayPnL)
+	require.True(t, res.AUM.IsZero(), "an incomplete aggregate must not expose a partial total")
+	require.Equal(t, 2, res.Coverage.TotalFundCount)
+	require.Equal(t, 1, res.Coverage.IncludedFundCount)
+	require.Equal(t, 1, res.Coverage.ExcludedFundCount)
+	require.Equal(t, 2, res.Coverage.TotalPortfolioCount)
+	require.Equal(t, 1, res.Coverage.IncludedPortfolioCount)
+	require.Equal(t, 1, res.Coverage.ExcludedPortfolioCount)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionValuationDate}, res.Coverage.ExclusionReasons)
+	require.Len(t, res.Coverage.Exclusions, 1)
+	require.Equal(t, "THB", res.Coverage.Exclusions[0].Currency)
+	require.True(t, stale.Equal(res.Coverage.Exclusions[0].BusinessDate))
+	require.True(t, today.Equal(res.Coverage.Exclusions[0].RequiredBusinessDate))
+}
+
+func TestGetValuationSummary_ValuationCurrencyChangeIsIncomplete(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	fund := newFund("USD", nil)
+	portfolio := &entity.Portfolio{
+		ID:                uuid.New(),
+		FundID:            fund.ID,
+		PortfolioType:     vo.PortfolioTypeLive,
+		Status:            vo.PortfolioStatusActive,
+		BaseCurrency:      "USD",
+		ValuationCurrency: "USD",
+	}
+	valuations := snapshotPair(portfolio.ID, today, decimal.NewFromInt(100), decimal.NewFromInt(5), decimal.Zero, decimal.NewFromInt(90), decimal.NewFromInt(4), decimal.Zero)
+	valuations[0].ValuationCcy = "USD"
+	valuations[1].ValuationCcy = "EUR"
+	adapter := NewValuationSummaryAdapter(
+		&fakeFundRepo{funds: []*entity.Fund{fund}},
+		&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{portfolio.ID: valuations}},
+		"THB",
+		&fakeQuoteProvider{},
+	)
+
+	res, err := adapter.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
+	require.False(t, res.DataAvailable)
+	require.True(t, res.AUM.IsZero())
+	require.True(t, res.TodayPnL.IsZero())
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionValuationCurrency}, res.Coverage.ExclusionReasons)
+	require.Len(t, res.Coverage.Exclusions, 1)
+	require.Equal(t, "EUR", res.Coverage.Exclusions[0].Currency)
+}
+
+func TestGetValuationSummary_FXFailuresAreTypedIncompleteWithoutPartialTotals(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name   string
+		quote  *contract.MarketQuote
+		err    error
+		reason contract.ValuationSummaryExclusionReason
+	}{
+		{name: "provider error", err: contract.ErrMarketDataUnavailable, reason: contract.ValuationSummaryExclusionMissingFX},
+		{name: "nil quote", reason: contract.ValuationSummaryExclusionMissingFX},
+		{name: "stale rate", quote: func() *contract.MarketQuote {
+			q := exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(36))
+			q.Stale = true
+			return q
+		}(), reason: contract.ValuationSummaryExclusionStaleFX},
+		{name: "wrong business date", quote: exactFXQuote("FX_USDTHB", "THB", today.AddDate(0, 0, -1), decimal.NewFromInt(36)), reason: contract.ValuationSummaryExclusionWrongDateFX},
+		{name: "wrong symbol", quote: exactFXQuote("FX_THBUSD", "THB", today, decimal.NewFromInt(36)), reason: contract.ValuationSummaryExclusionFXSymbol},
+		{name: "quote currency mismatch", quote: exactFXQuote("FX_USDTHB", "USD", today, decimal.NewFromInt(36)), reason: contract.ValuationSummaryExclusionFXCurrency},
+		{name: "zero rate", quote: exactFXQuote("FX_USDTHB", "THB", today, decimal.Zero), reason: contract.ValuationSummaryExclusionInvalidFX},
+		{name: "negative rate", quote: exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(-36)), reason: contract.ValuationSummaryExclusionInvalidFX},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fund := newFund("USD", nil)
+			fund.Code = "USD-FUND"
+			portfolio := newPortfolio(fund.ID)
+			portfolio.Code = "USD-LIVE"
+			portfolio.ValuationCurrency = "USD"
+			provider := &fakeQuoteProvider{
+				quotes: map[string]*contract.MarketQuote{fxQuoteKey("FX_USDTHB", today): tt.quote},
+				errs:   map[string]error{fxQuoteKey("FX_USDTHB", today): tt.err},
+			}
+			adapter := NewValuationSummaryAdapter(
+				&fakeFundRepo{funds: []*entity.Fund{fund}},
+				&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+				&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
+					portfolio.ID: withValuationCurrency(snapshotPair(portfolio.ID, today, decimal.NewFromInt(10), decimal.NewFromInt(1), decimal.Zero, decimal.NewFromInt(9), decimal.Zero, decimal.Zero), "USD"),
+				}},
+				"THB",
+				provider,
+			)
+
+			res, err := adapter.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+			require.NoError(t, err)
+			require.False(t, res.DataAvailable)
+			require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
+			require.True(t, res.AUM.IsZero())
+			require.True(t, res.TodayPnL.IsZero())
+			require.Nil(t, res.TodayPnLPercent)
+			require.Equal(t, []contract.ValuationSummaryExclusionReason{tt.reason}, res.Coverage.ExclusionReasons)
+			require.Equal(t, []string{"USD"}, res.Coverage.ExcludedCurrencies)
+			require.Equal(t, 1, res.Coverage.TotalFundCount)
+			require.Equal(t, 0, res.Coverage.IncludedFundCount)
+			require.Equal(t, 1, res.Coverage.ExcludedFundCount)
+			require.Equal(t, 1, res.Coverage.TotalPortfolioCount)
+			require.Equal(t, 0, res.Coverage.IncludedPortfolioCount)
+			require.Equal(t, 1, res.Coverage.ExcludedPortfolioCount)
+			require.Len(t, res.Coverage.Exclusions, 1)
+			require.Equal(t, "USD-FUND", res.Coverage.Exclusions[0].FundCode)
+			require.Equal(t, "USD-LIVE", res.Coverage.Exclusions[0].PortfolioCode)
+			require.Equal(t, []quoteCall{{Symbol: "FX_USDTHB", BusinessDate: today}}, provider.calls)
+		})
+	}
+}
+
+func TestGetValuationSummary_MissingPreviousDateFXIsIncomplete(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	previousDate := today.AddDate(0, 0, -1)
+	fund := newFund("USD", nil)
+	portfolio := newPortfolio(fund.ID)
+	provider := &fakeQuoteProvider{quotes: map[string]*contract.MarketQuote{
+		fxQuoteKey("FX_USDTHB", today): exactFXQuote("FX_USDTHB", "THB", today, decimal.NewFromInt(36)),
+	}}
+	adapter := NewValuationSummaryAdapter(
+		&fakeFundRepo{funds: []*entity.Fund{fund}},
+		&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
+			portfolio.ID: withValuationCurrency(snapshotPair(portfolio.ID, today, decimal.NewFromInt(10), decimal.NewFromInt(1), decimal.Zero, decimal.NewFromInt(9), decimal.Zero, decimal.Zero), "USD"),
+		}},
+		"THB",
+		provider,
+	)
+
+	res, err := adapter.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
+	require.False(t, res.DataAvailable)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingFX}, res.Coverage.ExclusionReasons)
+	require.Len(t, res.Coverage.Exclusions, 1)
+	require.True(t, previousDate.Equal(res.Coverage.Exclusions[0].BusinessDate))
+	require.Equal(t, []quoteCall{
+		{Symbol: "FX_USDTHB", BusinessDate: today},
+		{Symbol: "FX_USDTHB", BusinessDate: previousDate},
+	}, provider.calls)
+}
+
+func TestGetValuationSummary_StaleValuationIsIncomplete(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	fund := newFund("THB", nil)
+	portfolio := newPortfolio(fund.ID)
+	snapshots := snapshotPair(portfolio.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(99), decimal.Zero, decimal.Zero)
+	snapshots[0].HasStaleInputs = true
+	adapter := newTestValuationSummaryAdapter(
+		&fakeFundRepo{funds: []*entity.Fund{fund}},
+		&fakePortfolioRepo{portfolios: []*entity.Portfolio{portfolio}},
+		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{portfolio.ID: snapshots}},
+	)
+
+	res, err := adapter.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
+	require.False(t, res.DataAvailable)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionStaleValuation}, res.Coverage.ExclusionReasons)
+}
+
+func TestGetValuationSummary_NonOfficialPortfoliosAreExcludedFromOfficialAUM(t *testing.T) {
+	t.Parallel()
+	today := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	fund := newFund("THB", nil)
+	live := newPortfolio(fund.ID)
+	simulation := newPortfolio(fund.ID)
+	simulation.PortfolioType = vo.PortfolioTypeSimulation
+	model := newPortfolio(fund.ID)
+	model.PortfolioType = vo.PortfolioTypeModel
+	adapter := newTestValuationSummaryAdapter(
+		&fakeFundRepo{funds: []*entity.Fund{fund}},
+		&fakePortfolioRepo{portfolios: []*entity.Portfolio{live, simulation, model}},
+		&fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
+			live.ID:       snapshotPair(live.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(100), decimal.Zero, decimal.Zero),
+			simulation.ID: snapshotPair(simulation.ID, today, decimal.NewFromInt(900), decimal.Zero, decimal.Zero, decimal.NewFromInt(900), decimal.Zero, decimal.Zero),
+			model.ID:      snapshotPair(model.ID, today, decimal.NewFromInt(9000), decimal.Zero, decimal.Zero, decimal.NewFromInt(9000), decimal.Zero, decimal.Zero),
+		}},
+	)
+
+	res, err := adapter.GetValuationSummary(context.Background(), contract.ValuationSummaryRequest{Scope: contract.ValuationSummaryScopeCompany})
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
+	require.True(t, res.DataAvailable)
+	require.True(t, decimal.NewFromInt(100).Equal(res.AUM))
+	require.Equal(t, 1, res.Coverage.TotalFundCount)
+	require.Equal(t, 1, res.Coverage.IncludedFundCount)
+	require.Equal(t, 3, res.Coverage.TotalPortfolioCount)
+	require.Equal(t, 1, res.Coverage.IncludedPortfolioCount)
+	require.Equal(t, 2, res.Coverage.ExcludedPortfolioCount)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionNonOfficial}, res.Coverage.ExclusionReasons)
+	require.Len(t, res.Coverage.Exclusions, 2)
 }
 
 func TestGetValuationSummary_NegativeDayPnL(t *testing.T) {
@@ -288,7 +637,7 @@ func TestGetValuationSummary_NegativeDayPnL(t *testing.T) {
 	valRepo := &fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
 		p.ID: snapshotPair(p.ID, today, decimal.NewFromInt(900), decimal.NewFromInt(60), decimal.Zero, decimal.NewFromInt(1000), decimal.NewFromInt(80), decimal.Zero),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fund}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{p}},
 		valRepo,
@@ -312,7 +661,7 @@ func TestGetValuationSummary_ZeroDayPnL(t *testing.T) {
 	valRepo := &fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
 		p.ID: snapshotPair(p.ID, today, decimal.NewFromInt(1000), decimal.NewFromInt(50), decimal.NewFromInt(10), decimal.NewFromInt(1000), decimal.NewFromInt(50), decimal.NewFromInt(10)),
 	}}
-	a := NewValuationSummaryAdapter(
+	a := newTestValuationSummaryAdapter(
 		&fakeFundRepo{funds: []*entity.Fund{fund}},
 		&fakePortfolioRepo{portfolios: []*entity.Portfolio{p}},
 		valRepo,
@@ -414,6 +763,53 @@ type fakeValuationRepo struct {
 	history map[uuid.UUID][]*entity.ValuationSnapshot
 	listErr error
 }
+
+type quoteCall struct {
+	Symbol       string
+	BusinessDate time.Time
+}
+
+type fakeQuoteProvider struct {
+	quotes map[string]*contract.MarketQuote
+	errs   map[string]error
+	calls  []quoteCall
+}
+
+func fxQuoteKey(symbol string, businessDate time.Time) string {
+	return symbol + "|" + businessDate.UTC().Format("2006-01-02")
+}
+
+func exactFXQuote(symbol, currency string, businessDate time.Time, rate decimal.Decimal) *contract.MarketQuote {
+	return &contract.MarketQuote{
+		Symbol:      symbol,
+		Price:       rate,
+		Currency:    currency,
+		EffectiveAt: businessDate,
+		FetchedAt:   businessDate,
+		Source:      contract.QuoteSourceMarketDataSnapshot,
+	}
+}
+
+func (p *fakeQuoteProvider) GetLatestQuote(context.Context, string) (*contract.MarketQuote, error) {
+	return nil, contract.ErrMarketDataUnavailable
+}
+
+func (p *fakeQuoteProvider) GetQuoteAsOf(_ context.Context, symbol string, businessDate time.Time) (*contract.MarketQuote, error) {
+	p.calls = append(p.calls, quoteCall{Symbol: symbol, BusinessDate: businessDate})
+	key := fxQuoteKey(symbol, businessDate)
+	if err := p.errs[key]; err != nil {
+		return nil, err
+	}
+	quote := p.quotes[key]
+	if quote == nil {
+		return nil, nil
+	}
+	copy := *quote
+	return &copy, nil
+}
+
+func (p *fakeQuoteProvider) PrimaryProviderName() string    { return "fake" }
+func (p *fakeQuoteProvider) ProviderConfigured(string) bool { return true }
 
 func (r *fakeValuationRepo) Insert(context.Context, pgx.Tx, *entity.ValuationSnapshot) error {
 	return nil

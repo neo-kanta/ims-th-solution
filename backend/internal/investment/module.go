@@ -789,9 +789,12 @@ func (m *Module) PortfolioScopeResolver() contract.PortfolioScopeResolver {
 // ValuationSummaryProvider returns an adapter consumed by the integration
 // module's dashboard valuation-summary endpoint to aggregate today's AUM and
 // P&L across a scoped set of funds.
-func (m *Module) ValuationSummaryProvider() contract.ValuationSummaryProvider {
+func (m *Module) ValuationSummaryProvider(
+	reportingCurrency string,
+	quotes contract.MarketQuoteProvider,
+) contract.ValuationSummaryProvider {
 	if m == nil || m.funds == nil || m.portfolios == nil || m.valuation == nil {
 		return nil
 	}
-	return adapter.NewValuationSummaryAdapter(m.funds, m.portfolios, m.valuation)
+	return adapter.NewValuationSummaryAdapter(m.funds, m.portfolios, m.valuation, reportingCurrency, quotes)
 }

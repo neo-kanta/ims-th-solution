@@ -118,7 +118,11 @@ func main() {
 	)
 	referenceDataModule := referencedata.NewModule(pool)
 	marketDataModule := marketdata.NewModule(pool, cfg, redisClient, referenceDataModule.Resolver())
-	integrationModule := integration.NewModule(pool, iamModule, investmentModule.ValuationSummaryProvider())
+	integrationModule := integration.NewModule(
+		pool,
+		iamModule,
+		investmentModule.ValuationSummaryProvider(cfg.ReportingCurrency, marketDataModule.QuoteProvider()),
+	)
 	permissionsModule := permissions.NewModule(pool, iamModule)
 	notificationModule := notification.NewModule(pool, cfg, iamModule)
 	approvalModule := approval.NewModule(pool, iamModule, auditModule.Recorder(), notificationModule.ApprovalNotifier(), approvaladapter.NewPostgresDelegateResolver(pool), nil)

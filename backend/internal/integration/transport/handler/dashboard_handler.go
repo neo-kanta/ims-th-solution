@@ -105,7 +105,7 @@ func (h *DashboardHandler) GetMyTasks(w http.ResponseWriter, r *http.Request) {
 // GetValuationSummary handles GET /integration/dashboard/valuation-summary.
 //
 // @Summary      Dashboard AUM / P&L summary
-// @Description  Returns aggregate AUM and today's P&L for the "AUM Today" and "Today's P&L" dashboard cards. scope=company aggregates every fund the caller is authorized to see; scope=mine restricts to funds the authenticated caller manages, resolved from the JWT — a client-supplied username is never accepted. Returns data_available=false (not a misleading zero) when no valuation snapshot exists yet for the resolved scope.
+// @Description  Returns official LIVE-portfolio AUM and today's P&L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
 // @Tags         Integration
 // @Produce      json
 // @Param        scope  query  string  false  "company (default) or mine"

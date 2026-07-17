@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
 // ValuationScope selects the aggregation breadth for a dashboard valuation
@@ -25,6 +27,7 @@ const (
 type ValuationSummary struct {
 	Scope           ValuationScope
 	Username        string // set only for ValuationScopeMine
+	Status          contract.ValuationSummaryStatus
 	BusinessDate    time.Time
 	Currency        string
 	AUM             decimal.Decimal
@@ -32,4 +35,5 @@ type ValuationSummary struct {
 	TodayPnLPercent *decimal.Decimal
 	AsOf            time.Time
 	DataAvailable   bool
+	Coverage        contract.ValuationSummaryCoverage
 }

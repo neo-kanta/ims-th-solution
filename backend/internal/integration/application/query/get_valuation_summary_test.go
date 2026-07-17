@@ -23,6 +23,8 @@ func TestGetValuationSummary_DeniedPermissionReturnsUnavailableWithoutCallingPro
 	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
 	require.NoError(t, err)
 	require.False(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusNoData, res.Status)
+	require.Equal(t, "THB", res.Currency)
 	require.False(t, prov.called, "provider must not be consulted when the caller lacks dashboard permission")
 }
 
@@ -111,17 +113,50 @@ func TestGetValuationSummary_NoProviderDegradesToUnavailable(t *testing.T) {
 	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
 	require.NoError(t, err)
 	require.False(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
 }
 
 func TestGetValuationSummary_ProviderNoDataMapsToUnavailable(t *testing.T) {
 	t.Parallel()
 	iam := &fakeIAMPort{hasPerm: true, contracts: []string{"*"}}
-	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{DataAvailable: false}}
+	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{DataAvailable: false, Status: contract.ValuationSummaryStatusNoData}}
 	h := NewGetValuationSummaryHandler(iam, prov)
 
 	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
 	require.NoError(t, err)
 	require.False(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusNoData, res.Status)
+}
+
+func TestGetValuationSummary_MapsIncompleteStatusAndCoverageWithoutTotals(t *testing.T) {
+	t.Parallel()
+	bd := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	iam := &fakeIAMPort{hasPerm: true, contracts: []string{"*"}}
+	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{
+		Status:        contract.ValuationSummaryStatusIncomplete,
+		DataAvailable: false,
+		Currency:      "THB",
+		BusinessDate:  bd,
+		Coverage: contract.ValuationSummaryCoverage{
+			TotalFundCount:     2,
+			IncludedFundCount:  1,
+			ExcludedFundCount:  1,
+			ExcludedCurrencies: []string{"USD"},
+			ExclusionReasons:   []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingFX},
+		},
+	}}
+	h := NewGetValuationSummaryHandler(iam, prov)
+
+	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
+	require.NoError(t, err)
+	require.Equal(t, contract.ValuationSummaryStatusIncomplete, res.Status)
+	require.False(t, res.DataAvailable)
+	require.Equal(t, "THB", res.Currency)
+	require.True(t, bd.Equal(res.BusinessDate))
+	require.True(t, res.AUM.IsZero())
+	require.Equal(t, 2, res.Coverage.TotalFundCount)
+	require.Equal(t, []string{"USD"}, res.Coverage.ExcludedCurrencies)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingFX}, res.Coverage.ExclusionReasons)
 }
 
 func TestGetValuationSummary_MapsSuccessfulResult(t *testing.T) {
@@ -131,7 +166,7 @@ func TestGetValuationSummary_MapsSuccessfulResult(t *testing.T) {
 	pct := decimal.RequireFromString("1.01")
 	iam := &fakeIAMPort{hasPerm: true, contracts: []string{"*"}}
 	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{
-		DataAvailable: true, Currency: "THB", BusinessDate: bd, AsOf: asOf,
+		DataAvailable: true, Status: contract.ValuationSummaryStatusAvailable, Currency: "THB", BusinessDate: bd, AsOf: asOf,
 		AUM: decimal.NewFromInt(1234567), TodayPnL: decimal.NewFromInt(12345), TodayPnLPercent: &pct,
 	}}
 	h := NewGetValuationSummaryHandler(iam, prov)
@@ -139,6 +174,7 @@ func TestGetValuationSummary_MapsSuccessfulResult(t *testing.T) {
 	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
 	require.NoError(t, err)
 	require.True(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
 	require.Equal(t, "THB", res.Currency)
 	require.True(t, bd.Equal(res.BusinessDate))
 	require.True(t, decimal.NewFromInt(1234567).Equal(res.AUM))
@@ -187,5 +223,7 @@ func (p *fakeValuationSummaryProvider) GetValuationSummary(_ context.Context, re
 	p.gotReq = req
 	return p.result, p.err
 }
+
+func (p *fakeValuationSummaryProvider) ReportingCurrency() string { return "THB" }
 
 var _ contract.ValuationSummaryProvider = (*fakeValuationSummaryProvider)(nil)
