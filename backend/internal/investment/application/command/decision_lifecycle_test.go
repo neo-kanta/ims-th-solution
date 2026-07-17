@@ -65,7 +65,7 @@ func TestBatchApprove_PermissionBeforeDisclosure(t *testing.T) {
 
 	authorizedDecision := &entity.Decision{
 		ID:                uuid.New(),
-		ContractID:        authorizedCID,
+		FundID:            authorizedCID,
 		DecisionNumber:    "DEC-ALLOWED",
 		ApprovalRequestID: &approvalReqID,
 		Status:            vo.DecisionLifecyclePendingApproval,
@@ -75,7 +75,7 @@ func TestBatchApprove_PermissionBeforeDisclosure(t *testing.T) {
 	}
 	unauthorizedDecision := &entity.Decision{
 		ID:                uuid.New(),
-		ContractID:        unauthorizedCID,
+		FundID:            unauthorizedCID,
 		DecisionNumber:    "DEC-DENIED",
 		ApprovalRequestID: &approvalReqID,
 		Status:            vo.DecisionLifecyclePendingApproval,
@@ -142,9 +142,8 @@ func buildDraftDecisionWithReport(t *testing.T) (
 
 	d = &entity.Decision{
 		ID:               uuid.New(),
-		FundID:           uuid.New(),
+		FundID:           cid,
 		PortfolioID:      uuid.New(),
-		ContractID:       cid,
 		InstrumentCode:   "PTT",
 		Side:             vo.OrderSideBuy,
 		Status:           vo.DecisionLifecycleDraft,
@@ -187,7 +186,6 @@ func TestSubmitDecision_NoReport_Skips_ReferenceCheck(t *testing.T) {
 		ID:             uuid.New(),
 		FundID:         uuid.New(),
 		PortfolioID:    uuid.New(),
-		ContractID:     uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,
 		Status:         vo.DecisionLifecycleDraft,
@@ -222,7 +220,6 @@ func TestCancel_CancelsActiveApproval(t *testing.T) {
 		ID:              uuid.New(),
 		FundID:          uuid.New(),
 		PortfolioID:     uuid.New(),
-		ContractID:      uuid.New(),
 		InstrumentCode:  "PTT",
 		Side:            vo.OrderSideBuy,
 		Status:          vo.DecisionLifecyclePendingApproval,

@@ -100,7 +100,7 @@ func (h *DecisionBatchApprovalHandler) BatchApprove(ctx context.Context, req Bat
 		// Unauthorized callers receive the same "not found" response as for a
 		// nonexistent decision so they cannot infer existence from error type.
 		if h.perms != nil {
-			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.ContractID.String())
+			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.FundID.String())
 			if permErr != nil || !ok {
 				res.Error = "decision not found"
 				results = append(results, res)
@@ -148,7 +148,7 @@ func (h *DecisionBatchApprovalHandler) BatchReject(ctx context.Context, req Batc
 			continue
 		}
 		if h.perms != nil {
-			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.ContractID.String())
+			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.FundID.String())
 			if permErr != nil || !ok {
 				res.Error = "decision not found"
 				results = append(results, res)

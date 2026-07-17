@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	textcurrency "golang.org/x/text/currency"
 )
 
 // AppConfig holds all application configuration loaded from environment variables.
@@ -125,6 +126,11 @@ type AppConfig struct {
 	IngestionScheduleCron string // Cron expression for the ingestion scheduler (default: "0 18 * * 1-5" — 18:00 weekdays).
 
 	// Investment: valuation
+	// ReportingCurrency is the single ISO 4217 currency used by official
+	// company/manager AUM and P&L reporting. It has no in-code default: every
+	// environment must choose it explicitly.
+	ReportingCurrency string
+
 	// ValuationStaleThresholdsByAssetClass maps an asset class code (e.g.
 	// "EQUITY", "FIXED_INCOME") to the maximum age of its inputs (price /
 	// FX) before the runner records investment_valuation_stale_inputs_total
@@ -308,6 +314,7 @@ func Load() (*AppConfig, error) {
 		IngestionScheduleCron: getEnvOrDefault("INGESTION_SCHEDULE_CRON", "0 18 * * 1-5"),
 
 		// Investment: valuation staleness thresholds
+		ReportingCurrency: strings.TrimSpace(os.Getenv("REPORTING_CURRENCY")),
 		ValuationStaleThresholdsByAssetClass: parseStaleThresholds(
 			"VALUATION_STALE_THRESHOLDS",
 			"EQUITY=24h,FIXED_INCOME=72h,FUND=24h,ETF=24h,CASH=720h,ALTERNATIVE=720h,DERIVATIVE=24h",
@@ -349,6 +356,10 @@ func Load() (*AppConfig, error) {
 		IMSAPIBaseURL:        getEnvOrDefault("IMS_API_BASE_URL", "http://localhost:8080/api/v1"),
 	}
 
+	if err := validateReportingCurrency(cfg.ReportingCurrency); err != nil {
+		return nil, err
+	}
+
 	if cfg.JWTSecret == "" && cfg.Env != "development" {
 		return nil, fmt.Errorf("APP_JWT_SECRET is required in non-development environments")
 	}
@@ -369,6 +380,19 @@ func Load() (*AppConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+func validateReportingCurrency(code string) error {
+	if code == "" {
+		return fmt.Errorf("REPORTING_CURRENCY is required")
+	}
+	if code != strings.ToUpper(code) {
+		return fmt.Errorf("REPORTING_CURRENCY must be an uppercase ISO 4217 code")
+	}
+	if _, err := textcurrency.ParseISO(code); err != nil {
+		return fmt.Errorf("REPORTING_CURRENCY must be a recognized ISO 4217 code: %q", code)
+	}
+	return nil
 }
 
 // MarshalJSON / String redactions for config: AppConfig has no String method

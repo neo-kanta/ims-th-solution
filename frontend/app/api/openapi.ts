@@ -4,6 +4,7 @@ import type { Client } from "openapi-fetch";
 
 import { useAuthStore } from "~/stores/useAuthStore";
 
+import { v2BaseUrlFrom } from "./urls";
 import type { paths } from "./ims-api";
 
 export type ImsOpenApiClient = Client<paths>;
@@ -99,12 +100,8 @@ export function unwrapOpenApiResponse<T>(result: OpenApiResult<T>): T {
   return isApiEnvelope<T>(result.data) ? result.data.data : result.data;
 }
 
-export function useOpenApiClient(): ImsOpenApiClient {
-  const config = useRuntimeConfig();
+function createAuthedClient(baseUrl: string): ImsOpenApiClient {
   const authStore = useAuthStore();
-  const baseUrl = (import.meta.server
-    ? config.apiBaseUrl
-    : config.public.apiBaseUrl) as string;
 
   const client = createClient<paths>({
     baseUrl,
@@ -128,4 +125,27 @@ export function useOpenApiClient(): ImsOpenApiClient {
   });
 
   return client;
+}
+
+export function useOpenApiClient(): ImsOpenApiClient {
+  const config = useRuntimeConfig();
+  const baseUrl = (import.meta.server
+    ? config.apiBaseUrl
+    : config.public.apiBaseUrl) as string;
+
+  return createAuthedClient(baseUrl);
+}
+
+/**
+ * Client for Portfolio V2 routes (docs/api/portfolio-v2-api-ddd.md), mounted
+ * under `/api/v2` alongside the V1 API under `/api/v1`. See
+ * {@link v2BaseUrlFrom} (app/api/urls.ts) for the base URL derivation.
+ */
+export function useOpenApiClientV2(): ImsOpenApiClient {
+  const config = useRuntimeConfig();
+  const v1BaseUrl = (import.meta.server
+    ? config.apiBaseUrl
+    : config.public.apiBaseUrl) as string;
+
+  return createAuthedClient(v2BaseUrlFrom(v1BaseUrl));
 }

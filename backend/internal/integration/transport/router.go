@@ -12,6 +12,7 @@ import (
 func RegisterRoutes(r chi.Router, h *handler.DashboardHandler) {
 	r.Route("/integration", func(r chi.Router) {
 		r.Get("/dashboard/me", h.GetDashboardSnapshot)
+		r.Get("/dashboard/valuation-summary", h.GetValuationSummary)
 		r.Get("/tasks/my", h.GetMyTasks)
 		r.Get("/tasks/my/summary", h.GetMyTasksSummary)
 	})

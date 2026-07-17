@@ -4,6 +4,7 @@ import { computed } from "vue";
 import AppIcon from "~/shared/ui/AppIcon.vue";
 
 interface Props {
+  icon?: string;
   label: string;
   /** null = backend call hasn't returned / errored; renders "—". */
   value: number | null;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  icon: "",
   subtitle: "",
   hint: "",
   tone: "default",
@@ -33,7 +35,12 @@ const displayValue = computed(() => {
 <template>
   <article class="kpi" :class="`kpi--${tone}`" :aria-busy="loading">
     <header class="kpi__head">
-      <span class="kpi__label">{{ label }}</span>
+      <span class="kpi__label-wrap">
+        <span v-if="icon" class="kpi__icon" aria-hidden="true">
+          <AppIcon :name="icon" size="xs" />
+        </span>
+        <span class="kpi__label">{{ label }}</span>
+      </span>
       <span v-if="hint" class="kpi__hint" :title="hint">
         <AppIcon name="info" size="xs" />
       </span>
@@ -52,8 +59,6 @@ const displayValue = computed(() => {
   border-radius: var(--radius-lg);
   background: var(--bg-card);
   min-width: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.01);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
@@ -66,13 +71,6 @@ const displayValue = computed(() => {
   width: 100%;
   height: 3px;
   background: transparent;
-  transition: background-color 0.2s ease;
-}
-
-.kpi:hover {
-  transform: translateY(-3px);
-  border-color: var(--border-strong);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .kpi--success::before { background: var(--state-success); }
@@ -87,6 +85,18 @@ const displayValue = computed(() => {
   gap: var(--space-2);
 }
 
+.kpi__label-wrap {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.kpi__icon {
+  display: inline-flex;
+  color: var(--text-tertiary);
+}
+
 .kpi__label {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
@@ -99,7 +109,6 @@ const displayValue = computed(() => {
   display: inline-flex;
   color: var(--text-tertiary);
   cursor: help;
-  transition: color 0.15s ease;
 }
 
 .kpi__hint:hover {
@@ -127,12 +136,4 @@ const displayValue = computed(() => {
   font-weight: var(--font-weight-medium);
 }
 
-:root[data-theme="dark"] .kpi {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-:root[data-theme="dark"] .kpi:hover {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-  background: var(--bg-card-hover);
-}
 </style>

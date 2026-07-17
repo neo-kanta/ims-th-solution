@@ -4,6 +4,8 @@ import { useI18n } from "~/composables/useI18n";
 import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
 import { todayBangkokIso } from "~/features/my-funds/lib/derive";
 import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
+import type { ApiWorkflowState } from "~/features/my-funds/types";
+import type { AppTranslationKey } from "~/composables/useI18n";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
@@ -20,38 +22,59 @@ const { t } = useI18n();
 const router = useRouter();
 
 // Fund workspace state
-const { funds, activeFund, loading: fundsLoading, error: fundsError, loadFunds, setActiveFund } = useFundWorkspace();
+const { funds, activeFund, loadFunds, setActiveFund } = useFundWorkspace();
 const activeFundId = ref<string>("");
-const workflowState = ref<any>(null);
+const workflowState = ref<ApiWorkflowState | null>(null);
 const workflowLoading = ref(false);
 
-const businessDate = computed(() => workflowState.value?.business_date || todayBangkokIso());
+const businessDate = computed(() => workflowState.value?.businessDate || todayBangkokIso());
 
 // Operations Catalog directory state
 const catalogSearchQuery = ref("");
-const catalogWorkflows = ref([
+interface OperatorWorkflowDefinition {
+  code: "OP-01" | "OP-02" | "OP-03";
+  titleKey: AppTranslationKey;
+  descriptionKey: AppTranslationKey;
+  requiresFund: boolean;
+  routePath: (fundId: string) => string;
+}
+
+interface OperatorWorkflow extends OperatorWorkflowDefinition {
+  title: string;
+  description: string;
+}
+
+const catalogDefinitions: readonly OperatorWorkflowDefinition[] = [
   {
     code: "OP-01",
-    title: "BUY/SELL Single Securities",
-    description: "Place new single security investment decisions for mapped fund portfolios.",
-    status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/operation/new`,
+    titleKey: "operator.directory.workflows.op01.title",
+    descriptionKey: "operator.directory.workflows.op01.description",
+    requiresFund: false,
+    routePath: () => `/investment/operator/decision/new`,
   },
   {
     code: "OP-02",
-    title: "Execution & Approvals",
-    description: "Query API database for pending decisions, inspect rules, and authorize execution in batch.",
-    status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/operation`,
+    titleKey: "operator.directory.workflows.op02.title",
+    descriptionKey: "operator.directory.workflows.op02.description",
+    requiresFund: false,
+    routePath: () => `/investment/decision`,
   },
   {
     code: "OP-03",
-    title: "Review & Print Summary",
-    description: "Search and inspect processed decisions, and generate print-ready decision summary reports.",
-    status: "Ready",
-    routePath: (fundId: string) => `/investment/funds/${fundId}/decisions`,
+    titleKey: "operator.directory.workflows.op03.title",
+    descriptionKey: "operator.directory.workflows.op03.description",
+    requiresFund: true,
+    routePath: (fundId: string) => `/investment/operator/${fundId}/decisions`,
   },
-]);
+];
+
+const catalogWorkflows = computed<OperatorWorkflow[]>(() =>
+  catalogDefinitions.map((workflow) => ({
+    ...workflow,
+    title: t(workflow.titleKey),
+    description: t(workflow.descriptionKey),
+  })),
+);
 
 const filteredCatalog = computed(() => {
   const query = catalogSearchQuery.value.toLowerCase().trim();
@@ -61,7 +84,7 @@ const filteredCatalog = computed(() => {
       op.code.toLowerCase().includes(query) ||
       op.title.toLowerCase().includes(query) ||
       op.description.toLowerCase().includes(query) ||
-      op.status.toLowerCase().includes(query)
+      t("operator.status.ready").toLowerCase().includes(query)
   );
 });
 
@@ -70,7 +93,7 @@ async function refreshWorkflowState() {
   workflowLoading.value = true;
   try {
     workflowState.value = await myFundsApi.getWorkflowState(activeFundId.value, todayBangkokIso());
-  } catch (err) {
+  } catch {
     workflowState.value = null;
   } finally {
     workflowLoading.value = false;
@@ -78,15 +101,15 @@ async function refreshWorkflowState() {
 }
 
 function onFundChange(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  if (target?.value) {
+  const target = event.target;
+  if (target instanceof HTMLSelectElement && target.value) {
     activeFundId.value = target.value;
     setActiveFund(target.value);
   }
 }
 
-function openWorkflow(op: any) {
-  if (op.status !== "Ready" || !activeFundId.value) return;
+function openWorkflow(op: OperatorWorkflow) {
+  if (op.requiresFund && !activeFundId.value) return;
   const path = op.routePath(activeFundId.value);
   void router.push(path);
 }
@@ -110,22 +133,22 @@ onMounted(async () => {
 <template>
   <section class="operator-page">
     <AppPageHeader
-      :title="t('navigation.operatorPage', 'Operator page')"
-      :description="t('operator.page.description', 'Operations Directory catalog for active fund workflows.')"
+      :title="t('navigation.operatorPage')"
+      :description="t('operator.page.description')"
     />
 
     <!-- Top Fund Selector Control Card -->
     <div class="operator-header">
       <div v-if="activeFund" class="operator-header__info">
         <div class="operator-header__metric">
-          <span class="operator-header__metric-label">Business Date</span>
+          <span class="operator-header__metric-label">{{ t("operator.directory.businessDate") }}</span>
           <span class="operator-header__metric-value">{{ businessDate }}</span>
         </div>
         <div class="operator-header__metric">
-          <span class="operator-header__metric-label">Fund Status</span>
+          <span class="operator-header__metric-label">{{ t("operator.directory.fundStatus") }}</span>
           <span class="operator-header__metric-value">
             <AppBadge :variant="activeFund.status === 'ACTIVE' ? 'success' : 'neutral'">
-              {{ activeFund.status }}
+              {{ activeFund.status === "ACTIVE" ? t("operator.status.active") : t("operator.status.inactive") }}
             </AppBadge>
           </span>
         </div>
@@ -134,14 +157,15 @@ onMounted(async () => {
 
     <!-- Operations Directory Catalog Table -->
     <div class="catalog-card mt">
-      <AppCard title="Operations Directory" subtitle="Filter and run active workflows in the catalog">
+      <AppCard :title="t('operator.directory.title')" :subtitle="t('operator.directory.subtitle')">
         <div class="controls-row">
           <div class="control-group search-group">
-            <label class="control-label">Filter workflows</label>
+            <label class="control-label" for="operator-workflow-search">{{ t("operator.directory.filterLabel") }}</label>
             <input
+              id="operator-workflow-search"
               v-model="catalogSearchQuery"
               type="text"
-              placeholder="Search workflows (e.g. BUY, Execution, Close)..."
+              :placeholder="t('operator.directory.searchPlaceholder')"
               class="control-input"
             />
           </div>
@@ -151,11 +175,11 @@ onMounted(async () => {
           <table class="operator-table">
             <thead>
               <tr>
-                <th width="80">Code</th>
-                <th>Workflow / Function</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th width="100" class="center">Action</th>
+                <th width="80">{{ t("operator.directory.columns.code") }}</th>
+                <th>{{ t("operator.directory.columns.workflow") }}</th>
+                <th>{{ t("operator.directory.columns.description") }}</th>
+                <th>{{ t("operator.directory.columns.status") }}</th>
+                <th width="100" class="center">{{ t("operator.directory.columns.action") }}</th>
               </tr>
             </thead>
             <tbody>
@@ -169,27 +193,18 @@ onMounted(async () => {
                 <td class="bold">{{ op.title }}</td>
                 <td class="text-secondary">{{ op.description }}</td>
                 <td>
-                  <span
-                    class="status-pill"
-                    :class="{
-                      'status-pill--ready': op.status === 'Ready',
-                      'status-pill--next': op.status === 'Coming Next',
-                      'status-pill--scheduled': op.status === 'Scheduled'
-                    }"
-                  >
-                    {{ op.status }}
+                  <span class="status-pill status-pill--ready">
+                    {{ t("operator.status.ready") }}
                   </span>
                 </td>
                 <td class="center" @click.stop>
                   <AppButton
-                    v-if="op.status === 'Ready'"
                     variant="secondary"
                     size="xs"
                     @click="openWorkflow(op)"
                   >
-                    Open
+                    {{ t("operator.actions.open") }}
                   </AppButton>
-                  <span v-else class="text-tertiary">—</span>
                 </td>
               </tr>
             </tbody>

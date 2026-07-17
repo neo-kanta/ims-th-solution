@@ -29,7 +29,9 @@ onMounted(() => {
 
 const status = computed(() => deriveRuleStatus(props.rule));
 const meta = computed(() => props.rule.type_metadata);
-const ownerLabel = computed(() => users.labelFor(props.rule.createdBy));
+const ownerLabel = computed(
+  () => users.labelFor(props.rule.createdBy) || t("common.notAvailable"),
+);
 </script>
 
 <template>

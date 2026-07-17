@@ -99,7 +99,6 @@ func (h *TradeConfirmationCommandHandler) Record(ctx context.Context, req Record
 		DecisionID:        exec.DecisionID,
 		FundID:            exec.FundID,
 		PortfolioID:       exec.PortfolioID,
-		ContractID:        exec.ContractID,
 		BusinessDate:      exec.BusinessDate,
 		ConfirmedQuantity: req.ConfirmedQuantity,
 		ConfirmedAmount:   req.ConfirmedAmount,

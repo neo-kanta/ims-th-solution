@@ -22,7 +22,6 @@ import (
 type CreateDecisionRequest struct {
 	FundID           uuid.UUID
 	PortfolioID      uuid.UUID
-	ContractID       uuid.UUID
 	InstrumentID     *uuid.UUID
 	InstrumentCode   string
 	BusinessDate     time.Time
@@ -78,6 +77,7 @@ type DecisionCommandHandler struct {
 	approvalCanceller contract.ApprovalCanceller
 	compliance        contract.ComplianceChecker
 	funds             domain.FundRepository
+	portfolios        domain.PortfolioRepository
 }
 
 // NewDecisionCommandHandler wires the handler.
@@ -136,6 +136,15 @@ func (h *DecisionCommandHandler) SetFundRepository(f domain.FundRepository) {
 	}
 }
 
+// SetPortfolioRepository injects the authoritative portfolio repository used
+// by Submit to determine LIVE/SIMULATION/MODEL policy. Portfolio type is never
+// accepted from a caller or transport request.
+func (h *DecisionCommandHandler) SetPortfolioRepository(p domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = p
+	}
+}
+
 // Create persists a brand-new DRAFT decision and emits an audit record.
 // Reference rules on the research report (if any) are enforced at submission
 // time, not creation — drafts may reference a report whose review has not yet
@@ -167,7 +176,6 @@ func (h *DecisionCommandHandler) Create(ctx context.Context, req CreateDecisionR
 		ID:               uuid.New(),
 		FundID:           req.FundID,
 		PortfolioID:      req.PortfolioID,
-		ContractID:       req.ContractID,
 		InstrumentID:     req.InstrumentID,
 		InstrumentCode:   strings.ToUpper(strings.TrimSpace(req.InstrumentCode)),
 		BusinessDate:     req.BusinessDate.UTC(),
@@ -181,10 +189,22 @@ func (h *DecisionCommandHandler) Create(ctx context.Context, req CreateDecisionR
 		Rationale:        req.Rationale,
 		Status:           vo.DecisionLifecycleDraft,
 		SubmitterUserID:  req.ActorID,
-		CreatedAt:        now,
-		CreatedBy:        req.ActorID,
-		UpdatedAt:        now,
-		UpdatedBy:        req.ActorID,
+		// This request shape only ever builds a single-order decision header
+		// (basket/rebalance/switch decisions are out of scope for Create).
+		// These three columns are NOT NULL with a DB-side DEFAULT
+		// (20260615000004_investment__add_decision_basket_fields.up.sql), but
+		// the DEFAULT only applies when a column is omitted from the INSERT —
+		// the persistence layer's INSERT always lists them explicitly, so an
+		// unset Go zero value inserts '' and trips
+		// chk_inv_decision_decision_type/process_type/product_type. Set the
+		// same values the migration documents as the defaults.
+		DecisionType: vo.DecisionTypeSingleOrder,
+		ProcessType:  vo.DecisionProcessInvestment,
+		ProductType:  vo.DecisionProductMutualFund,
+		CreatedAt:    now,
+		CreatedBy:    req.ActorID,
+		UpdatedAt:    now,
+		UpdatedBy:    req.ActorID,
 	}
 
 	if req.ResearchReportID != nil {
@@ -351,7 +371,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 
 	// Workflow gate — refuse to submit when the day is closed or locked.
 	if h.workflow != nil {
-		allowed, err := h.workflow.IsTradeAllowed(ctx, d.ContractID, d.BusinessDate)
+		allowed, err := h.workflow.IsTradeAllowed(ctx, d.FundID, d.BusinessDate)
 		if err != nil {
 			return nil, fmt.Errorf("checking workflow trade gate: %w", err)
 		}
@@ -390,7 +410,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		}
 		violation := policy.CanReferenceResearchReport(policy.ReportReferenceInput{
 			Report:       rep,
-			ContractID:   d.ContractID,
+			ContractID:   d.FundID,
 			Side:         d.Side,
 			BusinessDate: d.BusinessDate,
 		})
@@ -408,16 +428,30 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 	// For BASKET_ORDER / REBALANCE / SWITCH the Ticker field is empty — the
 	// compliance engine evaluates header-level rules only (per-line checks are Phase 2).
 	if h.compliance != nil {
-		var qty, price decimal.Decimal
-		if d.Quantity != nil {
-			qty = *d.Quantity
+		portfolioType, err := resolveCompliancePortfolioType(ctx, h.portfolios, d.PortfolioID)
+		if err != nil {
+			return nil, err
 		}
-		if d.LimitPrice != nil {
-			price = *d.LimitPrice
+		auditGap := func(gateErr error) error {
+			return auditComplianceControlGap(ctx, h.audit, complianceControlGapAuditInput{
+				Phase:          "DECISION_SUBMISSION",
+				DecisionID:     d.ID,
+				PortfolioID:    d.PortfolioID,
+				PortfolioType:  portfolioType,
+				ActorID:        actorID,
+				BusinessDate:   d.BusinessDate,
+				InstrumentCode: d.InstrumentCode,
+			}, gateErr)
 		}
+		qty, price, err := decisionComplianceOrderValues(d)
+		if err != nil {
+			return nil, err
+		}
+		checkGroupID := uuid.New()
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
+			CheckGroupID: checkGroupID,
 			PortfolioID:  d.PortfolioID,
-			ContractID:   d.ContractID,
+			ContractID:   d.FundID,
 			BusinessDate: d.BusinessDate,
 			Actor:        actorID.String(),
 			OrderID:      d.ID,
@@ -431,98 +465,121 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		if err != nil {
 			return nil, fmt.Errorf("pre-trade compliance check: %w", err)
 		}
-		if result != nil {
-			cgid := result.CheckGroupID
-			d.ComplianceCheckGroupID = &cgid
-
-			if result.Verdict == contract.ComplianceVerdictBlock {
-				allReleasable := true
-				for _, b := range result.Breaches {
-					if !b.Overridable {
-						allReleasable = false
-						break
-					}
-				}
-				if !allReleasable || h.approval == nil {
-					// Persist the check group ID for audit trail before rejecting.
-					nowBlk := h.now()
-					d.UpdatedAt = nowBlk
-					d.UpdatedBy = actorID
-					_ = h.runTx(ctx, func(tx pgx.Tx) error {
-						return h.decisions.Update(ctx, tx, d)
-					})
-					return nil, &domain.ErrComplianceRejected{
-						DecisionID:   d.ID.String(),
-						CheckGroupID: result.CheckGroupID.String(),
-						Message:      summarizeBreaches(result.Breaches),
-					}
-				}
-				// All breaches are overridable — submit COMPLIANCE_RELEASE approval
-				// first; only persist the status change after the submission succeeds.
-				// If submission fails the decision stays in DRAFT and can be retried.
-				nowCR := h.now()
-				ctrID := d.ContractID
-				res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
-					ProcessType:      "COMPLIANCE_RELEASE",
-					SubjectType:      "COMPLIANCE_RELEASE",
-					SubjectID:        d.ID,
-					SubjectTitle:     fmt.Sprintf("Compliance Release — %s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
-					SubjectReference: d.DecisionNumber,
-					ContractType:     "FUND",
-					ContractID:       &ctrID,
-					PortfolioID:      &d.PortfolioID,
-					SubmitterID:      actorID,
-				})
-				if err != nil {
-					return nil, fmt.Errorf("submitting compliance release approval: %w", err)
-				}
-				d.Status = vo.DecisionLifecyclePendingComplianceRelease
-				d.UpdatedAt = nowCR
-				d.UpdatedBy = actorID
-				if res != nil {
-					rid := res.RequestID
-					// Store the compliance-release request ID in its own field so
-					// the investment-decision approval ID is not overwritten later.
-					d.ComplianceReleaseApprovalRequestID = &rid
-					d.ApprovalStatus = res.Status
-				}
-				if err := h.runTx(ctx, func(tx pgx.Tx) error {
-					return h.decisions.Update(ctx, tx, d)
-				}); err != nil {
-					return nil, err
-				}
-				h.audit.LogAction(contract.AuditEntry{
-					ActorID:      actorID.String(),
-					Action:       "INVESTMENT_DECISION_COMPLIANCE_RELEASE_SUBMITTED",
-					Module:       "investment",
-					ResourceType: "INVESTMENT_DECISION",
-					ResourceID:   d.ID.String(),
-					Details:      map[string]any{"check_group_id": result.CheckGroupID.String()},
-					BusinessDate: nowCR,
-				})
-				return d, nil // decision is pending compliance release; skip investment approval
+		if result == nil {
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: checkGroupID.String(),
+				Reason:       "pre-trade compliance check returned nil result",
 			}
-			// PASS and WARN both continue to the investment decision approval engine.
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
 		}
+		if gateErr := liveComplianceStatusError(portfolioType, result); gateErr != nil {
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		switch result.Verdict {
+		case contract.ComplianceVerdictPass, contract.ComplianceVerdictWarn, contract.ComplianceVerdictBlock:
+			// Supported business verdicts continue through the existing policy.
+		default:
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: result.CheckGroupID.String(),
+				Reason:       fmt.Sprintf("unsupported compliance verdict %q", result.Verdict),
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		cgid := result.CheckGroupID
+		d.ComplianceCheckGroupID = &cgid
+
+		if result.Verdict == contract.ComplianceVerdictBlock {
+			allReleasable := true
+			for _, b := range result.Breaches {
+				if !b.Overridable {
+					allReleasable = false
+					break
+				}
+			}
+			if !allReleasable || h.approval == nil {
+				// Persist the check group ID for audit trail before rejecting.
+				nowBlk := h.now()
+				d.UpdatedAt = nowBlk
+				d.UpdatedBy = actorID
+				_ = h.runTx(ctx, func(tx pgx.Tx) error {
+					return h.decisions.Update(ctx, tx, d)
+				})
+				return nil, &domain.ErrComplianceRejected{
+					DecisionID:   d.ID.String(),
+					CheckGroupID: result.CheckGroupID.String(),
+					Message:      summarizeBreaches(result.Breaches),
+				}
+			}
+			// All breaches are overridable — submit COMPLIANCE_RELEASE approval
+			// first; only persist the status change after the submission succeeds.
+			// If submission fails the decision stays in DRAFT and can be retried.
+			nowCR := h.now()
+			ctrID := d.FundID
+			res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
+				ProcessType:      "COMPLIANCE_RELEASE",
+				SubjectType:      "COMPLIANCE_RELEASE",
+				SubjectID:        d.ID,
+				SubjectTitle:     fmt.Sprintf("Compliance Release — %s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
+				SubjectReference: d.DecisionNumber,
+				ContractType:     "FUND",
+				ContractID:       &ctrID,
+				PortfolioID:      &d.PortfolioID,
+				SubmitterID:      actorID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("submitting compliance release approval: %w", err)
+			}
+			d.Status = vo.DecisionLifecyclePendingComplianceRelease
+			d.UpdatedAt = nowCR
+			d.UpdatedBy = actorID
+			if res != nil {
+				rid := res.RequestID
+				// Store the compliance-release request ID in its own field so
+				// the investment-decision approval ID is not overwritten later.
+				d.ComplianceReleaseApprovalRequestID = &rid
+				d.ApprovalStatus = res.Status
+			}
+			if err := h.runTx(ctx, func(tx pgx.Tx) error {
+				return h.decisions.Update(ctx, tx, d)
+			}); err != nil {
+				return nil, err
+			}
+			h.audit.LogAction(contract.AuditEntry{
+				ActorID:      actorID.String(),
+				Action:       "INVESTMENT_DECISION_COMPLIANCE_RELEASE_SUBMITTED",
+				Module:       "investment",
+				ResourceType: "INVESTMENT_DECISION",
+				ResourceID:   d.ID.String(),
+				Details:      map[string]any{"check_group_id": result.CheckGroupID.String()},
+				BusinessDate: nowCR,
+			})
+			return d, nil // decision is pending compliance release; skip investment approval
+		}
+		// PASS and WARN both continue to the investment decision approval engine.
 	}
 
 	// Submit through approval engine when wired.
 	if h.approval != nil {
-		ctrType := "COMPANY"
-		var ctrID *uuid.UUID
-		if d.ContractID != uuid.Nil {
-			ctrType = "FUND"
-			id := d.ContractID
-			ctrID = &id
-		}
+		// Decisions are always fund-scoped: fund_id is required at create and
+		// NOT NULL in the DB.
+		fundID := d.FundID
 		res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
 			ProcessType:      "INVESTMENT_DECISION",
 			SubjectType:      "INVESTMENT_DECISION",
 			SubjectID:        d.ID,
 			SubjectTitle:     fmt.Sprintf("%s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
 			SubjectReference: d.DecisionNumber,
-			ContractType:     ctrType,
-			ContractID:       ctrID,
+			ContractType:     "FUND",
+			ContractID:       &fundID,
 			PortfolioID:      &d.PortfolioID,
 			SubmitterID:      actorID,
 		})
@@ -717,7 +774,7 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 	// Compliance release approved — re-validate before re-submitting to the
 	// investment decision approval engine.
 	if h.workflow != nil {
-		allowed, wfErr := h.workflow.IsTradeAllowed(ctx, d.ContractID, d.BusinessDate)
+		allowed, wfErr := h.workflow.IsTradeAllowed(ctx, d.FundID, d.BusinessDate)
 		if wfErr != nil {
 			return fmt.Errorf("checking workflow trade gate: %w", wfErr)
 		}
@@ -736,7 +793,7 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 		}
 		violation := policy.CanReferenceResearchReport(policy.ReportReferenceInput{
 			Report:       rep,
-			ContractID:   d.ContractID,
+			ContractID:   d.FundID,
 			Side:         d.Side,
 			BusinessDate: d.BusinessDate,
 		})
@@ -751,21 +808,17 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 	if h.approval == nil {
 		return fmt.Errorf("approval engine not wired; cannot continue decision %s after compliance release", decisionID)
 	}
-	ctrType := "COMPANY"
-	var ctrID *uuid.UUID
-	if d.ContractID != uuid.Nil {
-		ctrType = "FUND"
-		id := d.ContractID
-		ctrID = &id
-	}
+	// Decisions are always fund-scoped: fund_id is required at create and
+	// NOT NULL in the DB.
+	fundID := d.FundID
 	res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
 		ProcessType:      "INVESTMENT_DECISION",
 		SubjectType:      "INVESTMENT_DECISION",
 		SubjectID:        d.ID,
 		SubjectTitle:     fmt.Sprintf("%s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
 		SubjectReference: d.DecisionNumber,
-		ContractType:     ctrType,
-		ContractID:       ctrID,
+		ContractType:     "FUND",
+		ContractID:       &fundID,
 		PortfolioID:      &d.PortfolioID,
 		SubmitterID:      d.SubmitterUserID,
 	})
@@ -808,9 +861,6 @@ func validateCreateDecision(req CreateDecisionRequest) error {
 	if req.PortfolioID == uuid.Nil {
 		return &domain.ErrInvalidDecisionRequest{Field: "portfolio_id", Detail: "is required"}
 	}
-	if req.ContractID == uuid.Nil {
-		return &domain.ErrInvalidDecisionRequest{Field: "contract_id", Detail: "is required"}
-	}
 	if req.BusinessDate.IsZero() {
 		return &domain.ErrInvalidDecisionRequest{Field: "business_date", Detail: "is required"}
 	}
@@ -826,5 +876,51 @@ func validateCreateDecision(req CreateDecisionRequest) error {
 	if req.Quantity == nil && req.Amount == nil {
 		return &domain.ErrInvalidDecisionRequest{Field: "quantity", Detail: "quantity or amount is required"}
 	}
+	if req.Quantity != nil && !req.Quantity.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "quantity", Detail: "must be positive"}
+	}
+	if req.Amount != nil && !req.Amount.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "amount", Detail: "must be positive"}
+	}
+	if req.LimitPrice != nil && !req.LimitPrice.IsPositive() {
+		return &domain.ErrInvalidDecisionRequest{Field: "limit_price", Detail: "must be positive"}
+	}
 	return nil
+}
+
+// decisionComplianceOrderValues converts the decision ticket into the
+// quantity + unit-price shape required by the compliance contract.
+//
+// An explicit amount is the authoritative proposed notional. When quantity
+// is also available, amount/quantity is therefore the effective unit price;
+// this keeps Quantity*Price equal to the amount the operator entered. A
+// quantity-only decision falls back to its positive limit price. Amount-only
+// decisions fail closed because quantity-based rules cannot be evaluated
+// safely without units.
+func decisionComplianceOrderValues(d *entity.Decision) (decimal.Decimal, decimal.Decimal, error) {
+	if d.Quantity == nil || !d.Quantity.IsPositive() {
+		return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+			Field:  "quantity",
+			Detail: "a positive quantity is required for pre-trade compliance",
+		}
+	}
+
+	qty := *d.Quantity
+	if d.Amount != nil {
+		if !d.Amount.IsPositive() {
+			return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+				Field:  "amount",
+				Detail: "must be positive",
+			}
+		}
+		return qty, d.Amount.Div(qty), nil
+	}
+
+	if d.LimitPrice == nil || !d.LimitPrice.IsPositive() {
+		return decimal.Zero, decimal.Zero, &domain.ErrInvalidDecisionRequest{
+			Field:  "limit_price",
+			Detail: "a positive limit price or amount is required for pre-trade compliance",
+		}
+	}
+	return qty, *d.LimitPrice, nil
 }

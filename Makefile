@@ -102,10 +102,13 @@ build: ## Build backend binary + frontend static
 docker-build: ## Build Docker images
 	cd infra && docker compose build
 
-swagger: ## Generate backend Swagger docs
-	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go -d . -o docs --parseInternal --useStructName
+swagger: ## Generate backend Swagger docs (V1, basePath /api/v1)
+	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/main.go -d . -o docs --parseInternal --useStructName --tags "!Investment - Portfolios V2"
 
-api-client: swagger ## Generate frontend API types from backend Swagger docs
+swagger-v2: ## Generate Portfolio V2 Swagger docs (basePath /api/v2 — see backend/cmd/server/swagger_v2_docs.go)
+	cd backend && go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/server/swagger_v2_docs.go -d . -o docs/v2 --parseInternal --useStructName --tags "Investment - Portfolios V2" --instanceName=v2
+
+api-client: swagger swagger-v2 ## Generate frontend API types from backend Swagger docs
 	cd frontend && npm run api:generate
 
 # =============================

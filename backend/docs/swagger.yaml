@@ -339,6 +339,7 @@ definitions:
       checkRecordID:
         type: string
       contractID:
+        description: nil for portfolio-only checks (no fund_id)
         type: string
       createdAt:
         type: string
@@ -558,6 +559,7 @@ definitions:
         description: actor ID or "system"
         type: string
       contractID:
+        description: nil for portfolio-only checks (no fund_id)
         type: string
       createdAt:
         type: string
@@ -670,8 +672,6 @@ definitions:
         type: string
       business_date:
         type: string
-      contract_id:
-        type: string
       currency:
         type: string
       exchange:
@@ -700,12 +700,24 @@ definitions:
         type: string
     required:
     - business_date
-    - contract_id
     - currency
     - fund_id
     - instrument_code
     - portfolio_id
     - side
+    type: object
+  CreateExecutionRequest:
+    properties:
+      broker_reference:
+        type: string
+      decision_id:
+        type: string
+      ordered_amount:
+        type: string
+      ordered_quantity:
+        type: string
+    required:
+    - decision_id
     type: object
   CreateFundRequest:
     properties:
@@ -858,6 +870,8 @@ definitions:
         type: string
       name:
         maxLength: 255
+        type: string
+      portfolio_type:
         type: string
       risk_profile:
         type: string
@@ -1280,8 +1294,6 @@ definitions:
         type: string
       compliance_release_approval_request_id:
         type: string
-      contract_id:
-        type: string
       created_at:
         type: string
       currency:
@@ -1500,6 +1512,53 @@ definitions:
           ZeroTransactionAttestation must be true when approving a day with no
           investment transactions. Ignored for all other actions.
         type: boolean
+    type: object
+  ExecutionResponse:
+    properties:
+      broker_reference:
+        type: string
+      business_date:
+        type: string
+      cancellation_reason:
+        type: string
+      cancelled_at:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      decision_id:
+        type: string
+      executed_amount:
+        type: string
+      executed_at:
+        type: string
+      executed_quantity:
+        type: string
+      execution_price:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      instrument_code:
+        type: string
+      instrument_id:
+        type: string
+      ordered_amount:
+        type: string
+      ordered_quantity:
+        type: string
+      portfolio_id:
+        type: string
+      side:
+        type: string
+      status:
+        type: string
+      trader_user_id:
+        type: string
+      updated_at:
+        type: string
     type: object
   FundAllocationResponse:
     properties:
@@ -2584,6 +2643,8 @@ definitions:
         type: string
       name:
         type: string
+      portfolio_type:
+        type: string
       risk_profile:
         type: string
       status:
@@ -2715,6 +2776,8 @@ definitions:
         type: string
       rules_evaluated:
         type: integer
+      status:
+        type: string
       total_duration_ms:
         type: integer
       verdict:
@@ -4377,6 +4440,81 @@ definitions:
       unrealised_pnl:
         type: string
       valuation_ccy:
+        type: string
+    type: object
+  ValuationSummaryCoverageDTO:
+    properties:
+      excluded_business_dates:
+        items:
+          type: string
+        type: array
+      excluded_currencies:
+        items:
+          type: string
+        type: array
+      excluded_fund_count:
+        type: integer
+      excluded_portfolio_count:
+        type: integer
+      exclusion_reasons:
+        items:
+          type: string
+        type: array
+      exclusions:
+        items:
+          $ref: '#/definitions/ValuationSummaryExclusionDTO'
+        type: array
+      included_fund_count:
+        type: integer
+      included_portfolio_count:
+        type: integer
+      total_fund_count:
+        type: integer
+      total_portfolio_count:
+        type: integer
+    type: object
+  ValuationSummaryDTO:
+    properties:
+      as_of:
+        type: string
+      aum_today:
+        type: string
+      business_date:
+        type: string
+      coverage:
+        $ref: '#/definitions/ValuationSummaryCoverageDTO'
+      currency:
+        type: string
+      data_available:
+        type: boolean
+      scope:
+        type: string
+      status:
+        enum:
+        - AVAILABLE
+        - NO_DATA
+        - INCOMPLETE
+        type: string
+      today_pnl:
+        type: string
+      today_pnl_percent:
+        type: string
+      username:
+        type: string
+    type: object
+  ValuationSummaryExclusionDTO:
+    properties:
+      business_date:
+        type: string
+      currency:
+        type: string
+      fund_code:
+        type: string
+      portfolio_code:
+        type: string
+      reason:
+        type: string
+      required_business_date:
         type: string
     type: object
   WatchlistItemResponse:
@@ -7313,6 +7451,50 @@ paths:
       summary: Personal dashboard snapshot
       tags:
       - Integration
+  /integration/dashboard/valuation-summary:
+    get:
+      description: Returns official LIVE-portfolio AUM and today's P&L converted to
+        the configured reporting currency. scope=company aggregates every authorized
+        fund; scope=mine restricts to funds the authenticated caller manages. status
+        is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false
+        and no usable numeric total; coverage reports exact included/excluded fund
+        and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date,
+        invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL
+        portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
+      parameters:
+      - description: company (default) or mine
+        in: query
+        name: scope
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ValuationSummaryDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Dashboard AUM / P&L summary
+      tags:
+      - Integration
   /integration/tasks/my:
     get:
       description: Returns the caller's task feed, optionally filtered by module,
@@ -7404,10 +7586,6 @@ paths:
       - description: Filter by portfolio UUID
         in: query
         name: portfolio_id
-        type: string
-      - description: Filter by contract UUID
-        in: query
-        name: contract_id
         type: string
       - description: Filter by business date YYYY-MM-DD
         in: query
@@ -7624,6 +7802,11 @@ paths:
           description: Conflict
           schema:
             $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated
+            rule rejection
+          schema:
+            $ref: '#/definitions/ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -7795,6 +7978,56 @@ paths:
       summary: Batch Reject Investment Decisions
       tags:
       - Investment - Decisions
+  /investment/executions:
+    post:
+      consumes:
+      - application/json
+      description: Opens an execution against an APPROVED decision and reruns pre-trade
+        compliance using the actual ordered values.
+      parameters:
+      - description: Execution fields
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateExecutionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated
+            rule rejection
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Investment Execution
+      tags:
+      - Investment - Executions
   /investment/funds:
     get:
       description: List funds visible to the authenticated user.

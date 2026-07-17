@@ -68,7 +68,7 @@ interface WorkflowStoreState {
   loadingHistory: boolean;
   executing: boolean;
   error: string | null;
-  lastResult: WorkflowExecuteResponse | null;
+  lastResult: WorkflowTransitionEntry | null;
   lastIdempotencyKey: string | null;
 }
 
@@ -247,8 +247,9 @@ export const useWorkflowStore = defineStore("workflow", {
         if (response.error !== undefined) {
           throw new OpenApiRequestError(response.response, response.error);
         }
-        this.lastResult =
-          unwrapEnvelope<WorkflowExecuteResponse>(response.data) ?? null;
+        const workflow = unwrapEnvelope<WorkflowExecuteResponse>(response.data);
+        const timeline = workflow?.timeline ?? [];
+        this.lastResult = timeline[timeline.length - 1] ?? null;
         await this.refresh();
         return true;
       } catch (err) {

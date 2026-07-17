@@ -97,6 +97,10 @@ func (r *valuationPortfolioRepo) GetByFundCode(ctx context.Context, fundID uuid.
 	return nil, nil
 }
 
+func (r *valuationPortfolioRepo) GetByCode(ctx context.Context, code string) (*entity.Portfolio, error) {
+	return nil, nil
+}
+
 func (r *valuationPortfolioRepo) List(ctx context.Context, filter domain.PortfolioListFilter) ([]*entity.Portfolio, int, error) {
 	return nil, 0, nil
 }

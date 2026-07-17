@@ -34,7 +34,7 @@ onMounted(() => {
 });
 
 function portfolioLabel(id: string): string {
-  return portfolios.labelFor(id);
+  return portfolios.labelFor(id) || t("common.notAvailable");
 }
 
 function statusToneClass(status: string): string {
@@ -50,8 +50,21 @@ function statusToneClass(status: string): string {
   }
 }
 
-function shortenId(id: string, len = 8): string {
-  if (!id) return "—";
+function statusLabel(status: string): string {
+  switch (status) {
+    case "OPEN":
+      return t("compliance.postTrade.filters.open");
+    case "OVERRIDDEN":
+      return t("compliance.postTrade.filters.overridden");
+    case "RESOLVED":
+      return t("compliance.postTrade.filters.resolved");
+    default:
+      return status;
+  }
+}
+
+function shortenId(id: string | null | undefined, len = 8): string {
+  if (!id) return t("common.notAvailable");
   return id.length <= len ? id : `${id.slice(0, len)}…`;
 }
 </script>
@@ -92,7 +105,7 @@ function shortenId(id: string, len = 8): string {
       <tbody>
         <tr v-for="b in items" :key="b.id">
           <td>
-            <div class="inbox__rule">{{ ruleLabel(b.ruleTypeID) }}</div>
+            <div class="inbox__rule">{{ ruleLabel(b.ruleTypeID, t) }}</div>
             <code class="inbox__code">{{ b.ruleTypeID }}</code>
           </td>
           <td>
@@ -102,7 +115,7 @@ function shortenId(id: string, len = 8): string {
             <ComplianceVerdictBadge :verdict="b.verdict" />
           </td>
           <td>
-            <span :class="statusToneClass(b.status)">{{ b.status }}</span>
+            <span :class="statusToneClass(b.status)">{{ statusLabel(b.status) }}</span>
           </td>
           <td>{{ formatIsoDate(b.businessDate) }}</td>
           <td>
@@ -110,17 +123,12 @@ function shortenId(id: string, len = 8): string {
               <span class="inbox__portfolio-label">
                 {{ portfolioLabel(b.portfolioID) }}
               </span>
-              <code class="inbox__code" :title="b.portfolioID">
-                {{ shortenId(b.portfolioID) }}
-              </code>
             </div>
           </td>
           <td>
-            <code class="inbox__code" :title="b.contractID">
-              {{ shortenId(b.contractID) }}
-            </code>
+            {{ t("common.notAvailable") }}
           </td>
-          <td class="inbox__msg" :title="b.message">{{ b.message || "—" }}</td>
+          <td class="inbox__msg" :title="b.message">{{ b.message || t("common.notAvailable") }}</td>
           <td class="inbox-table__actions">
             <AppButton
               variant="primary"
@@ -128,7 +136,7 @@ function shortenId(id: string, len = 8): string {
               :disabled="!canOverride || b.status !== 'OPEN'"
               :title="
                 !canOverride
-                  ? 'IRG_OVERRIDE_BREACH permission required.'
+                  ? t('compliance.postTrade.override.permissionRequired')
                   : b.status !== 'OPEN'
                     ? t('compliance.postTrade.override.notOverridable')
                     : undefined
@@ -148,7 +156,7 @@ function shortenId(id: string, len = 8): string {
               {{ t("compliance.postTrade.table.statusTransitionDisabled") }}
             </div>
             <div class="inbox__id-row">
-              <span class="inbox__id-label">Breach</span>
+              <span class="inbox__id-label">{{ t("compliance.nav.postTrade") }}</span>
               <code :title="b.id">{{ shortenId(b.id) }}</code>
               <span class="inbox__id-label">·</span>
               <span>{{ formatIsoDateTime(b.createdAt) }}</span>

@@ -6,6 +6,7 @@ import AppCard from "~/shared/ui/AppCard.vue";
 import AppEmptyState from "~/shared/ui/AppEmptyState.vue";
 
 import { useCompliancePortfolioDirectory } from "../composables/useCompliancePortfolioDirectory";
+import { useComplianceUserDirectory } from "../composables/useComplianceUserDirectory";
 import { formatIsoDate, formatIsoDateTime } from "../lib/formatters";
 import { ruleLabel } from "../lib/ruleTypeCatalog";
 import type { ComplianceCheckGroupResult } from "../types";
@@ -22,17 +23,22 @@ const props = defineProps<Props>();
 
 const { t } = useI18n();
 const portfolios = useCompliancePortfolioDirectory();
+const users = useComplianceUserDirectory();
 
 onMounted(() => {
-  void portfolios.ensureLoaded();
+  void Promise.all([portfolios.ensureLoaded(), users.ensureLoaded()]);
 });
 
 const recordCount = computed(() => props.data?.records?.length ?? 0);
 const breachCount = computed(() => props.data?.breaches?.length ?? 0);
 
 function shortenId(id: string | null | undefined, len = 8): string {
-  if (!id) return "—";
+  if (!id) return t("common.notAvailable");
   return id.length <= len ? id : `${id.slice(0, len)}…`;
+}
+
+function userLabel(id: string | null | undefined): string {
+  return users.labelFor(id) || t("common.notAvailable");
 }
 </script>
 
@@ -73,48 +79,48 @@ function shortenId(id: string | null | undefined, len = 8): string {
             }"
           >
             <div class="audit-item__head">
-              <div class="audit-item__title">{{ ruleLabel(r.ruleTypeID) }}</div>
+              <div class="audit-item__title">{{ ruleLabel(r.ruleTypeID, t) }}</div>
               <div class="audit-item__badges">
                 <ComplianceVerdictBadge :verdict="r.finalVerdict" />
                 <ComplianceSeverityBadge :severity="r.effectiveSeverity" />
               </div>
             </div>
-            <p class="audit-item__message">{{ r.message || "—" }}</p>
+            <p class="audit-item__message">{{ r.message || t("common.notAvailable") }}</p>
             <dl class="audit-item__meta">
               <div>
-                <dt>Timing</dt>
+                <dt>{{ t("compliance.audit.fields.timing") }}</dt>
                 <dd>{{ r.timing }}</dd>
               </div>
               <div>
-                <dt>Business date</dt>
+                <dt>{{ t("compliance.audit.fields.businessDate") }}</dt>
                 <dd>{{ formatIsoDate(r.businessDate) }}</dd>
               </div>
               <div>
-                <dt>Checked at</dt>
+                <dt>{{ t("compliance.audit.fields.checkedAt") }}</dt>
                 <dd>{{ formatIsoDateTime(r.checkedAt) }}</dd>
               </div>
               <div>
-                <dt>Checked by</dt>
-                <dd><code>{{ shortenId(r.checkedBy ?? null) }}</code></dd>
+                <dt>{{ t("compliance.audit.fields.checkedBy") }}</dt>
+                <dd>{{ userLabel(r.checkedBy ?? null) }}</dd>
               </div>
               <div>
-                <dt>Order</dt>
+                <dt>{{ t("compliance.audit.fields.order") }}</dt>
                 <dd><code>{{ shortenId(r.orderID ?? null) }}</code></dd>
               </div>
               <div>
-                <dt>Ticker</dt>
-                <dd>{{ r.ticker || "—" }}</dd>
+                <dt>{{ t("compliance.audit.fields.ticker") }}</dt>
+                <dd>{{ r.ticker || t("common.notAvailable") }}</dd>
               </div>
               <div>
-                <dt>Portfolio</dt>
-                <dd :title="r.portfolioID">{{ portfolios.labelFor(r.portfolioID) }}</dd>
+                <dt>{{ t("compliance.audit.fields.portfolio") }}</dt>
+                <dd>{{ portfolios.labelFor(r.portfolioID) || t("common.notAvailable") }}</dd>
               </div>
               <div>
-                <dt>Rule version</dt>
+                <dt>{{ t("compliance.audit.fields.ruleVersion") }}</dt>
                 <dd>v{{ r.ruleInstanceVersion }}</dd>
               </div>
               <div>
-                <dt>Data hash</dt>
+                <dt>{{ t("compliance.audit.fields.dataHash") }}</dt>
                 <dd><code>{{ shortenId(r.dataSnapshotHash ?? null, 12) }}</code></dd>
               </div>
             </dl>
@@ -125,8 +131,8 @@ function shortenId(id: string | null | undefined, len = 8): string {
       <AppCard :title="t('compliance.audit.breaches') + ` (${breachCount})`">
         <AppEmptyState
           v-if="breachCount === 0"
-          icon="check"
-          title="No breaches in this check group."
+          icon="table"
+          :title="t('compliance.audit.noBreaches')"
         />
         <ol v-else class="audit-list">
           <li
@@ -139,25 +145,25 @@ function shortenId(id: string | null | undefined, len = 8): string {
             }"
           >
             <div class="audit-item__head">
-              <div class="audit-item__title">{{ ruleLabel(b.ruleTypeID) }}</div>
+              <div class="audit-item__title">{{ ruleLabel(b.ruleTypeID, t) }}</div>
               <div class="audit-item__badges">
                 <ComplianceVerdictBadge :verdict="b.verdict" />
                 <ComplianceSeverityBadge :severity="b.severity" />
                 <span class="audit-item__status">{{ b.status }}</span>
               </div>
             </div>
-            <p class="audit-item__message">{{ b.message || "—" }}</p>
+            <p class="audit-item__message">{{ b.message || t("common.notAvailable") }}</p>
             <dl class="audit-item__meta">
               <div>
-                <dt>Breach</dt>
+                <dt>{{ t("compliance.audit.fields.breach") }}</dt>
                 <dd><code>{{ b.id }}</code></dd>
               </div>
               <div>
-                <dt>Business date</dt>
+                <dt>{{ t("compliance.audit.fields.businessDate") }}</dt>
                 <dd>{{ formatIsoDate(b.businessDate) }}</dd>
               </div>
               <div>
-                <dt>Created</dt>
+                <dt>{{ t("compliance.audit.fields.created") }}</dt>
                 <dd>{{ formatIsoDateTime(b.createdAt) }}</dd>
               </div>
             </dl>

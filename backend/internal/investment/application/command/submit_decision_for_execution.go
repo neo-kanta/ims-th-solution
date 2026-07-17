@@ -112,7 +112,7 @@ func (h *SubmitDecisionForExecutionHandler) Handle(
 	}
 	checkReq := contract.ProposedOrderCheck{
 		PortfolioID:  decision.PortfolioID,
-		ContractID:   decision.ContractID,
+		ContractID:   decision.FundID,
 		BusinessDate: decision.BusinessDate,
 		Actor:        req.ActorID.String(),
 		OrderID:      decision.ID,

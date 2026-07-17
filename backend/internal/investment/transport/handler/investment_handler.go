@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
@@ -54,6 +55,22 @@ type InvestmentHandler struct {
 	fundNAVQuery   *query.GetLatestFundNAVHandler
 	fundAllocQuery *query.GetFundAllocationHandler
 	fundNAVHistory *query.GetFundNAVHistoryHandler
+
+	// compliance is the Portfolio Compliance V2 surface (checks, rule catalog,
+	// binding administration, breach listing). Wired post-construction via
+	// SetPortfolioComplianceAdmin to avoid a circular construction dependency
+	// between investment and compliance — nil until the setter runs, so every
+	// handler in portfolio_v2_compliance_handler.go checks for nil first.
+	compliance contract.PortfolioComplianceContract
+}
+
+// SetPortfolioComplianceAdmin wires the Portfolio Compliance V2 contract.
+// Mirrors the existing post-construction setter pattern used for approval
+// and market-data cross-module wiring (see Module.SetApprovalSubmitter etc.).
+func (h *InvestmentHandler) SetPortfolioComplianceAdmin(c contract.PortfolioComplianceContract) {
+	if h != nil {
+		h.compliance = c
+	}
 }
 
 // NewInvestmentHandler wires every command/query for the investment module.
@@ -117,6 +134,7 @@ func writeDomainError(w http.ResponseWriter, err error) {
 		fundVer            *domain.ErrFundVersionMismatch
 		portVer            *domain.ErrPortfolioVersionMismatch
 		codeExists         *domain.ErrCodeAlreadyExists
+		ambiguousCode      *domain.ErrAmbiguousPortfolioCode
 		fundActive         *domain.ErrFundHasActivePortfolios
 		portActivity       *domain.ErrPortfolioHasOpenActivity
 		complianceRejected *domain.ErrComplianceRejected
@@ -135,7 +153,7 @@ func writeDomainError(w http.ResponseWriter, err error) {
 		httputil.UnprocessableEntity(w, err.Error())
 	case errors.As(err, &fundVer), errors.As(err, &portVer):
 		httputil.Conflict(w, err.Error())
-	case errors.As(err, &codeExists):
+	case errors.As(err, &codeExists), errors.As(err, &ambiguousCode):
 		httputil.Conflict(w, err.Error())
 	default:
 		httputil.InternalError(w, err.Error())
@@ -457,6 +475,50 @@ func (h *InvestmentHandler) GetPortfolio(w http.ResponseWriter, r *http.Request)
 	httputil.OK(w, response.FromPortfolio(p))
 }
 
+// GetPortfolioByCode handles GET /api/v2/portfolios/{portfolioCode}.
+//
+// Portfolio V2 (docs/api/portfolio-v2-api-ddd.md) identifies portfolios by
+// business code in the public route, resolving to the internal portfolio_id
+// server-side. The response shape is unchanged from V1's PortfolioResponse.
+// @Summary Get Portfolio By Code
+// @Description Retrieve one portfolio by its business code (Portfolio V2).
+// @Tags Investment - Portfolios V2
+// @Security BearerAuth
+// @Produce json
+// @Param portfolioCode path string true "Portfolio code"
+// @Success 200 {object} response.PortfolioResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /portfolios/{portfolioCode} [get]
+func (h *InvestmentHandler) GetPortfolioByCode(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "portfolioCode")
+	if code == "" {
+		httputil.BadRequest(w, "invalid portfolio code")
+		return
+	}
+	p, err := h.portfolios.GetByCode(r.Context(), code)
+	if err != nil {
+		// Includes *domain.ErrAmbiguousPortfolioCode (409) — see the
+		// GetByCode doc comment on domain.PortfolioRepository for why this
+		// must not be treated as a plain 500.
+		writeDomainError(w, err)
+		return
+	}
+	if p == nil {
+		httputil.NotFound(w, "portfolio not found")
+		return
+	}
+	if !hasFundAccess(r.Context(), h.pc, p.FundID) {
+		httputil.Forbidden(w, "no access to this portfolio")
+		return
+	}
+	httputil.OK(w, response.FromPortfolio(p))
+}
+
 // CreatePortfolio handles POST /investment/portfolios.
 // @Summary Create Portfolio
 // @Description Create a portfolio under a fund.
@@ -497,9 +559,14 @@ func (h *InvestmentHandler) CreatePortfolio(w http.ResponseWriter, r *http.Reque
 	if taxMethod == "" {
 		taxMethod = vo.TaxLotMethodAverage
 	}
+	portfolioType := vo.PortfolioType(req.PortfolioType)
+	if portfolioType == "" {
+		portfolioType = vo.PortfolioTypeLive
+	}
 
 	p, err := h.portfolioCmd.Create(r.Context(), command.CreatePortfolioRequest{
 		FundID:            req.FundID,
+		PortfolioType:     portfolioType,
 		Code:              req.Code,
 		Name:              req.Name,
 		Description:       req.Description,

@@ -18,9 +18,7 @@ export const complianceDashboardTabs: DashboardTabProvider = {
         { key: "library", label: t("compliance.dashboard.tabs.library"), to: "/compliance/rules", icon: "list", count: rulesCount },
         { key: "approvals", label: t("compliance.dashboard.tabs.approvals"), to: "/compliance", icon: "approval" },
         { key: "breaches", label: t("compliance.dashboard.tabs.breaches"), to: "/compliance/post-trade", icon: "warning", count: breachesCount },
-        { key: "exceptions", label: t("compliance.dashboard.tabs.exceptions"), to: "/compliance/exceptions", icon: "approval" },
         { key: "audit", label: t("compliance.dashboard.tabs.audit"), to: "/compliance/audit", icon: "audit" },
-        { key: "settings", label: t("compliance.dashboard.tabs.settings"), to: "/compliance/permissions", icon: "shield" },
       ];
     });
 
@@ -28,9 +26,7 @@ export const complianceDashboardTabs: DashboardTabProvider = {
       if (route.path === "/compliance") return "overview";
       if (route.path.startsWith("/compliance/rules")) return "library";
       if (route.path.startsWith("/compliance/post-trade")) return "breaches";
-      if (route.path.startsWith("/compliance/exceptions")) return "exceptions";
       if (route.path.startsWith("/compliance/audit")) return "audit";
-      if (route.path.startsWith("/compliance/permissions")) return "settings";
       return "";
     });
 

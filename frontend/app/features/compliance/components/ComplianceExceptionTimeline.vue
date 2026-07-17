@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppCard from "~/shared/ui/AppCard.vue";
 
 const { t } = useI18n();
 
 interface Step {
-  labelKey: string;
+  labelKey: AppTranslationKey;
   tone: "neutral" | "info" | "success" | "danger" | "warning";
 }
 
@@ -28,7 +28,7 @@ function dotClass(tone: Step["tone"]): string {
     <ol class="timeline">
       <li v-for="step in STEPS" :key="step.labelKey" class="timeline-item">
         <span :class="dotClass(step.tone)" aria-hidden="true" />
-        <span class="timeline-label">{{ t(step.labelKey as any) }}</span>
+        <span class="timeline-label">{{ t(step.labelKey) }}</span>
       </li>
     </ol>
   </AppCard>

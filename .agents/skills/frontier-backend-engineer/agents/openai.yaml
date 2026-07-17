@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontier Backend Engineer"
+  short_description: "Build verified Go APIs, domains, and migrations"
+  default_prompt: "Use $frontier-backend-engineer to implement and verify this backend task."

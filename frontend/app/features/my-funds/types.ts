@@ -1,11 +1,9 @@
 /**
- * Type definitions for the My Funds workspace (operational cockpit for
- * fund managers, researchers, reviewers, traders, compliance and admin).
- *
- * View models centralise the mapping from backend DTOs (FundResponse,
- * ValuationResponse, WorkflowStateResponse, Breach) into a flat shape
- * the UI consumes. All API access goes through the generated OpenAPI
- * client — see services/myFundsApi.ts.
+ * Fund DTOs and derived view models shared by portfolio-workspace and the
+ * investment operator page. View models centralise the mapping from backend
+ * DTOs (FundResponse, ValuationResponse, WorkflowStateResponse, Breach) into
+ * a flat shape the UI consumes. All API access goes through the generated
+ * OpenAPI client — see services/myFundsApi.ts.
  */
 import type { components } from "~/api/ims-api";
 
@@ -88,45 +86,4 @@ export interface FundComplianceSummary {
   worst_severity: "INFO" | "WARN" | "BLOCK" | null;
   latest_breach_id: string | null;
   latest_message: string | null;
-}
-
-/** Flat view model the My Funds list consumes per card. */
-export interface MyFundCard {
-  fund_id: string;
-  code: string;
-  short_name: string;
-  name: string;
-  base_currency: string;
-  role: MyFundRole;
-  status: MyFundStatus;
-  fund_status_raw: string;
-  manager_user_id: string | null;
-  valuation: FundValuationSummary;
-  workflow: FundWorkflowSummary;
-  compliance: FundComplianceSummary;
-  updated_at: string;
-}
-
-export type MyFundsFilter =
-  | "all"
-  | "managed"
-  | "breached"
-  | "locked"
-  | "stale";
-
-export type MyFundsSort = "aum" | "name" | "breach" | "updated";
-
-export interface MyFundsKpiStrip {
-  total_aum: string;
-  total_aum_numeric: number;
-  total_unrealised_pnl: string;
-  total_unrealised_pnl_numeric: number;
-  unrealised_pnl_trend: "up" | "down" | "flat";
-  active_count: number;
-  total_count: number;
-  open_breach_count: number;
-  worst_breach_severity: "INFO" | "WARN" | "BLOCK" | null;
-  stale_count: number;
-  pending_workflow_count: number;
-  valuation_ccy: string;
 }

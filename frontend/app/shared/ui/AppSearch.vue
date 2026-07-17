@@ -51,7 +51,6 @@ const featureProvider: SearchProvider = {
     const q = ctx.query.toLowerCase().trim();
     const features: SuggestionItem[] = [
       { id: "nav-dashboard", label: "Dashboard Overview", value: "Dashboard", type: "feature", to: "/", actionText: "Jump to", iconName: "workflow" },
-      { id: "nav-funds", label: "My investment funds", value: "My funds investment portfolio", type: "feature", to: "/investment/funds", actionText: "Jump to", iconName: "repo" },
       { id: "nav-research", label: "Investment Research console", value: "Investment Research analysis", type: "feature", to: "/investment/analysis", actionText: "Jump to", iconName: "repo" },
       { id: "nav-market-data", label: "Market Data feeds", value: "Market data stats global", type: "feature", to: "/market-data", actionText: "Jump to", iconName: "organization" },
       { id: "nav-compliance-dashboard", label: "Compliance dashboard", value: "Compliance overview dashboard", type: "feature", to: "/compliance", actionText: "Jump to", iconName: "compliance" },

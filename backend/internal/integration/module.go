@@ -8,6 +8,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/integration/infrastructure/persistence"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/integration/transport"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/integration/transport/handler"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
 // Module wires the integration dashboard aggregator.
@@ -16,13 +17,16 @@ type Module struct {
 }
 
 // NewModule creates a new integration module with its dependencies.
-func NewModule(pool *pgxpool.Pool, iam query.IAMPort) *Module {
+// valuation may be nil (e.g. in tests) — the valuation-summary endpoint
+// then degrades to an explicit not-available response.
+func NewModule(pool *pgxpool.Pool, iam query.IAMPort, valuation contract.ValuationSummaryProvider) *Module {
 	repo := persistence.NewTaskRepository(pool)
 
 	snapshotHandler := query.NewGetDashboardSnapshotHandler(iam, repo)
 	tasksHandler := query.NewGetMyTasksHandler(iam, repo)
+	valuationSummaryHandler := query.NewGetValuationSummaryHandler(iam, valuation)
 
-	dashboardHandler := handler.NewDashboardHandler(snapshotHandler, tasksHandler)
+	dashboardHandler := handler.NewDashboardHandler(snapshotHandler, tasksHandler, valuationSummaryHandler)
 
 	return &Module{
 		dashboardHandler: dashboardHandler,

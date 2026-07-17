@@ -52,6 +52,8 @@ type ExecutionCommandHandler struct {
 	now        func() time.Time
 	runTx      func(ctx context.Context, fn func(pgx.Tx) error) error
 	workflow   contract.WorkflowStateProvider
+	compliance contract.ComplianceChecker
+	portfolios domain.PortfolioRepository
 }
 
 // SetWorkflowStateProvider injects the workflow state port post-construction.
@@ -60,6 +62,26 @@ type ExecutionCommandHandler struct {
 func (h *ExecutionCommandHandler) SetWorkflowStateProvider(w contract.WorkflowStateProvider) {
 	if h != nil {
 		h.workflow = w
+	}
+}
+
+// SetComplianceChecker injects the execution-time IRG compliance gate
+// post-construction. When wired, Create() re-runs the pre-trade pipeline
+// against the execution's actual ordered quantity/amount immediately before
+// the execution row is opened — a second gate alongside the existing
+// submit-time check, not a replacement for it.
+func (h *ExecutionCommandHandler) SetComplianceChecker(checker contract.ComplianceChecker) {
+	if h != nil {
+		h.compliance = checker
+	}
+}
+
+// SetPortfolioRepository injects the authoritative portfolio repository used
+// by Create to determine LIVE/SIMULATION/MODEL policy. Portfolio type is never
+// accepted from a caller or transport request.
+func (h *ExecutionCommandHandler) SetPortfolioRepository(p domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = p
 	}
 }
 
@@ -112,7 +134,7 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 	// IsTradeAllowed, because execution is an operational act against an already-
 	// approved decision, not a new trade submission.
 	if h.workflow != nil {
-		locked, err := h.workflow.IsTransactionLocked(ctx, d.ContractID, d.BusinessDate)
+		locked, err := h.workflow.IsTransactionLocked(ctx, d.FundID, d.BusinessDate)
 		if err != nil {
 			return nil, fmt.Errorf("checking workflow transaction lock: %w", err)
 		}
@@ -133,12 +155,103 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 	if ordAmt == nil {
 		ordAmt = d.Amount
 	}
+	// Execution-time IRG compliance gate. Runs after the decision/workflow
+	// checks above and before the execution row is created — a second gate
+	// alongside the existing submit-time check, evaluated against the actual
+	// ordered quantity for this execution rather than the original decision
+	// quantity.
+	if h.compliance != nil {
+		portfolioType, err := resolveCompliancePortfolioType(ctx, h.portfolios, d.PortfolioID)
+		if err != nil {
+			return nil, err
+		}
+		auditGap := func(gateErr error) error {
+			return auditComplianceControlGap(ctx, h.audit, complianceControlGapAuditInput{
+				Phase:          "EXECUTION_CREATION",
+				DecisionID:     d.ID,
+				PortfolioID:    d.PortfolioID,
+				PortfolioType:  portfolioType,
+				ActorID:        req.ActorID,
+				BusinessDate:   d.BusinessDate,
+				InstrumentCode: d.InstrumentCode,
+			}, gateErr)
+		}
+		qty := decimal.Decimal{}
+		if ordQty != nil {
+			qty = *ordQty
+		}
+		price := decimal.Decimal{}
+		// OrderedAmount is the execution request's actual notional. When both
+		// quantity and amount are available, derive an effective unit price so
+		// compliance rules evaluating Quantity*Price see that notional rather
+		// than the decision's earlier limit price. Quantity-only orders retain
+		// the approved decision limit price. Amount-only orders remain fail-
+		// closed in the compliance validator because quantity-based rules cannot
+		// be evaluated safely without units.
+		if ordAmt != nil && ordQty != nil && ordQty.IsPositive() {
+			price = ordAmt.Div(*ordQty)
+		} else if d.LimitPrice != nil {
+			price = *d.LimitPrice
+		}
+		checkGroupID := uuid.New()
+		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
+			CheckGroupID: checkGroupID,
+			PortfolioID:  d.PortfolioID,
+			ContractID:   d.FundID,
+			BusinessDate: d.BusinessDate,
+			Actor:        req.ActorID.String(),
+			OrderID:      d.ID,
+			Ticker:       d.InstrumentCode,
+			Side:         mapOrderSideToContract(d.Side),
+			Quantity:     qty,
+			Price:        price,
+			Currency:     d.Currency,
+			Exchange:     d.Exchange,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("execution-time compliance check: %w", err)
+		}
+		if result == nil {
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: checkGroupID.String(),
+				Reason:       "execution-time compliance check returned nil result",
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		if gateErr := liveComplianceStatusError(portfolioType, result); gateErr != nil {
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		switch result.Verdict {
+		case contract.ComplianceVerdictBlock:
+			return nil, &domain.ErrComplianceRejected{
+				DecisionID:   d.ID.String(),
+				CheckGroupID: result.CheckGroupID.String(),
+				Message:      summarizeBreaches(result.Breaches),
+			}
+		case contract.ComplianceVerdictPass, contract.ComplianceVerdictWarn:
+			// Explicitly permitted by the Portfolio Compliance V2 lifecycle.
+		default:
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: result.CheckGroupID.String(),
+				Reason:       fmt.Sprintf("unsupported compliance verdict %q", result.Verdict),
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+	}
 	e := &entity.Execution{
 		ID:              uuid.New(),
 		DecisionID:      d.ID,
 		FundID:          d.FundID,
 		PortfolioID:     d.PortfolioID,
-		ContractID:      d.ContractID,
 		InstrumentID:    d.InstrumentID,
 		InstrumentCode:  d.InstrumentCode,
 		BusinessDate:    d.BusinessDate,

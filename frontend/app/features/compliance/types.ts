@@ -97,7 +97,7 @@ export interface ComplianceBreach {
   checkRecordID: string;
   checkGroupID: string;
   portfolioID: string;
-  contractID: string;
+  contractID?: string;
   ruleTypeID: string;
   ruleInstanceID: string;
   severity: ComplianceBackendSeverity;
@@ -236,4 +236,3 @@ export interface ComplianceCheckGroupResult {
   records: ComplianceCheckRecord[];
   breaches: ComplianceBreach[];
 }
-

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppTabs, { type TabItem } from "~/shared/ui/AppTabs.vue";
@@ -30,7 +30,7 @@ export type TabKey =
   | "audit"
   | "settings";
 
-const TABS: { key: TabKey; labelKey: string }[] = [
+const TABS: { key: TabKey; labelKey: AppTranslationKey }[] = [
   { key: "overview", labelKey: "compliance.detail.tabs.overview" },
   { key: "logic", labelKey: "compliance.detail.tabs.logic" },
   { key: "scope", labelKey: "compliance.detail.tabs.scope" },
@@ -46,12 +46,13 @@ const catalogEntry = computed(() => lookupRuleCatalog(props.rule.ruleTypeID));
 const tabItems = computed<TabItem[]>(() =>
   TABS.map((tab) => ({
     key: tab.key,
-    label: t(tab.labelKey as any),
+    label: t(tab.labelKey),
   })),
 );
 
 function activate(key: string) {
-  emit("update:activeTab", key as TabKey);
+  const tab = TABS.find((item) => item.key === key);
+  if (tab) emit("update:activeTab", tab.key);
 }
 </script>
 
@@ -80,10 +81,10 @@ function activate(key: string) {
         </template>
 
         <template v-if="catalogEntry">
-          <h3 class="rule-tabs__section-title">Why it matters</h3>
-          <p class="rule-tabs__body">{{ catalogEntry.explanation }}</p>
-          <h3 class="rule-tabs__section-title">Typical correction</h3>
-          <p class="rule-tabs__body">{{ catalogEntry.suggestedCorrection }}</p>
+          <h3 class="rule-tabs__section-title">{{ t("compliance.detail.overview.descriptionTitle") }}</h3>
+          <p class="rule-tabs__body">{{ t(catalogEntry.explanationKey) }}</p>
+          <h3 class="rule-tabs__section-title">{{ t("compliance.preTrade.result.suggestedCorrection") }}</h3>
+          <p class="rule-tabs__body">{{ t(catalogEntry.suggestedCorrectionKey) }}</p>
         </template>
       </AppCard>
 

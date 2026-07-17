@@ -33,14 +33,9 @@ function extractErrorMessage(err: unknown, fallback: string): string {
  * Shared compliance rule directory — fetched once per `useState` key.
  *
  * The dashboard's KPI grid, category panel, and high-risk list all need the
- * same underlying rule list; instead of issuing N separate paginated calls,
- * we pull the first 200 rows (the backend cap) into a shared store and
- * derive every aggregation from it.
- *
- * This is honest about its scope: if more than 200 rules exist, the derived
- * counts are an under-estimate of the true totals. The dashboard surfaces
- * a warning when that ceiling is hit so reviewers don't read it as "the
- * fund only has 200 rules" — they read it as "showing 200 of N."
+ * same underlying rule list. The service follows every backend page before
+ * publishing state, so aggregate counts are never based on only the first
+ * 200 records.
  */
 export function useComplianceRuleDirectory(): {
   items: ComputedRef<ComplianceRule[]>;
@@ -48,7 +43,6 @@ export function useComplianceRuleDirectory(): {
   loading: ComputedRef<boolean>;
   loaded: ComputedRef<boolean>;
   error: ComputedRef<string | null>;
-  truncated: ComputedRef<boolean>;
   ensureLoaded: () => Promise<void>;
   refresh: () => Promise<void>;
   byDerivedStatus: ComputedRef<Map<ComplianceRuleDerivedStatus, ComplianceRule[]>>;
@@ -69,7 +63,7 @@ export function useComplianceRuleDirectory(): {
   async function load() {
     state.value = { ...state.value, loading: true, error: null };
     try {
-      const payload = await complianceApi.listRules({ limit: 200, offset: 0 });
+      const payload = await complianceApi.listAllRules();
       state.value = {
         items: payload.instances ?? [],
         total: payload.total ?? 0,
@@ -102,10 +96,6 @@ export function useComplianceRuleDirectory(): {
   const loading = computed(() => state.value.loading);
   const loaded = computed(() => state.value.loaded);
   const error = computed(() => state.value.error);
-  const truncated = computed(
-    () => state.value.total > 0 && state.value.items.length < state.value.total,
-  );
-
   const byDerivedStatus = computed(() => {
     const out = new Map<ComplianceRuleDerivedStatus, ComplianceRule[]>();
     for (const rule of state.value.items) {
@@ -142,7 +132,6 @@ export function useComplianceRuleDirectory(): {
     loading,
     loaded,
     error,
-    truncated,
     ensureLoaded,
     refresh,
     byDerivedStatus,

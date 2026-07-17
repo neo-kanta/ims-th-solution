@@ -65,6 +65,9 @@ const breadcrumbOwner = computed(() => {
   if (route.path.startsWith("/investment") && route.params.fundId) {
     return activeFundInfo.value?.code || String(route.params.fundId);
   }
+  if (route.path.startsWith("/portfolios") && route.params.portfolioCode) {
+    return "Portfolios";
+  }
   return authStore.user?.username || "neo-kanta";
 });
 
@@ -75,6 +78,12 @@ const breadcrumbRepo = computed(() => {
       return activeFundInfo.value?.shortName || String(route.params.fundId);
     }
     return "investment";
+  }
+  if (route.path.startsWith("/portfolios")) {
+    if (route.params.portfolioCode) {
+      return String(route.params.portfolioCode);
+    }
+    return "portfolios";
   }
   return appName.toLowerCase().replace(/\s+/g, "-");
 });
@@ -87,7 +96,9 @@ function handleRepoClick() {
   if (breadcrumbRepo.value === "compliance") {
     void router.push("/compliance");
   } else if (breadcrumbRepo.value === "investment") {
-    void router.push("/investment/funds");
+    void router.push("/investment/operator");
+  } else if (route.path.startsWith("/portfolios")) {
+    void router.push("/portfolios");
   } else {
     void router.push("/");
   }

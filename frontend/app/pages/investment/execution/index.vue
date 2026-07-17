@@ -7,9 +7,9 @@ import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
  * /investment/execution — global execution / order ticket index.
  *
  * The backend does not expose an order-management lifecycle. The supported
- * way to record a real transaction today is per-fund: the fund's Operation
- * tab posts to `POST /investment/portfolios/{id}/transactions`, with the
- * pre-trade compliance gate enforced inside the same handler.
+ * way to record a real transaction today is per-fund: the Operator page's
+ * Operation workflow posts to `POST /investment/portfolios/{id}/transactions`,
+ * with the pre-trade compliance gate enforced inside the same handler.
  *
  * Rather than fake a global execution surface, we route the user to that
  * real flow.
@@ -48,13 +48,13 @@ const { t } = useI18n();
           {{
             t(
               "placeholders.executionOrders.notConfiguredCopy",
-              "There is no global order-management endpoint in the backend yet. To post a real BUY or SELL transaction, open the target fund and use its Operation tab. The backend re-runs the pre-trade compliance check inside the post handler — a successful response means the trade was both compliant and recorded on the ledger.",
+              "There is no global order-management endpoint in the backend yet. To post a real BUY or SELL transaction, open the Operator page and use its Operation workflow. The backend re-runs the pre-trade compliance check inside the post handler — a successful response means the trade was both compliant and recorded on the ledger.",
             )
           }}
         </p>
         <div class="execution-page__links">
-          <NuxtLink to="/investment/funds" class="execution-page__link">
-            {{ t("holdings.page.myFunds", "My funds") }}
+          <NuxtLink to="/investment/operator" class="execution-page__link">
+            {{ t("navigation.operatorPage", "Operator page") }}
           </NuxtLink>
           <NuxtLink to="/compliance/pre-trade" class="execution-page__link">
             {{ t("compliance.preTrade.title", "Pre-trade simulator") }}
