@@ -79,7 +79,7 @@ export const zhDashboardMessages = {
     taskActionMenuNotConnected: "任务操作菜单尚未连接。",
     taskActionsNotConnected: "任务操作尚未连接。",
     metricNotAvailable: "暂无数据",
-    metricLoadError: "数据加载失败",
+    metricLoadError: "加载失败",
     metricAsOf: "截至 {time}",
     scopeCompany: "全公司 AUM",
     scopeMine: "我的 AUM",

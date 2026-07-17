@@ -80,7 +80,7 @@ export const enDashboardMessages = {
     taskActionMenuNotConnected: "Task action menu is not connected yet.",
     taskActionsNotConnected: "Task actions are not connected yet.",
     metricNotAvailable: "Not yet available",
-    metricLoadError: "Could not load data",
+    metricLoadError: "Could not load",
     metricAsOf: "As of {time}",
     scopeCompany: "Entire company AUM",
     scopeMine: "My AUM",

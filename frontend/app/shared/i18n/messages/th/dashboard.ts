@@ -80,7 +80,7 @@ export const thDashboardMessages = {
     taskActionMenuNotConnected: "เมนูการดำเนินการของงานยังไม่ได้เชื่อมต่อ",
     taskActionsNotConnected: "การดำเนินการของงานยังไม่ได้เชื่อมต่อ",
     metricNotAvailable: "ยังไม่มีข้อมูล",
-    metricLoadError: "ไม่สามารถโหลดข้อมูลได้",
+    metricLoadError: "โหลดข้อมูลไม่สำเร็จ",
     metricAsOf: "ณ เวลา {time}",
     scopeCompany: "AUM ทั้งบริษัท",
     scopeMine: "AUM ของฉัน",
