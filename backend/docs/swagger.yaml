@@ -4380,6 +4380,27 @@ definitions:
       valuation_ccy:
         type: string
     type: object
+  ValuationSummaryDTO:
+    properties:
+      as_of:
+        type: string
+      aum_today:
+        type: string
+      business_date:
+        type: string
+      currency:
+        type: string
+      data_available:
+        type: boolean
+      scope:
+        type: string
+      today_pnl:
+        type: string
+      today_pnl_percent:
+        type: string
+      username:
+        type: string
+    type: object
   WatchlistItemResponse:
     properties:
       created_at:
@@ -7312,6 +7333,48 @@ paths:
       security:
       - BearerAuth: []
       summary: Personal dashboard snapshot
+      tags:
+      - Integration
+  /integration/dashboard/valuation-summary:
+    get:
+      description: Returns aggregate AUM and today's P&L for the "AUM Today" and "Today's
+        P&L" dashboard cards. scope=company aggregates every fund the caller is authorized
+        to see; scope=mine restricts to funds the authenticated caller manages, resolved
+        from the JWT — a client-supplied username is never accepted. Returns data_available=false
+        (not a misleading zero) when no valuation snapshot exists yet for the resolved
+        scope.
+      parameters:
+      - description: company (default) or mine
+        in: query
+        name: scope
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/ValuationSummaryDTO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Dashboard AUM / P&L summary
       tags:
       - Integration
   /integration/tasks/my:

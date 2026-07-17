@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/integration/application/query"
@@ -11,18 +12,21 @@ import (
 
 // DashboardHandler handles dashboard and task feed HTTP endpoints.
 type DashboardHandler struct {
-	snapshot *query.GetDashboardSnapshotHandler
-	tasks    *query.GetMyTasksHandler
+	snapshot         *query.GetDashboardSnapshotHandler
+	tasks            *query.GetMyTasksHandler
+	valuationSummary *query.GetValuationSummaryHandler
 }
 
 // NewDashboardHandler creates a new DashboardHandler.
 func NewDashboardHandler(
 	snapshot *query.GetDashboardSnapshotHandler,
 	tasks *query.GetMyTasksHandler,
+	valuationSummary *query.GetValuationSummaryHandler,
 ) *DashboardHandler {
 	return &DashboardHandler{
-		snapshot: snapshot,
-		tasks:    tasks,
+		snapshot:         snapshot,
+		tasks:            tasks,
+		valuationSummary: valuationSummary,
 	}
 }
 
@@ -96,6 +100,41 @@ func (h *DashboardHandler) GetMyTasks(w http.ResponseWriter, r *http.Request) {
 		Tasks:   dtos,
 		Summary: response.FromTaskSummary(summary),
 	})
+}
+
+// GetValuationSummary handles GET /integration/dashboard/valuation-summary.
+//
+// @Summary      Dashboard AUM / P&L summary
+// @Description  Returns aggregate AUM and today's P&L for the "AUM Today" and "Today's P&L" dashboard cards. scope=company aggregates every fund the caller is authorized to see; scope=mine restricts to funds the authenticated caller manages, resolved from the JWT — a client-supplied username is never accepted. Returns data_available=false (not a misleading zero) when no valuation snapshot exists yet for the resolved scope.
+// @Tags         Integration
+// @Produce      json
+// @Param        scope  query  string  false  "company (default) or mine"
+// @Success      200  {object}  httputil.SuccessResponse{data=response.ValuationSummaryDTO}
+// @Failure      400  {object}  httputil.ErrorResponse
+// @Failure      401  {object}  httputil.ErrorResponse
+// @Failure      500  {object}  httputil.ErrorResponse
+// @Security     BearerAuth
+// @Router       /integration/dashboard/valuation-summary [get]
+func (h *DashboardHandler) GetValuationSummary(w http.ResponseWriter, r *http.Request) {
+	claims := middleware.GetUserClaims(r.Context())
+	if claims == nil {
+		httputil.Unauthorized(w, "authentication required")
+		return
+	}
+
+	scope := r.URL.Query().Get("scope")
+
+	summary, err := h.valuationSummary.Execute(r.Context(), claims.Subject, claims.Username, scope)
+	if err != nil {
+		if errors.Is(err, query.ErrInvalidValuationScope) {
+			httputil.BadRequest(w, err.Error())
+			return
+		}
+		httputil.InternalError(w, "failed to load valuation summary")
+		return
+	}
+
+	httputil.OK(w, response.FromValuationSummary(summary))
 }
 
 // GetMyTasksSummary handles GET /integration/tasks/my/summary.

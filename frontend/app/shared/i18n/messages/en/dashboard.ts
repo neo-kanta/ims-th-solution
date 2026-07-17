@@ -15,7 +15,7 @@ export const enDashboardMessages = {
     noDataCopy: "The dashboard has no session data to display yet.",
     notConfiguredTitle: "Cockpit metrics not configured",
     notConfiguredCopy:
-      "Firm-wide AUM, P&L, pending approvals and activity feed are not yet wired to a backend endpoint. Use the workflow panel and task feed above for live state, and open a fund from My Funds for per-fund NAV, holdings, and compliance details.",
+      "Firm-wide AUM, P&L, pending approvals and activity feed are not yet wired to a backend endpoint. Use the workflow panel and task feed above for live state, and open the investment operator page for per-fund operations detail.",
     workflowDayStart: "Day Start",
     workflowAnalysis: "Analysis",
     workflowDecision: "Decision",
@@ -80,6 +80,11 @@ export const enDashboardMessages = {
     taskActionMenuNotConnected: "Task action menu is not connected yet.",
     taskActionsNotConnected: "Task actions are not connected yet.",
     metricNotAvailable: "Not yet available",
+    metricLoadError: "Could not load data",
+    metricAsOf: "As of {time}",
+    scopeCompany: "Entire company AUM",
+    scopeMine: "My AUM",
+    scopeSelectorLabel: "AUM scope",
     actionRequired: "Action required",
   },
   dashboard: {
@@ -142,11 +147,6 @@ export const enDashboardMessages = {
       findLayerPlaceholder: "Find a task layer...",
       noMatchingLayers: "No matching layers",
       showPrimaryQueue: "Show primary queue",
-      topContracts: "Top Contracts",
-      findContract: "Find a contract...",
-      newContract: "New",
-      loadingContracts: "Loading contracts...",
-      noContractsFound: "No contracts found.",
     },
     priority: {
       HIGH: "High",

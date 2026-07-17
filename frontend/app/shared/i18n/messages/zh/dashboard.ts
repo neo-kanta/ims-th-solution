@@ -14,7 +14,7 @@ export const zhDashboardMessages = {
     noDataCopy: "仪表板目前没有可显示的会话数据。",
     notConfiguredTitle: "驾驶舱指标尚未配置",
     notConfiguredCopy:
-      "全公司 AUM、损益、待审批和活动信息流尚未接入后端 API。请使用上方工作流面板和任务信息流查看实时状态,并从“我的基金”打开基金以查看每个基金的 NAV、持仓和合规详情。",
+      "全公司 AUM、损益、待审批和活动信息流尚未接入后端 API。请使用上方工作流面板和任务信息流查看实时状态,并打开投资运营(Operator)页面查看各基金的操作详情。",
     workflowDayStart: "日初",
     workflowAnalysis: "分析",
     workflowDecision: "决策",
@@ -79,6 +79,11 @@ export const zhDashboardMessages = {
     taskActionMenuNotConnected: "任务操作菜单尚未连接。",
     taskActionsNotConnected: "任务操作尚未连接。",
     metricNotAvailable: "暂无数据",
+    metricLoadError: "数据加载失败",
+    metricAsOf: "截至 {time}",
+    scopeCompany: "全公司 AUM",
+    scopeMine: "我的 AUM",
+    scopeSelectorLabel: "AUM 范围",
     actionRequired: "需要处理",
   },
   dashboard: {
@@ -141,11 +146,6 @@ export const zhDashboardMessages = {
       findLayerPlaceholder: "查找任务层...",
       noMatchingLayers: "未找到匹配的任务层",
       showPrimaryQueue: "显示主要队列",
-      topContracts: "热门合同",
-      findContract: "查找合同...",
-      newContract: "新建",
-      loadingContracts: "正在加载合同...",
-      noContractsFound: "未找到合同。",
     },
     priority: {
       HIGH: "高",

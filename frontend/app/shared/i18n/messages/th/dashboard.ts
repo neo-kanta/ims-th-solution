@@ -15,7 +15,7 @@ export const thDashboardMessages = {
     noDataCopy: "แดชบอร์ดยังไม่มีข้อมูลเซสชันสำหรับแสดงผล",
     notConfiguredTitle: "ตัวชี้วัดภาพรวมยังไม่ได้ตั้งค่า",
     notConfiguredCopy:
-      "AUM ทั่วทั้งบริษัท กำไรขาดทุน รายการอนุมัติ และฟีดกิจกรรมยังไม่ถูกเชื่อมต่อกับ API แบ็กเอนด์ โปรดใช้แผงเวิร์กโฟลว์และฟีดงานด้านบนเพื่อดูสถานะจริง และเปิดกองทุนจาก My Funds เพื่อดู NAV/Holdings/Compliance รายกองทุน",
+      "AUM ทั่วทั้งบริษัท กำไรขาดทุน รายการอนุมัติ และฟีดกิจกรรมยังไม่ถูกเชื่อมต่อกับ API แบ็กเอนด์ โปรดใช้แผงเวิร์กโฟลว์และฟีดงานด้านบนเพื่อดูสถานะจริง และเปิดหน้า Operator เพื่อดูรายละเอียดการดำเนินงานรายกองทุน",
     workflowDayStart: "เริ่มวัน",
     workflowAnalysis: "วิเคราะห์",
     workflowDecision: "ตัดสินใจ",
@@ -80,6 +80,11 @@ export const thDashboardMessages = {
     taskActionMenuNotConnected: "เมนูการดำเนินการของงานยังไม่ได้เชื่อมต่อ",
     taskActionsNotConnected: "การดำเนินการของงานยังไม่ได้เชื่อมต่อ",
     metricNotAvailable: "ยังไม่มีข้อมูล",
+    metricLoadError: "ไม่สามารถโหลดข้อมูลได้",
+    metricAsOf: "ณ เวลา {time}",
+    scopeCompany: "AUM ทั้งบริษัท",
+    scopeMine: "AUM ของฉัน",
+    scopeSelectorLabel: "ขอบเขต AUM",
     actionRequired: "ต้องดำเนินการ",
   },
   dashboard: {
@@ -142,11 +147,6 @@ export const thDashboardMessages = {
       findLayerPlaceholder: "ค้นหาเลเยอร์งาน...",
       noMatchingLayers: "ไม่พบเลเยอร์ที่ตรงกัน",
       showPrimaryQueue: "แสดงคิวหลัก",
-      topContracts: "สัญญายอดนิยม",
-      findContract: "ค้นหาสัญญา...",
-      newContract: "สร้างใหม่",
-      loadingContracts: "กำลังโหลดสัญญา...",
-      noContractsFound: "ไม่พบสัญญา",
     },
     priority: {
       HIGH: "สูง",

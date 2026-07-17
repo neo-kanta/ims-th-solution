@@ -276,6 +276,31 @@ export interface TaskListDTO {
 }
 
 // ---------------------------------------------------------------------------
+// Valuation summary — GET /integration/dashboard/valuation-summary
+// ---------------------------------------------------------------------------
+
+export type ValuationScope = "company" | "mine";
+
+/**
+ * Normalized read model for the "AUM Today" / "Today's P&L" cards.
+ * Amounts stay as decimal strings — the frontend only formats them, it never
+ * recomputes authoritative figures. When dataAvailable is false every
+ * numeric field is empty and MUST render as an explicit "not available"
+ * state, never a zero.
+ */
+export interface ValuationSummaryDTO {
+  scope: ValuationScope;
+  username: string | null;
+  businessDate: string;
+  currency: string;
+  aumToday: string;
+  todayPnl: string;
+  todayPnlPercent: string | null;
+  asOf: string;
+  dataAvailable: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // AI command bar — disabled/mock-ready state only in Phase 1
 // ---------------------------------------------------------------------------
 

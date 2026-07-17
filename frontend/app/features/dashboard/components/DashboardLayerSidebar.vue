@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-
-import { useOpenApiClient, unwrapOpenApiResponse } from "~/api/openapi";
+import { computed, ref } from "vue";
 
 const { t } = useI18n();
 
@@ -35,51 +33,6 @@ interface LayerItem {
 
 const searchQuery = ref("");
 const tasks = computed(() => props.snapshot?.tasks ?? []);
-
-const contractSearchQuery = ref("");
-const contractsLoading = ref(false);
-const contractsError = ref<string | null>(null);
-const contracts = ref<{ id: string; code: string }[]>([]);
-
-async function fetchContracts() {
-  contractsLoading.value = true;
-  contractsError.value = null;
-  try {
-    const client = useOpenApiClient();
-    const result = await client.GET("/investment/funds", {
-      params: { query: { limit: 50 } },
-    });
-    const data = unwrapOpenApiResponse(result);
-    contracts.value = (data?.items ?? []).map((fund) => ({
-      id: fund.id ?? "",
-      code: fund.code ?? "",
-    }));
-  } catch (err) {
-    contractsError.value =
-      err instanceof Error ? err.message : "Failed to load contracts";
-  } finally {
-    contractsLoading.value = false;
-  }
-}
-
-onMounted(() => {
-  void fetchContracts();
-});
-
-const filteredContracts = computed(() => {
-  const term = contractSearchQuery.value.trim().toLowerCase();
-  if (!term) return contracts.value;
-  return contracts.value.filter((c) => c.code.toLowerCase().includes(term));
-});
-
-const router = useRouter();
-function handleNewContract() {
-  void router.push("/investment/funds");
-}
-
-function selectContract(id: string) {
-  void router.push(`/investment/funds/${id}/holdings`);
-}
 
 function countBy(predicate: (task: TaskDTO) => boolean): number {
   return tasks.value.filter(predicate).length;
@@ -212,44 +165,6 @@ function resetLayers() {
     </button>
 
     <hr class="layer-sidebar__separator" />
-
-    <div class="layer-sidebar__contracts-section">
-      <div class="layer-sidebar__contracts-header">
-        <h3 class="layer-sidebar__contracts-title">{{ t("dashboard.layers.topContracts", "Top Contracts") }}</h3>
-        <button class="layer-sidebar__new-btn" type="button" @click="handleNewContract">
-          <AppIcon name="plus" size="xs" />
-          <span>{{ t("dashboard.layers.newContract", "New") }}</span>
-        </button>
-      </div>
-
-      <div class="layer-sidebar__search">
-        <AppIcon name="search" size="xs" />
-        <input
-          v-model="contractSearchQuery"
-          type="search"
-          :placeholder="t('dashboard.layers.findContract', 'Find a contract...')"
-          autocomplete="off"
-        />
-      </div>
-
-      <ul class="layer-sidebar__contracts-list">
-        <AppLoadingState v-if="contractsLoading" :message="t('dashboard.layers.loadingContracts', 'Loading contracts...')" />
-        <li v-else-if="contractsError" class="layer-sidebar__contracts-state layer-sidebar__contracts-state--error">
-          {{ contractsError }}
-        </li>
-        <template v-else>
-          <li v-for="contract in filteredContracts" :key="contract.id">
-            <a href="#" class="layer-sidebar__contract-link" @click.prevent="selectContract(contract.id)">
-              <AppIcon name="portfolio" size="xs" class="layer-sidebar__contract-icon" />
-              <span class="layer-sidebar__contract-code">{{ contract.code }}</span>
-            </a>
-          </li>
-          <li v-if="filteredContracts.length === 0" class="layer-sidebar__contracts-state">
-            {{ t("dashboard.layers.noContractsFound", "No contracts found.") }}
-          </li>
-        </template>
-      </ul>
-    </div>
 
     <div class="layer-sidebar__source">
       <span class="layer-sidebar__source-dot" :class="{ 'is-error': error }" />
@@ -479,18 +394,21 @@ function resetLayers() {
   .layer-sidebar {
     padding: var(--space-6) var(--space-4);
     border-right: 0;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 0;
     height: auto;
+    align-content: start;
+    overflow-y: auto;
   }
 
   .layer-sidebar__nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 640px) {
-  .layer-sidebar__nav {
-    grid-template-columns: 1fr;
+  .layer-sidebar {
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-3);
   }
 }
 
@@ -498,86 +416,5 @@ function resetLayers() {
   border: 0;
   border-top: 1px solid var(--border-subtle);
   margin: var(--space-4) 0;
-}
-
-.layer-sidebar__contracts-section {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.layer-sidebar__contracts-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.layer-sidebar__contracts-title {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-}
-
-.layer-sidebar__new-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 4px 8px;
-  background: var(--state-success);
-  color: #fff;
-  border-radius: var(--radius-md);
-  font-size: 11px;
-  font-weight: var(--font-weight-medium);
-  transition: background var(--transition-fast);
-}
-
-.layer-sidebar__new-btn:hover {
-  filter: brightness(0.9);
-}
-
-.layer-sidebar__contracts-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-1);
-}
-
-.layer-sidebar__contract-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-.layer-sidebar__contract-link:hover {
-  color: var(--text-primary);
-  background: var(--bg-row-hover);
-  text-decoration: none;
-}
-
-.layer-sidebar__contract-icon {
-  color: var(--text-tertiary);
-}
-
-.layer-sidebar__contract-code {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  font-family: var(--font-family-mono);
-}
-
-.layer-sidebar__contracts-state {
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-tertiary);
-  font-size: var(--font-size-xs);
-  list-style: none;
-}
-
-.layer-sidebar__contracts-state--error {
-  color: var(--state-danger);
 }
 </style>

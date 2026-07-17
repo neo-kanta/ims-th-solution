@@ -4616,6 +4616,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integration/dashboard/valuation-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dashboard AUM / P&L summary
+         * @description Returns aggregate AUM and today's P&L for the "AUM Today" and "Today's P&L" dashboard cards. scope=company aggregates every fund the caller is authorized to see; scope=mine restricts to funds the authenticated caller manages, resolved from the JWT — a client-supplied username is never accepted. Returns data_available=false (not a misleading zero) when no valuation snapshot exists yet for the resolved scope.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description company (default) or mine */
+                    scope?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ValuationSummaryDTO"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/integration/tasks/my": {
         parameters: {
             query?: never;
@@ -17127,6 +17198,17 @@ export interface components {
             source?: string;
             unrealised_pnl?: string;
             valuation_ccy?: string;
+        };
+        ValuationSummaryDTO: {
+            as_of?: string;
+            aum_today?: string;
+            business_date?: string;
+            currency?: string;
+            data_available?: boolean;
+            scope?: string;
+            today_pnl?: string;
+            today_pnl_percent?: string;
+            username?: string;
         };
         WatchlistItemResponse: {
             created_at?: string;

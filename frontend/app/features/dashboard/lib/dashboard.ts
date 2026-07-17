@@ -1,8 +1,16 @@
 import type { AppTranslationKey } from "../../../shared/i18n/messages";
 import type { TranslationParams } from "../../../shared/i18n/types";
 import type { UserPermissions } from "../../auth/types";
-import type { DashboardPayload, QuickAction } from "../types";
+import type {
+  DashboardOverviewChangeTone,
+  DashboardOverviewMetricTone,
+  DashboardPayload,
+  QuickAction,
+  ValuationScope,
+  ValuationSummaryDTO,
+} from "../types";
 import { createDateFormatter, resolveIntlLocale } from "../../../shared/i18n/intl";
+import { formatMoneyCompact, formatPercent, parseDecimalOrNull } from "../../my-funds/lib/format";
 
 type DashboardLocale = "en" | "th" | "zh";
 type TranslateFn = (
@@ -56,12 +64,13 @@ export function formatDashboardHeadlineDate(
 export function formatDashboardTime(
   timestamp: string,
   locale: DashboardLocale | string = "en",
+  timeZone = "UTC",
 ): string {
   return createDateFormatter(locale, {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-  }, "UTC").format(new Date(timestamp));
+  }, timeZone).format(new Date(timestamp));
 }
 
 export function formatDashboardRelativeTime(
@@ -141,6 +150,161 @@ export function buildDashboardSnapshot(
     pendingApprovals: [],
     lastRefresh: new Date(now).toISOString(),
     canCreateContract: canCreateContract(permissions),
-    createContractUrl: "/investment/funds",
+    createContractUrl: "/investment/operator",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUM / P&L scope selector + metric derivation
+//
+// Pure functions so the scope default/visibility rule and the metric
+// value/tone/no-data derivation can be unit tested without mounting the
+// dashboard screen (this project's Vitest setup has no Nuxt/component
+// runtime — see tests/*.test.ts, which all exercise pure lib functions).
+// ---------------------------------------------------------------------------
+
+export interface DashboardScopeOption {
+  key: ValuationScope;
+  label: string;
+}
+
+/**
+ * The default AUM scope for a session. "company" is only ever the default
+ * (or even offered — see buildScopeOptions) when the caller's data scope is
+ * the "*" wildcard; a restricted user must not land on a "company" view
+ * that is silently just their own subset mislabelled as company-wide.
+ */
+export function defaultAumScope(canViewCompany: boolean): ValuationScope {
+  return canViewCompany ? "company" : "mine";
+}
+
+/**
+ * Builds the scope selector's options. "Entire company AUM" is present only
+ * for callers with the "*" wildcard data scope; "My AUM" is always offered.
+ */
+export function buildScopeOptions(
+  canViewCompany: boolean,
+  t: TranslateFn,
+): DashboardScopeOption[] {
+  const items: DashboardScopeOption[] = [];
+  if (canViewCompany) {
+    items.push({
+      key: "company",
+      label: t("dashboardOverview.scopeCompany", "Entire company AUM"),
+    });
+  }
+  items.push({
+    key: "mine",
+    label: t("dashboardOverview.scopeMine", "My AUM"),
+  });
+  return items;
+}
+
+export interface DashboardValuationMetric {
+  id: string;
+  label: string;
+  value: string;
+  changeLabel: string;
+  changeTone: DashboardOverviewChangeTone;
+  helperText: string;
+  icon: string;
+  tone: DashboardOverviewMetricTone;
+}
+
+/**
+ * Builds the "AUM Today" metric card. Renders an explicit not-available /
+ * load-error state (value "—") rather than a zero when no valuation
+ * snapshot exists yet for the selected scope.
+ */
+export function buildAumMetric(
+  summary: ValuationSummaryDTO | null,
+  hasError: boolean,
+  t: TranslateFn,
+  locale: DashboardLocale | string = "en",
+): DashboardValuationMetric {
+  const base = {
+    id: "aum",
+    label: t("dashboardOverview.metricAumLabel", "AUM Today"),
+    icon: "portfolio",
+    tone: "primary" as DashboardOverviewMetricTone,
+  };
+  if (hasError) {
+    return {
+      ...base,
+      value: "—",
+      changeLabel: "",
+      changeTone: "neutral",
+      helperText: t("dashboardOverview.metricLoadError", "Could not load"),
+    };
+  }
+  if (!summary || !summary.dataAvailable) {
+    return {
+      ...base,
+      value: "—",
+      changeLabel: "",
+      changeTone: "neutral",
+      helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+    };
+  }
+  return {
+    ...base,
+    value: formatMoneyCompact(parseDecimalOrNull(summary.aumToday), summary.currency),
+    changeLabel: "",
+    changeTone: "neutral",
+    helperText: t("dashboardOverview.metricAsOf", {
+      time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
+    }),
+  };
+}
+
+/**
+ * Builds the "Today's P&L" metric card. Positive P&L renders a success
+ * tone, negative renders danger, and the no-data state stays visually
+ * distinct ("—", neutral) from a genuine zero P&L.
+ */
+export function buildPnlMetric(
+  summary: ValuationSummaryDTO | null,
+  hasError: boolean,
+  t: TranslateFn,
+  locale: DashboardLocale | string = "en",
+): DashboardValuationMetric {
+  const base = {
+    id: "pnl",
+    label: t("dashboardOverview.metricPnlLabel", "Today's P&L"),
+    icon: "analysis",
+  };
+  if (hasError) {
+    return {
+      ...base,
+      value: "—",
+      changeLabel: "",
+      changeTone: "neutral",
+      helperText: t("dashboardOverview.metricLoadError", "Could not load"),
+      tone: "success",
+    };
+  }
+  if (!summary || !summary.dataAvailable) {
+    return {
+      ...base,
+      value: "—",
+      changeLabel: "",
+      changeTone: "neutral",
+      helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+      tone: "success",
+    };
+  }
+  const pnl = parseDecimalOrNull(summary.todayPnl) ?? 0;
+  const pct = parseDecimalOrNull(summary.todayPnlPercent);
+  const changeTone: DashboardOverviewChangeTone =
+    pnl > 0 ? "success" : pnl < 0 ? "danger" : "neutral";
+  return {
+    ...base,
+    value: formatMoneyCompact(pnl, summary.currency, true),
+    changeLabel: pct === null ? "" : formatPercent(pct, 2, true),
+    changeTone,
+    helperText: t("dashboardOverview.metricAsOf", {
+      time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
+    }),
+    tone: pnl < 0 ? "danger" : "success",
   };
 }
