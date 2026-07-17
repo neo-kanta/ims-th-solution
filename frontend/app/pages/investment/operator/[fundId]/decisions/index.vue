@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useDecisionList } from "~/features/investment-decision/composables/useDecisionList";
 import { decisionApi } from "~/features/investment-decision/services/decisionApi";
+import { investmentLedgerApi } from "~/features/investment-ledger/services/investmentLedgerApi";
+import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
+import { useI18n } from "~/composables/useI18n";
+import { decisionStatusKey } from "~/features/portfolio-decision/lib/decisionFormat";
 
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
@@ -21,7 +25,11 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const fundId = computed(() => String(route.params.fundId ?? ""));
+const { t } = useI18n();
+const fundId = computed(() => {
+  const value = route.params.fundId;
+  return typeof value === "string" ? value : "";
+});
 
 // Review List & Print State
 const reviewList = useDecisionList();
@@ -30,6 +38,47 @@ const reviewStatusFilter = ref<string>("ALL");
 const selectedReviewDecision = ref<ApiDecision | null>(null);
 const activeReviewLoading = ref(false);
 const reviewError = ref<string | null>(null);
+const selectedFundLabel = ref("");
+const selectedPortfolioLabel = ref("");
+
+function joinBusinessLabel(code?: string, name?: string): string {
+  return [code, name].filter((value): value is string => Boolean(value?.trim())).join(" — ");
+}
+
+function statusLabel(status: string | undefined): string {
+  const key = decisionStatusKey(status);
+  return key ? t(key) : status || t("common.notAvailable");
+}
+
+function sideLabel(side: string | undefined): string {
+  if (side === "BUY") return t("portfolio.decisionNew.buy");
+  if (side === "SELL") return t("portfolio.decisionNew.sell");
+  return side || t("common.notAvailable");
+}
+
+async function loadSelectedBusinessLabels(decision: ApiDecision) {
+  selectedFundLabel.value = "";
+  selectedPortfolioLabel.value = "";
+  await Promise.all([
+    decision.portfolio_id
+      ? investmentLedgerApi
+          .getPortfolio(decision.portfolio_id)
+          .then((portfolio) => {
+            selectedPortfolioLabel.value = joinBusinessLabel(portfolio.code, portfolio.name);
+          })
+          .catch(() => undefined)
+      : Promise.resolve(),
+    decision.fund_id
+      ? myFundsApi
+          .listMyFunds()
+          .then((funds) => {
+            const fund = funds.find((item) => item.id === decision.fund_id);
+            selectedFundLabel.value = joinBusinessLabel(fund?.code, fund?.name);
+          })
+          .catch(() => undefined)
+      : Promise.resolve(),
+  ]);
+}
 
 async function loadReviewDecisions() {
   if (!fundId.value) return;
@@ -41,6 +90,8 @@ async function loadReviewDecisions() {
   });
   // Clear selection
   selectedReviewDecision.value = null;
+  selectedFundLabel.value = "";
+  selectedPortfolioLabel.value = "";
 }
 
 async function selectReviewDecision(decision: ApiDecision) {
@@ -48,9 +99,11 @@ async function selectReviewDecision(decision: ApiDecision) {
   activeReviewLoading.value = true;
   reviewError.value = null;
   try {
-    selectedReviewDecision.value = await decisionApi.getDecisionDetail(decision.id);
-  } catch (err: any) {
-    reviewError.value = err.message || "Failed to load decision details for printing";
+    const detail = await decisionApi.getDecisionDetail(decision.id);
+    selectedReviewDecision.value = detail;
+    await loadSelectedBusinessLabels(detail);
+  } catch (err) {
+    reviewError.value = err instanceof Error ? err.message : t("operator.review.loadError");
   } finally {
     activeReviewLoading.value = false;
   }
@@ -67,10 +120,10 @@ watch(fundId, () => {
 
 <template>
   <div>
-    <AppPageHeader title="Review & Print Summary">
+    <AppPageHeader :title="t('operator.review.title')">
       <template #actions>
         <AppButton variant="secondary" @click="router.push('/investment/operator')">
-          ← Back to Operator
+          ← {{ t("operator.actions.backToOperator") }}
         </AppButton>
       </template>
     </AppPageHeader>
@@ -81,25 +134,25 @@ watch(fundId, () => {
         <div class="split-layout__left">
           <div class="controls-row">
             <div class="control-group">
-              <label class="control-label">Status Filter</label>
+              <label class="control-label">{{ t("operator.review.statusFilter") }}</label>
               <select v-model="reviewStatusFilter" class="control-select" @change="loadReviewDecisions">
-                <option value="ALL">All Decisions</option>
-                <option value="APPROVED">Approved</option>
-                <option value="READY_FOR_EXECUTION">Ready for Execution</option>
-                <option value="CANCELLED">Cancelled</option>
+                <option value="ALL">{{ t("operator.review.allDecisions") }}</option>
+                <option value="APPROVED">{{ t("operator.review.approved") }}</option>
+                <option value="READY_FOR_EXECUTION">{{ t("operator.review.readyForExecution") }}</option>
+                <option value="CANCELLED">{{ t("operator.review.cancelled") }}</option>
               </select>
             </div>
             <div class="control-group search-group">
-              <label class="control-label">Search</label>
+              <label class="control-label">{{ t("operator.review.search") }}</label>
               <input
                 v-model="reviewSearch"
                 type="text"
-                placeholder="Search decision no..."
+                :placeholder="t('operator.review.searchPlaceholder')"
                 class="control-input"
                 @keydown.enter="loadReviewDecisions"
               />
             </div>
-            <AppButton variant="secondary" size="sm" @click="loadReviewDecisions">Search</AppButton>
+            <AppButton variant="secondary" size="sm" @click="loadReviewDecisions">{{ t("operator.actions.search") }}</AppButton>
           </div>
 
           <AppCard class="mt">
@@ -107,20 +160,20 @@ watch(fundId, () => {
               <table class="operator-table">
                 <thead>
                   <tr>
-                    <th>Decision No</th>
-                    <th>Side</th>
-                    <th>Instrument</th>
-                    <th class="right">Qty</th>
-                    <th>Status</th>
-                    <th>Date</th>
+                    <th>{{ t("operator.review.columns.decisionNumber") }}</th>
+                    <th>{{ t("operator.review.columns.side") }}</th>
+                    <th>{{ t("operator.review.columns.instrument") }}</th>
+                    <th class="right">{{ t("operator.review.columns.quantity") }}</th>
+                    <th>{{ t("operator.review.columns.status") }}</th>
+                    <th>{{ t("operator.review.columns.date") }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="reviewList.loading.value">
-                    <td colspan="6" class="text-center p-4">Loading decisions…</td>
+                    <td colspan="6" class="text-center p-4">{{ t("operator.review.loading") }}</td>
                   </tr>
                   <tr v-else-if="reviewList.items.value.length === 0">
-                    <td colspan="6" class="text-center p-4 text-secondary">No processed decisions found.</td>
+                    <td colspan="6" class="text-center p-4 text-secondary">{{ t("operator.review.empty") }}</td>
                   </tr>
                   <tr
                     v-for="item in reviewList.items.value"
@@ -131,13 +184,13 @@ watch(fundId, () => {
                   >
                     <td class="bold">{{ item.decision_number || '—' }}</td>
                     <td>
-                      <AppBadge :variant="item.side === 'BUY' ? 'success' : 'error'">{{ item.side }}</AppBadge>
+                      <AppBadge :variant="item.side === 'BUY' ? 'success' : 'error'">{{ sideLabel(item.side) }}</AppBadge>
                     </td>
                     <td class="bold">{{ item.instrument_code || '—' }}</td>
                     <td class="right">{{ item.quantity || '—' }}</td>
                     <td>
                       <AppBadge :variant="item.status === 'APPROVED' || item.status === 'READY_FOR_EXECUTION' ? 'success' : 'neutral'">
-                        {{ item.status }}
+                        {{ statusLabel(item.status) }}
                       </AppBadge>
                     </td>
                     <td>{{ item.business_date ? item.business_date.slice(0, 10) : '—' }}</td>
@@ -150,34 +203,34 @@ watch(fundId, () => {
 
         <!-- Right Column: Print Sheet Preview -->
         <div class="split-layout__right">
-          <AppCard title="Summary Sheet Preview" subtitle="Review decision details and execute printing">
+          <AppCard :title="t('operator.review.previewTitle')" :subtitle="t('operator.review.previewSubtitle')">
             <div v-if="activeReviewLoading" class="p-6 text-center">
-              <AppLoadingState message="Loading summary sheet data..." />
+              <AppLoadingState :message="t('operator.review.previewLoading')" />
             </div>
             <div v-else-if="!selectedReviewDecision" class="p-6 text-center text-secondary">
-              Select a decision from the left list to generate and print its formal summary report.
+              {{ t("operator.review.previewEmpty") }}
             </div>
             <div v-else class="review-preview-card">
               <div class="preview-actions mb-4">
                 <AppButton variant="primary" size="sm" @click="triggerPrint">
-                  🖨 Print Summary Sheet
+                  {{ t("operator.actions.print") }}
                 </AppButton>
               </div>
 
               <!-- Dotted border preview card -->
               <div class="preview-paper">
-                <div class="paper-title">DECISION SHEET SUMMARY</div>
+                <div class="paper-title">{{ t("operator.review.sheetTitle") }}</div>
                 <div class="paper-metadata">
-                  <div><strong>No:</strong> {{ selectedReviewDecision.decision_number }}</div>
-                  <div><strong>Date:</strong> {{ selectedReviewDecision.business_date }}</div>
-                  <div><strong>Status:</strong> {{ selectedReviewDecision.status }}</div>
+                  <div><strong>{{ t("operator.review.number") }}:</strong> {{ selectedReviewDecision.decision_number }}</div>
+                  <div><strong>{{ t("operator.review.date") }}:</strong> {{ selectedReviewDecision.business_date }}</div>
+                  <div><strong>{{ t("operator.review.status") }}:</strong> {{ statusLabel(selectedReviewDecision.status) }}</div>
                 </div>
                 <div class="paper-body">
-                  <div class="paper-field"><strong>Instrument:</strong> {{ selectedReviewDecision.instrument_code }}</div>
-                  <div class="paper-field"><strong>Side:</strong> {{ selectedReviewDecision.side }}</div>
-                  <div class="paper-field"><strong>Qty / Price:</strong> {{ selectedReviewDecision.quantity }} @ {{ selectedReviewDecision.limit_price }} {{ selectedReviewDecision.currency }}</div>
-                  <div class="paper-field"><strong>Rationale:</strong></div>
-                  <div class="paper-text">{{ selectedReviewDecision.rationale || '—' }}</div>
+                  <div class="paper-field"><strong>{{ t("operator.review.instrument") }}:</strong> {{ selectedReviewDecision.instrument_code }}</div>
+                  <div class="paper-field"><strong>{{ t("operator.review.side") }}:</strong> {{ sideLabel(selectedReviewDecision.side) }}</div>
+                  <div class="paper-field"><strong>{{ t("operator.review.quantityPrice") }}:</strong> {{ selectedReviewDecision.quantity }} @ {{ selectedReviewDecision.limit_price }} {{ selectedReviewDecision.currency }}</div>
+                  <div class="paper-field"><strong>{{ t("operator.review.rationale") }}:</strong></div>
+                  <div class="paper-text">{{ selectedReviewDecision.rationale || t("operator.review.noRationale") }}</div>
                 </div>
               </div>
             </div>
@@ -190,31 +243,31 @@ watch(fundId, () => {
         <div class="print-header">
           <div class="print-logo">TH-IMS</div>
           <div class="print-title-block">
-            <h1 class="print-title">INVESTMENT DECISION SUMMARY REPORT</h1>
-            <div class="print-subtitle">Reference No: {{ selectedReviewDecision.decision_number || selectedReviewDecision.id }}</div>
+            <h1 class="print-title">{{ t("operator.review.reportTitle") }}</h1>
+            <div class="print-subtitle">{{ t("operator.review.referenceNumber") }}: {{ selectedReviewDecision.decision_number || t("common.notAvailable") }}</div>
           </div>
         </div>
 
         <div class="print-section">
-          <h2 class="print-section-title">1. GENERAL METADATA</h2>
+          <h2 class="print-section-title">{{ t("operator.review.sections.metadata") }}</h2>
           <table class="print-table">
             <tbody>
               <tr>
-                <th>Fund ID</th>
-                <td>{{ selectedReviewDecision.fund_id }}</td>
-                <th>Portfolio ID</th>
-                <td>{{ selectedReviewDecision.portfolio_id }}</td>
+                <th>{{ t("operator.review.fields.fund") }}</th>
+                <td>{{ selectedFundLabel || t("operator.operation.unavailableBusinessLabel") }}</td>
+                <th>{{ t("operator.review.fields.portfolio") }}</th>
+                <td>{{ selectedPortfolioLabel || t("operator.operation.unavailableBusinessLabel") }}</td>
               </tr>
               <tr>
-                <th>Business Date</th>
+                <th>{{ t("operator.review.fields.businessDate") }}</th>
                 <td>{{ selectedReviewDecision.business_date ? selectedReviewDecision.business_date.slice(0, 10) : '—' }}</td>
-                <th>Lifecycle Status</th>
-                <td>{{ selectedReviewDecision.status }}</td>
+                <th>{{ t("operator.review.fields.lifecycleStatus") }}</th>
+                <td>{{ statusLabel(selectedReviewDecision.status) }}</td>
               </tr>
               <tr>
-                <th>Submitted At</th>
+                <th>{{ t("operator.review.fields.submittedAt") }}</th>
                 <td>{{ selectedReviewDecision.submitted_at || '—' }}</td>
-                <th>Created At</th>
+                <th>{{ t("operator.review.fields.createdAt") }}</th>
                 <td>{{ selectedReviewDecision.created_at || '—' }}</td>
               </tr>
             </tbody>
@@ -222,29 +275,29 @@ watch(fundId, () => {
         </div>
 
         <div class="print-section">
-          <h2 class="print-section-title">2. TRANSACTION DETAILS</h2>
+          <h2 class="print-section-title">{{ t("operator.review.sections.transaction") }}</h2>
           <table class="print-table">
             <tbody>
               <tr>
-                <th>Instrument Code</th>
+                <th>{{ t("operator.review.fields.instrumentCode") }}</th>
                 <td>{{ selectedReviewDecision.instrument_code }}</td>
-                <th>Exchange</th>
-                <td>{{ selectedReviewDecision.exchange || 'SET' }}</td>
+                <th>{{ t("operator.review.fields.exchange") }}</th>
+                <td>{{ selectedReviewDecision.exchange || t("common.notAvailable") }}</td>
               </tr>
               <tr>
-                <th>Side</th>
-                <td><strong>{{ selectedReviewDecision.side }}</strong></td>
-                <th>Currency</th>
+                <th>{{ t("operator.review.side") }}</th>
+                <td><strong>{{ sideLabel(selectedReviewDecision.side) }}</strong></td>
+                <th>{{ t("operator.review.fields.currency") }}</th>
                 <td>{{ selectedReviewDecision.currency }}</td>
               </tr>
               <tr>
-                <th>Quantity</th>
+                <th>{{ t("operator.review.fields.quantity") }}</th>
                 <td>{{ selectedReviewDecision.quantity || '—' }}</td>
-                <th>Limit Price</th>
+                <th>{{ t("operator.review.fields.limitPrice") }}</th>
                 <td>{{ selectedReviewDecision.limit_price || '—' }}</td>
               </tr>
               <tr>
-                <th>Gross Amount</th>
+                <th>{{ t("operator.review.fields.grossAmount") }}</th>
                 <td colspan="3">{{ selectedReviewDecision.amount || '—' }}</td>
               </tr>
             </tbody>
@@ -252,23 +305,23 @@ watch(fundId, () => {
         </div>
 
         <div v-if="selectedReviewDecision.lines && selectedReviewDecision.lines.length > 0" class="print-section">
-          <h2 class="print-section-title">3. DECISION LINES</h2>
+          <h2 class="print-section-title">{{ t("operator.review.sections.lines") }}</h2>
           <table class="print-table print-table--striped">
             <thead>
               <tr>
-                <th>Line No</th>
-                <th>Instrument</th>
-                <th>Side</th>
-                <th class="right">Qty</th>
-                <th class="right">Price</th>
-                <th>CCY</th>
+                <th>{{ t("operator.review.fields.lineNumber") }}</th>
+                <th>{{ t("operator.review.instrument") }}</th>
+                <th>{{ t("operator.review.side") }}</th>
+                <th class="right">{{ t("operator.review.fields.quantity") }}</th>
+                <th class="right">{{ t("operator.review.fields.price") }}</th>
+                <th>{{ t("operator.review.fields.currency") }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="line in selectedReviewDecision.lines" :key="line.id || line.line_number">
                 <td>{{ line.line_number }}</td>
                 <td>{{ line.instrument_code || '—' }}</td>
-                <td>{{ line.side || '—' }}</td>
+                <td>{{ sideLabel(line.side) }}</td>
                 <td class="right">{{ line.quantity || '—' }}</td>
                 <td class="right">{{ line.amount || '—' }}</td>
                 <td>{{ line.currency || '—' }}</td>
@@ -278,26 +331,26 @@ watch(fundId, () => {
         </div>
 
         <div class="print-section">
-          <h2 class="print-section-title">4. INVESTMENT RATIONALE</h2>
+          <h2 class="print-section-title">{{ t("operator.review.sections.rationale") }}</h2>
           <div class="print-rationale">
-            {{ selectedReviewDecision.rationale || 'No rationale provided.' }}
+            {{ selectedReviewDecision.rationale || t("operator.review.noRationale") }}
           </div>
         </div>
 
         <div class="print-section">
-          <h2 class="print-section-title">5. APPROVAL TIMELINE</h2>
+          <h2 class="print-section-title">{{ t("operator.review.sections.approval") }}</h2>
           <table class="print-table">
             <tbody>
               <tr>
-                <th>Current Stage</th>
-                <td>Stage {{ selectedReviewDecision.approval_stage || '—' }} / {{ selectedReviewDecision.approval_total_stages || '—' }}</td>
+                <th>{{ t("operator.review.fields.currentStage") }}</th>
+                <td>{{ t("operator.review.fields.stageValue", { current: selectedReviewDecision.approval_stage || t("common.notAvailable"), total: selectedReviewDecision.approval_total_stages || t("common.notAvailable") }) }}</td>
               </tr>
               <tr v-if="selectedReviewDecision.previous_approvers && selectedReviewDecision.previous_approvers.length > 0">
-                <th>Previous Approvers</th>
+                <th>{{ t("operator.review.fields.previousApprovers") }}</th>
                 <td>{{ selectedReviewDecision.previous_approvers.join(', ') }}</td>
               </tr>
               <tr v-if="selectedReviewDecision.current_approvers && selectedReviewDecision.current_approvers.length > 0">
-                <th>Pending Approvers</th>
+                <th>{{ t("operator.review.fields.pendingApprovers") }}</th>
                 <td>{{ selectedReviewDecision.current_approvers.join(', ') }}</td>
               </tr>
             </tbody>
@@ -307,11 +360,11 @@ watch(fundId, () => {
         <div class="print-signatures">
           <div class="print-signature-box">
             <div class="print-signature-line"></div>
-            <div class="print-signature-label">Prepared By (Fund Manager)</div>
+            <div class="print-signature-label">{{ t("operator.review.signatures.preparedBy") }}</div>
           </div>
           <div class="print-signature-box">
             <div class="print-signature-line"></div>
-            <div class="print-signature-label">Approved By (Compliance Officer)</div>
+            <div class="print-signature-label">{{ t("operator.review.signatures.approvedBy") }}</div>
           </div>
         </div>
       </div>

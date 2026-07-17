@@ -190,12 +190,12 @@ export function buildScopeOptions(
   if (canViewCompany) {
     items.push({
       key: "company",
-      label: t("dashboardOverview.scopeCompany", "Entire company AUM"),
+      label: t("dashboardOverview.scopeCompany"),
     });
   }
   items.push({
     key: "mine",
-    label: t("dashboardOverview.scopeMine", "My AUM"),
+    label: t("dashboardOverview.scopeMine"),
   });
   return items;
 }
@@ -211,6 +211,26 @@ export interface DashboardValuationMetric {
   tone: DashboardOverviewMetricTone;
 }
 
+function unavailableValuationHelper(
+  summary: ValuationSummaryDTO | null,
+  t: TranslateFn,
+): string {
+  if (summary?.status === "INCOMPLETE") {
+    const { includedPortfolioCount, totalPortfolioCount } = summary.coverage;
+    if (totalPortfolioCount > 0) {
+      return t("dashboardOverview.metricIncompleteCoverage", {
+        included: includedPortfolioCount,
+        total: totalPortfolioCount,
+      });
+    }
+    return t("dashboardOverview.metricIncomplete");
+  }
+  if (summary?.status === "NO_DATA") {
+    return t("dashboardOverview.metricNoData");
+  }
+  return t("dashboardOverview.metricNotAvailable");
+}
+
 /**
  * Builds the "AUM Today" metric card. Renders an explicit not-available /
  * load-error state (value "—") rather than a zero when no valuation
@@ -224,26 +244,31 @@ export function buildAumMetric(
 ): DashboardValuationMetric {
   const base = {
     id: "aum",
-    label: t("dashboardOverview.metricAumLabel", "AUM Today"),
+    label: t("dashboardOverview.metricAumLabel"),
     icon: "portfolio",
     tone: "primary" as DashboardOverviewMetricTone,
   };
   if (hasError) {
     return {
       ...base,
-      value: "—",
+      value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: t("dashboardOverview.metricLoadError", "Could not load"),
+      helperText: t("dashboardOverview.metricLoadError"),
     };
   }
-  if (!summary || !summary.dataAvailable) {
+  if (
+    !summary ||
+    summary.status !== "AVAILABLE" ||
+    !summary.dataAvailable ||
+    summary.aumToday === null
+  ) {
     return {
       ...base,
-      value: "—",
+      value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+      helperText: unavailableValuationHelper(summary, t),
     };
   }
   return {
@@ -251,9 +276,11 @@ export function buildAumMetric(
     value: formatMoneyCompact(parseDecimalOrNull(summary.aumToday), summary.currency),
     changeLabel: "",
     changeTone: "neutral",
-    helperText: t("dashboardOverview.metricAsOf", {
-      time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
-    }),
+    helperText: summary.asOf
+      ? t("dashboardOverview.metricAsOf", {
+          time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
+        })
+      : t("dashboardOverview.metricReportingCurrency", { currency: summary.currency }),
   };
 }
 
@@ -270,26 +297,31 @@ export function buildPnlMetric(
 ): DashboardValuationMetric {
   const base = {
     id: "pnl",
-    label: t("dashboardOverview.metricPnlLabel", "Today's P&L"),
+    label: t("dashboardOverview.metricPnlLabel"),
     icon: "analysis",
   };
   if (hasError) {
     return {
       ...base,
-      value: "—",
+      value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: t("dashboardOverview.metricLoadError", "Could not load"),
+      helperText: t("dashboardOverview.metricLoadError"),
       tone: "success",
     };
   }
-  if (!summary || !summary.dataAvailable) {
+  if (
+    !summary ||
+    summary.status !== "AVAILABLE" ||
+    !summary.dataAvailable ||
+    summary.todayPnl === null
+  ) {
     return {
       ...base,
-      value: "—",
+      value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: t("dashboardOverview.metricNotAvailable", "Not yet available"),
+      helperText: unavailableValuationHelper(summary, t),
       tone: "success",
     };
   }
@@ -302,9 +334,11 @@ export function buildPnlMetric(
     value: formatMoneyCompact(pnl, summary.currency, true),
     changeLabel: pct === null ? "" : formatPercent(pct, 2, true),
     changeTone,
-    helperText: t("dashboardOverview.metricAsOf", {
-      time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
-    }),
+    helperText: summary.asOf
+      ? t("dashboardOverview.metricAsOf", {
+          time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
+        })
+      : t("dashboardOverview.metricReportingCurrency", { currency: summary.currency }),
     tone: pnl < 0 ? "danger" : "success",
   };
 }

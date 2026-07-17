@@ -9,6 +9,7 @@ import { enInvestmentResearchMessages } from "./investmentResearch";
 import { enMarketDataMessages } from "./marketData";
 import { enPlaceholderMessages } from "./placeholders";
 import { enPortfolioMessages } from "./portfolio";
+import { enOperatorMessages } from "./operator";
 import { enSettingsMessages } from "./settings";
 
 export const enMessages = {
@@ -24,4 +25,5 @@ export const enMessages = {
   ...enMarketDataMessages,
   ...enWatchlistMessages,
   ...enPortfolioMessages,
+  ...enOperatorMessages,
 } as const;

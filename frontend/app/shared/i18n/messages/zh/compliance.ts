@@ -60,6 +60,7 @@ export const zhComplianceMessages = {
         noMatches: "沒有符合此搜尋的投資組合。",
       },
       tabs: {
+        label: "合规分区",
         overview: "總覽",
         library: "規則庫",
         approvals: "審批",
@@ -423,6 +424,7 @@ export const zhComplianceMessages = {
         submit: "確認跳過",
         submitting: "正在保存數據…",
         success: "違規已跳過並記錄。",
+        permissionRequired: "需要 IRG_OVERRIDE_BREACH 權限。",
         notOverridable:
           "該項目並非處於 OPEN 狀態。只有 OPEN 狀態的違規事項才允許執行跳過操作。",
       },
@@ -449,6 +451,10 @@ export const zhComplianceMessages = {
         settings: "設置",
       },
       header: {
+        updated: "更新時間",
+        owner: "負責人",
+        edit: "編輯",
+        disable: "停用",
         editUnavailable:
           "後端目前尚不支援編輯規則操作。",
         disableUnavailable:
@@ -634,6 +640,20 @@ export const zhComplianceMessages = {
       },
       records: "檢核記錄",
       breaches: "合規違規佐證資料",
+      noBreaches: "此檢查群組中沒有違規記錄。",
+      fields: {
+        timing: "檢查時點",
+        businessDate: "業務日期",
+        checkedAt: "檢查時間",
+        checkedBy: "檢查人員",
+        order: "訂單",
+        ticker: "證券代碼",
+        portfolio: "投資組合",
+        ruleVersion: "規則版本",
+        dataHash: "資料雜湊",
+        breach: "違規記錄",
+        created: "建立時間",
+      },
       export: {
         label: "導出為 CSV 檔",
         disabled:
@@ -651,6 +671,9 @@ export const zhComplianceMessages = {
       action: "模組權限 / 操作功能",
       code: "權限項目編號",
       held: "具備該權限",
+      planned: "已規劃 · 後端尚未接入",
+      yes: "是",
+      no: "否",
       table: {
         viewRules: "檢視合規規則清單",
         createRule: "建立規則實例項目",

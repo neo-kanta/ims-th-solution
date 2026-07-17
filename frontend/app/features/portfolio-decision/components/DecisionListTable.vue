@@ -2,6 +2,7 @@
 import DecisionStatusBadge from "~/features/investment-decision/components/DecisionStatusBadge.vue";
 import type { ApiDecisionV2 } from "../services/portfolioDecisionApi";
 import { formatMoney, formatQuantity } from "../lib/decisionFormat";
+import { useI18n } from "~/composables/useI18n";
 
 defineProps<{
   items: ApiDecisionV2[];
@@ -12,9 +13,17 @@ const emit = defineEmits<{
   open: [decision: ApiDecisionV2];
 }>();
 
+const { t } = useI18n();
+
 function formatDateTime(value?: string): string {
-  if (!value) return "—";
+  if (!value) return t("common.notAvailable");
   return value.replace("T", " ").slice(0, 16);
+}
+
+function sideLabel(side: string | undefined): string {
+  if (side === "BUY") return t("portfolio.decisionNew.buy");
+  if (side === "SELL") return t("portfolio.decisionNew.sell");
+  return side || t("common.notAvailable");
 }
 </script>
 
@@ -23,29 +32,29 @@ function formatDateTime(value?: string): string {
     <table>
       <thead>
         <tr>
-          <th>Decision No</th>
-          <th>Instrument</th>
-          <th>Side</th>
-          <th>Quantity</th>
-          <th>Limit price</th>
-          <th>Status</th>
-          <th>Business date</th>
-          <th>Created / submitted</th>
-          <th class="col-action">Action</th>
+          <th>{{ t("portfolio.decisionList.columns.decisionNumber") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.instrument") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.side") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.quantity") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.limitPrice") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.status") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.businessDate") }}</th>
+          <th>{{ t("portfolio.decisionList.columns.createdSubmitted") }}</th>
+          <th class="col-action">{{ t("portfolio.decisionList.columns.action") }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="loading">
-          <td colspan="9" class="empty">Loading decisions…</td>
+          <td colspan="9" class="empty">{{ t("portfolio.decisionList.loading") }}</td>
         </tr>
         <tr v-else-if="items.length === 0">
-          <td colspan="9" class="empty">No decisions yet for this portfolio.</td>
+          <td colspan="9" class="empty">{{ t("portfolio.decisionList.empty") }}</td>
         </tr>
         <tr v-for="d in items" :key="d.id" class="decision-row" @click="emit('open', d)">
           <td class="cell-mono">{{ d.decision_number ?? "—" }}</td>
           <td>{{ d.instrument_code ?? "—" }}</td>
           <td>
-            <span class="side-badge" :data-side="d.side">{{ d.side ?? "—" }}</span>
+            <span class="side-badge" :data-side="d.side">{{ sideLabel(d.side) }}</span>
           </td>
           <td class="cell-mono">
             <template v-if="d.quantity">{{ formatQuantity(d.quantity) }}</template>
@@ -57,7 +66,7 @@ function formatDateTime(value?: string): string {
           <td>{{ d.business_date ?? "—" }}</td>
           <td>{{ formatDateTime(d.submitted_at ?? d.created_at) }}</td>
           <td class="col-action">
-            <button type="button" class="btn-open" @click.stop="emit('open', d)">Open</button>
+            <button type="button" class="btn-open" @click.stop="emit('open', d)">{{ t("portfolio.decisionList.open") }}</button>
           </td>
         </tr>
       </tbody>

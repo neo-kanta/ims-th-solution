@@ -13,6 +13,7 @@ import {
   type DecisionStatus,
 } from "~/features/investment-decision/services/decisionApi";
 import type { ApiDecision } from "~/features/investment-decision/services/decisionApi";
+import { useI18n } from "~/composables/useI18n";
 
 definePageMeta({
   layout: "dashboard",
@@ -22,7 +23,11 @@ definePageMeta({
 
 const route = useRoute();
 const router = useRouter();
-const fundId = computed(() => route.params.fundId as string);
+const { t } = useI18n();
+const fundId = computed(() => {
+  const value = route.params.fundId;
+  return typeof value === "string" ? value : "";
+});
 
 const { items, total, page, limit, loading, error, fetchList } =
   useDecisionList();
@@ -54,7 +59,7 @@ function pickEnum<T extends string>(
   allowed: readonly T[],
 ): T | undefined {
   if (typeof raw !== "string") return undefined;
-  return (allowed as readonly string[]).includes(raw) ? (raw as T) : undefined;
+  return allowed.find((value) => value === raw);
 }
 
 function hydrateFromQuery() {
@@ -153,13 +158,13 @@ onMounted(() => {
 
 <template>
   <div>
-    <AppPageHeader title="Operation — Decisions">
+    <AppPageHeader :title="t('operator.operation.title')">
       <template #actions>
         <AppButton
           variant="primary"
           @click="router.push(`/investment/operator/${fundId}/operation/new`)"
         >
-          New Decision
+          {{ t("operator.actions.newDecision") }}
         </AppButton>
       </template>
     </AppPageHeader>
@@ -196,19 +201,19 @@ onMounted(() => {
 
     <div v-if="batchApproveDialog" class="dialog-overlay" @click.self="batchApproveDialog = false">
       <div class="dialog">
-        <div class="dialog__title">Batch Approve {{ selectedNos.length }} Decision(s)</div>
+        <div class="dialog__title">{{ t("operator.operation.batchApproveTitle", { count: selectedNos.length }) }}</div>
         <div class="dialog__body">
-          <label class="dialog__label">Comment (optional)</label>
+          <label class="dialog__label">{{ t("operator.operation.commentOptional") }}</label>
           <textarea v-model="batchComment" rows="3" class="dialog__textarea" />
         </div>
         <div class="dialog__actions">
-          <button class="dialog__btn" @click="batchApproveDialog = false">Cancel</button>
+          <button class="dialog__btn" @click="batchApproveDialog = false">{{ t("operator.actions.cancel") }}</button>
           <button
             class="dialog__btn dialog__btn--primary"
             :disabled="mutations.loading.value"
             @click="confirmBatchApprove"
           >
-            Approve
+            {{ t("operator.actions.approve") }}
           </button>
         </div>
       </div>
@@ -216,19 +221,19 @@ onMounted(() => {
 
     <div v-if="batchRejectDialog" class="dialog-overlay" @click.self="batchRejectDialog = false">
       <div class="dialog">
-        <div class="dialog__title">Batch Reject {{ selectedNos.length }} Decision(s)</div>
+        <div class="dialog__title">{{ t("operator.operation.batchRejectTitle", { count: selectedNos.length }) }}</div>
         <div class="dialog__body">
-          <label class="dialog__label">Reason <span class="required">*</span></label>
+          <label class="dialog__label">{{ t("operator.operation.reason") }} <span class="required">*</span></label>
           <textarea v-model="batchReason" rows="3" class="dialog__textarea" />
         </div>
         <div class="dialog__actions">
-          <button class="dialog__btn" @click="batchRejectDialog = false">Cancel</button>
+          <button class="dialog__btn" @click="batchRejectDialog = false">{{ t("operator.actions.cancel") }}</button>
           <button
             class="dialog__btn dialog__btn--danger"
             :disabled="mutations.loading.value || !batchReason.trim()"
             @click="confirmBatchReject"
           >
-            Reject
+            {{ t("operator.actions.reject") }}
           </button>
         </div>
       </div>

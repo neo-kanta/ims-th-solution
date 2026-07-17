@@ -8,6 +8,7 @@ export {
   formatQuantity,
   shortenId,
 } from "../../investment-ledger/lib/ledgerFormat";
+import type { AppTranslationKey } from "~/composables/useI18n";
 
 export type DecisionLifecycleStatus =
   | "DRAFT"
@@ -19,30 +20,29 @@ export type DecisionLifecycleStatus =
   | "REJECTED"
   | "CANCELLED";
 
-export const DECISION_STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  PENDING_COMPLIANCE_RELEASE: "Pending Compliance Release",
-  PENDING_APPROVAL: "Pending Approval",
-  APPROVED: "Approved",
-  READY_FOR_EXECUTION: "Ready for Execution",
-  EXECUTED: "Executed",
-  REJECTED: "Rejected",
-  CANCELLED: "Cancelled",
+export const DECISION_STATUS_KEYS: Readonly<Record<string, AppTranslationKey>> = {
+  DRAFT: "portfolio.decisionNew.status.draft",
+  SUBMITTED: "portfolio.decisionNew.status.submitted",
+  BLOCKED: "portfolio.decisionNew.status.blocked",
+  PENDING_COMPLIANCE_RELEASE: "portfolio.decisionNew.status.pendingComplianceRelease",
+  PENDING_APPROVAL: "portfolio.decisionNew.status.pendingApproval",
+  APPROVED: "portfolio.decisionNew.status.approved",
+  READY_FOR_EXECUTION: "portfolio.decisionNew.status.readyForExecution",
+  EXECUTED: "portfolio.decisionNew.status.executed",
+  REJECTED: "portfolio.decisionNew.status.rejected",
+  CANCELLED: "portfolio.decisionNew.status.cancelled",
 };
 
-export function decisionStatusLabel(status: string | null | undefined): string {
-  if (!status) return "—";
-  return DECISION_STATUS_LABELS[status] ?? status;
+export function decisionStatusKey(status: string | null | undefined): AppTranslationKey | null {
+  if (!status) return null;
+  return DECISION_STATUS_KEYS[status] ?? null;
 }
 
 export type WorkflowStageState = "complete" | "active" | "upcoming" | "blocked";
 
 export interface DecisionWorkflowStage {
   key: string;
-  label: string;
-  /** i18n key under portfolio.decisionNew.workflow.* — components should
-   * prefer t(labelKey, label) over the raw English `label` fallback. */
-  labelKey: string;
+  labelKey: AppTranslationKey;
   state: WorkflowStageState;
 }
 
@@ -54,15 +54,7 @@ const STAGE_KEYS = [
   "holdings_updated",
 ] as const;
 
-const STAGE_LABELS: Record<(typeof STAGE_KEYS)[number], string> = {
-  draft: "Draft",
-  compliance_approval: "Compliance & Approval",
-  execution: "Execution",
-  confirmation: "Confirmation",
-  holdings_updated: "Holdings Updated",
-};
-
-const STAGE_LABEL_KEYS: Record<(typeof STAGE_KEYS)[number], string> = {
+const STAGE_LABEL_KEYS: Record<(typeof STAGE_KEYS)[number], AppTranslationKey> = {
   draft: "portfolio.decisionNew.workflow.draft",
   compliance_approval: "portfolio.decisionNew.workflow.complianceApproval",
   execution: "portfolio.decisionNew.workflow.execution",
@@ -102,7 +94,7 @@ export function decisionWorkflowStages(
     } else if (index === currentRank) {
       state = "active";
     }
-    return { key, label: STAGE_LABELS[key], labelKey: STAGE_LABEL_KEYS[key], state };
+    return { key, labelKey: STAGE_LABEL_KEYS[key], state };
   });
 }
 

@@ -9,6 +9,7 @@ import { zhInvestmentResearchMessages } from "./investmentResearch";
 import { zhMarketDataMessages } from "./marketData";
 import { zhPlaceholderMessages } from "./placeholders";
 import { zhPortfolioMessages } from "./portfolio";
+import { zhOperatorMessages } from "./operator";
 import { zhSettingsMessages } from "./settings";
 
 export const zhMessages = {
@@ -24,4 +25,5 @@ export const zhMessages = {
   ...zhMarketDataMessages,
   ...zhWatchlistMessages,
   ...zhPortfolioMessages,
+  ...zhOperatorMessages,
 } as const;

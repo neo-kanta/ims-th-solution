@@ -7,7 +7,7 @@ import {
   statusOf,
 } from "../app/features/portfolio-decision/lib/decisionErrors";
 import {
-  decisionStatusLabel,
+  decisionStatusKey,
   decisionWorkflowStages,
   estimatedConsideration,
 } from "../app/features/portfolio-decision/lib/decisionFormat";
@@ -41,16 +41,17 @@ describe("backend error display", () => {
   });
 });
 
-describe("decisionStatusLabel", () => {
-  it("labels every lifecycle status the backend can return", () => {
-    expect(decisionStatusLabel("DRAFT")).toBe("Draft");
-    expect(decisionStatusLabel("PENDING_COMPLIANCE_RELEASE")).toBe("Pending Compliance Release");
-    expect(decisionStatusLabel("PENDING_APPROVAL")).toBe("Pending Approval");
-    expect(decisionStatusLabel("APPROVED")).toBe("Approved");
-    expect(decisionStatusLabel("READY_FOR_EXECUTION")).toBe("Ready for Execution");
-    expect(decisionStatusLabel("EXECUTED")).toBe("Executed");
-    expect(decisionStatusLabel("REJECTED")).toBe("Rejected");
-    expect(decisionStatusLabel("CANCELLED")).toBe("Cancelled");
+describe("decisionStatusKey", () => {
+  it("maps every lifecycle status to a typed translation key", () => {
+    expect(decisionStatusKey("DRAFT")).toBe("portfolio.decisionNew.status.draft");
+    expect(decisionStatusKey("PENDING_COMPLIANCE_RELEASE")).toBe("portfolio.decisionNew.status.pendingComplianceRelease");
+    expect(decisionStatusKey("PENDING_APPROVAL")).toBe("portfolio.decisionNew.status.pendingApproval");
+    expect(decisionStatusKey("APPROVED")).toBe("portfolio.decisionNew.status.approved");
+    expect(decisionStatusKey("READY_FOR_EXECUTION")).toBe("portfolio.decisionNew.status.readyForExecution");
+    expect(decisionStatusKey("EXECUTED")).toBe("portfolio.decisionNew.status.executed");
+    expect(decisionStatusKey("REJECTED")).toBe("portfolio.decisionNew.status.rejected");
+    expect(decisionStatusKey("CANCELLED")).toBe("portfolio.decisionNew.status.cancelled");
+    expect(decisionStatusKey("UNKNOWN")).toBeNull();
   });
 });
 

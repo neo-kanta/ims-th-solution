@@ -49,7 +49,9 @@ export function buildValuationHistorySeries(
     return sorted;
   }
 
-  const newest = Date.parse(sorted[sorted.length - 1]!.date);
+  const newestPoint = sorted.at(-1);
+  if (!newestPoint) return sorted;
+  const newest = Date.parse(newestPoint.date);
   const cutoff = newest - rangeDays * DAY_MS;
   return sorted.filter((point) => Date.parse(point.date) >= cutoff);
 }
@@ -83,8 +85,9 @@ export function buildValuationSparkline(
         `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.y.toFixed(2)}`,
     )
     .join(" ");
-  const first = coordinates[0]!;
-  const last = coordinates[coordinates.length - 1]!;
+  const first = coordinates[0];
+  const last = coordinates.at(-1);
+  if (!first || !last) return { areaPath: "", coordinates: [], linePath: "" };
   const baseline = height - padding;
 
   return {
@@ -98,8 +101,11 @@ export function valuationHistoryChange(
   points: ValuationHistoryPoint[],
 ): number | null {
   if (points.length < 2) return null;
-  const first = points[0]!.value;
-  const latest = points[points.length - 1]!.value;
+  const firstPoint = points[0];
+  const latestPoint = points.at(-1);
+  if (!firstPoint || !latestPoint) return null;
+  const first = firstPoint.value;
+  const latest = latestPoint.value;
   if (first === 0) return null;
   return ((latest - first) / first) * 100;
 }

@@ -11,6 +11,11 @@
  * would accept scientific notation ("1e5"), which the spec forbids.
  */
 
+import type {
+  AppTranslationKey,
+  TranslationParams,
+} from "~/composables/useI18n";
+
 const STRICT_POSITIVE_DECIMAL = /^\d+(\.\d+)?$/;
 
 export function isStrictPositiveDecimal(value: string): boolean {
@@ -39,14 +44,19 @@ export interface DecisionDraftLike {
   businessDate: string;
 }
 
+export interface DecisionValidationError {
+  key: AppTranslationKey;
+  params?: TranslationParams;
+}
+
 export interface DecisionDraftErrors {
-  instrument?: string;
-  side?: string;
-  quantity?: string;
-  amount?: string;
-  limitPrice?: string;
-  currency?: string;
-  businessDate?: string;
+  instrument?: DecisionValidationError;
+  side?: DecisionValidationError;
+  quantity?: DecisionValidationError;
+  amount?: DecisionValidationError;
+  limitPrice?: DecisionValidationError;
+  currency?: DecisionValidationError;
+  businessDate?: DecisionValidationError;
 }
 
 export interface DecisionValidationOptions {
@@ -71,41 +81,41 @@ export function validateDecisionDraft(
   const errors: DecisionDraftErrors = {};
 
   if (!draft.instrumentCode.trim()) {
-    errors.instrument = "Select an instrument.";
+    errors.instrument = { key: "portfolio.decisionNew.validation.instrumentRequired" };
   } else if (
     draft.side === "SELL" &&
     draft.instrumentId &&
     options.isOwnedInstrument === false
   ) {
-    errors.instrument = "This portfolio does not hold this instrument — select an owned position to sell.";
+    errors.instrument = { key: "portfolio.decisionNew.validation.instrumentNotOwned" };
   }
   if (draft.side !== "BUY" && draft.side !== "SELL") {
-    errors.side = "Choose BUY or SELL.";
+    errors.side = { key: "portfolio.decisionNew.validation.sideRequired" };
   }
   if (!draft.currency) {
-    errors.currency = "Currency is required.";
+    errors.currency = { key: "portfolio.decisionNew.validation.currencyRequired" };
   } else if (!isCurrencyCode(draft.currency)) {
-    errors.currency = "Use a 3-letter uppercase ISO currency code.";
+    errors.currency = { key: "portfolio.decisionNew.validation.currencyInvalid" };
   }
   if (!draft.businessDate) {
-    errors.businessDate = "Business date is required.";
+    errors.businessDate = { key: "portfolio.decisionNew.validation.businessDateRequired" };
   } else if (!isIsoDate(draft.businessDate)) {
-    errors.businessDate = "Use YYYY-MM-DD format.";
+    errors.businessDate = { key: "portfolio.decisionNew.validation.businessDateInvalid" };
   }
 
   const hasQuantity = draft.quantity.trim() !== "";
   const hasAmount = draft.amount.trim() !== "";
   if (!hasQuantity && !hasAmount) {
-    errors.quantity = "Enter a quantity or an amount.";
+    errors.quantity = { key: "portfolio.decisionNew.validation.quantityOrAmount" };
   }
   if (hasQuantity && !isStrictPositiveDecimal(draft.quantity)) {
-    errors.quantity = "Quantity must be a positive number (no scientific notation).";
+    errors.quantity = { key: "portfolio.decisionNew.validation.quantityInvalid" };
   }
   if (hasAmount && !isStrictPositiveDecimal(draft.amount)) {
-    errors.amount = "Amount must be a positive number (no scientific notation).";
+    errors.amount = { key: "portfolio.decisionNew.validation.amountInvalid" };
   }
   if (draft.limitPrice.trim() && !isStrictPositiveDecimal(draft.limitPrice)) {
-    errors.limitPrice = "Limit price must be a positive number (no scientific notation).";
+    errors.limitPrice = { key: "portfolio.decisionNew.validation.limitPriceInvalid" };
   }
 
   if (
@@ -116,7 +126,10 @@ export function validateDecisionDraft(
   ) {
     const requested = Number(draft.quantity);
     if (requested > options.availableQuantity) {
-      errors.quantity = `Exceeds available holding (${options.availableQuantity}).`;
+      errors.quantity = {
+        key: "portfolio.decisionNew.validation.exceedsHolding",
+        params: { available: options.availableQuantity },
+      };
     }
   }
 

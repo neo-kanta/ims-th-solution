@@ -31,8 +31,10 @@ export function resolveLegacyFundRedirect(
 
   if (withCode.length === 0) return { kind: "empty" };
   if (withCode.length === 1) {
-    const portfolio = withCode[0]!;
-    return { kind: "redirect", path: newDecisionPath(portfolio.code), portfolio };
+    const portfolio = withCode[0];
+    if (portfolio) {
+      return { kind: "redirect", path: newDecisionPath(portfolio.code), portfolio };
+    }
   }
   return { kind: "choose", portfolios: withCode };
 }

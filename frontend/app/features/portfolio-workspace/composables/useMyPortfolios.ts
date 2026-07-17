@@ -3,17 +3,15 @@ import { computed, ref } from "vue";
 import { useOpenApiClient, unwrapOpenApiResponse } from "~/api/openapi";
 import { useAuthStore } from "~/stores/useAuthStore";
 import { investmentLedgerApi } from "~/features/investment-ledger/services/investmentLedgerApi";
+import { dashboardApi } from "~/features/dashboard/services/dashboardApi";
+import { collectOffsetPages } from "~/features/compliance/lib/pagination";
 import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
-import {
-  deriveRole,
-  deriveStatus,
-  summarizeBreaches,
-  todayBangkokIso,
-} from "~/features/my-funds/lib/derive";
+import { summarizeBreaches, todayBangkokIso } from "~/features/my-funds/lib/derive";
 import { parseDecimal, parseDecimalOrNull } from "~/features/my-funds/lib/format";
+import { buildPortfolioDirectoryKpis } from "../lib/directoryKpis";
+import type { ValuationSummaryDTO } from "~/features/dashboard/types";
 
 import type {
-  ApiCashBalance,
   ApiPortfolio,
   ApiValuation,
   ApiBreach,
@@ -25,8 +23,8 @@ import type {
 
 interface PortfolioDecoration {
   latestValuation: ApiValuation | null;
-  cashBalances: ApiCashBalance[];
   breaches: ApiBreach[];
+  complianceAvailable: boolean;
 }
 
 export function useMyPortfolios() {
@@ -35,16 +33,18 @@ export function useMyPortfolios() {
   const loading = ref(false);
   const decorating = ref(false);
   const error = ref<string | null>(null);
+  const valuationSummary = ref<ValuationSummaryDTO | null>(null);
+  const valuationSummaryError = ref(false);
   const businessDate = ref<string>(todayBangkokIso());
   const filter = ref<MyPortfoliosFilter>("all");
-  const sort = ref<MyPortfoliosSort>("aum");
+  const sort = ref<MyPortfoliosSort>("updated");
   const search = ref("");
 
   const filtered = computed<MyPortfolioCard[]>(() => {
     const term = search.value.trim().toLowerCase();
     const base = cards.value.filter((card) => {
       if (term) {
-        const haystack = `${card.code} ${card.name} ${card.portfolio_id} ${card.portfolio_type} ${card.base_currency}`.toLowerCase();
+        const haystack = `${card.code} ${card.name} ${card.portfolio_type} ${card.base_currency}`.toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       switch (filter.value) {
@@ -69,13 +69,12 @@ export function useMyPortfolios() {
         case "breach":
           return (
             b.compliance.open_count - a.compliance.open_count ||
-            b.valuation.aum_numeric - a.valuation.aum_numeric
+            (b.updated_at ?? "").localeCompare(a.updated_at ?? "")
           );
         case "updated":
           return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
-        case "aum":
         default:
-          return b.valuation.aum_numeric - a.valuation.aum_numeric;
+          return (a.code || a.name).localeCompare(b.code || b.name);
       }
     });
   });
@@ -91,107 +90,82 @@ export function useMyPortfolios() {
     return { all, managed, breached, locked, stale };
   });
 
-  const kpis = computed<MyPortfoliosKpiStrip>(() => {
-    let aum = 0;
-    let unrealised = 0;
-    let active = 0;
-    let breachCount = 0;
-    let staleCount = 0;
-    let worstSeverity: MyPortfoliosKpiStrip["worst_breach_severity"] = null;
-    const ccyTally: Record<string, number> = {};
-
-    for (const card of cards.value) {
-      aum += card.valuation.aum_numeric;
-      unrealised += card.valuation.unrealised_pnl_numeric;
-      breachCount += card.compliance.open_count;
-      if (card.status === "ACTIVE" || card.status === "BREACH") {
-        active += 1;
-      }
-      if (card.valuation.has_stale_inputs || !card.valuation.available) {
-        staleCount += 1;
-      }
-      if (card.compliance.worst_severity) {
-        if (
-          card.compliance.worst_severity === "BLOCK" ||
-          (card.compliance.worst_severity === "WARN" && worstSeverity !== "BLOCK") ||
-          (card.compliance.worst_severity === "INFO" && worstSeverity === null)
-        ) {
-          worstSeverity = card.compliance.worst_severity;
-        }
-      }
-      const ccy = card.valuation.valuation_ccy || card.base_currency || "";
-      if (ccy) ccyTally[ccy] = (ccyTally[ccy] ?? 0) + 1;
-    }
-
-    const ccy = pickDominantCurrency(ccyTally) || cards.value[0]?.base_currency || "";
-    const trend: MyPortfoliosKpiStrip["unrealised_pnl_trend"] =
-      unrealised > 0 ? "up" : unrealised < 0 ? "down" : "flat";
-
-    return {
-      total_aum: aum.toString(),
-      total_aum_numeric: aum,
-      total_unrealised_pnl: unrealised.toString(),
-      total_unrealised_pnl_numeric: unrealised,
-      unrealised_pnl_trend: trend,
-      active_count: active,
-      total_count: cards.value.length,
-      open_breach_count: breachCount,
-      worst_breach_severity: worstSeverity,
-      stale_count: staleCount,
-      valuation_ccy: ccy,
-    };
-  });
+  const kpis = computed<MyPortfoliosKpiStrip>(() =>
+    buildPortfolioDirectoryKpis(
+      cards.value,
+      valuationSummary.value,
+      valuationSummaryError.value,
+    ),
+  );
 
   async function decoratePortfolio(portfolio: ApiPortfolio): Promise<PortfolioDecoration> {
     const portfolioId = portfolio.id;
     if (!portfolioId) {
-      return { latestValuation: null, cashBalances: [], breaches: [] };
+      return {
+        latestValuation: null,
+        breaches: [],
+        complianceAvailable: false,
+      };
     }
 
     const client = useOpenApiClient();
-    const [latestValuation, cashBalances, breaches] = await Promise.all([
+    const [latestValuation, complianceResult] = await Promise.all([
       myFundsApi.getLatestValuation(portfolioId).catch(() => null),
-      myFundsApi.listCash(portfolioId).catch(() => [] as ApiCashBalance[]),
-      client
-        .GET("/compliance/breaches", {
-          params: { query: { portfolio_id: portfolioId, status: "OPEN", limit: 50 } },
-        })
-        .then((res) => {
-          const body = unwrapOpenApiResponse<{ breaches?: ApiBreach[] }>(res);
-          return body.breaches ?? [];
-        })
-        .catch(() => [] as ApiBreach[]),
+      collectOffsetPages<ApiBreach>(async (offset, limit) => {
+        const res = await client.GET("/compliance/breaches", {
+          params: {
+            query: {
+              portfolio_id: portfolioId,
+              status: "OPEN",
+              offset,
+              limit,
+            },
+          },
+        });
+        const body = unwrapOpenApiResponse<{
+          breaches?: ApiBreach[];
+          total?: number;
+          offset?: number;
+        }>(res);
+        return {
+          items: body.breaches ?? [],
+          total: body.total,
+          offset: body.offset,
+        };
+      })
+        .then(({ items }) => ({ available: true as const, breaches: items }))
+        .catch(() => ({ available: false as const, breaches: [] as ApiBreach[] })),
     ]);
 
-    return { latestValuation, cashBalances, breaches };
+    return {
+      latestValuation,
+      breaches: complianceResult.breaches,
+      complianceAvailable: complianceResult.available,
+    };
   }
 
   function buildCard(portfolio: ApiPortfolio, dec: PortfolioDecoration): MyPortfolioCard {
-    const valuation = buildPortfolioValuation(portfolio, dec.latestValuation, dec.cashBalances);
-    const compliance = summarizeBreaches(dec.breaches);
-    const role = deriveRole(
-      { manager_user_id: portfolio.manager_user_id } as any,
-      authStore.user?.id ?? null,
-    );
-
-    // Mock workflow summary since portfolios do not contain workflow
-    const mockWorkflow = {
-      available: false,
-      contract_id: "",
-      business_date: "",
-      current_state: "NOT_STARTED",
-      allowed_actions: [],
-      opened_at: null,
-      manager_approved_at: null,
-      transaction_closed_at: null,
-      accounting_closed_at: null,
-    };
-
-    const status = deriveStatus(
-      { status: portfolio.status } as any,
-      mockWorkflow,
-      compliance,
-    ) as any;
+    const valuation = buildPortfolioValuation(portfolio, dec.latestValuation);
+    const compliance = dec.complianceAvailable
+      ? summarizeBreaches(dec.breaches)
+      : {
+          available: false,
+          open_count: 0,
+          warning_count: 0,
+          worst_severity: null,
+          latest_breach_id: null,
+          latest_message: null,
+        };
+    const role =
+      authStore.user?.id && portfolio.manager_user_id === authStore.user.id
+        ? "MANAGER"
+        : "MEMBER";
+    const status =
+      compliance.available && compliance.open_count > 0
+        ? "BREACH"
+        : (portfolio.status ?? "").toUpperCase() === "ACTIVE"
+          ? "ACTIVE"
+          : "CLOSED";
 
     return {
       portfolio_id: portfolio.id ?? "",
@@ -212,33 +186,55 @@ export function useMyPortfolios() {
     };
   }
 
-  async function loadAll() {
+  async function loadAll(portfolioLoadErrorMessage: string) {
     loading.value = true;
     error.value = null;
+    valuationSummaryError.value = false;
     try {
+      const valuationSummaryRequest = dashboardApi
+        .valuationSummary("company")
+        .then((summary) => ({ ok: true as const, summary }))
+        .catch(() => ({ ok: false as const, summary: null }));
       const list = await investmentLedgerApi.listPortfolios({ limit: 200 });
       const items = list.items ?? [];
 
       // Render skeleton cards immediately
       cards.value = items.map((p) =>
-        buildCard(p, { latestValuation: null, cashBalances: [], breaches: [] }),
+        buildCard(p, {
+          latestValuation: null,
+          breaches: [],
+          complianceAvailable: false,
+        }),
       );
 
       decorating.value = true;
-      const decorated = await Promise.all(
-        items.map(async (p) => {
-          try {
-            const dec = await decoratePortfolio(p);
-            return buildCard(p, dec);
-          } catch {
-            return buildCard(p, { latestValuation: null, cashBalances: [], breaches: [] });
-          }
-        }),
-      );
+      const [decorated, valuationResult] = await Promise.all([
+        Promise.all(
+          items.map(async (p) => {
+            try {
+              const dec = await decoratePortfolio(p);
+              return buildCard(p, dec);
+            } catch {
+              return buildCard(p, {
+                latestValuation: null,
+                breaches: [],
+                complianceAvailable: false,
+              });
+            }
+          }),
+        ),
+        valuationSummaryRequest,
+      ]);
       cards.value = decorated;
+      valuationSummary.value = valuationResult.summary;
+      valuationSummaryError.value = !valuationResult.ok;
+      if (valuationResult.summary?.businessDate) {
+        businessDate.value = valuationResult.summary.businessDate;
+      }
     } catch (err) {
       cards.value = [];
-      error.value = describeError(err, "Failed to load portfolios.");
+      valuationSummary.value = null;
+      error.value = describeError(err, portfolioLoadErrorMessage);
     } finally {
       loading.value = false;
       decorating.value = false;
@@ -282,7 +278,6 @@ export function useMyPortfolios() {
 function buildPortfolioValuation(
   portfolio: ApiPortfolio,
   val: ApiValuation | null,
-  balances: ApiCashBalance[],
 ): MyPortfolioCard["valuation"] {
   if (!val) {
     return {
@@ -313,18 +308,10 @@ function buildPortfolioValuation(
   const cash = parseDecimal(val.cash_balance);
   const roi = parseDecimalOrNull(val.roi);
 
-  let liveCash = 0;
-  let haveLiveCash = false;
-  for (const b of balances) {
-    const amount = parseDecimal(b.balance);
-    if (Number.isFinite(amount)) {
-      liveCash += amount;
-      haveLiveCash = true;
-    }
-  }
-
-  const effectiveCash = haveLiveCash ? liveCash : cash;
-  const cashBufferPct = nav > 0 ? (effectiveCash / nav) * 100 : null;
+  // `ValuationResponse.cash_balance` is already normalized into the
+  // valuation currency by the backend valuation snapshot. Never add raw cash
+  // balances from different currencies in the client.
+  const cashBufferPct = nav > 0 ? (cash / nav) * 100 : null;
 
   return {
     available: true,
@@ -337,25 +324,13 @@ function buildPortfolioValuation(
     realised_pnl: val.realised_pnl ?? "0",
     realised_pnl_numeric: realised,
     roi: roi !== null ? roi.toString() : null,
-    cash_balance: effectiveCash.toString(),
+    cash_balance: val.cash_balance ?? "0",
     cash_buffer_pct: cashBufferPct,
     valuation_ccy: valuationCcy,
     business_date: val.business_date ?? null,
     has_stale_inputs: !!val.has_stale_inputs,
     is_indicative: !!val.is_indicative,
   };
-}
-
-function pickDominantCurrency(tally: Record<string, number>): string {
-  let best = "";
-  let bestCount = -1;
-  for (const [ccy, count] of Object.entries(tally)) {
-    if (count > bestCount) {
-      best = ccy;
-      bestCount = count;
-    }
-  }
-  return best;
 }
 
 function describeError(err: unknown, fallback: string): string {

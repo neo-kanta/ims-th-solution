@@ -7,13 +7,14 @@ import { useI18n } from "~/composables/useI18n";
 import PortfolioWorkspaceHeader from "./components/PortfolioWorkspaceHeader.vue";
 import { usePortfolioContext } from "./composables/usePortfolioContext";
 import { portfolioApi, type ApiTransactionV2 } from "./services/portfolioApi";
+import { investmentLedgerApi } from "~/features/investment-ledger/services/investmentLedgerApi";
 
 const props = defineProps<{ portfolioCode: string }>();
 const { t } = useI18n();
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
-  () => t("portfolio.workspaceTabs.ledger", "Ledger"),
+  () => t("portfolio.workspaceTabs.ledger"),
   (newTitle) => {
     pageTitle.value = newTitle || "";
   },
@@ -24,6 +25,30 @@ const ctx = usePortfolioContext(() => props.portfolioCode);
 const transactions = ref<ApiTransactionV2[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const instrumentLabels = ref<Record<string, string>>({});
+
+function instrumentBusinessLabel(ticker?: string, name?: string): string {
+  return [ticker, name].filter((value): value is string => Boolean(value?.trim())).join(" — ");
+}
+
+async function loadInstrumentLabels(items: ApiTransactionV2[]) {
+  const ids = [...new Set(items.map((transaction) => transaction.instrument_id).filter((id): id is string => Boolean(id)))];
+  const entries = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const instrument = await investmentLedgerApi.getInstrument(id);
+        return [id, instrumentBusinessLabel(instrument.primary_ticker, instrument.name)] as const;
+      } catch {
+        return [id, ""] as const;
+      }
+    }),
+  );
+  instrumentLabels.value = Object.fromEntries(entries);
+}
+
+function labelForInstrument(id: string | undefined): string {
+  return (id && instrumentLabels.value[id]) || t("portfolio.terminal.unavailable");
+}
 
 async function loadTransactions() {
   if (!props.portfolioCode) return;
@@ -32,9 +57,10 @@ async function loadTransactions() {
   try {
     const result = await portfolioApi.listTransactions(props.portfolioCode, { limit: 50 });
     transactions.value = result.items ?? [];
+    await loadInstrumentLabels(transactions.value);
   } catch (err) {
     transactions.value = [];
-    error.value = err instanceof Error ? err.message : "Failed to load transactions.";
+    error.value = err instanceof Error ? err.message : t("portfolio.ledger.errorTitle");
   } finally {
     loading.value = false;
   }
@@ -86,7 +112,7 @@ watch(
           <tr v-for="txn in transactions" :key="txn.id">
             <td>{{ txn.business_date }}</td>
             <td>{{ txn.transaction_type }}</td>
-            <td class="portfolio-ledger__mono">{{ txn.instrument_id || "—" }}</td>
+            <td>{{ labelForInstrument(txn.instrument_id) }}</td>
             <td>{{ txn.quantity || "—" }}</td>
             <td>{{ txn.price || "—" }}</td>
             <td>{{ txn.net_amount }}</td>

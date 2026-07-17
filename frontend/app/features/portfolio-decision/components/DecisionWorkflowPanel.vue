@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
+import { useI18n } from "~/composables/useI18n";
 import { decisionWorkflowStages } from "../lib/decisionFormat";
 
 const props = defineProps<{
@@ -20,7 +20,7 @@ const stages = computed(() => decisionWorkflowStages(props.status));
       :class="`is-${stage.state}`"
     >
       <span class="workflow-panel__dot" aria-hidden="true" />
-      <span class="workflow-panel__label">{{ t(stage.labelKey as AppTranslationKey, stage.label) }}</span>
+      <span class="workflow-panel__label">{{ t(stage.labelKey) }}</span>
     </li>
   </ol>
 </template>

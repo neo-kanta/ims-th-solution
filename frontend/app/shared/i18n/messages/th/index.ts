@@ -9,6 +9,7 @@ import { thInvestmentResearchMessages } from "./investmentResearch";
 import { thMarketDataMessages } from "./marketData";
 import { thPlaceholderMessages } from "./placeholders";
 import { thPortfolioMessages } from "./portfolio";
+import { thOperatorMessages } from "./operator";
 import { thSettingsMessages } from "./settings";
 
 export const thMessages = {
@@ -24,4 +25,5 @@ export const thMessages = {
   ...thMarketDataMessages,
   ...thWatchlistMessages,
   ...thPortfolioMessages,
+  ...thOperatorMessages,
 } as const;

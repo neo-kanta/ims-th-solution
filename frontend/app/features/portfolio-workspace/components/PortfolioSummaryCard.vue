@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
-import { formatMoneyCompact, formatPercent, relativeTime } from "~/features/my-funds/lib/format";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
+import { formatMoneyCompact, formatPercent } from "~/features/my-funds/lib/format";
 import type { MyPortfolioCard } from "../types";
 import PortfolioRoleActionMenu from "./PortfolioRoleActionMenu.vue";
 
@@ -15,26 +15,29 @@ const props = withDefaults(defineProps<Props>(), { loading: false });
 
 const emit = defineEmits<{
   (e: "open", code: string): void;
-  (e: "viewBreaches", fundId: string): void;
+  (e: "viewBreaches", portfolioCode: string): void;
   (e: "writeResearch", fundId: string): void;
 }>();
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 
 const navLabel = computed(() =>
-  formatMoneyCompact(props.card.valuation.nav_numeric, props.card.valuation.valuation_ccy),
-);
-
-const aumLabel = computed(() =>
-  formatMoneyCompact(props.card.valuation.aum_numeric, props.card.valuation.valuation_ccy),
+  props.card.valuation.available
+    ? formatMoneyCompact(
+        props.card.valuation.nav_numeric,
+        props.card.valuation.valuation_ccy,
+      )
+    : t("common.notAvailable"),
 );
 
 const unrealisedLabel = computed(() =>
-  formatMoneyCompact(
-    props.card.valuation.unrealised_pnl_numeric,
-    props.card.valuation.valuation_ccy,
-    true,
-  ),
+  props.card.valuation.available
+    ? formatMoneyCompact(
+        props.card.valuation.unrealised_pnl_numeric,
+        props.card.valuation.valuation_ccy,
+        true,
+      )
+    : t("common.notAvailable"),
 );
 
 const unrealisedTrend = computed<"up" | "down" | "flat">(() => {
@@ -47,37 +50,34 @@ const unrealisedTrend = computed<"up" | "down" | "flat">(() => {
 const cashBufferLabel = computed(() => formatPercent(props.card.valuation.cash_buffer_pct, 2));
 
 const roiLabel = computed(() => {
-  if (!props.card.valuation.roi) return "—";
+  if (!props.card.valuation.roi) return t("common.notAvailable");
   const n = Number(props.card.valuation.roi);
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return t("common.notAvailable");
   return formatPercent(n * 100, 2, true);
 });
 
-const updatedLabel = computed(() => relativeTime(props.card.updated_at));
-
-const statusVariant = computed(() => {
-  switch (props.card.status) {
-    case "ACTIVE":
-      return "success";
-    case "CLOSED":
-      return "neutral";
-    case "BREACH":
-      return "error";
-    default:
-      return "neutral";
-  }
+const updatedLabel = computed(() => {
+  if (!props.card.updated_at) return t("common.notAvailable");
+  const timestamp = Date.parse(props.card.updated_at);
+  if (!Number.isFinite(timestamp)) return t("common.notAvailable");
+  const localeCode = locale.value === "th" ? "th-TH" : locale.value === "zh" ? "zh-TW" : "en-US";
+  return new Intl.DateTimeFormat(localeCode, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Bangkok",
+  }).format(new Date(timestamp));
 });
 
 const statusLabel = computed(() => {
   switch (props.card.status) {
     case "ACTIVE":
-      return t("portfolio.status.active", "Active");
+      return t("portfolio.status.active");
     case "CLOSED":
-      return t("portfolio.status.closed", "Closed");
+      return t("portfolio.status.closed");
     case "BREACH":
-      return t("portfolio.status.breach", "Breach");
+      return t("portfolio.status.breach");
     default:
-      return props.card.portfolio_status_raw || "—";
+      return props.card.portfolio_status_raw || t("common.notAvailable");
   }
 });
 
@@ -87,23 +87,14 @@ const roleVariant = computed(() =>
 
 const roleLabel = computed(() =>
   props.card.role === "MANAGER"
-    ? t("portfolio.roles.manager", "Manager")
-    : t("portfolio.roles.member", "Member"),
+    ? t("portfolio.roles.manager")
+    : t("portfolio.roles.member"),
 );
 
-const initials = computed(() => {
-  const seed = (props.card.code || props.card.name || props.card.portfolio_id || "?").trim();
-  const parts = seed.split(/[-_\s]/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-  }
-  return seed.slice(0, 2).toUpperCase();
-});
-
 const cashBufferHint = computed(() => {
-  if (props.card.valuation.cash_buffer_pct === null) return "—";
+  if (props.card.valuation.cash_buffer_pct === null) return t("common.notAvailable");
   const cashStr = formatMoneyCompact(Number(props.card.valuation.cash_balance), props.card.valuation.valuation_ccy);
-  return `Cash ${cashStr}`;
+  return t("portfolio.card.cashAmount", { value: cashStr });
 });
 
 const roiValueLabel = computed(() => roiLabel.value);
@@ -117,18 +108,37 @@ const roiTrend = computed(() => {
 
 const complianceBadgeTone = computed(() => {
   if (props.card.valuation.has_stale_inputs) return "stale";
+  if (!props.card.compliance.available) return "unavailable";
   if (props.card.compliance.open_count > 0) return "danger";
   return "success";
 });
 
 const complianceBadgeLabel = computed(() => {
   if (props.card.valuation.has_stale_inputs) {
-    return t("portfolio.filters.stale", "Stale NAV");
+    return t("portfolio.filters.stale");
+  }
+  if (!props.card.compliance.available) {
+    return t("portfolio.compliance.unavailableShort");
   }
   if (props.card.compliance.open_count > 0) {
-    return t("portfolio.status.breach", "Breached");
+    return t("portfolio.status.breach");
   }
-  return t("portfolio.compliance.clearShort", "Clear");
+  return t("portfolio.compliance.clearShort");
+});
+
+const riskKeyByValue: Record<string, AppTranslationKey> = {
+  LOW: "portfolio.risk.low",
+  MEDIUM: "portfolio.risk.medium",
+  HIGH: "portfolio.risk.high",
+  CONSERVATIVE: "portfolio.risk.conservative",
+  MODERATE: "portfolio.risk.moderate",
+  AGGRESSIVE: "portfolio.risk.aggressive",
+};
+
+const riskLabel = computed(() => {
+  const raw = props.card.risk_profile.trim().toUpperCase();
+  const key = riskKeyByValue[raw];
+  return key ? t(key) : raw || t("portfolio.badges.private");
 });
 
 function onOpen() {
@@ -149,13 +159,13 @@ function onOpen() {
     <header class="portfolio-card__header">
       <div class="portfolio-card__identity">
         <div class="portfolio-card__codes">
-          <span class="portfolio-card__code">{{ (card.code || "—").toUpperCase() }}</span>
+          <span class="portfolio-card__code">{{ (card.code || t("common.notAvailable")).toUpperCase() }}</span>
           <span v-if="card.portfolio_type" class="portfolio-card__sep">/</span>
           <span v-if="card.portfolio_type" class="portfolio-card__slug">{{ (card.portfolio_type || "").toLowerCase() }}</span>
         </div>
         <div class="portfolio-card__name">{{ card.name || card.code }}</div>
         <div class="portfolio-card__chips">
-          <span class="portfolio-card__badge-outline">{{ card.risk_profile ? t(`portfolio.risk.${card.risk_profile.toLowerCase()}`, card.risk_profile) : t("portfolio.badges.private", "Private") }}</span>
+          <span class="portfolio-card__badge-outline">{{ riskLabel }}</span>
           <span class="portfolio-card__badge-outline">{{ roleLabel }}</span>
           <span v-if="card.base_currency" class="portfolio-card__badge-outline">{{ card.base_currency }}</span>
         </div>
@@ -168,33 +178,33 @@ function onOpen() {
 
     <section class="portfolio-card__metrics-grid">
       <div class="portfolio-card__grid-col">
-        <div class="portfolio-card__grid-label">{{ t("portfolio.card.nav", "Net Asset Value") }}</div>
+        <div class="portfolio-card__grid-label">{{ t("portfolio.card.nav") }}</div>
         <div class="portfolio-card__grid-value" :title="card.valuation.nav">{{ navLabel }}</div>
         <div class="portfolio-card__grid-hint">
           {{
             card.valuation.business_date
-              ? t("portfolio.card.asOf", { date: card.valuation.business_date }, `as of ${card.valuation.business_date}`)
-              : t("portfolio.card.noValuation", "No valuation yet")
+              ? t("portfolio.card.asOf", { date: card.valuation.business_date })
+              : t("portfolio.card.noValuation")
           }}
         </div>
       </div>
 
       <div class="portfolio-card__grid-col">
-        <div class="portfolio-card__grid-label">{{ t("portfolio.card.virtualPnl", "Virtual P&L") }}</div>
+        <div class="portfolio-card__grid-label">{{ t("portfolio.card.unrealisedPnl") }}</div>
         <div class="portfolio-card__grid-value" :data-trend="unrealisedTrend">{{ unrealisedLabel }}</div>
-        <div class="portfolio-card__grid-hint">{{ t("portfolio.card.vsYest", "vs yest") }}</div>
+        <div class="portfolio-card__grid-hint">{{ t("portfolio.card.latestValuation") }}</div>
       </div>
 
       <div class="portfolio-card__grid-col">
-        <div class="portfolio-card__grid-label">{{ t("portfolio.card.cashBuffer", "Cash Buffer") }}</div>
+        <div class="portfolio-card__grid-label">{{ t("portfolio.card.cashBuffer") }}</div>
         <div class="portfolio-card__grid-value">{{ cashBufferLabel }}</div>
         <div class="portfolio-card__grid-hint">{{ cashBufferHint }}</div>
       </div>
 
       <div class="portfolio-card__grid-col">
-        <div class="portfolio-card__grid-label">{{ t("portfolio.card.roi", "ROI") }}</div>
+        <div class="portfolio-card__grid-label">{{ t("portfolio.card.roi") }}</div>
         <div class="portfolio-card__grid-value" :data-trend="roiTrend">{{ roiValueLabel }}</div>
-        <div class="portfolio-card__grid-hint">{{ t("portfolio.card.unadjusted", "unadjusted") }}</div>
+        <div class="portfolio-card__grid-hint">{{ t("portfolio.card.unadjusted") }}</div>
       </div>
     </section>
 
@@ -209,8 +219,8 @@ function onOpen() {
       <span>
         {{
           card.valuation.has_stale_inputs
-            ? t("portfolio.card.staleInputs", "Stale price inputs — values indicative")
-            : t("portfolio.card.indicative", "Indicative valuation — not all inputs confirmed")
+            ? t("portfolio.card.staleInputs")
+            : t("portfolio.card.indicative")
         }}
       </span>
     </div>
@@ -229,11 +239,12 @@ function onOpen() {
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
           </span>
-          <span v-else class="portfolio-card__badge-danger">!</span>
+          <span v-else-if="complianceBadgeTone === 'danger'" class="portfolio-card__badge-danger">!</span>
+          <span v-else class="portfolio-card__badge-warn">?</span>
           <span>{{ complianceBadgeLabel }}</span>
         </div>
         <span class="portfolio-card__updated">
-          {{ t("portfolio.card.updated", { value: updatedLabel }, `Updated ${updatedLabel}`) }}
+          {{ t("portfolio.card.updated", { value: updatedLabel }) }}
         </span>
       </div>
       <PortfolioRoleActionMenu
@@ -487,6 +498,12 @@ function onOpen() {
   background: #fdf6e2;
   color: #b25e00;
   border-color: #fce1a6;
+}
+
+.portfolio-card__compliance-badge[data-tone="unavailable"] {
+  background: var(--bg-card-muted, #f6f8fa);
+  color: var(--text-secondary, #57606a);
+  border-color: var(--border-subtle, #d0d7de);
 }
 
 .portfolio-card__compliance-badge[data-tone="danger"] {

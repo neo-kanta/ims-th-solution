@@ -28,7 +28,9 @@ const status = computed(() => deriveRuleStatus(props.rule));
 const displayName = computed(
   () => props.rule.name || ruleLabel(props.rule.ruleTypeID, t),
 );
-const ownerLabel = computed(() => users.labelFor(props.rule.createdBy));
+const ownerLabel = computed(
+  () => users.labelFor(props.rule.createdBy) || t("common.notAvailable"),
+);
 
 const accentClass = computed(() => {
   const tone = ruleStatusTone(status.value);
@@ -63,12 +65,12 @@ const accentClass = computed(() => {
           </div>
           <div class="rule-header__meta">
             <div class="rule-header__meta-item">
-              <span class="rule-header__meta-label">Updated:</span>
+              <span class="rule-header__meta-label">{{ t("compliance.detail.header.updated") }}:</span>
               <span class="rule-header__meta-value">{{ formatIsoDateTime(rule.updatedAt) }}</span>
             </div>
             <div class="rule-header__meta-item">
-              <span class="rule-header__meta-label">Owner:</span>
-              <span class="rule-header__meta-value" :title="rule.createdBy">{{ ownerLabel }}</span>
+              <span class="rule-header__meta-label">{{ t("compliance.detail.header.owner") }}:</span>
+              <span class="rule-header__meta-value">{{ ownerLabel }}</span>
             </div>
           </div>
         </div>
@@ -81,7 +83,7 @@ const accentClass = computed(() => {
             class="rule-header__btn"
             :title="t('compliance.detail.header.editUnavailable')"
           >
-            Edit
+            {{ t("compliance.detail.header.edit") }}
           </AppButton>
           <AppButton
             variant="ghost"
@@ -90,7 +92,7 @@ const accentClass = computed(() => {
             class="rule-header__btn"
             :title="t('compliance.detail.header.disableUnavailable')"
           >
-            Disable
+            {{ t("compliance.detail.header.disable") }}
           </AppButton>
         </div>
       </div>
@@ -281,4 +283,3 @@ const accentClass = computed(() => {
   opacity: 1;
 }
 </style>
-

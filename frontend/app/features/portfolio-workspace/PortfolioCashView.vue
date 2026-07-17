@@ -13,7 +13,7 @@ const { t } = useI18n();
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
-  () => t("portfolio.workspaceTabs.cash", "Cash"),
+  () => t("portfolio.workspaceTabs.cash"),
   (newTitle) => {
     pageTitle.value = newTitle || "";
   },

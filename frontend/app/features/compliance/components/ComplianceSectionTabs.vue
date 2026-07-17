@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppTabs, { type TabItem } from "~/shared/ui/AppTabs.vue";
 
 interface TabCount {
@@ -33,7 +33,7 @@ const { t } = useI18n();
 interface TabDef {
   key: Props["active"];
   to: string;
-  labelKey: string;
+  labelKey: AppTranslationKey;
   icon: string;
   count?: TabCount;
 }
@@ -78,7 +78,7 @@ const tabs = computed<TabDef[]>(() => [
 const tabItems = computed<TabItem[]>(() =>
   tabs.value.map((tab) => ({
     key: tab.key,
-    label: t(tab.labelKey as any),
+    label: t(tab.labelKey),
     to: tab.to,
     icon: tab.icon,
     count: tab.count
@@ -91,7 +91,11 @@ const tabItems = computed<TabItem[]>(() =>
 </script>
 
 <template>
-  <AppTabs :items="tabItems" :model-value="active" aria-label="Compliance sections" />
+  <AppTabs
+    :items="tabItems"
+    :model-value="active"
+    :aria-label="t('compliance.dashboard.tabs.label')"
+  />
 </template>
 
 <style scoped>

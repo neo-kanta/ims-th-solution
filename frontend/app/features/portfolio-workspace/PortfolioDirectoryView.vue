@@ -29,19 +29,20 @@ const {
   setSearch,
 } = useMyPortfolios();
 
-onMounted(() => {
-  void loadAll();
-});
+function reload() {
+  void loadAll(t("portfolio.page.errorDetail"));
+}
+
+onMounted(reload);
 
 function openPortfolio(code: string) {
   void router.push(`/portfolios/${encodeURIComponent(code)}/overview`);
 }
 
-function viewBreaches(fundId: string) {
-  void router.push({
-    path: "/compliance/exceptions",
-    query: { contract_id: fundId },
-  });
+function viewBreaches(portfolioCode: string) {
+  void router.push(
+    `/portfolios/${encodeURIComponent(portfolioCode)}/compliance`,
+  );
 }
 
 function writeResearch(fundId: string) {
@@ -55,17 +56,12 @@ function writeResearch(fundId: string) {
 <template>
   <section class="portfolio-directory-page">
     <AppPageHeader
-      :title="t('portfolio.directory.title', 'Portfolios')"
-      :description="
-        t(
-          'portfolio.directory.subtitle',
-          'Operational cockpit for portfolios you can act on today — valuations, cash, and compliance breaches in one place.',
-        )
-      "
+      :title="t('portfolio.directory.title')"
+      :description="t('portfolio.directory.subtitle')"
     >
       <template #actions>
         <div class="portfolio-directory-page__date" aria-live="polite">
-          <span class="portfolio-directory-page__date-label">{{ t("portfolio.page.asOf", "Business date") }}</span>
+          <span class="portfolio-directory-page__date-label">{{ t("portfolio.page.asOf") }}</span>
           <span class="portfolio-directory-page__date-value">{{ businessDate }}</span>
         </div>
       </template>
@@ -84,28 +80,28 @@ function writeResearch(fundId: string) {
     />
 
     <div v-if="decorating && !loading" class="portfolio-directory-page__notice" role="status">
-      {{ t("portfolio.page.decorating", "Refreshing valuation and compliance signals…") }}
+      {{ t("portfolio.page.decorating") }}
     </div>
 
     <div v-if="loading && cards.length === 0" class="portfolio-directory-page__notice" role="status">
-      {{ t("portfolio.page.loading", "Loading portfolios…") }}
+      {{ t("portfolio.page.loading") }}
     </div>
 
     <div v-else-if="error" class="portfolio-directory-page__error" role="alert">
       <div class="portfolio-directory-page__error-title">
-        {{ t("portfolio.page.errorTitle", "Failed to load portfolios") }}
+        {{ t("portfolio.page.errorTitle") }}
       </div>
       <div class="portfolio-directory-page__error-detail">{{ error }}</div>
-      <button type="button" class="portfolio-directory-page__retry" @click="loadAll">
-        {{ t("portfolio.page.retry", "Retry") }}
+      <button type="button" class="portfolio-directory-page__retry" @click="reload">
+        {{ t("portfolio.page.retry") }}
       </button>
     </div>
 
     <div v-else-if="filtered.length === 0" class="portfolio-directory-page__empty">
       {{
         cards.length === 0
-          ? t("portfolio.page.empty", "You don't have access to any active portfolios yet.")
-          : t("portfolio.page.noResults", "No portfolios match the current filter.")
+          ? t("portfolio.page.empty")
+          : t("portfolio.page.noResults")
       }}
     </div>
 

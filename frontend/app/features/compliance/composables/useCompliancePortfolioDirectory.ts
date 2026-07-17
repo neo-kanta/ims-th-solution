@@ -85,11 +85,11 @@ export function useCompliancePortfolioDirectory(): {
   );
 
   function labelFor(id: string | null | undefined): string {
-    if (!id) return "—";
+    if (!id) return "";
     const hit = byId.value.get(id);
-    if (!hit) return id;
+    if (!hit) return "";
     const parts = [hit.code, hit.name].filter(Boolean);
-    return parts.length > 0 ? parts.join(" — ") : id;
+    return parts.join(" — ");
   }
 
   return {

@@ -31,7 +31,7 @@ const ctx = usePortfolioContext(() => props.portfolioCode);
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
-  () => t("portfolio.workspaceTabs.compliance", "Compliance"),
+  () => t("portfolio.workspaceTabs.compliance"),
   (newTitle) => {
     pageTitle.value = newTitle || "";
   },

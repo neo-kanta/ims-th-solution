@@ -60,6 +60,7 @@ export const enComplianceMessages = {
           "Portfolio search is unavailable because this account does not have portfolio-view permission.",
       },
       tabs: {
+        label: "Compliance sections",
         overview: "Overview",
         library: "Library",
         approvals: "Approvals",
@@ -428,6 +429,7 @@ export const enComplianceMessages = {
         submit: "Confirm override",
         submitting: "Submitting…",
         success: "Override recorded.",
+        permissionRequired: "IRG_OVERRIDE_BREACH permission required.",
         notOverridable:
           "This breach is not OPEN. Only OPEN breaches can be overridden.",
       },
@@ -454,6 +456,10 @@ export const enComplianceMessages = {
         settings: "Settings",
       },
       header: {
+        updated: "Updated",
+        owner: "Owner",
+        edit: "Edit",
+        disable: "Disable",
         editUnavailable:
           "Edit is not yet supported by the backend.",
         disableUnavailable:
@@ -639,6 +645,20 @@ export const enComplianceMessages = {
       },
       records: "Check records",
       breaches: "Breach records",
+      noBreaches: "No breaches in this check group.",
+      fields: {
+        timing: "Timing",
+        businessDate: "Business date",
+        checkedAt: "Checked at",
+        checkedBy: "Checked by",
+        order: "Order",
+        ticker: "Ticker",
+        portfolio: "Portfolio",
+        ruleVersion: "Rule version",
+        dataHash: "Data hash",
+        breach: "Breach",
+        created: "Created",
+      },
       export: {
         label: "Export CSV",
         disabled:
@@ -656,6 +676,9 @@ export const enComplianceMessages = {
       action: "Action",
       code: "Permission code",
       held: "Held",
+      planned: "Planned · backend not wired yet",
+      yes: "Yes",
+      no: "No",
       table: {
         viewRules: "View compliance rules",
         createRule: "Create rule instance",

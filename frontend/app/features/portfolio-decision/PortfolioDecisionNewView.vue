@@ -20,6 +20,7 @@ import { usePortfolioHoldingsDirectory } from "./composables/usePortfolioHolding
 import { estimatedConsideration, formatMoney } from "./lib/decisionFormat";
 import { decisionDetailPath } from "./lib/decisionRoutes";
 import { resolveDecisionNewPageState } from "./lib/pageState";
+import type { DecisionValidationError } from "./lib/decisionValidation";
 
 const props = defineProps<{ portfolioCode: string }>();
 
@@ -33,6 +34,14 @@ const draftCtl = useDecisionDraft();
 const lifecycle = useDecisionLifecycle();
 
 const canSubmit = computed(() => auth.hasPermission("INVESTMENT_DECISION_SUBMIT"));
+
+function inputValue(event: Event): string {
+  return event.target instanceof HTMLInputElement ? event.target.value : "";
+}
+
+function validationMessage(error: DecisionValidationError | undefined): string {
+  return error ? t(error.key, error.params) : "";
+}
 
 // Pure state resolution (lib/pageState.ts) so loading/not-found/permission-
 // denied/error/ready is testable without mounting this component, and so a
@@ -134,7 +143,11 @@ async function onSaveDraft() {
 
 async function onSubmit() {
   if (!draftCtl.isValid.value) return;
-  const result = await lifecycle.createThenSubmit(props.portfolioCode, draftCtl.buildCreateBody());
+  const result = await lifecycle.createThenSubmit(
+    props.portfolioCode,
+    draftCtl.buildCreateBody(),
+    t("portfolio.decisionNew.errors.missingIdentifier"),
+  );
   if (result?.id) goToDetail(result.id);
 }
 
@@ -263,7 +276,7 @@ function onCancel() {
                 :owned-holdings="ownedHoldingsForCombobox"
                 :restrict-to-owned="draftCtl.draft.side === 'SELL'"
                 :disabled="lifecycle.busy.value"
-                :error-message="draftCtl.errors.value.instrument ?? null"
+                :error-message="validationMessage(draftCtl.errors.value.instrument) || null"
                 input-id="decision-instrument"
                 @select="draftCtl.selectInstrument"
                 @clear="draftCtl.clearInstrument"
@@ -283,10 +296,10 @@ function onCancel() {
                   placeholder="0"
                   :disabled="lifecycle.busy.value"
                   :value="draftCtl.draft.quantity"
-                  @input="draftCtl.patch({ quantity: ($event.target as HTMLInputElement).value })"
+                  @input="draftCtl.patch({ quantity: inputValue($event) })"
                 />
                 <span v-if="draftCtl.errors.value.quantity" class="decision-new__error">
-                  {{ draftCtl.errors.value.quantity }}
+                  {{ validationMessage(draftCtl.errors.value.quantity) }}
                 </span>
               </div>
               <div class="decision-new__field">
@@ -301,10 +314,10 @@ function onCancel() {
                   placeholder="0.00"
                   :disabled="lifecycle.busy.value"
                   :value="draftCtl.draft.amount"
-                  @input="draftCtl.patch({ amount: ($event.target as HTMLInputElement).value })"
+                  @input="draftCtl.patch({ amount: inputValue($event) })"
                 />
                 <span v-if="draftCtl.errors.value.amount" class="decision-new__error">
-                  {{ draftCtl.errors.value.amount }}
+                  {{ validationMessage(draftCtl.errors.value.amount) }}
                 </span>
               </div>
               <div class="decision-new__field">
@@ -319,10 +332,10 @@ function onCancel() {
                   placeholder="0.00"
                   :disabled="lifecycle.busy.value"
                   :value="draftCtl.draft.limitPrice"
-                  @input="draftCtl.patch({ limitPrice: ($event.target as HTMLInputElement).value })"
+                  @input="draftCtl.patch({ limitPrice: inputValue($event) })"
                 />
                 <span v-if="draftCtl.errors.value.limitPrice" class="decision-new__error">
-                  {{ draftCtl.errors.value.limitPrice }}
+                  {{ validationMessage(draftCtl.errors.value.limitPrice) }}
                 </span>
               </div>
             </div>
@@ -342,13 +355,13 @@ function onCancel() {
                   class="input"
                   type="text"
                   maxlength="3"
-                  placeholder="THB"
+                  :placeholder="t('portfolio.decisionNew.currencyPlaceholder')"
                   :disabled="lifecycle.busy.value"
                   :value="draftCtl.draft.currency"
-                  @input="draftCtl.patch({ currency: ($event.target as HTMLInputElement).value.toUpperCase() })"
+                  @input="draftCtl.patch({ currency: inputValue($event).toUpperCase() })"
                 />
                 <span v-if="draftCtl.errors.value.currency" class="decision-new__error">
-                  {{ draftCtl.errors.value.currency }}
+                  {{ validationMessage(draftCtl.errors.value.currency) }}
                 </span>
               </div>
               <div class="decision-new__field">
@@ -359,10 +372,10 @@ function onCancel() {
                   id="decision-exchange"
                   class="input"
                   type="text"
-                  placeholder="SET"
+                  :placeholder="t('portfolio.decisionNew.exchangePlaceholder')"
                   :disabled="lifecycle.busy.value"
                   :value="draftCtl.draft.exchange"
-                  @input="draftCtl.patch({ exchange: ($event.target as HTMLInputElement).value })"
+                  @input="draftCtl.patch({ exchange: inputValue($event) })"
                 />
               </div>
               <div class="decision-new__field">
@@ -377,7 +390,7 @@ function onCancel() {
                   @update:model-value="(v: string) => draftCtl.patch({ businessDate: v })"
                 />
                 <span v-if="draftCtl.errors.value.businessDate" class="decision-new__error">
-                  {{ draftCtl.errors.value.businessDate }}
+                  {{ validationMessage(draftCtl.errors.value.businessDate) }}
                 </span>
               </div>
             </div>

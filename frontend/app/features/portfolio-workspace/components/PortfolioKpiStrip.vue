@@ -2,7 +2,12 @@
 import { computed } from "vue";
 
 import { useI18n } from "~/composables/useI18n";
-import { formatMoneyCompact } from "~/features/my-funds/lib/format";
+import { formatDashboardTime } from "~/features/dashboard/lib/dashboard";
+import {
+  formatMoneyCompact,
+  formatPercent,
+  parseDecimalOrNull,
+} from "~/features/my-funds/lib/format";
 import type { MyPortfoliosKpiStrip } from "../types";
 
 interface Props {
@@ -11,37 +16,92 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), { loading: false });
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
-const totalAum = computed(() =>
-  formatMoneyCompact(props.kpis.total_aum_numeric, props.kpis.valuation_ccy),
+const moneyAvailable = computed(
+  () =>
+    props.kpis.valuation_summary_status === "AVAILABLE" &&
+    props.kpis.total_aum !== null &&
+    props.kpis.today_pnl !== null &&
+    props.kpis.valuation_ccy !== null,
 );
 
-const totalPnl = computed(() =>
-  formatMoneyCompact(
-    props.kpis.total_unrealised_pnl_numeric,
+function moneyWithCurrency(value: string | null, signed = false): string {
+  if (!moneyAvailable.value || !props.kpis.valuation_ccy) {
+    return t("common.notAvailable");
+  }
+  const formatted = formatMoneyCompact(
+    parseDecimalOrNull(value),
     props.kpis.valuation_ccy,
-    true,
-  ),
-);
+    signed,
+  );
+  return `${formatted} ${props.kpis.valuation_ccy}`;
+}
 
-const pnlTrend = computed(() => props.kpis.unrealised_pnl_trend);
+const aumLabel = computed(() => moneyWithCurrency(props.kpis.total_aum));
+const todayPnlLabel = computed(() => moneyWithCurrency(props.kpis.today_pnl, true));
+const todayPnlPercentLabel = computed(() => {
+  if (!moneyAvailable.value || props.kpis.today_pnl_percent === null) return "";
+  return formatPercent(
+    parseDecimalOrNull(props.kpis.today_pnl_percent),
+    2,
+    true,
+  );
+});
+
+const valuationHint = computed(() => {
+  if (props.loading) return t("portfolio.kpis.summaryLoading");
+  const currency = props.kpis.valuation_ccy ?? t("common.notAvailable");
+  switch (props.kpis.valuation_summary_status) {
+    case "ERROR":
+      return t("portfolio.kpis.summaryError");
+    case "INCOMPLETE": {
+      const coverage = props.kpis.valuation_coverage;
+      return coverage.totalPortfolioCount > 0
+        ? t("portfolio.kpis.summaryIncompleteCoverage", {
+            included: coverage.includedPortfolioCount,
+            total: coverage.totalPortfolioCount,
+            excluded: coverage.excludedPortfolioCount,
+            currency,
+          })
+        : t("portfolio.kpis.summaryIncomplete", { currency });
+    }
+    case "NO_DATA":
+      return t("portfolio.kpis.summaryNoData", { currency });
+    case "AVAILABLE":
+    default:
+      return props.kpis.valuation_as_of
+        ? t("portfolio.kpis.summaryAsOf", {
+            currency,
+            time: formatDashboardTime(
+              props.kpis.valuation_as_of,
+              locale.value,
+              "Asia/Bangkok",
+            ),
+          })
+        : t("portfolio.kpis.summaryCurrency", { currency });
+  }
+});
 
 const breachLabel = computed(() => {
-  if (!props.kpis.open_breach_count) {
-    return t("portfolio.kpis.noBreach", "No open breaches");
+  if (props.kpis.open_breach_count === null) {
+    return t("portfolio.kpis.complianceUnavailable");
+  }
+  if (props.kpis.open_breach_count === 0) {
+    return t("portfolio.kpis.noBreach");
   }
   if (props.kpis.worst_breach_severity === "BLOCK") {
-    return t("portfolio.kpis.blockerBreach", "Blocker open");
+    return t("portfolio.kpis.blockerBreach");
   }
   if (props.kpis.worst_breach_severity === "WARN") {
-    return t("portfolio.kpis.warningBreach", "Warnings open");
+    return t("portfolio.kpis.warningBreach");
   }
-  return t("portfolio.kpis.infoBreach", "Notices open");
+  return t("portfolio.kpis.infoBreach");
 });
 
 const breachVariant = computed(() => {
-  if (!props.kpis.open_breach_count) return "muted";
+  if (props.kpis.open_breach_count === null) return "warn";
+  if (props.kpis.open_breach_count === 0) return "muted";
   if (props.kpis.worst_breach_severity === "BLOCK") return "danger";
   if (props.kpis.worst_breach_severity === "WARN") return "warn";
   return "info";
@@ -49,12 +109,11 @@ const breachVariant = computed(() => {
 
 const staleLabel = computed(() => {
   if (!props.kpis.stale_count) {
-    return t("portfolio.kpis.dataFresh", "All feeds fresh");
+    return t("portfolio.kpis.dataFresh");
   }
   return t(
     "portfolio.kpis.dataStaleCount",
     { count: props.kpis.stale_count },
-    `${props.kpis.stale_count} stale`,
   );
 });
 </script>
@@ -69,32 +128,31 @@ const staleLabel = computed(() => {
           <line x1="12" y1="20" x2="12" y2="4"></line>
           <line x1="6" y1="20" x2="6" y2="14"></line>
         </svg>
-        <span>{{ t("portfolio.kpis.totalAum", "Total AUM") }}</span>
+        <span>{{ t("portfolio.kpis.totalAum") }}</span>
       </div>
-      <div class="kpi-strip__value">{{ totalAum }}</div>
+      <div class="kpi-strip__value">{{ aumLabel }}</div>
       <div class="kpi-strip__hint">
-        {{
-          t(
-            "portfolio.kpis.totalAumHint",
-            { count: kpis.total_count },
-            `Across ${kpis.total_count} portfolios`,
-          )
-        }}
+        {{ valuationHint }}
       </div>
     </div>
 
-    <!-- Unrealised P&L -->
+    <!-- Today's P&L -->
     <div class="kpi-strip__cell">
       <div class="kpi-strip__label">
         <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
           <polyline points="17 6 23 6 23 12"></polyline>
         </svg>
-        <span>{{ t("portfolio.kpis.unrealisedPnl", "Unrealised P&L") }}</span>
+        <span>{{ t("portfolio.kpis.todayPnl") }}</span>
       </div>
-      <div class="kpi-strip__value" :data-trend="pnlTrend">{{ totalPnl }}</div>
+      <div class="kpi-strip__value" :data-trend="kpis.today_pnl_trend">
+        {{ todayPnlLabel }}
+        <span v-if="todayPnlPercentLabel" class="kpi-strip__sub">
+          {{ todayPnlPercentLabel }}
+        </span>
+      </div>
       <div class="kpi-strip__hint">
-        {{ t("portfolio.kpis.unrealisedHint", "Sum of latest valuations") }}
+        {{ valuationHint }}
       </div>
     </div>
 
@@ -106,13 +164,13 @@ const staleLabel = computed(() => {
           <circle cx="12" cy="12" r="6"></circle>
           <circle cx="12" cy="12" r="2"></circle>
         </svg>
-        <span>{{ t("portfolio.kpis.activePortfolios", "Active Portfolios") }}</span>
+        <span>{{ t("portfolio.kpis.activePortfolios") }}</span>
       </div>
       <div class="kpi-strip__value">
         {{ kpis.active_count }}<span class="kpi-strip__sub">/{{ kpis.total_count }}</span>
       </div>
       <div class="kpi-strip__hint">
-        {{ kpis.active_count === kpis.total_count ? t("portfolio.kpis.allActive", "All active today") : t("portfolio.kpis.someInactive", "Some inactive/closed") }}
+        {{ kpis.active_count === kpis.total_count ? t("portfolio.kpis.allActive") : t("portfolio.kpis.someInactive") }}
       </div>
     </div>
 
@@ -124,10 +182,10 @@ const staleLabel = computed(() => {
           <line x1="12" y1="9" x2="12" y2="13"></line>
           <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
-        <span>{{ t("portfolio.kpis.openBreaches", "Open Breaches") }}</span>
+        <span>{{ t("portfolio.kpis.openBreaches") }}</span>
       </div>
       <div class="kpi-strip__value" :data-variant="breachVariant">
-        {{ kpis.open_breach_count }}
+        {{ kpis.open_breach_count ?? t("common.notAvailable") }}
       </div>
       <div class="kpi-strip__hint" :data-variant="breachVariant">
         {{ breachLabel }}
@@ -140,13 +198,13 @@ const staleLabel = computed(() => {
         <svg class="kpi-strip__label-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
-        <span>{{ t("portfolio.kpis.dataHealth", "Data Health") }}</span>
+        <span>{{ t("portfolio.kpis.dataHealth") }}</span>
       </div>
       <div class="kpi-strip__value" :data-variant="kpis.stale_count ? 'warn' : 'muted'">
-        {{ kpis.stale_count ? kpis.stale_count : "—" }}
+        {{ kpis.stale_count }}
       </div>
       <div class="kpi-strip__hint">
-        {{ kpis.stale_count ? t("portfolio.kpis.dataStaleCount", { count: kpis.stale_count }, `${kpis.stale_count} stale`) : staleLabel }}
+        {{ staleLabel }}
       </div>
     </div>
   </div>

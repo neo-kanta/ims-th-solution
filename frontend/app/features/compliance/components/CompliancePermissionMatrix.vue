@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppIcon from "~/shared/ui/AppIcon.vue";
 
 interface MatrixRow {
-  labelKey: string;
+  labelKey: AppTranslationKey;
   code: string;
   /** True if backend already wires this code; false if it's planned (Phase 2 + Missing API). */
   shipped: boolean;
@@ -54,9 +54,9 @@ const rows = computed(() =>
         <tbody>
           <tr v-for="row in rows" :key="row.code">
             <td>
-              <div class="perm-table__label">{{ t(row.labelKey as any) }}</div>
+              <div class="perm-table__label">{{ t(row.labelKey) }}</div>
               <div v-if="!row.shipped" class="perm-table__planned">
-                Planned · backend not wired yet
+                {{ t("compliance.permissions.planned") }}
               </div>
             </td>
             <td>
@@ -69,14 +69,14 @@ const rows = computed(() =>
                 :title="t('compliance.permissions.youHave')"
               >
                 <AppIcon name="check" size="xs" />
-                Yes
+                {{ t("compliance.permissions.yes") }}
               </span>
               <span
                 v-else
                 class="perm-pill perm-pill--no"
                 :title="t('compliance.permissions.youDontHave')"
               >
-                No
+                {{ t("compliance.permissions.no") }}
               </span>
             </td>
           </tr>

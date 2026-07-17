@@ -1,20 +1,26 @@
 <script setup lang="ts">
-const props = defineProps<{ status?: string }>();
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 
-const labelMap: Record<string, string> = {
-  DRAFT: "Draft",
-  SUBMITTED: "Submitted",
-  PENDING_APPROVAL: "Pending Approval",
-  PENDING_COMPLIANCE_RELEASE: "Pending Compliance Release",
-  APPROVED: "Approved",
-  BLOCKED: "Blocked",
-  REJECTED: "Rejected",
-  CANCELLED: "Cancelled",
-  READY_FOR_EXECUTION: "Ready for Execution",
-  EXECUTED: "Executed",
+const props = defineProps<{ status?: string }>();
+const { t } = useI18n();
+
+const labelKeys: Readonly<Record<string, AppTranslationKey>> = {
+  DRAFT: "portfolio.decisionNew.status.draft",
+  SUBMITTED: "portfolio.decisionNew.status.submitted",
+  PENDING_APPROVAL: "portfolio.decisionNew.status.pendingApproval",
+  PENDING_COMPLIANCE_RELEASE: "portfolio.decisionNew.status.pendingComplianceRelease",
+  APPROVED: "portfolio.decisionNew.status.approved",
+  BLOCKED: "portfolio.decisionNew.status.blocked",
+  REJECTED: "portfolio.decisionNew.status.rejected",
+  CANCELLED: "portfolio.decisionNew.status.cancelled",
+  READY_FOR_EXECUTION: "portfolio.decisionNew.status.readyForExecution",
+  EXECUTED: "portfolio.decisionNew.status.executed",
 };
 
-const label = computed(() => labelMap[props.status ?? ""] ?? props.status ?? "—");
+const label = computed(() => {
+  const key = labelKeys[props.status ?? ""];
+  return key ? t(key) : props.status || t("common.notAvailable");
+});
 </script>
 
 <template>

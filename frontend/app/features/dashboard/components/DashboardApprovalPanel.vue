@@ -4,7 +4,7 @@ import type { DashboardOverviewPendingApproval } from "../types";
 const { t } = useI18n();
 
 withDefaults(defineProps<{
-  items: DashboardOverviewPendingApproval[];
+  items: readonly DashboardOverviewPendingApproval[];
   loading?: boolean;
   error?: string | null;
 }>(), {
@@ -17,19 +17,19 @@ withDefaults(defineProps<{
   <section class="dashboard-side-panel">
     <div class="dashboard-side-panel__header">
       <h2 class="dashboard-side-panel__title">
-        {{ t("dashboardOverview.pendingApprovalsTitle", "Pending Approvals") }}
+        {{ t("dashboardOverview.pendingApprovalsTitle") }}
       </h2>
       <span class="dashboard-side-panel__count">{{ items.length }}</span>
     </div>
 
-    <AppLoadingState v-if="loading" :message="t('dashboardOverview.loadingApprovals', 'Loading approvals...')" />
+    <AppLoadingState v-if="loading" :message="t('dashboardOverview.loadingApprovals')" />
 
     <p v-else-if="error" class="approval-panel__error">{{ error }}</p>
 
     <AppEmptyState
       v-else-if="items.length === 0"
-      :title="t('dashboardOverview.noPendingApprovals', 'No pending approvals')"
-      :description="t('dashboardOverview.allCaughtUp', 'You\'re all caught up.')"
+      :title="t('dashboardOverview.noPendingApprovals')"
+      :description="t('dashboardOverview.allCaughtUp')"
       icon="folder"
     />
 

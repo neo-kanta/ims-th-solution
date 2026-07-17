@@ -116,7 +116,7 @@ function truncate(id: string, len = 8): string {
           <td>{{ formatEffectiveWindow(row.rule.effectiveWindow) }}</td>
           <td>
             <div class="rules-table__owner-cell" :title="row.rule.createdBy">
-              <span>{{ users.labelFor(row.rule.createdBy) }}</span>
+              <span>{{ users.labelFor(row.rule.createdBy) || t("common.notAvailable") }}</span>
               <code v-if="!users.forbidden.value" class="rules-table__owner">
                 {{ truncate(row.rule.createdBy) }}
               </code>

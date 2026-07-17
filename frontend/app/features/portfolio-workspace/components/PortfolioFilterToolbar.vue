@@ -29,23 +29,31 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const filters = computed<Array<{ key: MyPortfoliosFilter; label: string; count: number }>>(() => [
-  { key: "all", label: t("portfolio.filters.all", "All portfolios"), count: props.counts.all },
-  { key: "managed", label: t("portfolio.filters.managed", "Managed"), count: props.counts.managed },
-  { key: "breached", label: t("portfolio.filters.breached", "Breached"), count: props.counts.breached },
-  { key: "locked", label: t("portfolio.filters.locked", "Closed"), count: props.counts.locked },
-  { key: "stale", label: t("portfolio.filters.stale", "Stale NAV"), count: props.counts.stale },
+  { key: "all", label: t("portfolio.filters.all"), count: props.counts.all },
+  { key: "managed", label: t("portfolio.filters.managed"), count: props.counts.managed },
+  { key: "breached", label: t("portfolio.filters.breached"), count: props.counts.breached },
+  { key: "locked", label: t("portfolio.filters.locked"), count: props.counts.locked },
+  { key: "stale", label: t("portfolio.filters.stale"), count: props.counts.stale },
 ]);
 
 const sortOptions = computed<Array<{ key: MyPortfoliosSort; label: string }>>(() => [
-  { key: "aum", label: t("portfolio.sort.aum", "AUM") },
-  { key: "breach", label: t("portfolio.sort.breach", "Breach severity") },
-  { key: "updated", label: t("portfolio.sort.updated", "Last updated") },
-  { key: "name", label: t("portfolio.sort.name", "Name") },
+  { key: "breach", label: t("portfolio.sort.breach") },
+  { key: "updated", label: t("portfolio.sort.updated") },
+  { key: "name", label: t("portfolio.sort.name") },
 ]);
 
 function onSearch(event: Event) {
-  const target = event.target as HTMLInputElement;
-  emit("update:search", target.value);
+  if (event.currentTarget instanceof HTMLInputElement) {
+    emit("update:search", event.currentTarget.value);
+  }
+}
+
+function onSort(event: Event) {
+  if (!(event.currentTarget instanceof HTMLSelectElement)) return;
+  const value = event.currentTarget.value;
+  if (value === "name" || value === "breach" || value === "updated") {
+    emit("update:sort", value);
+  }
 }
 </script>
 
@@ -93,15 +101,15 @@ function onSearch(event: Event) {
         <input
           type="search"
           :value="search"
-          :placeholder="t('portfolio.search.placeholder', 'Filter by code, name, manager…')"
+          :placeholder="t('portfolio.search.placeholder')"
           @input="onSearch"
         />
       </label>
       <label class="toolbar__sort">
-        <span class="toolbar__sort-label">{{ t("portfolio.sort.label", "Sort") }}</span>
+        <span class="toolbar__sort-label">{{ t("portfolio.sort.label") }}</span>
         <select
           :value="sort"
-          @change="emit('update:sort', (($event.target as HTMLSelectElement).value as MyPortfoliosSort))"
+          @change="onSort"
         >
           <option v-for="opt in sortOptions" :key="opt.key" :value="opt.key">
             {{ opt.label }}

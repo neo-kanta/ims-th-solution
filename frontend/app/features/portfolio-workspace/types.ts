@@ -1,4 +1,8 @@
 import type { components } from "~/api/ims-api";
+import type {
+  ValuationSummaryCoverageDTO,
+  ValuationSummaryStatus,
+} from "~/features/dashboard/types";
 
 export type ApiPortfolio = components["schemas"]["PortfolioResponse"];
 export type ApiValuation = components["schemas"]["ValuationResponse"];
@@ -61,18 +65,22 @@ export type MyPortfoliosFilter =
   | "locked"
   | "stale";
 
-export type MyPortfoliosSort = "aum" | "name" | "breach" | "updated";
+export type MyPortfoliosSort = "name" | "breach" | "updated";
 
 export interface MyPortfoliosKpiStrip {
-  total_aum: string;
-  total_aum_numeric: number;
-  total_unrealised_pnl: string;
-  total_unrealised_pnl_numeric: number;
-  unrealised_pnl_trend: "up" | "down" | "flat";
+  valuation_summary_status: ValuationSummaryStatus | "ERROR";
+  total_aum: string | null;
+  today_pnl: string | null;
+  today_pnl_percent: string | null;
+  today_pnl_trend: "up" | "down" | "flat" | null;
+  valuation_ccy: string | null;
+  valuation_business_date: string | null;
+  valuation_as_of: string | null;
+  valuation_coverage: ValuationSummaryCoverageDTO;
   active_count: number;
   total_count: number;
-  open_breach_count: number;
+  open_breach_count: number | null;
   worst_breach_severity: "INFO" | "WARN" | "BLOCK" | null;
+  compliance_unavailable_count: number;
   stale_count: number;
-  valuation_ccy: string;
 }

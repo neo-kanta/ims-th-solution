@@ -36,7 +36,7 @@ const ctx = usePortfolioContext(() => props.portfolioCode);
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
-  () => t("portfolio.workspaceTabs.overview", "Overview"),
+  () => t("portfolio.workspaceTabs.overview"),
   (newTitle) => {
     pageTitle.value = newTitle || "";
   },
@@ -261,12 +261,12 @@ const holdingByInstrument = computed(
     new Map(holdings.value.map((holding) => [holding.instrument_id, holding])),
 );
 const valuationLineByInstrument = computed(
-  () =>
-    new Map(
-      (latestValuation.value?.holding_lines ?? [])
-        .filter((line) => line.instrument_id)
-        .map((line) => [line.instrument_id!, line]),
-    ),
+  () => {
+    const entries = (latestValuation.value?.holding_lines ?? []).flatMap((line) =>
+      line.instrument_id ? [[line.instrument_id, line] as const] : [],
+    );
+    return new Map(entries);
+  },
 );
 
 function instrumentLabel(

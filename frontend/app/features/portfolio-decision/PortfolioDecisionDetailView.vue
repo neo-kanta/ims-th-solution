@@ -14,9 +14,11 @@ import { portfolioDecisionApi, type ApiDecisionV2 } from "./services/portfolioDe
 import { describeDecisionError } from "./lib/decisionErrors";
 import { formatMoney, formatQuantity } from "./lib/decisionFormat";
 import { decisionsListPath } from "./lib/decisionRoutes";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{ portfolioCode: string; decisionId: string }>();
 const router = useRouter();
+const { t } = useI18n();
 
 const ctx = usePortfolioContext(() => props.portfolioCode);
 
@@ -36,7 +38,7 @@ async function load() {
     decision.value = await portfolioDecisionApi.get(props.portfolioCode, props.decisionId);
   } catch (err) {
     decision.value = null;
-    error.value = describeDecisionError(err, "Failed to load the decision.");
+    error.value = describeDecisionError(err, t("portfolio.decisionDetail.errors.load"));
   } finally {
     loading.value = false;
   }
@@ -60,7 +62,7 @@ async function onSubmit() {
   try {
     decision.value = await portfolioDecisionApi.submit(props.portfolioCode, decision.value.id);
   } catch (err) {
-    actionError.value = describeDecisionError(err, "Submit for approval failed.");
+    actionError.value = describeDecisionError(err, t("portfolio.decisionDetail.errors.submit"));
   } finally {
     busy.value = false;
   }
@@ -83,7 +85,7 @@ async function confirmCancel() {
     );
     showCancelForm.value = false;
   } catch (err) {
-    actionError.value = describeDecisionError(err, "Cancel failed.");
+    actionError.value = describeDecisionError(err, t("portfolio.decisionDetail.errors.cancel"));
   } finally {
     busy.value = false;
   }
@@ -92,26 +94,32 @@ async function confirmCancel() {
 function backToList() {
   void router.push(decisionsListPath(props.portfolioCode));
 }
+
+function sideLabel(side: string | undefined): string {
+  if (side === "BUY") return t("portfolio.decisionNew.buy");
+  if (side === "SELL") return t("portfolio.decisionNew.sell");
+  return side || t("common.notAvailable");
+}
 </script>
 
 <template>
   <section class="decision-detail">
     <PortfolioWorkspaceHeader :portfolio="ctx.portfolio.value" />
 
-    <div v-if="loading" class="decision-detail__notice">Loading decision…</div>
+    <div v-if="loading" class="decision-detail__notice">{{ t("portfolio.decisionDetail.loading") }}</div>
     <div v-else-if="error" class="decision-detail__error" role="alert">
       <span>{{ error }}</span>
-      <button type="button" class="decision-detail__retry" @click="load">Retry</button>
+      <button type="button" class="decision-detail__retry" @click="load">{{ t("portfolio.decisionDetail.retry") }}</button>
     </div>
 
     <template v-else-if="decision">
       <header class="decision-detail__header">
         <div>
           <button type="button" class="decision-detail__back" @click="backToList">
-            ← All decisions
+            ← {{ t("portfolio.decisionDetail.allDecisions") }}
           </button>
           <h1 class="decision-detail__title">
-            {{ decision.side }} {{ decision.instrument_code }}
+            {{ sideLabel(decision.side) }} {{ decision.instrument_code }}
             <DecisionStatusBadge :status="decision.status" />
           </h1>
           <p class="decision-detail__subtitle">{{ decision.decision_number }}</p>
@@ -119,12 +127,12 @@ function backToList() {
         <div class="decision-detail__actions">
           <IMSPermissionGuard v-if="canSubmit" permission="INVESTMENT_DECISION_SUBMIT" mode="disable">
             <AppButton variant="primary" size="sm" :loading="busy" :disabled="busy" @click="onSubmit">
-              Submit for approval
+              {{ t("portfolio.decisionDetail.submit") }}
             </AppButton>
           </IMSPermissionGuard>
           <IMSPermissionGuard v-if="canCancel" permission="INVESTMENT_DECISION_CANCEL" mode="disable">
             <AppButton variant="secondary" size="sm" :disabled="busy" @click="openCancelForm">
-              Cancel decision
+              {{ t("portfolio.decisionDetail.cancel") }}
             </AppButton>
           </IMSPermissionGuard>
         </div>
@@ -133,10 +141,10 @@ function backToList() {
       <p v-if="actionError" class="decision-detail__error" role="alert">{{ actionError }}</p>
 
       <div v-if="showCancelForm" class="decision-detail__cancel-form">
-        <label class="decision-detail__label" for="cancel-reason">Cancellation reason</label>
-        <AppTextarea id="cancel-reason" v-model="cancelReason" :rows="2" placeholder="Reason for cancelling…" />
+        <label class="decision-detail__label" for="cancel-reason">{{ t("portfolio.decisionDetail.cancellationReason") }}</label>
+        <AppTextarea id="cancel-reason" v-model="cancelReason" :rows="2" :placeholder="t('portfolio.decisionDetail.cancellationPlaceholder')" />
         <div class="decision-detail__cancel-actions">
-          <AppButton variant="ghost" size="sm" @click="showCancelForm = false">Back</AppButton>
+          <AppButton variant="ghost" size="sm" @click="showCancelForm = false">{{ t("portfolio.decisionDetail.back") }}</AppButton>
           <AppButton
             variant="danger"
             size="sm"
@@ -144,30 +152,29 @@ function backToList() {
             :disabled="busy || !cancelReason.trim()"
             @click="confirmCancel"
           >
-            Confirm cancel
+            {{ t("portfolio.decisionDetail.confirmCancel") }}
           </AppButton>
         </div>
       </div>
 
       <div class="decision-detail__grid">
         <dl class="decision-detail__facts">
-          <div><dt>Side</dt><dd>{{ decision.side }}</dd></div>
-          <div><dt>Instrument</dt><dd>{{ decision.instrument_code }}</dd></div>
-          <div><dt>Quantity</dt><dd>{{ decision.quantity ? formatQuantity(decision.quantity) : "—" }}</dd></div>
-          <div><dt>Amount</dt><dd>{{ decision.amount ? formatMoney(decision.amount, decision.currency) : "—" }}</dd></div>
-          <div><dt>Limit price</dt><dd>{{ decision.limit_price ? formatMoney(decision.limit_price, decision.currency) : "—" }}</dd></div>
-          <div><dt>Currency</dt><dd>{{ decision.currency }}</dd></div>
-          <div><dt>Exchange</dt><dd>{{ decision.exchange || "—" }}</dd></div>
-          <div><dt>Business date</dt><dd>{{ decision.business_date }}</dd></div>
-          <div><dt>Rationale</dt><dd>{{ decision.rationale || "—" }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.side") }}</dt><dd>{{ sideLabel(decision.side) }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.instrument") }}</dt><dd>{{ decision.instrument_code }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.quantity") }}</dt><dd>{{ decision.quantity ? formatQuantity(decision.quantity) : t("common.notAvailable") }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.amount") }}</dt><dd>{{ decision.amount ? formatMoney(decision.amount, decision.currency) : t("common.notAvailable") }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.limitPrice") }}</dt><dd>{{ decision.limit_price ? formatMoney(decision.limit_price, decision.currency) : t("common.notAvailable") }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.currency") }}</dt><dd>{{ decision.currency }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.exchange") }}</dt><dd>{{ decision.exchange || t("common.notAvailable") }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.businessDate") }}</dt><dd>{{ decision.business_date }}</dd></div>
+          <div><dt>{{ t("portfolio.decisionDetail.fields.rationale") }}</dt><dd>{{ decision.rationale || t("common.notAvailable") }}</dd></div>
         </dl>
 
         <div class="decision-detail__workflow">
-          <div class="decision-detail__workflow-title">Lifecycle</div>
+          <div class="decision-detail__workflow-title">{{ t("portfolio.decisionDetail.lifecycle") }}</div>
           <DecisionWorkflowPanel :status="decision.status" />
           <p class="decision-detail__note">
-            The portfolio's holdings and cash update only after execution and broker
-            confirmation — this decision has not posted a transaction.
+            {{ t("portfolio.decisionDetail.lifecycleNote") }}
           </p>
         </div>
       </div>

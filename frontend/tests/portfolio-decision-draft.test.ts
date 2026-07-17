@@ -149,7 +149,9 @@ describe("useDecisionDraft SELL availability guard", () => {
     draftCtl.availableQuantity.value = 50;
     draftCtl.patch({ quantity: "100", businessDate: "2026-07-14" });
 
-    expect(draftCtl.errors.value.quantity).toMatch(/exceeds available holding/i);
+    expect(draftCtl.errors.value.quantity?.key).toBe(
+      "portfolio.decisionNew.validation.exceedsHolding",
+    );
     expect(draftCtl.isValid.value).toBe(false);
   });
 });
@@ -162,7 +164,9 @@ describe("useDecisionDraft SELL ownership guard", () => {
     draftCtl.isOwnedInstrument.value = false;
     draftCtl.patch({ quantity: "10", businessDate: "2026-07-14" });
 
-    expect(draftCtl.errors.value.instrument).toMatch(/does not hold this instrument/i);
+    expect(draftCtl.errors.value.instrument?.key).toBe(
+      "portfolio.decisionNew.validation.instrumentNotOwned",
+    );
     expect(draftCtl.isValid.value).toBe(false);
   });
 

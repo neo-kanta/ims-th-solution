@@ -60,6 +60,7 @@ export const thComplianceMessages = {
         noMatches: "ไม่พบพอร์ตการลงทุนที่ตรงกับคำค้นหานี้",
       },
       tabs: {
+        label: "ส่วนการกำกับดูแล",
         overview: "ภาพรวม",
         library: "คลังกฎเกณฑ์",
         approvals: "การอนุมัติ",
@@ -426,6 +427,7 @@ export const thComplianceMessages = {
         submit: "ยืนยันการละเว้น",
         submitting: "กำลังบันทึกข้อมูล…",
         success: "บันทึกการละเว้นเกณฑ์เรียบร้อยแล้ว",
+        permissionRequired: "ต้องมีสิทธิ์ IRG_OVERRIDE_BREACH",
         notOverridable:
           "รายการละเมิดนี้ไม่ได้อยู่ในสถานะ OPEN ข้อมูลที่ได้รับการละเว้นต้องอยู่ในสถานะ OPEN เท่านั้น",
       },
@@ -452,6 +454,10 @@ export const thComplianceMessages = {
         settings: "ตั้งค่า",
       },
       header: {
+        updated: "อัปเดต",
+        owner: "เจ้าของ",
+        edit: "แก้ไข",
+        disable: "ปิดใช้งาน",
         editUnavailable:
           "ระบบการแก้ไขยังไม่เปิดใช้งานในระบบหลังบ้านในขณะนี้",
         disableUnavailable:
@@ -637,6 +643,20 @@ export const thComplianceMessages = {
       },
       records: "บันทึกการประเมิน",
       breaches: "ข้อมูลการละเมิดเกณฑ์",
+      noBreaches: "ไม่พบรายการละเมิดในกลุ่มการตรวจสอบนี้",
+      fields: {
+        timing: "ช่วงตรวจ",
+        businessDate: "วันที่ทางธุรกิจ",
+        checkedAt: "ตรวจสอบเมื่อ",
+        checkedBy: "ตรวจสอบโดย",
+        order: "คำสั่งซื้อขาย",
+        ticker: "หลักทรัพย์",
+        portfolio: "พอร์ตโฟลิโอ",
+        ruleVersion: "เวอร์ชันกฎ",
+        dataHash: "แฮชข้อมูล",
+        breach: "รายการละเมิด",
+        created: "สร้างเมื่อ",
+      },
       export: {
         label: "ส่งออกไฟล์ CSV",
         disabled:
@@ -654,6 +674,9 @@ export const thComplianceMessages = {
       action: "สิทธิ์การใช้งาน / ระบบ",
       code: "รหัสอ้างอิงของสิทธิ์",
       held: "ครอบครองสิทธิ์",
+      planned: "วางแผนไว้ · ฝั่งเซิร์ฟเวอร์ยังไม่รองรับ",
+      yes: "มี",
+      no: "ไม่มี",
       table: {
         viewRules: "ดูกฎการควบคุมดูแลการลงทุน",
         createRule: "สร้าง/จัดหาอินสแตนซ์ของกฎการลงทุน",

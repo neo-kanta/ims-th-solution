@@ -71,6 +71,7 @@ export function useDecisionLifecycle() {
   async function createThenSubmit(
     portfolioCode: string,
     body: ApiCreateDecisionV2Request,
+    missingIdentifierMessage: string,
   ): Promise<ApiDecisionV2 | null> {
     if (busy.value) return null;
     busy.value = true;
@@ -87,8 +88,16 @@ export function useDecisionLifecycle() {
       return null;
     }
 
+    const createdId = decisionId.value;
+    if (!createdId) {
+      error.value = missingIdentifierMessage;
+      phase.value = "create-failed";
+      busy.value = false;
+      return null;
+    }
+
     try {
-      const submitted = await portfolioDecisionApi.submit(portfolioCode, decisionId.value!);
+      const submitted = await portfolioDecisionApi.submit(portfolioCode, createdId);
       decision.value = submitted;
       phase.value = "submitted";
       return submitted;

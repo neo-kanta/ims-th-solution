@@ -11,9 +11,11 @@ import DecisionListTable from "./components/DecisionListTable.vue";
 import { usePortfolioDecisionsList } from "./composables/usePortfolioDecisionsList";
 import type { ApiDecisionV2 } from "./services/portfolioDecisionApi";
 import { decisionDetailPath, newDecisionPath } from "./lib/decisionRoutes";
+import { useI18n } from "~/composables/useI18n";
 
 const props = defineProps<{ portfolioCode: string }>();
 const router = useRouter();
+const { t } = useI18n();
 
 const ctx = usePortfolioContext(() => props.portfolioCode);
 const list = usePortfolioDecisionsList();
@@ -41,9 +43,9 @@ function openDecision(decision: ApiDecisionV2) {
     <PortfolioWorkspaceHeader :portfolio="ctx.portfolio.value" />
 
     <div class="decisions-list__toolbar">
-      <h2 class="decisions-list__title">Investment decisions</h2>
+      <h2 class="decisions-list__title">{{ t("portfolio.decisionList.title") }}</h2>
       <IMSPermissionGuard permission="INVESTMENT_DECISION_MANAGE">
-        <AppButton variant="primary" size="sm" @click="openNew">+ New decision</AppButton>
+        <AppButton variant="primary" size="sm" @click="openNew">+ {{ t("portfolio.decisionList.newDecision") }}</AppButton>
       </IMSPermissionGuard>
     </div>
 
@@ -63,15 +65,15 @@ function openDecision(decision: ApiDecisionV2) {
         :disabled="list.page.value <= 1"
         @click="list.setPage(list.page.value - 1, portfolioCode)"
       >
-        ‹ Prev
+        ‹ {{ t("portfolio.decisionList.previous") }}
       </button>
-      <span>Page {{ list.page.value }} / {{ Math.ceil(list.total.value / list.limit.value) }}</span>
+      <span>{{ t("portfolio.decisionList.page", { current: list.page.value, total: Math.ceil(list.total.value / list.limit.value) }) }}</span>
       <button
         type="button"
         :disabled="list.page.value * list.limit.value >= list.total.value"
         @click="list.setPage(list.page.value + 1, portfolioCode)"
       >
-        Next ›
+        {{ t("portfolio.decisionList.next") }} ›
       </button>
     </div>
   </section>

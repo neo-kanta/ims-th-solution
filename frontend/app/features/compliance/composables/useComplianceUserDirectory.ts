@@ -29,7 +29,7 @@ function statusOf(err: unknown): number | null {
  * Shared user directory — resolves owner / actor UUIDs to display names via
  * `GET /admin/users`. The endpoint requires `IAM_USER_VIEW`; for users that
  * lack it (most compliance-only roles) we mark the directory `forbidden` and
- * every lookup quietly returns the raw UUID. This is intentional:
+ * every unresolved lookup returns an empty label. This is intentional:
  *
  *   - We never crash on 403.
  *   - We never invent a name.
@@ -107,10 +107,10 @@ export function useComplianceUserDirectory(): {
   );
 
   function labelFor(id: string | null | undefined): string {
-    if (!id) return "—";
+    if (!id) return "";
     const hit = byId.value.get(id);
-    if (!hit) return id;
-    return hit.display_name?.trim() || hit.username?.trim() || id;
+    if (!hit) return "";
+    return hit.display_name?.trim() || hit.username?.trim() || "";
   }
 
   return {

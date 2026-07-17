@@ -12,7 +12,7 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: "open", code: string): void;
-  (e: "viewBreaches", fundId: string): void;
+  (e: "viewBreaches", portfolioCode: string): void;
   (e: "writeResearch", fundId: string): void;
 }>();
 
@@ -20,14 +20,19 @@ const auth = useAuthStore();
 const { t } = useI18n();
 
 const canCreateResearch = computed(() => auth.hasPermission("INVESTMENT_RESEARCH_CREATE"));
-const canViewBreaches = computed(() => auth.hasPermission("IRG_VIEW_BREACHES"));
+const canViewBreaches = computed(() => auth.hasPermission("IRG_VIEW_RULES"));
 
 const showResearch = computed(() => canCreateResearch.value && props.card.role !== "MEMBER" && props.card.fund_id);
-const showBreaches = computed(() => canViewBreaches.value && props.card.compliance.open_count > 0 && props.card.fund_id);
+const showBreaches = computed(
+  () =>
+    canViewBreaches.value &&
+    props.card.compliance.available &&
+    props.card.compliance.open_count > 0,
+);
 
 const showDropdown = ref(false);
 
-function toggleDropdown(e: Event) {
+function toggleDropdown() {
   showDropdown.value = !showDropdown.value;
   if (showDropdown.value) {
     document.addEventListener("click", closeDropdown);
@@ -56,9 +61,7 @@ function handleResearch() {
 }
 
 function handleBreaches() {
-  if (props.card.fund_id) {
-    emit("viewBreaches", props.card.fund_id);
-  }
+  emit("viewBreaches", props.card.code);
 }
 </script>
 
@@ -70,12 +73,12 @@ function handleBreaches() {
         class="role-actions__btn-main"
         @click="handleOpen"
       >
-        {{ t("portfolio.actions.open", "Open") }}
+        {{ t("portfolio.actions.open") }}
       </button>
       <button
         type="button"
         class="role-actions__btn-chevron"
-        aria-label="More actions"
+        :aria-label="t('portfolio.actions.more')"
         @click="toggleDropdown"
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -85,7 +88,7 @@ function handleBreaches() {
 
       <div v-if="showDropdown" class="role-actions__dropdown">
         <button type="button" class="role-actions__dropdown-item" @click="handleOpen(); closeDropdown()">
-          {{ t("portfolio.actions.openDetails", "Open details") }}
+          {{ t("portfolio.actions.openDetails") }}
         </button>
         <button
           v-if="showResearch"
@@ -93,7 +96,7 @@ function handleBreaches() {
           class="role-actions__dropdown-item"
           @click="handleResearch(); closeDropdown()"
         >
-          {{ t("portfolio.actions.writeResearch", "New research") }}
+          {{ t("portfolio.actions.writeResearch") }}
         </button>
         <button
           v-if="showBreaches"
@@ -101,7 +104,7 @@ function handleBreaches() {
           class="role-actions__dropdown-item"
           @click="handleBreaches(); closeDropdown()"
         >
-          {{ t("portfolio.actions.viewBreaches", "View breaches") }}
+          {{ t("portfolio.actions.viewBreaches") }}
         </button>
       </div>
     </div>

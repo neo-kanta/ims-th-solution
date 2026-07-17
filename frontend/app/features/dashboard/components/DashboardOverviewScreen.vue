@@ -126,10 +126,10 @@ const lastRefreshSource = computed(
 );
 
 const taskSourceLabel = computed(() => {
-  if (tasksLoading.value) return t("dashboardOverview.taskSourceLoading", "Tasks: loading integration source");
-  if (tasksError.value) return t("dashboardOverview.taskSourceUnavailable", "Tasks: API source unavailable");
-  if (snapshot.value) return t("dashboardOverview.taskSourceApi", "Tasks: integration API source");
-  return t("dashboardOverview.taskSourceWaiting", "Tasks: waiting for integration source");
+  if (tasksLoading.value) return t("dashboardOverview.taskSourceLoading");
+  if (tasksError.value) return t("dashboardOverview.taskSourceUnavailable");
+  if (snapshot.value) return t("dashboardOverview.taskSourceApi");
+  return t("dashboardOverview.taskSourceWaiting");
 });
 
 const todoTotal = computed(() => snapshot.value?.summary.total ?? 0);
@@ -151,22 +151,22 @@ const displayMetrics = computed<DisplayMetric[]>(() => [
   {
     id: "contracts",
     loading: countsLoading.value,
-    label: t("dashboardOverview.metricContractsLabel", "Active Contracts"),
+    label: t("dashboardOverview.metricContractsLabel"),
     value: String(activeContractsCount.value),
     changeLabel: "",
     changeTone: "neutral" as const,
-    helperText: t("dashboardOverview.metricContractsHelper", "{count} accessible fund(s)", { count: activeContractsCount.value }),
+    helperText: t("dashboardOverview.metricContractsHelper", { count: activeContractsCount.value }),
     icon: "decision",
     tone: "info" as const,
   },
   {
     id: "approvals",
     loading: countsLoading.value,
-    label: t("dashboardOverview.metricApprovalsLabel", "Pending Approvals"),
+    label: t("dashboardOverview.metricApprovalsLabel"),
     value: String(pendingApprovalsCount.value),
-    changeLabel: pendingApprovalsCount.value > 0 ? t("dashboardOverview.actionRequired", "Action required") : "",
+    changeLabel: pendingApprovalsCount.value > 0 ? t("dashboardOverview.actionRequired") : "",
     changeTone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("neutral" as const),
-    helperText: t("dashboardOverview.metricApprovalsHelper", "{count} item(s) in your inbox", { count: pendingApprovalsCount.value }),
+    helperText: t("dashboardOverview.metricApprovalsHelper", { count: pendingApprovalsCount.value }),
     icon: "approval",
     tone: pendingApprovalsCount.value > 0 ? ("danger" as const) : ("info" as const),
   },
@@ -231,11 +231,11 @@ function onAssistantPreviewSubmit(query: string) {
 
 function onTaskAction(action: DashboardTodoAction, _task: TaskDTO) {
   if (action === "more") {
-    showToast(t("dashboardOverview.taskActionMenuNotConnected", "Task action menu is not connected yet."));
+    showToast(t("dashboardOverview.taskActionMenuNotConnected"));
     return;
   }
 
-  showToast(t("dashboardOverview.taskActionsNotConnected", "Task actions are not connected yet."));
+  showToast(t("dashboardOverview.taskActionsNotConnected"));
 }
 
 onMounted(() => {
@@ -281,7 +281,7 @@ onMounted(() => {
         >
           <AppIcon name="list" size="xs" />
           <span>{{
-            t("dashboardOverview.showLayers", "Task Layers & Contracts")
+            t("dashboardOverview.showLayers")
           }}</span>
         </button>
       </div>
@@ -292,13 +292,13 @@ onMounted(() => {
       />
 
       <div v-if="scopeSelectOptions.length > 1" class="dashboard-scope-row">
-        <label class="dashboard-scope-row__label" for="dashboard-aum-scope-select">{{ t("dashboardOverview.scopeSelectorLabel", "AUM scope") }}</label>
+        <label class="dashboard-scope-row__label" for="dashboard-aum-scope-select">{{ t("dashboardOverview.scopeSelectorLabel") }}</label>
         <AppSelect
           id="dashboard-aum-scope-select"
           v-model="aumScopeSelectValue"
           :options="scopeSelectOptions"
           placeholder=""
-          :aria-label="t('dashboardOverview.scopeSelectorLabel', 'AUM scope')"
+          :aria-label="t('dashboardOverview.scopeSelectorLabel')"
           class="dashboard-scope-row__select"
         />
       </div>
@@ -325,9 +325,9 @@ onMounted(() => {
 
     </main>
 
-    <aside class="dashboard-layered__rail" aria-label="Dashboard context">
+    <aside class="dashboard-layered__rail" :aria-label="t('dashboardOverview.contextLabel')">
       <DashboardApprovalPanel
-        :items="pendingApprovals as any"
+        :items="pendingApprovals"
         :loading="approvalsLoading"
         :error="approvalsError"
       />
@@ -335,11 +335,11 @@ onMounted(() => {
       <DashboardActivityPanel :items="[]" :loading="false" />
 
       <section class="dashboard-rail__panel">
-        <h2 class="dashboard-rail__title">{{ t("dashboardOverview.systemNotes", "System notes") }}</h2>
+        <h2 class="dashboard-rail__title">{{ t("dashboardOverview.systemNotes") }}</h2>
         <ul class="dashboard-rail__notes">
           <li>
             <span class="dashboard-rail__note-dot is-preview" />
-            <span>{{ t("dashboardOverview.aiAssistantPreview", "AI assistant: Preview") }}</span>
+            <span>{{ t("dashboardOverview.aiAssistantPreview") }}</span>
           </li>
           <li>
             <span class="dashboard-rail__note-dot" />
@@ -347,7 +347,7 @@ onMounted(() => {
           </li>
           <li>
             <span class="dashboard-rail__note-dot is-muted" />
-            <span>{{ t("dashboardOverview.taskRecordsCount", "{count} task records in current source", { count: todoTotal }) }}</span>
+            <span>{{ t("dashboardOverview.taskRecordsCount", { count: todoTotal }) }}</span>
           </li>
         </ul>
       </section>

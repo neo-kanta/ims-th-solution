@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
 
-import { useI18n } from "~/composables/useI18n";
+import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
 
@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const mutation = useComplianceRuleCreate();
 
-const STEPS = [
+const STEPS: readonly { key: "identity" | "scope" | "logic" | "message" | "review" | "submit"; labelKey: AppTranslationKey }[] = [
   { key: "identity", labelKey: "compliance.builder.steps.identity" },
   { key: "scope", labelKey: "compliance.builder.steps.scope" },
   { key: "logic", labelKey: "compliance.builder.steps.logic" },
@@ -69,6 +69,12 @@ function pickRuleType(typeId: string) {
   if (sample) form.parametersJson = sample;
   const entry = lookupRuleCatalog(typeId);
   if (entry && !form.name) form.name = t(entry.labelKey);
+}
+
+function onRuleTypeChange(event: Event) {
+  if (event.target instanceof HTMLSelectElement) {
+    pickRuleType(event.target.value);
+  }
 }
 
 const jsonError = computed<string | null>(() => {
@@ -150,7 +156,7 @@ async function submit() {
           :aria-current="i === stepIndex ? 'step' : undefined"
         >
           <span class="builder__step-num">{{ i + 1 }}</span>
-          <span class="builder__step-label">{{ t(s.labelKey as any) }}</span>
+          <span class="builder__step-label">{{ t(s.labelKey) }}</span>
         </li>
       </ol>
     </AppCard>
@@ -165,8 +171,8 @@ async function submit() {
           <span class="builder__label">
             {{ t("compliance.builder.identity.ruleTypeId") }}
           </span>
-          <select class="form-control" :value="form.ruleTypeId" @change="(e: Event) => pickRuleType((e.target as HTMLSelectElement).value)">
-            <option value="" disabled>Select a rule type…</option>
+          <select class="form-control" :value="form.ruleTypeId" @change="onRuleTypeChange">
+            <option value="" disabled>{{ t("compliance.builder.identity.ruleTypeId") }}</option>
             <option
               v-for="entry in RULE_CATALOG"
               :key="entry.typeId"
@@ -260,16 +266,16 @@ async function submit() {
     <AppCard v-else-if="currentStep === 'review'" :title="t('compliance.builder.review.title')">
       <h3 class="builder__section-title">{{ t("compliance.builder.review.summary") }}</h3>
       <dl class="builder__summary">
-        <div><dt>Rule type</dt><dd><code>{{ form.ruleTypeId || "—" }}</code></dd></div>
-        <div><dt>Name</dt><dd>{{ form.name || "—" }}</dd></div>
-        <div><dt>Description</dt><dd>{{ form.description || "—" }}</dd></div>
-        <div><dt>Effective from</dt><dd>{{ form.effectiveFrom }}</dd></div>
-        <div><dt>Effective to</dt><dd>{{ form.effectiveTo || "—" }}</dd></div>
-        <div><dt>Active</dt><dd>{{ form.isActive ? "Yes" : "No" }}</dd></div>
-        <div><dt>Change reason</dt><dd>{{ form.changeReason }}</dd></div>
+        <div><dt>{{ t("compliance.builder.identity.ruleTypeId") }}</dt><dd><code>{{ form.ruleTypeId || t("compliance.common.none") }}</code></dd></div>
+        <div><dt>{{ t("compliance.builder.identity.name") }}</dt><dd>{{ form.name || t("compliance.common.none") }}</dd></div>
+        <div><dt>{{ t("compliance.builder.identity.description") }}</dt><dd>{{ form.description || t("compliance.common.none") }}</dd></div>
+        <div><dt>{{ t("compliance.builder.scope.effectiveFrom") }}</dt><dd>{{ form.effectiveFrom }}</dd></div>
+        <div><dt>{{ t("compliance.builder.scope.effectiveTo") }}</dt><dd>{{ form.effectiveTo || t("compliance.common.none") }}</dd></div>
+        <div><dt>{{ t("compliance.builder.scope.isActive") }}</dt><dd>{{ form.isActive ? t("compliance.badges.status.ACTIVE") : t("compliance.badges.status.DISABLED") }}</dd></div>
+        <div><dt>{{ t("compliance.builder.message.changeReason") }}</dt><dd>{{ form.changeReason }}</dd></div>
       </dl>
       <h3 class="builder__section-title">{{ t("compliance.builder.review.payloadTitle") }}</h3>
-      <pre class="builder__payload">{{ JSON.stringify(buildPayload, null, 2) || "Invalid payload" }}</pre>
+      <pre class="builder__payload">{{ JSON.stringify(buildPayload, null, 2) || t("compliance.preTrade.form.invalid") }}</pre>
     </AppCard>
 
     <!-- Step 6: Submit -->
@@ -279,19 +285,19 @@ async function submit() {
       </p>
 
       <div class="builder__lifecycle">
-        <AppButton variant="primary" size="sm" :disabled="true" title="Not yet supported by the backend">
+        <AppButton variant="primary" size="sm" :disabled="true" :title="t('compliance.common.notYetAvailable')">
           {{ t("compliance.builder.lifecycleDisabled.submitForApproval") }}
         </AppButton>
-        <AppButton variant="secondary" size="sm" :disabled="true" title="Not yet supported by the backend">
+        <AppButton variant="secondary" size="sm" :disabled="true" :title="t('compliance.common.notYetAvailable')">
           {{ t("compliance.builder.lifecycleDisabled.approve") }}
         </AppButton>
-        <AppButton variant="ghost" size="sm" :disabled="true" title="Not yet supported by the backend">
+        <AppButton variant="ghost" size="sm" :disabled="true" :title="t('compliance.common.notYetAvailable')">
           {{ t("compliance.builder.lifecycleDisabled.reject") }}
         </AppButton>
-        <AppButton variant="ghost" size="sm" :disabled="true" title="Not yet supported by the backend">
+        <AppButton variant="ghost" size="sm" :disabled="true" :title="t('compliance.common.notYetAvailable')">
           {{ t("compliance.builder.lifecycleDisabled.disable") }}
         </AppButton>
-        <AppButton variant="ghost" size="sm" :disabled="true" title="Not yet supported by the backend">
+        <AppButton variant="ghost" size="sm" :disabled="true" :title="t('compliance.common.notYetAvailable')">
           {{ t("compliance.builder.lifecycleDisabled.archive") }}
         </AppButton>
       </div>

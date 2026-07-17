@@ -77,7 +77,7 @@ describe("validateDecisionDraft", () => {
 
   it("requires quantity or amount, mirroring the backend's validateCreateDecision rule", () => {
     const errors = validateDecisionDraft(draft({ quantity: "", amount: "" }));
-    expect(errors.quantity).toMatch(/quantity or an amount/i);
+    expect(errors.quantity?.key).toBe("portfolio.decisionNew.validation.quantityOrAmount");
   });
 
   it("accepts amount-only orders without requiring quantity", () => {
@@ -93,7 +93,7 @@ describe("validateDecisionDraft", () => {
 
   it("rejects scientific-notation quantity even though Number() would accept it", () => {
     const errors = validateDecisionDraft(draft({ quantity: "1e5" }));
-    expect(errors.quantity).toMatch(/positive number/i);
+    expect(errors.quantity?.key).toBe("portfolio.decisionNew.validation.quantityInvalid");
   });
 
   it("rejects a non-3-letter currency", () => {
@@ -110,7 +110,10 @@ describe("validateDecisionDraft", () => {
     const errors = validateDecisionDraft(draft({ side: "SELL", quantity: "500" }), {
       availableQuantity: 100,
     });
-    expect(errors.quantity).toMatch(/exceeds available holding/i);
+    expect(errors.quantity).toEqual({
+      key: "portfolio.decisionNew.validation.exceedsHolding",
+      params: { available: 100 },
+    });
   });
 
   it("allows a SELL quantity within the available holding", () => {
@@ -133,7 +136,7 @@ describe("validateDecisionDraft SELL non-owned-instrument prevention", () => {
     const errors = validateDecisionDraft(draft({ side: "SELL", quantity: "" }), {
       isOwnedInstrument: false,
     });
-    expect(errors.instrument).toMatch(/does not hold this instrument/i);
+    expect(errors.instrument?.key).toBe("portfolio.decisionNew.validation.instrumentNotOwned");
   });
 
   it("blocks a SELL of a non-owned instrument independently of the oversell/quantity check", () => {

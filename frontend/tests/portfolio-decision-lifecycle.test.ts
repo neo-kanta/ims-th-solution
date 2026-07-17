@@ -26,6 +26,9 @@ const body: ApiCreateDecisionV2Request = {
   quantity: "1000",
 };
 
+const missingIdentifierMessage =
+  "The decision was created without an identifier and cannot be submitted.";
+
 beforeEach(() => {
   createMock.mockReset();
   submitMock.mockReset();
@@ -68,7 +71,7 @@ describe("createThenSubmit", () => {
     submitMock.mockResolvedValueOnce({ id: "dec-2", status: "PENDING_APPROVAL" });
     const lifecycle = useDecisionLifecycle();
 
-    const result = await lifecycle.createThenSubmit("TH-EQ-01", body);
+    const result = await lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
 
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(submitMock).toHaveBeenCalledWith("TH-EQ-01", "dec-2");
@@ -80,7 +83,7 @@ describe("createThenSubmit", () => {
     createMock.mockRejectedValueOnce({ status: 422, data: { error: "compliance blocked" } });
     const lifecycle = useDecisionLifecycle();
 
-    const result = await lifecycle.createThenSubmit("TH-EQ-01", body);
+    const result = await lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
 
     expect(result).toBeNull();
     expect(submitMock).not.toHaveBeenCalled();
@@ -93,7 +96,7 @@ describe("createThenSubmit", () => {
     submitMock.mockRejectedValueOnce({ status: 409, data: { error: "workflow day not open" } });
     const lifecycle = useDecisionLifecycle();
 
-    const result = await lifecycle.createThenSubmit("TH-EQ-01", body);
+    const result = await lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
 
     expect(result).toBeNull();
     expect(lifecycle.phase.value).toBe("submit-failed");
@@ -109,7 +112,7 @@ describe("createThenSubmit", () => {
       .mockResolvedValueOnce({ id: "dec-4", status: "PENDING_APPROVAL" });
     const lifecycle = useDecisionLifecycle();
 
-    await lifecycle.createThenSubmit("TH-EQ-01", body);
+    await lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
     expect(lifecycle.phase.value).toBe("submit-failed");
 
     const retried = await lifecycle.retrySubmit("TH-EQ-01");
@@ -132,7 +135,7 @@ describe("createThenSubmit", () => {
 
 describe("duplicate-submission prevention", () => {
   it("ignores a second saveDraft click while the first is still in flight", async () => {
-    let resolveCreate!: (value: { id: string; status: string }) => void;
+    let resolveCreate: (value: { id: string; status: string }) => void = () => undefined;
     createMock.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveCreate = resolve;
@@ -155,7 +158,7 @@ describe("duplicate-submission prevention", () => {
   });
 
   it("ignores a second createThenSubmit click while the first is still in flight", async () => {
-    let resolveCreate!: (value: { id: string; status: string }) => void;
+    let resolveCreate: (value: { id: string; status: string }) => void = () => undefined;
     createMock.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveCreate = resolve;
@@ -164,8 +167,8 @@ describe("duplicate-submission prevention", () => {
     submitMock.mockResolvedValueOnce({ id: "dec-6", status: "PENDING_APPROVAL" });
     const lifecycle = useDecisionLifecycle();
 
-    const firstCall = lifecycle.createThenSubmit("TH-EQ-01", body);
-    const secondResult = await lifecycle.createThenSubmit("TH-EQ-01", body);
+    const firstCall = lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
+    const secondResult = await lifecycle.createThenSubmit("TH-EQ-01", body, missingIdentifierMessage);
     expect(secondResult).toBeNull();
 
     resolveCreate({ id: "dec-6", status: "DRAFT" });

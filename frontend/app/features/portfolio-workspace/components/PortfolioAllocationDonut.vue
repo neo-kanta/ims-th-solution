@@ -32,7 +32,7 @@ const RADIUS = 48;
 const slices = computed(() =>
   buildAllocationDonutSlices(
     props.items,
-    t("portfolio.allocation.other", "Other"),
+    t("portfolio.allocation.other"),
   ),
 );
 const arcs = computed(() => buildAllocationDonutArcs(slices.value, RADIUS));
@@ -96,7 +96,7 @@ function arcLabel(key: string): string {
       role="status"
     >
       <span class="allocation-donut__spinner" aria-hidden="true" />
-      {{ t("portfolio.allocation.loading", "Loading allocation…") }}
+      {{ t("portfolio.allocation.loading") }}
     </div>
 
     <div v-else-if="slices.length === 0" class="allocation-donut__state">
@@ -159,7 +159,7 @@ function arcLabel(key: string): string {
 
         <div class="allocation-donut__centre" aria-live="polite">
           <span class="allocation-donut__centre-label">
-            {{ activeSlice?.label ?? t("portfolio.allocation.total", "Total") }}
+            {{ activeSlice?.label ?? t("portfolio.allocation.total") }}
           </span>
           <strong class="allocation-donut__centre-value">
             {{ formatValue(activeSlice?.value ?? displayTotal) }}

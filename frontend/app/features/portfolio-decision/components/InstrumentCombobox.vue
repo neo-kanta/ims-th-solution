@@ -61,7 +61,9 @@ function pickOwned(holding: EnrichedHolding) {
 }
 
 function onInput(event: Event) {
-  search.setQuery((event.target as HTMLInputElement).value);
+  if (event.target instanceof HTMLInputElement) {
+    search.setQuery(event.target.value);
+  }
 }
 
 function onKeydown(event: KeyboardEvent) {
