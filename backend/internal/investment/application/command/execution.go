@@ -53,6 +53,7 @@ type ExecutionCommandHandler struct {
 	runTx      func(ctx context.Context, fn func(pgx.Tx) error) error
 	workflow   contract.WorkflowStateProvider
 	compliance contract.ComplianceChecker
+	portfolios domain.PortfolioRepository
 }
 
 // SetWorkflowStateProvider injects the workflow state port post-construction.
@@ -72,6 +73,15 @@ func (h *ExecutionCommandHandler) SetWorkflowStateProvider(w contract.WorkflowSt
 func (h *ExecutionCommandHandler) SetComplianceChecker(checker contract.ComplianceChecker) {
 	if h != nil {
 		h.compliance = checker
+	}
+}
+
+// SetPortfolioRepository injects the authoritative portfolio repository used
+// by Create to determine LIVE/SIMULATION/MODEL policy. Portfolio type is never
+// accepted from a caller or transport request.
+func (h *ExecutionCommandHandler) SetPortfolioRepository(p domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = p
 	}
 }
 
@@ -151,6 +161,21 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 	// ordered quantity for this execution rather than the original decision
 	// quantity.
 	if h.compliance != nil {
+		portfolioType, err := resolveCompliancePortfolioType(ctx, h.portfolios, d.PortfolioID)
+		if err != nil {
+			return nil, err
+		}
+		auditGap := func(gateErr error) error {
+			return auditComplianceControlGap(ctx, h.audit, complianceControlGapAuditInput{
+				Phase:          "EXECUTION_CREATION",
+				DecisionID:     d.ID,
+				PortfolioID:    d.PortfolioID,
+				PortfolioType:  portfolioType,
+				ActorID:        req.ActorID,
+				BusinessDate:   d.BusinessDate,
+				InstrumentCode: d.InstrumentCode,
+			}, gateErr)
+		}
 		qty := decimal.Decimal{}
 		if ordQty != nil {
 			qty = *ordQty
@@ -168,7 +193,9 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 		} else if d.LimitPrice != nil {
 			price = *d.LimitPrice
 		}
+		checkGroupID := uuid.New()
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
+			CheckGroupID: checkGroupID,
 			PortfolioID:  d.PortfolioID,
 			ContractID:   d.FundID,
 			BusinessDate: d.BusinessDate,
@@ -185,7 +212,20 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 			return nil, fmt.Errorf("execution-time compliance check: %w", err)
 		}
 		if result == nil {
-			return nil, fmt.Errorf("execution-time compliance check returned nil result")
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: checkGroupID.String(),
+				Reason:       "execution-time compliance check returned nil result",
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		if gateErr := liveComplianceStatusError(portfolioType, result); gateErr != nil {
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
 		}
 		switch result.Verdict {
 		case contract.ComplianceVerdictBlock:
@@ -197,7 +237,14 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 		case contract.ComplianceVerdictPass, contract.ComplianceVerdictWarn:
 			// Explicitly permitted by the Portfolio Compliance V2 lifecycle.
 		default:
-			return nil, fmt.Errorf("execution-time compliance check returned unsupported verdict %q", result.Verdict)
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: result.CheckGroupID.String(),
+				Reason:       fmt.Sprintf("unsupported compliance verdict %q", result.Verdict),
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
 		}
 	}
 	e := &entity.Execution{

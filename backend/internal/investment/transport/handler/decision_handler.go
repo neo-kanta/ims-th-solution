@@ -300,6 +300,7 @@ func (h *DecisionHandler) UpdateDecision(w http.ResponseWriter, r *http.Request)
 // @Failure 403 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection"
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /investment/decisions/{id}/submit [post]
 func (h *DecisionHandler) SubmitDecision(w http.ResponseWriter, r *http.Request) {
@@ -626,6 +627,8 @@ func writeDecisionError(w http.ResponseWriter, err error) {
 		referenceB  *domain.ErrDecisionReferenceInvalid
 		number      *domain.ErrDecisionNumberConflict
 		compBlocked *domain.ErrComplianceRejected
+		compMissing *command.ErrComplianceNotConfigured
+		compDown    *command.ErrComplianceUnavailable
 	)
 	switch {
 	case errors.As(err, &invalid):
@@ -640,6 +643,10 @@ func writeDecisionError(w http.ResponseWriter, err error) {
 		httputil.Conflict(w, err.Error())
 	case errors.As(err, &compBlocked):
 		httputil.UnprocessableEntity(w, err.Error())
+	case errors.As(err, &compMissing):
+		writeComplianceStatusError(w, command.ComplianceErrorCodeNotConfigured, compMissing.Error(), compMissing.CheckGroupID)
+	case errors.As(err, &compDown):
+		writeComplianceStatusError(w, command.ComplianceErrorCodeUnavailable, compDown.Error(), compDown.CheckGroupID)
 	default:
 		httputil.InternalError(w, err.Error())
 	}

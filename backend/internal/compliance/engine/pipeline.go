@@ -19,6 +19,7 @@ import (
 // CheckOutput is the result of running the evaluation pipeline.
 type CheckOutput struct {
 	CheckGroupID    uuid.UUID            `json:"check_group_id"`
+	Status          vo.ComplianceStatus  `json:"status"`
 	FinalVerdict    vo.Verdict           `json:"final_verdict"`
 	Records         []entity.CheckRecord `json:"records"`
 	Breaches        []entity.Breach      `json:"breaches"`
@@ -85,6 +86,7 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 		slog.Info("irg: no applicable rules", "check_group_id", input.CheckGroupID)
 		return &CheckOutput{
 			CheckGroupID:    input.CheckGroupID,
+			Status:          vo.ComplianceStatusNotConfigured,
 			FinalVerdict:    vo.VerdictPass,
 			TotalDurationMs: time.Since(pipelineStart).Milliseconds(),
 		}, nil
@@ -119,6 +121,7 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 
 	// 4. Evaluate each rule — ALL rules evaluated, no short-circuit
 	var records []entity.CheckRecord
+	status := vo.ComplianceStatusEvaluated
 	var breaches []entity.Breach
 
 	// contractID is nil for portfolio-only checks (no fund_id) so
@@ -132,7 +135,11 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 
 	for _, rb := range resolved {
 		ruleStart := time.Now()
-		record := p.evaluateOne(ctx, input, rb, bundle, dataHash, ruleStart)
+		evaluated := p.evaluateOne(ctx, input, rb, bundle, dataHash, ruleStart)
+		record := evaluated.record
+		if evaluated.status == vo.ComplianceStatusUnavailable {
+			status = vo.ComplianceStatusUnavailable
+		}
 		records = append(records, record)
 
 		// Create breach for BLOCK or WARN final verdicts
@@ -191,6 +198,7 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 
 	output := &CheckOutput{
 		CheckGroupID:    input.CheckGroupID,
+		Status:          status,
 		FinalVerdict:    finalVerdict,
 		Records:         records,
 		Breaches:        breaches,
@@ -210,6 +218,11 @@ func (p *Pipeline) runCheck(ctx context.Context, input spi.CheckInput, scopes []
 	return output, nil
 }
 
+type evaluatedRule struct {
+	record entity.CheckRecord
+	status vo.ComplianceStatus
+}
+
 func (p *Pipeline) evaluateOne(
 	ctx context.Context,
 	input spi.CheckInput,
@@ -217,7 +230,7 @@ func (p *Pipeline) evaluateOne(
 	bundle *spi.DataBundle,
 	dataHash string,
 	ruleStart time.Time,
-) entity.CheckRecord {
+) evaluatedRule {
 	now := time.Now().UTC()
 	recordID := uuid.New()
 
@@ -261,7 +274,7 @@ func (p *Pipeline) evaluateOne(
 		base.Message = fmt.Sprintf("rule type not registered: %s", rb.RuleInstance.RuleTypeID)
 		base.Evidence = mustJSON(vo.Evidence{Metrics: map[string]string{"error": "rule_type_not_registered"}})
 		base.EvalDurationMs = time.Since(ruleStart).Milliseconds()
-		return base
+		return evaluatedRule{record: base, status: vo.ComplianceStatusUnavailable}
 	}
 
 	// Call Evaluate
@@ -274,17 +287,31 @@ func (p *Pipeline) evaluateOne(
 		base.Message = fmt.Sprintf("evaluation error: %v", err)
 		base.Evidence = mustJSON(vo.Evidence{Metrics: map[string]string{"error": err.Error()}})
 		base.EvalDurationMs = time.Since(ruleStart).Milliseconds()
-		return base
+		return evaluatedRule{record: base, status: vo.ComplianceStatusUnavailable}
 	}
 
-	// Apply severity cap
-	base.Verdict = result.Verdict
-	base.FinalVerdict = rb.Binding.Severity.CapVerdict(result.Verdict)
+	status := result.Status
+	if status == "" {
+		status = vo.ComplianceStatusEvaluated
+	}
+
+	// A control that could not evaluate reliably is not an ordinary rule
+	// breach. It must remain BLOCK regardless of the configured reporting
+	// severity; otherwise MONITOR could turn missing control data into a false
+	// PASS record.
+	base.Verdict, base.FinalVerdict = complianceVerdicts(status, result.Verdict, rb.Binding.Severity)
 	base.Message = result.Message
 	base.Evidence = mustJSON(result.Evidence)
 	base.EvalDurationMs = time.Since(ruleStart).Milliseconds()
 
-	return base
+	return evaluatedRule{record: base, status: status}
+}
+
+func complianceVerdicts(status vo.ComplianceStatus, verdict vo.Verdict, severity vo.Severity) (vo.Verdict, vo.Verdict) {
+	if status == vo.ComplianceStatusUnavailable {
+		return vo.VerdictBlock, vo.VerdictBlock
+	}
+	return verdict, severity.CapVerdict(verdict)
 }
 
 func mustJSON(v interface{}) json.RawMessage {

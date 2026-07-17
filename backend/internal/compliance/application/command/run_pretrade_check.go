@@ -35,11 +35,12 @@ type PreTradeCheckRequest struct {
 
 // PreTradeCheckResponse is the result returned to the OMS / caller.
 type PreTradeCheckResponse struct {
-	CheckGroupID    uuid.UUID       `json:"check_group_id"`
-	Verdict         vo.Verdict      `json:"verdict" swaggertype:"string"`
-	RulesEvaluated  int             `json:"rules_evaluated"`
-	TotalDurationMs int64           `json:"total_duration_ms"`
-	Breaches        []BreachSummary `json:"breaches,omitempty"`
+	CheckGroupID    uuid.UUID           `json:"check_group_id"`
+	Status          vo.ComplianceStatus `json:"status" swaggertype:"string"`
+	Verdict         vo.Verdict          `json:"verdict" swaggertype:"string"`
+	RulesEvaluated  int                 `json:"rules_evaluated"`
+	TotalDurationMs int64               `json:"total_duration_ms"`
+	Breaches        []BreachSummary     `json:"breaches,omitempty"`
 }
 
 // BreachSummary is a compact representation for the caller.
@@ -120,6 +121,7 @@ func (h *RunPreTradeCheckHandler) handle(ctx context.Context, req PreTradeCheckR
 
 	resp := &PreTradeCheckResponse{
 		CheckGroupID:    checkGroupID,
+		Status:          output.Status,
 		Verdict:         output.FinalVerdict,
 		RulesEvaluated:  output.RulesEvaluated,
 		TotalDurationMs: output.TotalDurationMs,

@@ -35,6 +35,32 @@ type pretradeBindingRepo struct {
 	resolveCalled int
 }
 
+// effectiveFilteringBindingRepo models the production repository's active and
+// effective-window selection against real RuleBinding/RuleInstance fixtures.
+// The application still observes only the resolved rows, as it does in
+// production, but these tests no longer label the same empty slice as several
+// different repository outcomes.
+type effectiveFilteringBindingRepo struct {
+	*pretradeBindingRepo
+	candidates []domain.ResolvedBinding
+}
+
+func (r *effectiveFilteringBindingRepo) ResolveApplicable(_ context.Context, scopes []vo.Scope, date time.Time) ([]domain.ResolvedBinding, error) {
+	r.lastScopes = scopes
+	r.resolveCalled++
+	resolved := make([]domain.ResolvedBinding, 0, len(r.candidates))
+	for _, candidate := range r.candidates {
+		if !candidate.Binding.IsActive || !candidate.RuleInstance.IsActive {
+			continue
+		}
+		if !candidate.Binding.EffectiveWindow.Contains(date) || !candidate.RuleInstance.EffectiveWindow.Contains(date) {
+			continue
+		}
+		resolved = append(resolved, candidate)
+	}
+	return resolved, nil
+}
+
 func (r *pretradeBindingRepo) ResolveApplicable(_ context.Context, scopes []vo.Scope, _ time.Time) ([]domain.ResolvedBinding, error) {
 	r.lastScopes = scopes
 	r.resolveCalled++
@@ -56,10 +82,13 @@ func (r *pretradeBindingRepo) Deactivate(_ context.Context, _ uuid.UUID) error {
 // pretradeCheckRepo records CreateBatch calls for dry-run assertions.
 type pretradeCheckRepo struct {
 	batchCalls int32
+	batches    [][]entity.CheckRecord
 }
 
-func (r *pretradeCheckRepo) CreateBatch(_ context.Context, _ []entity.CheckRecord) error {
+func (r *pretradeCheckRepo) CreateBatch(_ context.Context, records []entity.CheckRecord) error {
 	atomic.AddInt32(&r.batchCalls, 1)
+	batch := append([]entity.CheckRecord(nil), records...)
+	r.batches = append(r.batches, batch)
 	return nil
 }
 func (r *pretradeCheckRepo) Create(_ context.Context, _ *entity.CheckRecord) error {
@@ -160,6 +189,19 @@ func buildPreTradeHandler(bindings []domain.ResolvedBinding) (
 	return
 }
 
+func buildPreTradeHandlerWithBindingRepo(bindingRepo domain.RuleBindingRepository) (
+	h *command.RunPreTradeCheckHandler,
+	checkRepo *pretradeCheckRepo,
+	breachRepo *pretradeBreachRepo,
+) {
+	checkRepo = &pretradeCheckRepo{}
+	breachRepo = &pretradeBreachRepo{}
+	fetcher := engine.NewFetcher(nil, nil, nil, nil, nil, nil, nil, nil)
+	pipeline := engine.NewPipeline(spi.GlobalRegistry(), bindingRepo, checkRepo, breachRepo, fetcher)
+	h = command.NewRunPreTradeCheckHandler(pipeline, spi.GlobalRegistry())
+	return
+}
+
 // buildPreTradeHandlerCapturingScopes is like buildPreTradeHandler but also
 // returns the binding repo, so tests can assert on the scopes buildScopes()
 // passed to ResolveApplicable.
@@ -252,6 +294,9 @@ func TestPreTradeCheck_VerdictScenarios(t *testing.T) {
 
 			if resp.Verdict != tc.wantVerdict {
 				t.Errorf("verdict: got %q, want %q", resp.Verdict, tc.wantVerdict)
+			}
+			if resp.Status != vo.ComplianceStatusEvaluated {
+				t.Errorf("status: got %q, want %q", resp.Status, vo.ComplianceStatusEvaluated)
 			}
 			if resp.RulesEvaluated != 1 {
 				t.Errorf("rules_evaluated: got %d, want 1", resp.RulesEvaluated)
@@ -360,24 +405,97 @@ func TestPreTradeCheck_DryRunSkipsPersistence(t *testing.T) {
 	}
 }
 
-// TestPreTradeCheck_NoRules verifies that an order with no applicable bindings
-// yields PASS with zero rules evaluated and no breaches.
-func TestPreTradeCheck_NoRules(t *testing.T) {
+// TestPreTradeCheck_NoActiveEffectiveRules verifies the contract returned by
+// the pipeline after ResolveApplicable filters out inactive or out-of-window
+// bindings. No false PASS check or breach row is persisted.
+func TestPreTradeCheck_NoActiveEffectiveRules(t *testing.T) {
 	t.Parallel()
+	businessDate := basePreTradeReq(1, 1).BusinessDate
+	fixture := func(mutate func(*domain.ResolvedBinding)) []domain.ResolvedBinding {
+		binding := minimumTradeBinding(vo.SeverityBlock)
+		binding.Binding.EffectiveWindow = vo.EffectiveWindow{ValidFrom: businessDate.AddDate(-1, 0, 0)}
+		binding.RuleInstance.EffectiveWindow = vo.EffectiveWindow{ValidFrom: businessDate.AddDate(-1, 0, 0)}
+		if mutate != nil {
+			mutate(&binding)
+		}
+		return []domain.ResolvedBinding{binding}
+	}
+	before := businessDate.AddDate(0, 0, -1)
+	tests := []struct {
+		name       string
+		candidates []domain.ResolvedBinding
+	}{
+		{name: "zero bindings"},
+		{name: "inactive binding", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.Binding.IsActive = false
+		})},
+		{name: "inactive rule instance", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.RuleInstance.IsActive = false
+		})},
+		{name: "future binding", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.Binding.EffectiveWindow.ValidFrom = businessDate.AddDate(0, 0, 1)
+		})},
+		{name: "future rule instance", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.RuleInstance.EffectiveWindow.ValidFrom = businessDate.AddDate(0, 0, 1)
+		})},
+		{name: "expired binding", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.Binding.EffectiveWindow.ValidTo = &before
+		})},
+		{name: "expired rule instance", candidates: fixture(func(rb *domain.ResolvedBinding) {
+			rb.RuleInstance.EffectiveWindow.ValidTo = &before
+		})},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repo := &effectiveFilteringBindingRepo{
+				pretradeBindingRepo: &pretradeBindingRepo{},
+				candidates:          tt.candidates,
+			}
+			h, checkRepo, breachRepo := buildPreTradeHandlerWithBindingRepo(repo)
+			resp, err := h.Handle(context.Background(), basePreTradeReq(1, 1))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if resp.Status != vo.ComplianceStatusNotConfigured {
+				t.Errorf("status: got %q, want %q", resp.Status, vo.ComplianceStatusNotConfigured)
+			}
+			if resp.RulesEvaluated != 0 {
+				t.Errorf("rules_evaluated: got %d, want 0", resp.RulesEvaluated)
+			}
+			if len(resp.Breaches) != 0 {
+				t.Errorf("breaches: got %d, want 0", len(resp.Breaches))
+			}
+			if got := atomic.LoadInt32(&checkRepo.batchCalls); got != 0 {
+				t.Errorf("must not persist a false PASS check record; got %d batches", got)
+			}
+			if got := atomic.LoadInt32(&breachRepo.createCalls); got != 0 {
+				t.Errorf("must not persist a breach without an evaluated rule; got %d", got)
+			}
+		})
+	}
+}
 
-	h, _, _ := buildPreTradeHandler(nil) // no bindings
-	resp, err := h.HandleDryRun(context.Background(), basePreTradeReq(1, 1))
+func TestPreTradeCheck_AtLeastOneValidBinding_IsEvaluated(t *testing.T) {
+	t.Parallel()
+	repo := &effectiveFilteringBindingRepo{
+		pretradeBindingRepo: &pretradeBindingRepo{},
+		candidates:          []domain.ResolvedBinding{minimumTradeBinding(vo.SeverityBlock)},
+	}
+	h, checkRepo, _ := buildPreTradeHandlerWithBindingRepo(repo)
+	resp, err := h.Handle(context.Background(), basePreTradeReq(10, 60))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.Verdict != vo.VerdictPass {
-		t.Errorf("verdict: got %q, want PASS when no rules are bound", resp.Verdict)
+	if resp.Status != vo.ComplianceStatusEvaluated {
+		t.Fatalf("status = %q, want %q", resp.Status, vo.ComplianceStatusEvaluated)
 	}
-	if resp.RulesEvaluated != 0 {
-		t.Errorf("rules_evaluated: got %d, want 0", resp.RulesEvaluated)
+	if resp.Verdict != vo.VerdictPass || resp.RulesEvaluated != 1 {
+		t.Fatalf("result = (%q, %d rules), want PASS with one evaluated rule", resp.Verdict, resp.RulesEvaluated)
 	}
-	if len(resp.Breaches) != 0 {
-		t.Errorf("breaches: got %d, want 0", len(resp.Breaches))
+	if got := atomic.LoadInt32(&checkRepo.batchCalls); got != 1 {
+		t.Fatalf("valid binding must persist one check batch, got %d", got)
 	}
 }
 

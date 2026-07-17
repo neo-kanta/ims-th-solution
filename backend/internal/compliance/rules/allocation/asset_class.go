@@ -6,6 +6,8 @@ package allocation
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/shopspring/decimal"
 
@@ -82,6 +84,7 @@ func (r *AssetClassMaxRule) DataDependencies() spi.DataDependencies {
 		NAV:             true,
 		MarketPrices:    true,
 		Classifications: true,
+		PortfolioMeta:   true,
 	}
 }
 
@@ -100,6 +103,9 @@ func (r *AssetClassMaxRule) Evaluate(
 	}
 	if p.MaxPercentNAV.IsZero() || p.MaxPercentNAV.IsNegative() {
 		return spi.EvalResult{}, fmt.Errorf("max_percent_nav must be positive, got %s", p.MaxPercentNAV)
+	}
+	if missing := missingAssetClassifications(input, data); len(missing) > 0 && !isNonLivePortfolio(data.PortfolioMeta) {
+		return assetClassUnavailable(p.AssetClass, missing), nil
 	}
 
 	pct, classMV, nav, ok := assetClassExposure(input, data, p.AssetClass)
@@ -224,6 +230,7 @@ func (r *AssetClassMinRule) DataDependencies() spi.DataDependencies {
 		NAV:             true,
 		MarketPrices:    true,
 		Classifications: true,
+		PortfolioMeta:   true,
 	}
 }
 
@@ -242,6 +249,9 @@ func (r *AssetClassMinRule) Evaluate(
 	}
 	if p.MinPercentNAV.IsNegative() {
 		return spi.EvalResult{}, fmt.Errorf("min_percent_nav must be non-negative, got %s", p.MinPercentNAV)
+	}
+	if missing := missingAssetClassifications(input, data); len(missing) > 0 && !isNonLivePortfolio(data.PortfolioMeta) {
+		return assetClassUnavailable(p.AssetClass, missing), nil
 	}
 
 	pct, classMV, nav, ok := assetClassExposure(input, data, p.AssetClass)
@@ -378,5 +388,67 @@ func assetClassBlock(msg string) spi.EvalResult {
 		Verdict:  vo.VerdictBlock,
 		Message:  msg,
 		Evidence: vo.Evidence{Metrics: map[string]string{"error": msg}},
+	}
+}
+
+func missingAssetClassifications(input spi.CheckInput, data spi.DataBundle) []string {
+	missing := map[string]struct{}{}
+	check := func(ticker string) {
+		ticker = strings.TrimSpace(ticker)
+		if ticker == "" {
+			return
+		}
+		classification, ok := data.Classifications.Get(ticker)
+		if !ok || strings.TrimSpace(classification.AssetClass) == "" {
+			missing[ticker] = struct{}{}
+		}
+	}
+
+	if data.Positions != nil {
+		for _, holding := range data.Positions.Holdings {
+			check(holding.Ticker)
+		}
+	}
+	if input.ProposedOrder != nil {
+		check(input.ProposedOrder.Ticker)
+	}
+
+	tickers := make([]string, 0, len(missing))
+	for ticker := range missing {
+		tickers = append(tickers, ticker)
+	}
+	sort.Strings(tickers)
+	return tickers
+}
+
+func assetClassUnavailable(assetClass string, missing []string) spi.EvalResult {
+	missingList := strings.Join(missing, ", ")
+	return spi.EvalResult{
+		Status:  vo.ComplianceStatusUnavailable,
+		Verdict: vo.VerdictBlock,
+		Message: fmt.Sprintf("asset class classification unavailable for instruments: %s", missingList),
+		Evidence: vo.Evidence{
+			Metrics: map[string]string{
+				"compliance_status":        string(vo.ComplianceStatusUnavailable),
+				"reason":                   "MISSING_ASSET_CLASSIFICATION",
+				"missing_instrument_count": fmt.Sprintf("%d", len(missing)),
+			},
+			References: map[string]string{
+				"asset_class":         assetClass,
+				"missing_instruments": missingList,
+			},
+		},
+	}
+}
+
+func isNonLivePortfolio(meta *spi.PortfolioMetadata) bool {
+	if meta == nil {
+		return false
+	}
+	switch strings.ToUpper(strings.TrimSpace(meta.PortfolioType)) {
+	case "SIMULATION", "MODEL":
+		return true
+	default:
+		return false
 	}
 }

@@ -5,6 +5,7 @@ package command
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -84,9 +85,18 @@ func approvedDecision() *entity.Decision {
 }
 
 func buildExecutionHandler(d *entity.Decision, execRepo *fakeExecutionRepo) *ExecutionCommandHandler {
+	return buildExecutionHandlerWithAudit(d, execRepo, &recordingAudit{})
+}
+
+func buildExecutionHandlerWithAudit(
+	d *entity.Decision,
+	execRepo *fakeExecutionRepo,
+	audit contract.AuditLogger,
+) *ExecutionCommandHandler {
 	decRepo := newFakeDecisionRepo(d)
-	h := NewExecutionCommandHandler(nil, decRepo, execRepo, &recordingAudit{}, nil)
+	h := NewExecutionCommandHandler(nil, decRepo, execRepo, audit, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
+	h.SetPortfolioRepository(postPortfolioRepo{portfolio: &entity.Portfolio{PortfolioType: vo.PortfolioTypeLive}})
 	return h
 }
 
@@ -157,8 +167,10 @@ func TestCreateExecution_ComplianceBlock_Blocked(t *testing.T) {
 	execRepo := &fakeExecutionRepo{}
 	h := buildExecutionHandler(d, execRepo)
 	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
-		CheckGroupID: uuid.New(),
-		Verdict:      contract.ComplianceVerdictBlock,
+		CheckGroupID:   uuid.New(),
+		Status:         contract.ComplianceStatusEvaluated,
+		Verdict:        contract.ComplianceVerdictBlock,
+		RulesEvaluated: 1,
 		Breaches: []contract.ProposedOrderBreach{
 			{RuleTypeID: "MAX_EXPOSURE", Message: "exceeds limit"},
 		},
@@ -190,13 +202,171 @@ func TestCreateExecution_ComplianceBlock_Blocked(t *testing.T) {
 	}
 }
 
+func TestCreateExecution_LiveFailsClosedOnComplianceControlStatus(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		result     *contract.ProposedOrderResult
+		assertType func(*testing.T, error)
+	}{
+		{
+			name: "not configured cannot be mistaken for pass",
+			result: &contract.ProposedOrderResult{
+				CheckGroupID: uuid.New(),
+				Status:       contract.ComplianceStatusNotConfigured,
+				Verdict:      contract.ComplianceVerdictPass,
+			},
+			assertType: func(t *testing.T, err error) {
+				var target *ErrComplianceNotConfigured
+				if !errors.As(err, &target) {
+					t.Fatalf("error = %T %v, want *ErrComplianceNotConfigured", err, err)
+				}
+			},
+		},
+		{
+			name: "classification unavailable blocks even with warn verdict",
+			result: &contract.ProposedOrderResult{
+				CheckGroupID:   uuid.New(),
+				Status:         contract.ComplianceStatusUnavailable,
+				Verdict:        contract.ComplianceVerdictWarn,
+				RulesEvaluated: 1,
+				Breaches: []contract.ProposedOrderBreach{{
+					RuleTypeID: "allocation.asset_class_min",
+					Message:    "asset class classification unavailable for instruments: NEW-BOND",
+				}},
+			},
+			assertType: func(t *testing.T, err error) {
+				var target *ErrComplianceUnavailable
+				if !errors.As(err, &target) {
+					t.Fatalf("error = %T %v, want *ErrComplianceUnavailable", err, err)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			d := approvedDecision()
+			repo := &fakeExecutionRepo{}
+			audit := &recordingAudit{}
+			h := buildExecutionHandlerWithAudit(d, repo, audit)
+			h.SetComplianceChecker(&fakeComplianceChecker{result: tt.result})
+
+			_, err := h.Create(context.Background(), CreateExecutionRequest{
+				DecisionID: d.ID,
+				ActorID:    uuid.New(),
+			})
+			if err == nil {
+				t.Fatal("expected LIVE compliance status to fail closed")
+			}
+			tt.assertType(t, err)
+			if len(repo.created) != 0 {
+				t.Fatalf("execution rows = %d, want 0", len(repo.created))
+			}
+			audit.mu.Lock()
+			defer audit.mu.Unlock()
+			if len(audit.entries) != 1 {
+				t.Fatalf("audit entries = %d, want one strict control-gap event", len(audit.entries))
+			}
+			entry := audit.entries[0]
+			details, ok := entry.Details.(map[string]any)
+			if entry.Action != complianceControlGapAuditAction || !ok {
+				t.Fatalf("audit entry = %#v, want control-gap event with details", entry)
+			}
+			if details["check_group_id"] != tt.result.CheckGroupID.String() || details["phase"] != "EXECUTION_CREATION" {
+				t.Fatalf("audit correlation details = %#v", details)
+			}
+		})
+	}
+}
+
+func TestCreateExecution_NonLivePortfolioPolicyUnchanged(t *testing.T) {
+	t.Parallel()
+	for _, portfolioType := range []vo.PortfolioType{vo.PortfolioTypeSimulation, vo.PortfolioTypeModel} {
+		portfolioType := portfolioType
+		t.Run(string(portfolioType), func(t *testing.T) {
+			t.Parallel()
+			cases := []struct {
+				name        string
+				result      *contract.ProposedOrderResult
+				wantBlocked bool
+			}{
+				{
+					name: "no active effective bindings",
+					result: &contract.ProposedOrderResult{
+						CheckGroupID: uuid.New(),
+						Status:       contract.ComplianceStatusNotConfigured,
+						Verdict:      contract.ComplianceVerdictPass,
+					},
+				},
+				{
+					name: "missing asset classification preserves prior pass evaluation",
+					result: &contract.ProposedOrderResult{
+						CheckGroupID:   uuid.New(),
+						Status:         contract.ComplianceStatusEvaluated,
+						Verdict:        contract.ComplianceVerdictPass,
+						RulesEvaluated: 1,
+					},
+				},
+				{
+					name: "valid classified allocation breach still blocks",
+					result: &contract.ProposedOrderResult{
+						CheckGroupID:   uuid.New(),
+						Status:         contract.ComplianceStatusEvaluated,
+						Verdict:        contract.ComplianceVerdictBlock,
+						RulesEvaluated: 1,
+						Breaches: []contract.ProposedOrderBreach{{
+							RuleTypeID: "allocation.asset_class_max",
+							Message:    "classified equity exposure exceeds the configured maximum",
+						}},
+					},
+					wantBlocked: true,
+				},
+			}
+			for _, tc := range cases {
+				tc := tc
+				t.Run(tc.name, func(t *testing.T) {
+					d := approvedDecision()
+					repo := &fakeExecutionRepo{}
+					h := buildExecutionHandler(d, repo)
+					h.SetPortfolioRepository(postPortfolioRepo{portfolio: &entity.Portfolio{PortfolioType: portfolioType}})
+					h.SetComplianceChecker(&fakeComplianceChecker{result: tc.result})
+
+					_, err := h.Create(context.Background(), CreateExecutionRequest{DecisionID: d.ID, ActorID: uuid.New()})
+					if tc.wantBlocked {
+						var blocked *domain.ErrComplianceRejected
+						if !errors.As(err, &blocked) {
+							t.Fatalf("%s valid-rule error = %T %v, want existing ErrComplianceRejected", portfolioType, err, err)
+						}
+						var unavailable *ErrComplianceUnavailable
+						if errors.As(err, &unavailable) {
+							t.Fatalf("%s must not apply the LIVE-only typed status gate", portfolioType)
+						}
+						if len(repo.created) != 0 {
+							t.Fatalf("execution rows = %d, want 0 on BLOCK", len(repo.created))
+						}
+						return
+					}
+					if err != nil || len(repo.created) != 1 {
+						t.Fatalf("%s no-rules result error=%v executions=%d, want success/1", portfolioType, err, len(repo.created))
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestCreateExecution_CompliancePass_Proceeds(t *testing.T) {
 	d := approvedDecision()
 	execRepo := &fakeExecutionRepo{}
 	h := buildExecutionHandler(d, execRepo)
 	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
-		CheckGroupID: uuid.New(),
-		Verdict:      contract.ComplianceVerdictPass,
+		CheckGroupID:   uuid.New(),
+		Status:         contract.ComplianceStatusEvaluated,
+		Verdict:        contract.ComplianceVerdictPass,
+		RulesEvaluated: 1,
 	}}
 	h.SetComplianceChecker(checker)
 
@@ -217,8 +387,10 @@ func TestCreateExecution_ComplianceWarn_Proceeds(t *testing.T) {
 	execRepo := &fakeExecutionRepo{}
 	h := buildExecutionHandler(d, execRepo)
 	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
-		CheckGroupID: uuid.New(),
-		Verdict:      contract.ComplianceVerdictWarn,
+		CheckGroupID:   uuid.New(),
+		Status:         contract.ComplianceStatusEvaluated,
+		Verdict:        contract.ComplianceVerdictWarn,
+		RulesEvaluated: 1,
 	}}
 	h.SetComplianceChecker(checker)
 
@@ -241,8 +413,10 @@ func TestCreateExecution_ComplianceUsesActualOrderedAmount(t *testing.T) {
 	execRepo := &fakeExecutionRepo{}
 	h := buildExecutionHandler(d, execRepo)
 	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
-		CheckGroupID: uuid.New(),
-		Verdict:      contract.ComplianceVerdictPass,
+		CheckGroupID:   uuid.New(),
+		Status:         contract.ComplianceStatusEvaluated,
+		Verdict:        contract.ComplianceVerdictPass,
+		RulesEvaluated: 1,
 	}}
 	h.SetComplianceChecker(checker)
 
@@ -275,18 +449,30 @@ func TestCreateExecution_ComplianceUsesActualOrderedAmount(t *testing.T) {
 func TestCreateExecution_ComplianceNilResult_Blocked(t *testing.T) {
 	d := approvedDecision()
 	execRepo := &fakeExecutionRepo{}
-	h := buildExecutionHandler(d, execRepo)
-	h.SetComplianceChecker(&fakeComplianceChecker{})
+	audit := &recordingAudit{}
+	h := buildExecutionHandlerWithAudit(d, execRepo, audit)
+	checker := &fakeComplianceChecker{}
+	h.SetComplianceChecker(checker)
 
 	_, err := h.Create(context.Background(), CreateExecutionRequest{
 		DecisionID: d.ID,
 		ActorID:    uuid.New(),
 	})
-	if err == nil {
-		t.Fatal("expected nil compliance result to fail closed")
+	var unavailable *ErrComplianceUnavailable
+	if !errors.As(err, &unavailable) {
+		t.Fatalf("error = %T %v, want *ErrComplianceUnavailable", err, err)
+	}
+	if unavailable.CheckGroupID == "" || unavailable.CheckGroupID == uuid.Nil.String() {
+		t.Fatalf("nil-result check_group_id = %q, want generated correlation", unavailable.CheckGroupID)
+	}
+	if checker.lastIn.CheckGroupID.String() != unavailable.CheckGroupID {
+		t.Fatalf("request check_group_id = %s, error correlation = %s", checker.lastIn.CheckGroupID, unavailable.CheckGroupID)
 	}
 	if len(execRepo.created) != 0 {
 		t.Fatalf("nil compliance result must create no execution; got %d", len(execRepo.created))
+	}
+	if len(audit.entries) != 1 || audit.entries[0].Details.(map[string]any)["check_group_id"] != unavailable.CheckGroupID {
+		t.Fatalf("nil-result audit correlation = %#v, want %s", audit.entries, unavailable.CheckGroupID)
 	}
 }
 
@@ -295,19 +481,62 @@ func TestCreateExecution_ComplianceUnknownVerdict_Blocked(t *testing.T) {
 	execRepo := &fakeExecutionRepo{}
 	h := buildExecutionHandler(d, execRepo)
 	h.SetComplianceChecker(&fakeComplianceChecker{result: &contract.ProposedOrderResult{
-		CheckGroupID: uuid.New(),
-		Verdict:      contract.ComplianceVerdict("REVIEW"),
+		CheckGroupID:   uuid.New(),
+		Status:         contract.ComplianceStatusEvaluated,
+		Verdict:        contract.ComplianceVerdict("REVIEW"),
+		RulesEvaluated: 1,
 	}})
 
 	_, err := h.Create(context.Background(), CreateExecutionRequest{
 		DecisionID: d.ID,
 		ActorID:    uuid.New(),
 	})
-	if err == nil {
-		t.Fatal("expected unsupported compliance verdict to fail closed")
+	var unavailable *ErrComplianceUnavailable
+	if !errors.As(err, &unavailable) {
+		t.Fatalf("error = %T %v, want *ErrComplianceUnavailable", err, err)
 	}
 	if len(execRepo.created) != 0 {
 		t.Fatalf("unsupported verdict must create no execution; got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_ControlGapAuditFailureCannotSucceed(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	h := buildExecutionHandlerWithAudit(d, execRepo, &failingAudit{strictErr: errors.New("audit store down")})
+	h.SetComplianceChecker(&fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Status:       contract.ComplianceStatusNotConfigured,
+		Verdict:      contract.ComplianceVerdictPass,
+	}})
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{DecisionID: d.ID, ActorID: uuid.New()})
+	if err == nil || !strings.Contains(err.Error(), "audit store down") {
+		t.Fatalf("audit failure error = %v, want surfaced strict audit failure", err)
+	}
+	if len(execRepo.created) != 0 {
+		t.Fatalf("audit failure must create no execution; got %d", len(execRepo.created))
+	}
+}
+
+func TestCreateExecution_EmptyAuthoritativePortfolioTypeFailsClosed(t *testing.T) {
+	d := approvedDecision()
+	execRepo := &fakeExecutionRepo{}
+	checker := &fakeComplianceChecker{result: &contract.ProposedOrderResult{
+		CheckGroupID: uuid.New(),
+		Status:       contract.ComplianceStatusNotConfigured,
+		Verdict:      contract.ComplianceVerdictPass,
+	}}
+	h := buildExecutionHandler(d, execRepo)
+	h.SetPortfolioRepository(postPortfolioRepo{portfolio: &entity.Portfolio{PortfolioType: ""}})
+	h.SetComplianceChecker(checker)
+
+	_, err := h.Create(context.Background(), CreateExecutionRequest{DecisionID: d.ID, ActorID: uuid.New()})
+	if err == nil || !strings.Contains(err.Error(), "unsupported portfolio type") {
+		t.Fatalf("empty authoritative portfolio type error = %v, want fail-closed error", err)
+	}
+	if checker.calls != 0 || len(execRepo.created) != 0 {
+		t.Fatalf("empty authoritative type must fail before compliance/write; checker=%d executions=%d", checker.calls, len(execRepo.created))
 	}
 }
 

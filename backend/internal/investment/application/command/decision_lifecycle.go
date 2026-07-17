@@ -77,6 +77,7 @@ type DecisionCommandHandler struct {
 	approvalCanceller contract.ApprovalCanceller
 	compliance        contract.ComplianceChecker
 	funds             domain.FundRepository
+	portfolios        domain.PortfolioRepository
 }
 
 // NewDecisionCommandHandler wires the handler.
@@ -132,6 +133,15 @@ func (h *DecisionCommandHandler) SetComplianceChecker(c contract.ComplianceCheck
 func (h *DecisionCommandHandler) SetFundRepository(f domain.FundRepository) {
 	if h != nil {
 		h.funds = f
+	}
+}
+
+// SetPortfolioRepository injects the authoritative portfolio repository used
+// by Submit to determine LIVE/SIMULATION/MODEL policy. Portfolio type is never
+// accepted from a caller or transport request.
+func (h *DecisionCommandHandler) SetPortfolioRepository(p domain.PortfolioRepository) {
+	if h != nil {
+		h.portfolios = p
 	}
 }
 
@@ -418,11 +428,28 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 	// For BASKET_ORDER / REBALANCE / SWITCH the Ticker field is empty — the
 	// compliance engine evaluates header-level rules only (per-line checks are Phase 2).
 	if h.compliance != nil {
+		portfolioType, err := resolveCompliancePortfolioType(ctx, h.portfolios, d.PortfolioID)
+		if err != nil {
+			return nil, err
+		}
+		auditGap := func(gateErr error) error {
+			return auditComplianceControlGap(ctx, h.audit, complianceControlGapAuditInput{
+				Phase:          "DECISION_SUBMISSION",
+				DecisionID:     d.ID,
+				PortfolioID:    d.PortfolioID,
+				PortfolioType:  portfolioType,
+				ActorID:        actorID,
+				BusinessDate:   d.BusinessDate,
+				InstrumentCode: d.InstrumentCode,
+			}, gateErr)
+		}
 		qty, price, err := decisionComplianceOrderValues(d)
 		if err != nil {
 			return nil, err
 		}
+		checkGroupID := uuid.New()
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
+			CheckGroupID: checkGroupID,
 			PortfolioID:  d.PortfolioID,
 			ContractID:   d.FundID,
 			BusinessDate: d.BusinessDate,
@@ -438,79 +465,106 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		if err != nil {
 			return nil, fmt.Errorf("pre-trade compliance check: %w", err)
 		}
-		if result != nil {
-			cgid := result.CheckGroupID
-			d.ComplianceCheckGroupID = &cgid
-
-			if result.Verdict == contract.ComplianceVerdictBlock {
-				allReleasable := true
-				for _, b := range result.Breaches {
-					if !b.Overridable {
-						allReleasable = false
-						break
-					}
-				}
-				if !allReleasable || h.approval == nil {
-					// Persist the check group ID for audit trail before rejecting.
-					nowBlk := h.now()
-					d.UpdatedAt = nowBlk
-					d.UpdatedBy = actorID
-					_ = h.runTx(ctx, func(tx pgx.Tx) error {
-						return h.decisions.Update(ctx, tx, d)
-					})
-					return nil, &domain.ErrComplianceRejected{
-						DecisionID:   d.ID.String(),
-						CheckGroupID: result.CheckGroupID.String(),
-						Message:      summarizeBreaches(result.Breaches),
-					}
-				}
-				// All breaches are overridable — submit COMPLIANCE_RELEASE approval
-				// first; only persist the status change after the submission succeeds.
-				// If submission fails the decision stays in DRAFT and can be retried.
-				nowCR := h.now()
-				ctrID := d.FundID
-				res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
-					ProcessType:      "COMPLIANCE_RELEASE",
-					SubjectType:      "COMPLIANCE_RELEASE",
-					SubjectID:        d.ID,
-					SubjectTitle:     fmt.Sprintf("Compliance Release — %s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
-					SubjectReference: d.DecisionNumber,
-					ContractType:     "FUND",
-					ContractID:       &ctrID,
-					PortfolioID:      &d.PortfolioID,
-					SubmitterID:      actorID,
-				})
-				if err != nil {
-					return nil, fmt.Errorf("submitting compliance release approval: %w", err)
-				}
-				d.Status = vo.DecisionLifecyclePendingComplianceRelease
-				d.UpdatedAt = nowCR
-				d.UpdatedBy = actorID
-				if res != nil {
-					rid := res.RequestID
-					// Store the compliance-release request ID in its own field so
-					// the investment-decision approval ID is not overwritten later.
-					d.ComplianceReleaseApprovalRequestID = &rid
-					d.ApprovalStatus = res.Status
-				}
-				if err := h.runTx(ctx, func(tx pgx.Tx) error {
-					return h.decisions.Update(ctx, tx, d)
-				}); err != nil {
-					return nil, err
-				}
-				h.audit.LogAction(contract.AuditEntry{
-					ActorID:      actorID.String(),
-					Action:       "INVESTMENT_DECISION_COMPLIANCE_RELEASE_SUBMITTED",
-					Module:       "investment",
-					ResourceType: "INVESTMENT_DECISION",
-					ResourceID:   d.ID.String(),
-					Details:      map[string]any{"check_group_id": result.CheckGroupID.String()},
-					BusinessDate: nowCR,
-				})
-				return d, nil // decision is pending compliance release; skip investment approval
+		if result == nil {
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: checkGroupID.String(),
+				Reason:       "pre-trade compliance check returned nil result",
 			}
-			// PASS and WARN both continue to the investment decision approval engine.
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
 		}
+		if gateErr := liveComplianceStatusError(portfolioType, result); gateErr != nil {
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		switch result.Verdict {
+		case contract.ComplianceVerdictPass, contract.ComplianceVerdictWarn, contract.ComplianceVerdictBlock:
+			// Supported business verdicts continue through the existing policy.
+		default:
+			gateErr := &ErrComplianceUnavailable{
+				CheckGroupID: result.CheckGroupID.String(),
+				Reason:       fmt.Sprintf("unsupported compliance verdict %q", result.Verdict),
+			}
+			if err := auditGap(gateErr); err != nil {
+				return nil, err
+			}
+			return nil, gateErr
+		}
+		cgid := result.CheckGroupID
+		d.ComplianceCheckGroupID = &cgid
+
+		if result.Verdict == contract.ComplianceVerdictBlock {
+			allReleasable := true
+			for _, b := range result.Breaches {
+				if !b.Overridable {
+					allReleasable = false
+					break
+				}
+			}
+			if !allReleasable || h.approval == nil {
+				// Persist the check group ID for audit trail before rejecting.
+				nowBlk := h.now()
+				d.UpdatedAt = nowBlk
+				d.UpdatedBy = actorID
+				_ = h.runTx(ctx, func(tx pgx.Tx) error {
+					return h.decisions.Update(ctx, tx, d)
+				})
+				return nil, &domain.ErrComplianceRejected{
+					DecisionID:   d.ID.String(),
+					CheckGroupID: result.CheckGroupID.String(),
+					Message:      summarizeBreaches(result.Breaches),
+				}
+			}
+			// All breaches are overridable — submit COMPLIANCE_RELEASE approval
+			// first; only persist the status change after the submission succeeds.
+			// If submission fails the decision stays in DRAFT and can be retried.
+			nowCR := h.now()
+			ctrID := d.FundID
+			res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
+				ProcessType:      "COMPLIANCE_RELEASE",
+				SubjectType:      "COMPLIANCE_RELEASE",
+				SubjectID:        d.ID,
+				SubjectTitle:     fmt.Sprintf("Compliance Release — %s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
+				SubjectReference: d.DecisionNumber,
+				ContractType:     "FUND",
+				ContractID:       &ctrID,
+				PortfolioID:      &d.PortfolioID,
+				SubmitterID:      actorID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("submitting compliance release approval: %w", err)
+			}
+			d.Status = vo.DecisionLifecyclePendingComplianceRelease
+			d.UpdatedAt = nowCR
+			d.UpdatedBy = actorID
+			if res != nil {
+				rid := res.RequestID
+				// Store the compliance-release request ID in its own field so
+				// the investment-decision approval ID is not overwritten later.
+				d.ComplianceReleaseApprovalRequestID = &rid
+				d.ApprovalStatus = res.Status
+			}
+			if err := h.runTx(ctx, func(tx pgx.Tx) error {
+				return h.decisions.Update(ctx, tx, d)
+			}); err != nil {
+				return nil, err
+			}
+			h.audit.LogAction(contract.AuditEntry{
+				ActorID:      actorID.String(),
+				Action:       "INVESTMENT_DECISION_COMPLIANCE_RELEASE_SUBMITTED",
+				Module:       "investment",
+				ResourceType: "INVESTMENT_DECISION",
+				ResourceID:   d.ID.String(),
+				Details:      map[string]any{"check_group_id": result.CheckGroupID.String()},
+				BusinessDate: nowCR,
+			})
+			return d, nil // decision is pending compliance release; skip investment approval
+		}
+		// PASS and WARN both continue to the investment decision approval engine.
 	}
 
 	// Submit through approval engine when wired.

@@ -68,6 +68,7 @@ func (h *ExecutionHandler) loadOwnedExecution(w http.ResponseWriter, r *http.Req
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection"
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId}/executions [post]
 func (h *ExecutionHandler) CreateExecutionByCode(w http.ResponseWriter, r *http.Request) {

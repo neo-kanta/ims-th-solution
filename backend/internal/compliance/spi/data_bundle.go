@@ -293,6 +293,7 @@ func (c *CalendarSnapshot) IsBusinessDay(date time.Time) bool {
 type PortfolioMetadata struct {
 	PortfolioID   uuid.UUID `json:"portfolio_id"`
 	ContractID    uuid.UUID `json:"contract_id"`
+	PortfolioType string    `json:"portfolio_type"`
 	MandateType   string    `json:"mandate_type"`
 	BaseCurrency  string    `json:"base_currency"`
 	Jurisdiction  string    `json:"jurisdiction"`

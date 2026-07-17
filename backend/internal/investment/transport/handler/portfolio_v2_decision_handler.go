@@ -202,6 +202,7 @@ func (h *DecisionHandler) GetDecisionByCode(w http.ResponseWriter, r *http.Reque
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 409 {object} httputil.ErrorResponse
+// @Failure 422 {object} httputil.ErrorResponse "COMPLIANCE_NOT_CONFIGURED, COMPLIANCE_UNAVAILABLE, or evaluated rule rejection"
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId}/submit [post]
 func (h *DecisionHandler) SubmitDecisionByCode(w http.ResponseWriter, r *http.Request) {

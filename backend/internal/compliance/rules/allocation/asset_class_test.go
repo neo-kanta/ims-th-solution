@@ -3,6 +3,7 @@ package allocation_test
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -189,5 +190,185 @@ func TestAssetClassMin_AtOrAboveFloor_Passes(t *testing.T) {
 	}
 	if result.Verdict != vo.VerdictPass {
 		t.Errorf("expected PASS, got %v: %s", result.Verdict, result.Message)
+	}
+}
+
+func TestAssetClassRules_MissingClassification_IsUnavailable(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		ruleTypeID string
+		params     spi.ParameterSet
+		holdings   []spi.Holding
+		order      *spi.ProposedOrder
+		classes    []spi.InstrumentClassification
+		missing    []string
+	}{
+		{
+			name:       "max unclassified existing holding",
+			ruleTypeID: "allocation.asset_class_max",
+			params:     maxParams("EQUITY", 60),
+			holdings: []spi.Holding{
+				{Ticker: "UNKNOWN-HOLDING", MarketValue: decimal.NewFromInt(20_000_000)},
+			},
+			missing: []string{"UNKNOWN-HOLDING"},
+		},
+		{
+			name:       "min unclassified existing holding",
+			ruleTypeID: "allocation.asset_class_min",
+			params:     minParams("FIXED_INCOME", 10),
+			holdings: []spi.Holding{
+				{Ticker: "UNCLASSIFIED-BOND", MarketValue: decimal.NewFromInt(20_000_000)},
+			},
+			missing: []string{"UNCLASSIFIED-BOND"},
+		},
+		{
+			name:       "max unclassified proposed instrument",
+			ruleTypeID: "allocation.asset_class_max",
+			params:     maxParams("EQUITY", 60),
+			order: &spi.ProposedOrder{
+				Ticker: "NEW-EQUITY", Side: vo.OrderSideBuy,
+				Quantity: decimal.NewFromInt(100), Price: decimal.NewFromInt(10),
+			},
+			missing: []string{"NEW-EQUITY"},
+		},
+		{
+			name:       "min unclassified proposed instrument",
+			ruleTypeID: "allocation.asset_class_min",
+			params:     minParams("FIXED_INCOME", 10),
+			order: &spi.ProposedOrder{
+				Ticker: "NEW-BOND", Side: vo.OrderSideBuy,
+				Quantity: decimal.NewFromInt(100), Price: decimal.NewFromInt(10),
+			},
+			missing: []string{"NEW-BOND"},
+		},
+		{
+			name:       "max partial classification snapshot",
+			ruleTypeID: "allocation.asset_class_max",
+			params:     maxParams("EQUITY", 60),
+			holdings: []spi.Holding{
+				{Ticker: "CLASSIFIED", MarketValue: decimal.NewFromInt(10_000_000)},
+				{Ticker: "MISSING", MarketValue: decimal.NewFromInt(10_000_000)},
+			},
+			classes: []spi.InstrumentClassification{{Ticker: "CLASSIFIED", AssetClass: "EQUITY"}},
+			missing: []string{"MISSING"},
+		},
+		{
+			name:       "min partial classification snapshot",
+			ruleTypeID: "allocation.asset_class_min",
+			params:     minParams("FIXED_INCOME", 10),
+			holdings: []spi.Holding{
+				{Ticker: "CLASSIFIED", MarketValue: decimal.NewFromInt(10_000_000)},
+				{Ticker: "BLANK", MarketValue: decimal.NewFromInt(10_000_000)},
+			},
+			classes: []spi.InstrumentClassification{
+				{Ticker: "CLASSIFIED", AssetClass: "FIXED_INCOME"},
+				{Ticker: "BLANK", AssetClass: ""},
+			},
+			missing: []string{"BLANK"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			rule, ok := spi.GlobalRegistry().Get(tt.ruleTypeID)
+			if !ok {
+				t.Fatalf("rule %s not registered", tt.ruleTypeID)
+			}
+			bundle := allocationBundle(tt.holdings, 100_000_000, nil, tt.classes)
+			bundle.PortfolioMeta = &spi.PortfolioMetadata{PortfolioType: "LIVE"}
+			result, err := rule.Evaluate(context.Background(), spi.CheckInput{
+				PortfolioID:   uuid.New(),
+				BusinessDate:  time.Now(),
+				ProposedOrder: tt.order,
+			}, bundle, tt.params)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if result.Status != vo.ComplianceStatusUnavailable {
+				t.Fatalf("status = %q, want %q", result.Status, vo.ComplianceStatusUnavailable)
+			}
+			if result.Verdict != vo.VerdictBlock {
+				t.Fatalf("verdict = %q, want BLOCK", result.Verdict)
+			}
+			if result.Evidence.Metrics["reason"] != "MISSING_ASSET_CLASSIFICATION" {
+				t.Fatalf("reason = %q", result.Evidence.Metrics["reason"])
+			}
+			for _, ticker := range tt.missing {
+				if !strings.Contains(result.Evidence.References["missing_instruments"], ticker) {
+					t.Fatalf("missing_instruments %q does not identify %q", result.Evidence.References["missing_instruments"], ticker)
+				}
+				if !strings.Contains(result.Message, ticker) {
+					t.Fatalf("message %q does not identify %q", result.Message, ticker)
+				}
+			}
+		})
+	}
+}
+
+func TestAssetClassRules_NonLiveMissingClassificationPreservesPriorEvaluation(t *testing.T) {
+	t.Parallel()
+	for _, portfolioType := range []string{"SIMULATION", "MODEL"} {
+		portfolioType := portfolioType
+		t.Run(portfolioType, func(t *testing.T) {
+			t.Parallel()
+			tests := []struct {
+				name       string
+				ruleTypeID string
+				params     spi.ParameterSet
+				holdings   []spi.Holding
+				classes    []spi.InstrumentClassification
+				want       vo.Verdict
+			}{
+				{
+					name:       "max ignores missing classification as before",
+					ruleTypeID: "allocation.asset_class_max",
+					params:     maxParams("EQUITY", 60),
+					holdings:   []spi.Holding{{Ticker: "UNKNOWN", MarketValue: decimal.NewFromInt(80_000_000)}},
+					want:       vo.VerdictPass,
+				},
+				{
+					name:       "min retains prior warning math",
+					ruleTypeID: "allocation.asset_class_min",
+					params:     minParams("FIXED_INCOME", 10),
+					holdings:   []spi.Holding{{Ticker: "UNKNOWN", MarketValue: decimal.NewFromInt(20_000_000)}},
+					want:       vo.VerdictWarn,
+				},
+				{
+					name:       "valid classified breach still blocks",
+					ruleTypeID: "allocation.asset_class_max",
+					params:     maxParams("EQUITY", 60),
+					holdings:   []spi.Holding{{Ticker: "PTT", MarketValue: decimal.NewFromInt(80_000_000)}},
+					classes:    []spi.InstrumentClassification{{Ticker: "PTT", AssetClass: "EQUITY"}},
+					want:       vo.VerdictBlock,
+				},
+			}
+			for _, tc := range tests {
+				tc := tc
+				t.Run(tc.name, func(t *testing.T) {
+					rule, ok := spi.GlobalRegistry().Get(tc.ruleTypeID)
+					if !ok {
+						t.Fatalf("rule %s not registered", tc.ruleTypeID)
+					}
+					bundle := allocationBundle(tc.holdings, 100_000_000, nil, tc.classes)
+					bundle.PortfolioMeta = &spi.PortfolioMetadata{PortfolioType: portfolioType}
+					result, err := rule.Evaluate(context.Background(), spi.CheckInput{
+						PortfolioID:  uuid.New(),
+						BusinessDate: time.Now(),
+					}, bundle, tc.params)
+					if err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+					if result.Status == vo.ComplianceStatusUnavailable {
+						t.Fatal("non-LIVE missing classification must not introduce the LIVE-only unavailable status")
+					}
+					if result.Verdict != tc.want {
+						t.Fatalf("verdict = %q, want prior policy %q", result.Verdict, tc.want)
+					}
+				})
+			}
+		})
 	}
 }

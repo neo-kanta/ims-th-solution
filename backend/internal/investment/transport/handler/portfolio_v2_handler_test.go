@@ -29,7 +29,12 @@ type stubPortfolioRepo struct {
 }
 
 func (r *stubPortfolioRepo) Create(context.Context, pgx.Tx, *entity.Portfolio) error { return nil }
-func (r *stubPortfolioRepo) GetByID(context.Context, uuid.UUID) (*entity.Portfolio, error) {
+func (r *stubPortfolioRepo) GetByID(_ context.Context, id uuid.UUID) (*entity.Portfolio, error) {
+	for _, portfolio := range r.byCode {
+		if portfolio != nil && portfolio.ID == id {
+			return portfolio, nil
+		}
+	}
 	return nil, nil
 }
 func (r *stubPortfolioRepo) GetByFundCode(context.Context, uuid.UUID, string) (*entity.Portfolio, error) {

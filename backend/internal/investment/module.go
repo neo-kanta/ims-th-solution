@@ -187,12 +187,14 @@ func NewModule(
 		m.decisionCmd.SetComplianceChecker(compliance)
 	}
 	m.decisionCmd.SetFundRepository(m.funds)
+	m.decisionCmd.SetPortfolioRepository(m.portfolios)
 	if workflow != nil {
 		m.executionCmd.SetWorkflowStateProvider(workflow)
 	}
 	if compliance != nil {
 		m.executionCmd.SetComplianceChecker(compliance)
 	}
+	m.executionCmd.SetPortfolioRepository(m.portfolios)
 
 	// ── Transport ─────────────────────────────────────────────────────────
 	// Intraday valuation handler ships without a quote provider; main.go

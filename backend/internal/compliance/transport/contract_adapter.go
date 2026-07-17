@@ -116,6 +116,7 @@ func (a *ComplianceContractAdapter) checkProposedOrder(
 
 	out := &contract.ProposedOrderResult{
 		CheckGroupID:   resp.CheckGroupID,
+		Status:         mapComplianceStatusToContract(resp.Status),
 		Verdict:        mapVerdictToContract(resp.Verdict),
 		RulesEvaluated: resp.RulesEvaluated,
 	}
@@ -130,6 +131,19 @@ func (a *ComplianceContractAdapter) checkProposedOrder(
 		})
 	}
 	return out, nil
+}
+
+func mapComplianceStatusToContract(status vo.ComplianceStatus) contract.ComplianceStatus {
+	switch status {
+	case vo.ComplianceStatusEvaluated:
+		return contract.ComplianceStatusEvaluated
+	case vo.ComplianceStatusNotConfigured:
+		return contract.ComplianceStatusNotConfigured
+	case vo.ComplianceStatusUnavailable:
+		return contract.ComplianceStatusUnavailable
+	default:
+		return contract.ComplianceStatus(status)
+	}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -104,6 +104,17 @@ const (
 	ComplianceVerdictBlock ComplianceVerdict = "BLOCK"
 )
 
+// ComplianceStatus reports whether configured controls produced the verdict.
+// LIVE investment flows fail closed on NOT_CONFIGURED or UNAVAILABLE; other
+// portfolio types preserve their existing policy at the owning boundary.
+type ComplianceStatus string
+
+const (
+	ComplianceStatusEvaluated     ComplianceStatus = "COMPLIANCE_EVALUATED"
+	ComplianceStatusNotConfigured ComplianceStatus = "COMPLIANCE_NOT_CONFIGURED"
+	ComplianceStatusUnavailable   ComplianceStatus = "COMPLIANCE_UNAVAILABLE"
+)
+
 // ComplianceOrderSide is the direction of a proposed trade.
 type ComplianceOrderSide string
 
@@ -150,6 +161,7 @@ type ProposedOrderBreach struct {
 // override workflows and audit trails.
 type ProposedOrderResult struct {
 	CheckGroupID   uuid.UUID
+	Status         ComplianceStatus
 	Verdict        ComplianceVerdict
 	RulesEvaluated int
 	Breaches       []ProposedOrderBreach
