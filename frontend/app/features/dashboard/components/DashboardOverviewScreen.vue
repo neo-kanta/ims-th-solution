@@ -42,7 +42,6 @@ const {
   error: tasksError,
   fetchTasks,
 } = useDashboardTasks();
-const authStore = useAuthStore();
 const router = useRouter();
 
 const {
@@ -73,15 +72,13 @@ const {
   fetchValuationSummary,
 } = useDashboardValuationSummary();
 
-// "Entire company AUM" is only offered when the caller's data scope is the
-// "*" wildcard (see permissions.contracts, populated from the JWT/session at
-// login) — otherwise a restricted user would see a "company" scope that is
-// silently just their own subset, which is misleading labelling.
-const canViewCompanyAum = computed(() => authStore.hasContract("*"));
-const aumScope = ref<ValuationScope>(defaultAumScope(canViewCompanyAum.value));
+// Company AUM is an authenticated company-wide metric for every dashboard
+// user. Fund/portfolio permissions still govern drill-down screens and the
+// separate "My AUM" view; they do not hide or narrow this aggregate.
+const aumScope = ref<ValuationScope>(defaultAumScope());
 
 const scopeSelectOptions = computed(() =>
-  buildScopeOptions(canViewCompanyAum.value, t).map((option) => ({
+  buildScopeOptions(t).map((option) => ({
     value: option.key,
     label: option.label,
   })),

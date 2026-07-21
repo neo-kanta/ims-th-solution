@@ -20,29 +20,27 @@ import (
 // aggregating authoritative INTERNAL valuation snapshots into the configured
 // reporting currency.
 //
-// Day P&L is derived in reporting currency for each portfolio:
+// Latest-snapshot P&L is derived in reporting currency for each portfolio:
 //
-//	(LocalCumulativePnL_t - LocalCumulativePnL_t-1) * FX_t
-//	  + LocalAUM_t-1 * (FX_t - FX_t-1)
+//	(LocalCumulativePnL_latest - LocalCumulativePnL_previous) * FX_latest
 //
-// The first term translates local daily performance at closing FX; the second
-// captures reporting-currency FX movement on opening net assets. Current values
-// use an exact-date persisted FX snapshot for the current valuation business
-// date. Opening assets and the return denominator use the same exact-date
-// policy at the previous snapshot's own business date. External cash flows are
-// therefore treated at closing FX: the ledger has a business date but no
-// authoritative intraday valuation/FX observation per flow, so this endpoint
-// does not claim transaction-time or GIPS/time-weighted performance.
+// The newest available FX observation is used consistently for both the latest
+// and previous local snapshots. This produces a current reporting-currency
+// translation without inventing historical FX movement when only the latest
+// rate is requested. External cash flows therefore remain outside P&L because
+// the calculation differences cumulative valuation P&L rather than AUM.
 //
 // Same-currency values use the identity rate without a provider call; a
 // different currency is never assigned a fabricated 1:1 rate.
 //
-// Any missing/stale/wrong-date/invalid FX input, stale valuation, missing
-// valuation, or inconsistent current valuation date makes the overall result
-// INCOMPLETE. Coverage remains available for diagnostics, but DataAvailable is
-// false and no normal UI total may be presented. SIMULATION and MODEL
-// portfolios are intentionally excluded from official reporting and do not by
-// themselves make an otherwise complete LIVE total incomplete.
+// By explicit owner policy, each LIVE portfolio contributes its latest
+// available valuation even when valuation dates differ or the snapshot reports
+// stale inputs. Coverage exposes the carried-forward count and oldest included
+// date so consumers can label the mixed-date total honestly. Missing
+// valuations, invalid/missing FX, or valuation-currency changes remain blocking.
+// SIMULATION and MODEL portfolios are intentionally excluded from official
+// reporting and do not by themselves make an otherwise complete LIVE total
+// incomplete.
 type ValuationSummaryAdapter struct {
 	funds             domain.FundRepository
 	portfolios        domain.PortfolioRepository
@@ -86,9 +84,8 @@ type scopedValuation struct {
 
 type preparedValuation struct {
 	scopedValuation
-	previous   *entity.ValuationSnapshot
-	currentFX  decimal.Decimal
-	previousFX decimal.Decimal
+	previous  *entity.ValuationSnapshot
+	currentFX decimal.Decimal
 }
 
 type fundCoverageState struct {
@@ -98,13 +95,14 @@ type fundCoverageState struct {
 
 type fxLookupKey struct {
 	from string
-	date string
 }
 
 type fxLookupResult struct {
 	rate   decimal.Decimal
 	reason contract.ValuationSummaryExclusionReason
 }
+
+const valuationSummaryPageSize = 1_000
 
 // GetValuationSummary implements contract.ValuationSummaryProvider.
 func (a *ValuationSummaryAdapter) GetValuationSummary(
@@ -122,20 +120,26 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 
 	activeStatus := vo.FundStatusActive
 	filter := domain.FundListFilter{
-		Status:            &activeStatus,
-		AccessibleFundIDs: req.AccessibleFundIDs,
-		Limit:             10_000,
+		Status: &activeStatus,
 	}
-	if req.Scope == contract.ValuationSummaryScopeMine {
+	var portfolioManagerID *uuid.UUID
+	switch req.Scope {
+	case contract.ValuationSummaryScopeCompany:
+		// Company scope is authoritative and company-wide by policy. Enforce that
+		// invariant here as well as in the integration caller so a future internal
+		// caller cannot accidentally label a permission-filtered subset "company".
+	case contract.ValuationSummaryScopeMine:
 		uid := req.UserID
-		filter.ManagerUserID = &uid
+		filter.AccessibleFundIDs = req.AccessibleFundIDs
+		portfolioManagerID = &uid
+	default:
+		return nil, fmt.Errorf("invalid valuation summary scope %q", req.Scope)
 	}
 
-	funds, _, err := a.funds.List(ctx, filter)
+	funds, err := a.listAllFunds(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("listing scoped funds: %w", err)
 	}
-	result.Coverage.TotalFundCount = len(funds)
 	if len(funds) == 0 {
 		return result, nil
 	}
@@ -148,6 +152,7 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 	excludedDates := make(map[string]time.Time)
 	exclusionReasons := make(map[contract.ValuationSummaryExclusionReason]struct{})
 	blockingCoverage := false
+	scopedFunds := make([]*entity.Fund, 0, len(funds))
 
 	addExclusion := func(
 		fund *entity.Fund,
@@ -189,17 +194,42 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 		blockingCoverage = blockingCoverage || blocking
 	}
 
+	// One paginated listing covers every scoped fund; grouping by FundID in
+	// memory preserves the per-fund iteration order below. The repository sorts
+	// by (fund_id, code), so each fund's group keeps the same relative order a
+	// per-fund listing would have produced. Portfolios of funds outside the
+	// scoped fund set (e.g. inactive funds) are ignored by the grouping lookup.
+	portfolioFilter := domain.PortfolioListFilter{
+		Status:        &activePortfolio,
+		ManagerUserID: portfolioManagerID,
+	}
+	if req.Scope == contract.ValuationSummaryScopeMine {
+		// Company scope must never be narrowed by an accessible-fund filter;
+		// mine scope stays bounded by the caller's accessible funds.
+		portfolioFilter.AccessibleFundIDs = req.AccessibleFundIDs
+	}
+	scopedPortfolios, err := a.listAllPortfolios(ctx, portfolioFilter)
+	if err != nil {
+		return nil, fmt.Errorf("listing scoped portfolios: %w", err)
+	}
+	portfoliosByFund := make(map[uuid.UUID][]*entity.Portfolio, len(funds))
+	for _, portfolio := range scopedPortfolios {
+		portfoliosByFund[portfolio.FundID] = append(portfoliosByFund[portfolio.FundID], portfolio)
+	}
+
 	var candidates []scopedValuation
 	for _, fund := range funds {
-		fundStates[fund.ID] = &fundCoverageState{}
-		portfolios, _, listErr := a.portfolios.List(ctx, domain.PortfolioListFilter{
-			FundID: &fund.ID,
-			Status: &activePortfolio,
-			Limit:  10_000,
-		})
-		if listErr != nil {
-			return nil, fmt.Errorf("listing portfolios for fund %s: %w", fund.ID, listErr)
+		portfolios := portfoliosByFund[fund.ID]
+		// A mine-scope fund with no portfolio managed by the caller is outside the
+		// requested scope. It must not appear as an excluded/no-active fund and
+		// must not make the caller's otherwise complete portfolio total unavailable.
+		if req.Scope == contract.ValuationSummaryScopeMine && len(portfolios) == 0 {
+			continue
 		}
+
+		scopedFunds = append(scopedFunds, fund)
+		fundStates[fund.ID] = &fundCoverageState{}
+		result.Coverage.TotalFundCount++
 		result.Coverage.TotalPortfolioCount += len(portfolios)
 		if len(portfolios) == 0 {
 			addExclusion(fund, nil, fund.BaseCurrency, time.Time{}, time.Time{}, contract.ValuationSummaryExclusionNoActivePortfolio, true)
@@ -242,6 +272,7 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 			}
 		}
 	}
+	funds = scopedFunds
 
 	if len(candidates) == 0 {
 		if blockingCoverage {
@@ -255,46 +286,9 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 	prepared := make([]preparedValuation, 0, len(candidates))
 	for _, candidate := range candidates {
 		latest := candidate.latest
-		if latest.HasStaleInputs {
-			addExclusion(
-				candidate.fund,
-				candidate.portfolio,
-				latest.ValuationCcy,
-				latest.BusinessDate,
-				latest.BusinessDate,
-				contract.ValuationSummaryExclusionStaleValuation,
-				true,
-			)
-			continue
-		}
-		if !sameBusinessDate(latest.BusinessDate, result.BusinessDate) {
-			addExclusion(
-				candidate.fund,
-				candidate.portfolio,
-				latest.ValuationCcy,
-				latest.BusinessDate,
-				result.BusinessDate,
-				contract.ValuationSummaryExclusionValuationDate,
-				true,
-			)
-			continue
-		}
-
 		previous, previousErr := a.previousInternalSnapshot(ctx, latest.PortfolioID, latest.BusinessDate)
 		if previousErr != nil {
 			return nil, fmt.Errorf("loading previous valuation for portfolio %s: %w", latest.PortfolioID, previousErr)
-		}
-		if previous != nil && previous.HasStaleInputs {
-			addExclusion(
-				candidate.fund,
-				candidate.portfolio,
-				previous.ValuationCcy,
-				previous.BusinessDate,
-				previous.BusinessDate,
-				contract.ValuationSummaryExclusionStaleValuation,
-				true,
-			)
-			continue
 		}
 		if previous != nil && previous.ValuationCcy != latest.ValuationCcy {
 			addExclusion(
@@ -309,7 +303,7 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 			continue
 		}
 
-		currentFX := a.reportingFXRate(ctx, latest.ValuationCcy, latest.BusinessDate, fxCache)
+		currentFX := a.reportingFXRate(ctx, latest.ValuationCcy, fxCache)
 		if currentFX.reason != "" {
 			addExclusion(
 				candidate.fund,
@@ -323,29 +317,17 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 			continue
 		}
 
-		previousFX := fxLookupResult{rate: decimal.NewFromInt(1)}
-		if previous != nil {
-			previousFX = a.reportingFXRate(ctx, previous.ValuationCcy, previous.BusinessDate, fxCache)
-			if previousFX.reason != "" {
-				addExclusion(
-					candidate.fund,
-					candidate.portfolio,
-					previous.ValuationCcy,
-					previous.BusinessDate,
-					previous.BusinessDate,
-					previousFX.reason,
-					true,
-				)
-				continue
-			}
-		}
-
 		prepared = append(prepared, preparedValuation{
 			scopedValuation: candidate,
 			previous:        previous,
 			currentFX:       currentFX.rate,
-			previousFX:      previousFX.rate,
 		})
+		if result.Coverage.OldestIncludedBusinessDate.IsZero() || latest.BusinessDate.Before(result.Coverage.OldestIncludedBusinessDate) {
+			result.Coverage.OldestIncludedBusinessDate = latest.BusinessDate
+		}
+		if latest.HasStaleInputs || !sameBusinessDate(latest.BusinessDate, result.BusinessDate) || (previous != nil && previous.HasStaleInputs) {
+			result.Coverage.LatestAvailablePortfolioCount++
+		}
 		includedPortfolioIDs[candidate.portfolio.ID] = struct{}{}
 		delete(excludedPortfolioIDs, candidate.portfolio.ID)
 		fundStates[candidate.fund.ID].includedLive++
@@ -381,9 +363,8 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 
 		previousLocalPnL := item.previous.UnrealisedPnL.Add(item.previous.RealisedPnL)
 		localDailyPnL := currentLocalPnL.Sub(previousLocalPnL).Mul(item.currentFX)
-		openingFXPnL := item.previous.AUM.Mul(item.currentFX.Sub(item.previousFX))
-		todayPnL = todayPnL.Add(localDailyPnL).Add(openingFXPnL)
-		previousAUM = previousAUM.Add(item.previous.AUM.Mul(item.previousFX))
+		todayPnL = todayPnL.Add(localDailyPnL)
+		previousAUM = previousAUM.Add(item.previous.AUM.Mul(item.currentFX))
 	}
 
 	result.AUM = aum
@@ -406,21 +387,79 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 	return result, nil
 }
 
+// listAllPages exhausts a paginated repository listing while enforcing the
+// fail-closed aggregation guards: the reported total must stay stable across
+// pages, pagination metadata must remain internally consistent, and paging
+// must reach exactly the reported total — a silently truncated listing would
+// otherwise understate an official company/mine aggregate.
+func listAllPages[T any](
+	kind string,
+	list func(page int) ([]T, int, error),
+) ([]T, error) {
+	items := make([]T, 0)
+	expectedTotal := -1
+
+	for page := 1; ; page++ {
+		batch, total, err := list(page)
+		if err != nil {
+			return nil, fmt.Errorf("page %d: %w", page, err)
+		}
+		if expectedTotal == -1 {
+			expectedTotal = total
+		} else if total != expectedTotal {
+			return nil, fmt.Errorf("%s total changed while aggregating: was %d, now %d", kind, expectedTotal, total)
+		}
+		if total < 0 || len(items)+len(batch) > expectedTotal {
+			return nil, fmt.Errorf("invalid %s pagination metadata on page %d", kind, page)
+		}
+
+		items = append(items, batch...)
+		if len(items) == expectedTotal {
+			return items, nil
+		}
+		if len(batch) == 0 {
+			return nil, fmt.Errorf("%s pagination ended at %d of %d rows", kind, len(items), expectedTotal)
+		}
+	}
+}
+
+func (a *ValuationSummaryAdapter) listAllFunds(
+	ctx context.Context,
+	filter domain.FundListFilter,
+) ([]*entity.Fund, error) {
+	filter.Limit = valuationSummaryPageSize
+	return listAllPages("fund", func(page int) ([]*entity.Fund, int, error) {
+		filter.Page = page
+		return a.funds.List(ctx, filter)
+	})
+}
+
+func (a *ValuationSummaryAdapter) listAllPortfolios(
+	ctx context.Context,
+	filter domain.PortfolioListFilter,
+) ([]*entity.Portfolio, error) {
+	filter.Limit = valuationSummaryPageSize
+	return listAllPages("portfolio", func(page int) ([]*entity.Portfolio, int, error) {
+		filter.Page = page
+		return a.portfolios.List(ctx, filter)
+	})
+}
+
 func (a *ValuationSummaryAdapter) reportingFXRate(
 	ctx context.Context,
 	fromCurrency string,
-	businessDate time.Time,
 	cache map[fxLookupKey]fxLookupResult,
 ) fxLookupResult {
-	fromCurrency = strings.TrimSpace(fromCurrency)
-	if fromCurrency == "" || a.reportingCurrency == "" || businessDate.IsZero() {
+	fromCurrency = strings.ToUpper(strings.TrimSpace(fromCurrency))
+	reportingCurrency := strings.ToUpper(strings.TrimSpace(a.reportingCurrency))
+	if fromCurrency == "" || reportingCurrency == "" {
 		return fxLookupResult{reason: contract.ValuationSummaryExclusionInvalidFX}
 	}
-	if fromCurrency == a.reportingCurrency {
+	if fromCurrency == reportingCurrency {
 		return fxLookupResult{rate: decimal.NewFromInt(1)}
 	}
 
-	key := fxLookupKey{from: fromCurrency, date: businessDate.UTC().Format("2006-01-02")}
+	key := fxLookupKey{from: fromCurrency}
 	if cached, ok := cache[key]; ok {
 		return cached
 	}
@@ -431,8 +470,8 @@ func (a *ValuationSummaryAdapter) reportingFXRate(
 		return missing
 	}
 
-	symbol := "FX_" + fromCurrency + a.reportingCurrency
-	quote, err := a.fx.GetQuoteAsOf(ctx, symbol, businessDate)
+	symbol := "FX_" + fromCurrency + reportingCurrency
+	quote, err := a.fx.GetLatestQuote(ctx, symbol)
 	if err != nil || quote == nil {
 		cache[key] = missing
 		return missing
@@ -440,13 +479,9 @@ func (a *ValuationSummaryAdapter) reportingFXRate(
 
 	result := fxLookupResult{rate: quote.Price}
 	switch {
-	case !sameBusinessDate(quote.EffectiveAt, businessDate):
-		result = fxLookupResult{reason: contract.ValuationSummaryExclusionWrongDateFX}
-	case quote.Stale:
-		result = fxLookupResult{reason: contract.ValuationSummaryExclusionStaleFX}
 	case quote.Symbol != symbol:
 		result = fxLookupResult{reason: contract.ValuationSummaryExclusionFXSymbol}
-	case quote.Currency != a.reportingCurrency:
+	case strings.ToUpper(strings.TrimSpace(quote.Currency)) != reportingCurrency:
 		result = fxLookupResult{reason: contract.ValuationSummaryExclusionFXCurrency}
 	case quote.Price.Sign() <= 0:
 		result = fxLookupResult{reason: contract.ValuationSummaryExclusionInvalidFX}

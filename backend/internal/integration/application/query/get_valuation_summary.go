@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/integration/domain"
-	integrationperm "github.com/neo-kanta/ims-th-solution/backend/internal/integration/permission"
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
@@ -15,9 +14,9 @@ import (
 // value other than "company" or "mine".
 var ErrInvalidValuationScope = errors.New(`invalid scope: must be "company" or "mine"`)
 
-// GetValuationSummaryHandler aggregates today's AUM and P&L for the
-// dashboard, scoped to either the caller's full accessible data set
-// ("company") or the funds the caller manages ("mine").
+// GetValuationSummaryHandler aggregates latest-available AUM and P&L for the
+// dashboard, scoped to either the full company ("company") or the portfolios
+// the caller manages inside funds they are authorized to access ("mine").
 //
 // Aggregation math lives in the investment module (behind
 // contract.ValuationSummaryProvider) — this handler only resolves identity
@@ -67,13 +66,6 @@ func (h *GetValuationSummaryHandler) Execute(
 		resolvedUsername = username
 	}
 
-	ok, err := h.iam.HasFunctionPermission(ctx, userID, integrationperm.DashboardView)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return unavailableValuationSummary(scope, resolvedUsername, contract.ValuationSummaryStatusNoData, h.reportingCurrency), nil
-	}
 	if h.valuation == nil {
 		return unavailableValuationSummary(scope, resolvedUsername, contract.ValuationSummaryStatusIncomplete, h.reportingCurrency), nil
 	}
@@ -83,9 +75,17 @@ func (h *GetValuationSummaryHandler) Execute(
 		return nil, err
 	}
 
-	accessibleFundIDs, err := h.accessibleFundIDs(ctx, userID)
-	if err != nil {
-		return nil, err
+	// Company AUM is an authenticated company-wide metric by explicit owner
+	// policy. A nil fund filter therefore means every active company fund,
+	// independent of the caller's portfolio/fund data scope. The "mine" view
+	// remains bounded by the caller's effective fund data permissions while the
+	// investment provider applies portfolio-manager ownership.
+	var accessibleFundIDs []uuid.UUID
+	if scope == domain.ValuationScopeMine {
+		accessibleFundIDs, err = h.accessibleFundIDs(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	res, err := h.valuation.GetValuationSummary(ctx, contract.ValuationSummaryRequest{
@@ -111,6 +111,15 @@ func (h *GetValuationSummaryHandler) Execute(
 		currency = h.reportingCurrency
 	}
 
+	coverage := res.Coverage
+	if scope == domain.ValuationScopeCompany {
+		// Company visibility grants the aggregate only. Item-level exclusions can
+		// carry fund and portfolio business codes, so omit them for a response
+		// available to every authenticated user. Aggregate counts, currencies,
+		// dates, and stable reasons remain available for completeness UX.
+		coverage.Exclusions = nil
+	}
+
 	return &domain.ValuationSummary{
 		Scope:           scope,
 		Username:        resolvedUsername,
@@ -122,7 +131,7 @@ func (h *GetValuationSummaryHandler) Execute(
 		TodayPnLPercent: res.TodayPnLPercent,
 		AsOf:            res.AsOf,
 		DataAvailable:   res.DataAvailable,
-		Coverage:        res.Coverage,
+		Coverage:        coverage,
 	}, nil
 }
 

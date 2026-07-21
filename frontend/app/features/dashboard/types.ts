@@ -298,6 +298,8 @@ export interface ValuationSummaryCoverageDTO {
   readonly totalPortfolioCount: number;
   readonly includedPortfolioCount: number;
   readonly excludedPortfolioCount: number;
+  readonly latestAvailablePortfolioCount: number;
+  readonly oldestIncludedBusinessDate: string | null;
   readonly excludedCurrencies: readonly string[];
   readonly excludedBusinessDates: readonly string[];
   readonly exclusionReasons: readonly string[];

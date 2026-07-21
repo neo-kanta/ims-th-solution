@@ -169,35 +169,31 @@ export interface DashboardScopeOption {
 }
 
 /**
- * The default AUM scope for a session. "company" is only ever the default
- * (or even offered — see buildScopeOptions) when the caller's data scope is
- * the "*" wildcard; a restricted user must not land on a "company" view
- * that is silently just their own subset mislabelled as company-wide.
+ * The default AUM scope for every authenticated dashboard session. Company
+ * aggregation is authoritative in the backend and intentionally independent
+ * of the caller's fund/portfolio drill-down permissions.
  */
-export function defaultAumScope(canViewCompany: boolean): ValuationScope {
-  return canViewCompany ? "company" : "mine";
+export function defaultAumScope(): ValuationScope {
+  return "company";
 }
 
 /**
- * Builds the scope selector's options. "Entire company AUM" is present only
- * for callers with the "*" wildcard data scope; "My AUM" is always offered.
+ * Builds the scope selector's options. Every authenticated dashboard user may
+ * view the company aggregate and switch to their data-scoped managed AUM.
  */
 export function buildScopeOptions(
-  canViewCompany: boolean,
   t: TranslateFn,
 ): DashboardScopeOption[] {
-  const items: DashboardScopeOption[] = [];
-  if (canViewCompany) {
-    items.push({
+  return [
+    {
       key: "company",
       label: t("dashboardOverview.scopeCompany"),
-    });
-  }
-  items.push({
-    key: "mine",
-    label: t("dashboardOverview.scopeMine"),
-  });
-  return items;
+    },
+    {
+      key: "mine",
+      label: t("dashboardOverview.scopeMine"),
+    },
+  ];
 }
 
 export interface DashboardValuationMetric {
@@ -214,10 +210,28 @@ export interface DashboardValuationMetric {
 function unavailableValuationHelper(
   summary: ValuationSummaryDTO | null,
   t: TranslateFn,
+  locale: DashboardLocale | string,
 ): string {
   if (summary?.status === "INCOMPLETE") {
     const { includedPortfolioCount, totalPortfolioCount } = summary.coverage;
     if (totalPortfolioCount > 0) {
+      const staleOnly = summary.coverage.exclusionReasons.length > 0
+        && summary.coverage.exclusionReasons.every((reason) =>
+          reason === "STALE_VALUATION" || reason === "VALUATION_DATE_MISMATCH",
+        );
+      const latestExcludedDate = summary.coverage.excludedBusinessDates.at(-1);
+      if (staleOnly && latestExcludedDate) {
+        const date = createDateFormatter(locale, {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        }, "UTC").format(new Date(latestExcludedDate));
+        return t("dashboardOverview.metricIncompleteStaleCoverage", {
+          included: includedPortfolioCount,
+          total: totalPortfolioCount,
+          date,
+        });
+      }
       return t("dashboardOverview.metricIncompleteCoverage", {
         included: includedPortfolioCount,
         total: totalPortfolioCount,
@@ -229,6 +243,36 @@ function unavailableValuationHelper(
     return t("dashboardOverview.metricNoData");
   }
   return t("dashboardOverview.metricNotAvailable");
+}
+
+function availableValuationHelper(
+  summary: ValuationSummaryDTO,
+  t: TranslateFn,
+  locale: DashboardLocale | string,
+): string {
+  const {
+    latestAvailablePortfolioCount,
+    oldestIncludedBusinessDate,
+    totalPortfolioCount,
+  } = summary.coverage;
+  if (latestAvailablePortfolioCount > 0 && oldestIncludedBusinessDate) {
+    const date = createDateFormatter(locale, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }, "UTC").format(new Date(oldestIncludedBusinessDate));
+    return t("dashboardOverview.metricLatestAvailableCoverage", {
+      count: latestAvailablePortfolioCount,
+      total: totalPortfolioCount,
+      date,
+      currency: summary.currency,
+    });
+  }
+  return summary.asOf
+    ? t("dashboardOverview.metricAsOf", {
+        time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
+      })
+    : t("dashboardOverview.metricReportingCurrency", { currency: summary.currency });
 }
 
 /**
@@ -268,7 +312,7 @@ export function buildAumMetric(
       value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: unavailableValuationHelper(summary, t),
+      helperText: unavailableValuationHelper(summary, t, locale),
     };
   }
   return {
@@ -276,11 +320,7 @@ export function buildAumMetric(
     value: formatMoneyCompact(parseDecimalOrNull(summary.aumToday), summary.currency),
     changeLabel: "",
     changeTone: "neutral",
-    helperText: summary.asOf
-      ? t("dashboardOverview.metricAsOf", {
-          time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
-        })
-      : t("dashboardOverview.metricReportingCurrency", { currency: summary.currency }),
+    helperText: availableValuationHelper(summary, t, locale),
   };
 }
 
@@ -321,7 +361,7 @@ export function buildPnlMetric(
       value: t("common.notAvailable"),
       changeLabel: "",
       changeTone: "neutral",
-      helperText: unavailableValuationHelper(summary, t),
+      helperText: unavailableValuationHelper(summary, t, locale),
       tone: "success",
     };
   }
@@ -334,11 +374,7 @@ export function buildPnlMetric(
     value: formatMoneyCompact(pnl, summary.currency, true),
     changeLabel: pct === null ? "" : formatPercent(pct, 2, true),
     changeTone,
-    helperText: summary.asOf
-      ? t("dashboardOverview.metricAsOf", {
-          time: formatDashboardTime(summary.asOf, locale, "Asia/Bangkok"),
-        })
-      : t("dashboardOverview.metricReportingCurrency", { currency: summary.currency }),
+    helperText: availableValuationHelper(summary, t, locale),
     tone: pnl < 0 ? "danger" : "success",
   };
 }

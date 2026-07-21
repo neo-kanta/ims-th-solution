@@ -55,6 +55,10 @@ func TestGetValuationSummary_SuccessEnvelope(t *testing.T) {
 		AUM:             decimal.NewFromInt(1234567),
 		TodayPnL:        decimal.NewFromInt(12345),
 		TodayPnLPercent: &pct,
+		Coverage: contract.ValuationSummaryCoverage{
+			LatestAvailablePortfolioCount: 1,
+			OldestIncludedBusinessDate:    time.Date(2026, 7, 17, 0, 0, 0, 0, time.UTC),
+		},
 	}}
 	h := NewDashboardHandler(nil, nil, query.NewGetValuationSummaryHandler(&fakeHandlerIAMPort{hasPerm: true, contracts: []string{"*"}}, prov))
 
@@ -75,8 +79,10 @@ func TestGetValuationSummary_SuccessEnvelope(t *testing.T) {
 			TodayPnLPercent *string `json:"today_pnl_percent"`
 			DataAvailable   bool    `json:"data_available"`
 			Coverage        struct {
-				TotalFundCount int        `json:"total_fund_count"`
-				Exclusions     []struct{} `json:"exclusions"`
+				TotalFundCount                int        `json:"total_fund_count"`
+				LatestAvailablePortfolioCount int        `json:"latest_available_portfolio_count"`
+				OldestIncludedBusinessDate    string     `json:"oldest_included_business_date"`
+				Exclusions                    []struct{} `json:"exclusions"`
 			} `json:"coverage"`
 		} `json:"data"`
 	}
@@ -88,6 +94,8 @@ func TestGetValuationSummary_SuccessEnvelope(t *testing.T) {
 	require.Equal(t, "1234567", body.Data.AUMToday)
 	require.Equal(t, "12345", body.Data.TodayPnL)
 	require.NotNil(t, body.Data.TodayPnLPercent)
+	require.Equal(t, 1, body.Data.Coverage.LatestAvailablePortfolioCount)
+	require.Equal(t, "2026-07-17", body.Data.Coverage.OldestIncludedBusinessDate)
 	require.Empty(t, body.Data.Coverage.Exclusions)
 }
 
@@ -138,9 +146,7 @@ func TestGetValuationSummary_IncompleteEnvelopeOmitsNumericTotalsAndIncludesCove
 	require.Equal(t, []any{"USD"}, coverage["excluded_currencies"])
 	require.Equal(t, []any{"MISSING_FX_RATE"}, coverage["exclusion_reasons"])
 	exclusions := coverage["exclusions"].([]any)
-	require.Len(t, exclusions, 1)
-	require.NotContains(t, exclusions[0].(map[string]any), "fund_id")
-	require.Equal(t, "F-USD", exclusions[0].(map[string]any)["fund_code"])
+	require.Empty(t, exclusions, "company aggregate must not disclose item-level fund or portfolio identities")
 }
 
 func TestGetValuationSummary_ProviderFailureReturns500(t *testing.T) {

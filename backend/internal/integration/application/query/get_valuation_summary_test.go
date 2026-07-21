@@ -14,18 +14,28 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
-func TestGetValuationSummary_DeniedPermissionReturnsUnavailableWithoutCallingProvider(t *testing.T) {
+func TestGetValuationSummary_CompanyScopeIsAvailableWithoutFunctionOrFundScope(t *testing.T) {
 	t.Parallel()
-	iam := &fakeIAMPort{hasPerm: false}
-	prov := &fakeValuationSummaryProvider{}
+	iam := &fakeIAMPort{
+		hasPerm:   false,
+		contracts: []string{uuid.NewString()},
+		scopeErr:  errors.New("company scope must not read fund permissions"),
+	}
+	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{
+		DataAvailable: true,
+		Status:        contract.ValuationSummaryStatusAvailable,
+		Currency:      "THB",
+		AUM:           decimal.NewFromInt(1),
+	}}
 	h := NewGetValuationSummaryHandler(iam, prov)
 
 	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
 	require.NoError(t, err)
-	require.False(t, res.DataAvailable)
-	require.Equal(t, contract.ValuationSummaryStatusNoData, res.Status)
+	require.True(t, res.DataAvailable)
+	require.Equal(t, contract.ValuationSummaryStatusAvailable, res.Status)
 	require.Equal(t, "THB", res.Currency)
-	require.False(t, prov.called, "provider must not be consulted when the caller lacks dashboard permission")
+	require.True(t, prov.called)
+	require.Nil(t, prov.gotReq.AccessibleFundIDs, "company AUM must include the whole company")
 }
 
 func TestGetValuationSummary_InvalidScopeReturnsError(t *testing.T) {
@@ -81,18 +91,18 @@ func TestGetValuationSummary_CompanyScopeNeverEchoesUsername(t *testing.T) {
 	require.Empty(t, res.Username)
 }
 
-func TestGetValuationSummary_WildcardDataScopePassesNilFundFilter(t *testing.T) {
+func TestGetValuationSummary_MineWildcardDataScopePassesNilFundFilter(t *testing.T) {
 	t.Parallel()
 	iam := &fakeIAMPort{hasPerm: true, contracts: []string{"*"}}
 	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{DataAvailable: true}}
 	h := NewGetValuationSummaryHandler(iam, prov)
 
-	_, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
+	_, err := h.Execute(context.Background(), uuid.New().String(), "alice", "mine")
 	require.NoError(t, err)
 	require.Nil(t, prov.gotReq.AccessibleFundIDs, `"*" data scope must translate to a nil (no-filter) fund list`)
 }
 
-func TestGetValuationSummary_RestrictedDataScopeParsesFundUUIDs(t *testing.T) {
+func TestGetValuationSummary_MineRestrictedDataScopeParsesFundUUIDs(t *testing.T) {
 	t.Parallel()
 	fundA := uuid.New()
 	fundB := uuid.New()
@@ -100,9 +110,38 @@ func TestGetValuationSummary_RestrictedDataScopeParsesFundUUIDs(t *testing.T) {
 	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{DataAvailable: true}}
 	h := NewGetValuationSummaryHandler(iam, prov)
 
-	_, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
+	_, err := h.Execute(context.Background(), uuid.New().String(), "alice", "mine")
 	require.NoError(t, err)
 	require.ElementsMatch(t, []uuid.UUID{fundA, fundB}, prov.gotReq.AccessibleFundIDs)
+}
+
+func TestGetValuationSummary_CompanyScopeOmitsItemLevelExclusions(t *testing.T) {
+	t.Parallel()
+	bd := time.Date(2026, 7, 14, 0, 0, 0, 0, time.UTC)
+	iam := &fakeIAMPort{hasPerm: false}
+	prov := &fakeValuationSummaryProvider{result: &contract.ValuationSummaryResult{
+		Status:        contract.ValuationSummaryStatusIncomplete,
+		DataAvailable: false,
+		Currency:      "THB",
+		Coverage: contract.ValuationSummaryCoverage{
+			TotalFundCount:     2,
+			ExcludedFundCount:  1,
+			ExcludedCurrencies: []string{"USD"},
+			ExclusionReasons:   []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingFX},
+			Exclusions: []contract.ValuationSummaryExclusion{{
+				FundCode: "F-USD", PortfolioCode: "P-USD", Currency: "USD",
+				BusinessDate: bd, Reason: contract.ValuationSummaryExclusionMissingFX,
+			}},
+		},
+	}}
+	h := NewGetValuationSummaryHandler(iam, prov)
+
+	res, err := h.Execute(context.Background(), uuid.New().String(), "alice", "company")
+	require.NoError(t, err)
+	require.Equal(t, 2, res.Coverage.TotalFundCount)
+	require.Equal(t, []string{"USD"}, res.Coverage.ExcludedCurrencies)
+	require.Equal(t, []contract.ValuationSummaryExclusionReason{contract.ValuationSummaryExclusionMissingFX}, res.Coverage.ExclusionReasons)
+	require.Empty(t, res.Coverage.Exclusions, "company aggregate must not disclose fund or portfolio identities")
 }
 
 func TestGetValuationSummary_NoProviderDegradesToUnavailable(t *testing.T) {

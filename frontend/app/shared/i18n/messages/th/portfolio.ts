@@ -315,7 +315,7 @@ export const thPortfolioMessages = {
       summaryIncomplete:
         "ข้อมูลยังไม่ครบถ้วน จึงยังไม่แสดงยอดรวมในสกุลเงิน {currency}",
       summaryIncompleteCoverage:
-        "รวมข้อมูลได้ {included}/{total} พอร์ตที่มีสิทธิ์ (ไม่รวม {excluded} พอร์ต) จึงยังไม่แสดงยอดรวม {currency}",
+        "รวมข้อมูลได้ {included}/{total} พอร์ตในขอบเขต (ไม่รวม {excluded} พอร์ต) จึงยังไม่แสดงยอดรวม {currency}",
       summaryAsOf: "{currency} · ณ เวลา {time}",
       summaryCurrency: "สกุลเงินรายงาน: {currency}",
       activePortfolios: "พอร์ตที่ใช้งานอยู่",

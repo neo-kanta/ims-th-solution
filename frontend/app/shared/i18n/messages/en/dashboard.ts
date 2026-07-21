@@ -84,7 +84,11 @@ export const enDashboardMessages = {
     metricNoData: "No official valuation data is available for this scope.",
     metricIncomplete: "Official valuation coverage is incomplete; totals are withheld.",
     metricIncompleteCoverage:
-      "{included} of {total} authorized portfolios included; totals are withheld.",
+      "{included} of {total} in-scope portfolios included; totals are withheld.",
+    metricIncompleteStaleCoverage:
+      "{included} of {total} portfolios included. Stale valuation data from {date} keeps the company total unavailable.",
+    metricLatestAvailableCoverage:
+      "Latest available data used for {count} of {total} portfolios; oldest valuation {date}. Total converted to {currency}.",
     metricLoadError: "Could not load",
     metricAsOf: "As of {time}",
     metricReportingCurrency: "Reporting currency: {currency}",

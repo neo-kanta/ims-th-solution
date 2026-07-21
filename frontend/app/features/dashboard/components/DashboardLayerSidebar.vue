@@ -175,7 +175,8 @@ function resetLayers() {
 
 <style scoped>
 .layer-sidebar {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
   padding: var(--space-8) var(--space-6);
@@ -356,7 +357,7 @@ function resetLayers() {
 }
 
 .layer-sidebar__reset {
-  justify-self: start;
+  align-self: flex-start;
   padding: 0;
   color: var(--text-tertiary);
   background: transparent;
@@ -396,8 +397,11 @@ function resetLayers() {
     border-right: 0;
     border-bottom: 0;
     height: auto;
-    align-content: start;
     overflow-y: auto;
+  }
+
+  .layer-sidebar__separator {
+    margin-top: 0;
   }
 
   .layer-sidebar__nav {
@@ -415,6 +419,7 @@ function resetLayers() {
 .layer-sidebar__separator {
   border: 0;
   border-top: 1px solid var(--border-subtle);
-  margin: var(--space-4) 0;
+  width: 100%;
+  margin: auto 0 0;
 }
 </style>

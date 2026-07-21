@@ -318,7 +318,7 @@ export const enPortfolioMessages = {
       summaryIncomplete:
         "Official coverage is incomplete; {currency} totals are withheld.",
       summaryIncompleteCoverage:
-        "{included}/{total} authorized portfolios included ({excluded} excluded); {currency} totals are withheld.",
+        "{included}/{total} in-scope portfolios included ({excluded} excluded); {currency} totals are withheld.",
       summaryAsOf: "{currency} · as of {time}",
       summaryCurrency: "Reporting currency: {currency}",
       activePortfolios: "Active portfolios",

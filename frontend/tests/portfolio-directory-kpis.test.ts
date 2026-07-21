@@ -25,6 +25,8 @@ function summary(
       totalPortfolioCount: 2,
       includedPortfolioCount: 2,
       excludedPortfolioCount: 0,
+      latestAvailablePortfolioCount: 0,
+      oldestIncludedBusinessDate: "2026-07-17",
       excludedCurrencies: [],
       excludedBusinessDates: [],
       exclusionReasons: [],

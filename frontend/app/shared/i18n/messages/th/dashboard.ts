@@ -84,7 +84,11 @@ export const thDashboardMessages = {
     metricNoData: "ยังไม่มีข้อมูลมูลค่าทางการสำหรับขอบเขตนี้",
     metricIncomplete: "ข้อมูลมูลค่าทางการยังไม่ครบถ้วน จึงยังไม่แสดงยอดรวม",
     metricIncompleteCoverage:
-      "รวมข้อมูลได้ {included} จาก {total} พอร์ตที่มีสิทธิ์ จึงยังไม่แสดงยอดรวม",
+      "รวมข้อมูลได้ {included} จาก {total} พอร์ตในขอบเขต จึงยังไม่แสดงยอดรวม",
+    metricIncompleteStaleCoverage:
+      "รวมข้อมูลได้ {included} จาก {total} พอร์ต ข้อมูลมูลค่า ณ {date} ล้าสมัย จึงยังไม่แสดงยอดรวมทั้งบริษัท",
+    metricLatestAvailableCoverage:
+      "ใช้ข้อมูลล่าสุดที่มีสำหรับ {count} จาก {total} พอร์ต โดยข้อมูลเก่าสุด ณ {date} และแปลงยอดรวมเป็น {currency}",
     metricLoadError: "โหลดข้อมูลไม่สำเร็จ",
     metricAsOf: "ณ เวลา {time}",
     metricReportingCurrency: "สกุลเงินรายงาน: {currency}",
