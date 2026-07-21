@@ -3,7 +3,7 @@ type: manager-task-board
 project: IMS Thailand
 owner: Kanta
 status: active
-last_updated: 2026-07-17
+last_updated: 2026-07-21
 ---
 
 # Manager Tasks
@@ -11,6 +11,154 @@ last_updated: 2026-07-17
 Only one task may be `IN PROGRESS`. A new AI instance must verify the repository
 before changing a status. Completed work belongs in the completion log, not in
 the active queue.
+
+## P0 - IN PROGRESS - Investment Integration Review and Breaches Browser UAT
+
+Goal: finish review of the local `neo-develop` investment integration without
+pushing or claiming production readiness. Code is separated into scoped
+commits; the remaining user-visible gate is authenticated browser proof of the
+redesigned Compliance Breaches workflow.
+
+- [x] Commit compliance backend cleanup and response DTO alignment as
+      `8d43747`.
+- [x] Commit latest-available portfolio AUM, THB FX, dashboard, localization,
+      tests, and the valuation Bruno request as `39ab72d`.
+- [x] Commit regenerated compliance/valuation Swagger and TypeScript contracts
+      plus response-envelope handling as `09d9421`.
+- [x] Commit the API-backed Compliance Breaches frontend redesign, EN/TH/ZH
+      copy, and tests as `f6c5205`.
+- [x] Pass focused Breaches tests (59), full frontend Vitest (546), production
+      build, touched-file typecheck comparison, and `git diff --check`.
+- [ ] Run authenticated desktop/tablet/mobile browser UAT in EN/TH/ZH and
+      light/dark themes; verify override permission/conflict, detail drawer,
+      console, and network behavior.
+- [ ] Resolve ownership and review of the excluded `docs/api/` changes before
+      any commit containing them.
+- [ ] Review the excluded Bruno execution requests and local environment values
+      as a separate scope.
+- [ ] Obtain explicit owner authorization before any push. No push is currently
+      authorized.
+
+Acceptance: local `neo-develop` remains reviewable; every pushed file, if later
+authorized, belongs to an evidenced commit; browser claims are made only after
+observed proof; excluded concurrent work is preserved.
+
+## P0 - COMPLETED LOCALLY - Latest-Available AUM and THB FX (IMS-LATEST-AUM)
+
+Goal: apply the owner's 2026-07-20 policy that both company and managed-
+portfolio totals use every portfolio's latest available valuation and convert
+all currencies with the latest valid authoritative FX quote into configured
+THB, while disclosing valuation freshness rather than hiding the total.
+
+- [x] Include older latest valuations and stale-input snapshots in company and
+      mine aggregates; keep missing valuation and missing/invalid FX fail-
+      closed.
+- [x] Resolve canonical `FX_USDTHB` through the reference-data Yahoo mapping
+      (`USDTHB=X`) even when a legacy symbol row already exists, and persist the
+      provider mapping without violating the legacy asset-type constraint.
+- [x] Convert cross-currency AUM and local P&L delta with the same latest FX
+      quote; do not invent historical FX movement from mismatched quote dates.
+- [x] Add `latest_available_portfolio_count` and
+      `oldest_included_business_date` to the contract, DTO, Swagger, generated
+      TypeScript API, and frontend normalization.
+- [x] Render EN/TH/ZH freshness disclosure on AUM/P&L cards when older latest
+      valuations are included.
+- [x] Prove the live authenticated dashboard shows Entire Company AUM
+      (`฿9.91B`, 7/7, oldest Jul 17) and My AUM (`฿5.68B`) in THB with zero
+      browser warnings/errors.
+- [x] Pass focused tests, full backend test/vet/build, deterministic API-client
+      generation, full 46-file/497-test Vitest, and Nuxt production build;
+      touched-file typecheck diagnostics remain zero.
+
+Safety and delivery state: uncommitted on `neo-develop` at base `0c14c1d`; no
+push, migration, seed, valuation mutation, or production deployment occurred.
+Local containers were rebuilt. A normal authorized refresh persisted one real
+Yahoo `USDTHB=X` market-data snapshot (`33.62000000 THB`); no fabricated data
+was inserted. Production remains blocked by the Oracle dirty migration at
+version `20260615000003`.
+
+## P1 - COMPLETED LOCALLY - Architecture Cleanup (IMS-ARCH-CLEANUP)
+
+Goal: owner-authorized (2026-07-20) pull-forward of the safe, behavior-
+preserving items from the Architecture Cleanup checklist plus three items from
+the 2026-07-20 code review. Zero wire-contract, SQL-result, or error-semantics
+change except where an item explicitly authorizes a generated-type fix. The
+regulatory task (IMS-REG-TH-SEC) remains gated and untouched. Full evidence in
+`HANDOFF.md`'s "Session: Architecture Cleanup (2026-07-20)".
+
+- [x] 1. Deduplicate exposure math: the three identical holding market-value
+      helpers in `rules/allocation`, `rules/ratio`, and `rules/concentration`
+      now call one shared `spi.HoldingMarketValue`. Fixed the N+1 rule-version
+      loading in `ListPortfolioRules` with a batched
+      `RuleInstanceRepository.GetCurrentVersions` (one `ANY($1)` query).
+- [x] 2. `PortfolioRuleCatalogEntry.Parameters` is now `any` (annotation-only
+      drift fix): generated TS changed `Record<string, never>` → `unknown`;
+      wire bytes unchanged because producers still assign raw pre-encoded JSON.
+- [x] 3. `@Failure 422` on CreateExecution/CreateExecutionByCode: found already
+      complete in source and generated docs (closed earlier by `e80f086` +
+      `790a2f7`); verified, no change needed.
+- [x] 4. zh-TW normalization of `zh/portfolio.ts`: all pre-existing Simplified
+      keys converted to Traditional matching `zh/compliance.ts` conventions
+      (載入/失敗/重試/紀錄/存取權限); placeholders preserved; scripted scan
+      finds zero remaining Simplified-only characters.
+- [x] 5. `cleanupInvestmentPrereqs` now deletes `investment__trade_confirmations`
+      → `investment__executions` → `investment__decisions` before the
+      portfolio/fund deletes (confirmations added because their RESTRICT FK on
+      execution_id would otherwise still block the chain).
+- [x] 6. `valuation_summary_adapter.go`: `listAllFunds`/`listAllPortfolios`
+      collapsed into one generic `listAllPages` helper; total-drift,
+      invalid-metadata, and exhaustive-paging fail-closed guards preserved with
+      byte-identical error messages.
+- [x] 7. Per-fund portfolio N+1 replaced with one paginated listing filtered by
+      Status/ManagerUserID/(mine-only) AccessibleFundIDs, grouped by FundID in
+      memory; all 25 existing adapter tests (coverage counts, exclusion
+      ordering, mine-scope intersection, forced one-row paging) pass unchanged.
+- [x] 8. `command.PreTradeCheckResponse`/`PostTradeCheckResponse`/`BreachSummary`
+      mirrored into `compliance/transport/dto/response` with mapping funcs like
+      the other five endpoints; JSON field names proven identical by new wire-
+      JSON tests; Swagger annotations updated; contracts regenerated
+      deterministically (second run byte-identical).
+
+Found-but-deferred (logged, not acted on):
+
+- The same `swaggertype:"object"` drift still exists on
+  `dto/response/responses.go` fields (`RuleInstanceVersion.Parameters`,
+  `CheckRecord.ParameterSnapshot`/`Evidence`) — V1-only, out of item 2's scope.
+- Concurrent-writer observation: files under `docs/api/` (README, new
+  `current-api-reference.md`, `_build_current_api_docs.py`, etc.) were
+  created/modified at 12:27–12:32 on 2026-07-20 by a process outside this
+  session; left untouched, flagged to the owner.
+
+## P0 - COMPLETED LOCALLY - Company AUM Visibility (IMS-COMPANY-AUM-VISIBILITY)
+
+Goal: implement the owner's 2026-07-18 policy that every authenticated
+dashboard user can see the complete company aggregate AUM/P&L, without granting
+item-level fund/portfolio access or weakening existing drill-down permissions.
+
+Manager checklist:
+
+- [x] Confirm that dashboard routes still require authentication.
+- [x] Remove function-permission and IAM fund-scope filtering from only the
+      `company` valuation-summary scope.
+- [x] Filter `mine` by portfolios managed by the authenticated user, intersected
+      with accessible funds; do not substitute fund-manager ownership.
+- [x] Remove item-level fund/portfolio exclusions from company responses while
+      preserving aggregate coverage evidence.
+- [x] Enforce company-wide scope again at the valuation provider boundary and
+      exhaust all fund/portfolio repository pages without silent row caps.
+- [x] Make company the default and always offer company/mine scope choices to
+      authenticated dashboard users.
+- [x] Align EN/TH/ZH coverage copy and regenerate Swagger/TypeScript contracts.
+- [x] Add focused backend and frontend regression tests.
+- [x] Record the final full Go and frontend verification results in
+      `HANDOFF.md` after the currently running gates complete.
+
+Safety and delivery state: changes are uncommitted on `neo-develop` at base
+`0c14c1d`; no push or production deployment occurred. Local backend/frontend
+containers were rebuilt for verification without database writes. Production
+remains blocked by the Oracle database dirty migration at version
+`20260615000003`. The environment and GitHub secrets are not the cause of that
+failure.
 
 ## P0 - COMPLETED LOCALLY - Three Production-Readiness Defects (IMS-PR3-20260717)
 
@@ -124,7 +272,8 @@ Current evidence and safety state:
   false `Clear` compliance UX, stale portfolio-route races, UUID exposure, and
   incomplete EN/TH/ZH/typecheck coverage. `neo-develop` remains unchanged.
 
-Merge-readiness remediation checklist (not started; requires owner approval):
+Merge-readiness remediation checklist (remaining unchecked items require owner
+approval):
 
 - [ ] Enforce fund data scope on every Portfolio V2 decision, execution, and
       confirmation read/write route, fail closed, and prove cross-scope denial.
@@ -134,8 +283,9 @@ Merge-readiness remediation checklist (not started; requires owner approval):
       portfolio rule configuration; validate/recheck actual fills.
 - [ ] Add actor-attributed immutable audit events for compliance binding create
       and deactivate operations.
-- [ ] Approve and implement a reporting-currency/FX or per-currency display
-      policy; never present omitted/mixed currency subtotals as company AUM.
+- [x] Approve and implement reporting-currency/FX policy: company/mine use each
+      portfolio's latest available valuation and latest valid FX into configured
+      THB, with freshness disclosure and no omitted currency subtotal.
 - [ ] Preserve compliance-unavailable state, prevent cross-portfolio response
       races, remove raw UUID presentation, and complete typed EN/TH/ZH copy.
 - [ ] Restore legacy-route compatibility where required, correct Swagger/client
@@ -506,8 +656,8 @@ jurisdiction. Official sources are mapped in
 `docs/compliance/thai-sec-regulatory-source-map.md`. The remaining human gate
 is selection of the first applicable product regime and approval of its exact
 source-to-rule matrix; no legal threshold may be invented or enforced before
-that approval. The overnight production-readiness/UAT program is the sole
-active task; it must report this regulatory gap honestly and must not close it.
+that approval. The regulatory program remains separately gated; the current
+integration review must report this gap honestly and must not close it.
 
 - [ ] Approve the first Thai SEC product regime and exact source-to-rule matrix
       with the owner/compliance expert. Jurisdiction and official source family
@@ -533,7 +683,9 @@ or mandate, reproducible by business date, and test both pass and breach edges.
       cleanup must not make portfolio fund association optional.
 - [ ] Add a live rule-type catalog endpoint or formalize generation of the
       frontend catalog from the backend registry.
-- [ ] Resolve duplicated exposure math and N+1 rule-version loading.
+- [x] Resolve duplicated exposure math and N+1 rule-version loading. Done
+      2026-07-20 (IMS-ARCH-CLEANUP item 1): shared `spi.HoldingMarketValue`
+      plus batched `GetCurrentVersions`.
 - [ ] Address branch-wide TypeScript typecheck debt as a dedicated quality task.
 - [ ] Review stale module/runbook claims after Portfolio Compliance V2 commits.
 - [x] Add a per-row effective-state indicator (scheduled/effective/expired)
@@ -543,22 +695,24 @@ or mandate, reproducible by business date, and test both pass and breach edges.
       fixed 2026-07-13 in the frontend-correction session (uses the
       browser's local date, explicitly labelled "as of", since the
       workspace exposes no authoritative backend business date).
-- [ ] Fix the `PortfolioRuleCatalogEntry.parameters` generated-type drift:
+- [x] Fix the `PortfolioRuleCatalogEntry.parameters` generated-type drift:
       `backend/pkg/contract/contracts.go`'s `swaggertype:"object"` annotation
       produces `Record<string, never>` in `ims-api.d.ts`. Found 2026-07-13.
       2026-07-13: frontend now routes through a safe `unknown`-accepting
-      `asParameterRecord` boundary normalizer in `PortfolioComplianceView.vue`
-      instead of casting at the render call site, but the root cause (the
-      Swagger annotation) is still backend-only and unfixed — this remains
-      open until `contracts.go` is corrected and the client regenerated.
-- [ ] `zh/portfolio.ts` uses Simplified Chinese for its pre-existing keys,
+      `asParameterRecord` boundary normalizer in `PortfolioComplianceView.vue`.
+      Closed 2026-07-20 (IMS-ARCH-CLEANUP item 2): the field is now `any`
+      (producers still assign raw JSON, wire bytes unchanged) and the
+      regenerated client types `parameters?: unknown`.
+- [x] Done 2026-07-20 (IMS-ARCH-CLEANUP item 4).
+      `zh/portfolio.ts` uses Simplified Chinese for its pre-existing keys,
       inconsistent with `zh/compliance.ts`'s Traditional (zh-TW) convention
       used everywhere else. Found 2026-07-13 while adding new zh-TW content
       to `portfolio.ts`; the new keys added that session use Traditional
       characters, but the surrounding pre-existing keys were left as-is
       (out of scope). Recommend a dedicated zh-TW normalization pass over
       `portfolio.ts`.
-- [ ] `tests/e2e/investment_test.go`'s shared `cleanupInvestmentPrereqs`
+- [x] Done 2026-07-20 (IMS-ARCH-CLEANUP item 5, plus trade confirmations).
+      `tests/e2e/investment_test.go`'s shared `cleanupInvestmentPrereqs`
       helper (lines 394-415) never deletes `investment__decisions` or
       `investment__executions`, both `ON DELETE RESTRICT` on
       `portfolio_id`/`decision_id`. `portfolio_v2_compliance_lifecycle_test.go`
@@ -573,7 +727,8 @@ or mandate, reproducible by business date, and test both pass and breach edges.
       `investment__executions`/`investment__decisions` (and the test add
       cleanup for its own compliance rule instance/bindings) before this
       test runs routinely in CI.
-- [ ] `CreateExecution` (`execution_handler.go:112`) and
+- [x] Verified already closed by `e80f086`/`790a2f7`; re-confirmed 2026-07-20
+      (IMS-ARCH-CLEANUP item 3). `CreateExecution` (`execution_handler.go:112`) and
       `CreateExecutionByCode` (`portfolio_v2_execution_handler.go:56-72`)
       Swagger annotations still list only `@Failure 400/401/404/409/500` —
       no `@Failure 422` — even though the 2026-07-14 session's fix means

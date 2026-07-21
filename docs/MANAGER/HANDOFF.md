@@ -3,14 +3,358 @@ type: manager-handoff
 project: IMS Thailand
 owner: Kanta
 status: active
-last_updated: 2026-07-17
-current_goal: IMS-PR3-20260717 is COMPLETE locally on feature/investment. Exactly the configured reporting-currency AUM, LIVE compliance fail-closed, and EN/TH/ZH plus branch TypeScript defects were fixed. The earlier UAT documentation gate and other merge blockers remain, so neo-develop must not be fast-forwarded.
+last_updated: 2026-07-21
+current_goal: Four scoped investment-integration code commits are local on neo-develop above origin/neo-develop 0c14c1d. Nothing has been pushed. Backend compliance cleanup, latest-available THB AUM/FX, generated contracts, and the Compliance Breaches frontend redesign are committed as separate packages. Full frontend Vitest and build pass; the redesign still requires authenticated responsive/theme/EN-TH-ZH browser UAT before any push decision. Concurrent docs/api and unrelated Bruno changes remain outside the commits.
 ---
 
 # Manager Handoff
 
 This file is the current-instance snapshot. Verify every Git claim at the start
 of a new session because branch and worktree state can change after this update.
+
+## Session: Local Investment Integration Commits on neo-develop (2026-07-21)
+
+**Status:** LOCAL COMMITS CREATED ON `neo-develop`; NOT PUSHED. The owner
+explicitly authorized committing directly on the local `neo-develop` branch and
+did not authorize a push. `origin/neo-develop` remains at `0c14c1d`.
+
+**Scoped commits:**
+
+- `8d43747` - `refactor(compliance): align response DTOs and rule loading`
+- `39ab72d` - `feat(investment): aggregate latest portfolio AUM in THB`
+- `09d9421` - `chore(api): regenerate compliance and valuation contracts`
+- `f6c5205` - `feat(frontend): redesign compliance breach queue`
+
+The code commits deliberately exclude all files under `docs/api/`, the local
+Bruno environment edit, and the unverified `tools/bruno/Investment/Executions/`
+requests. Those paths were already staged by another process during the commit
+session; path-limited commits were used so their staged state and content were
+preserved without inclusion.
+
+**Verification:** focused Breaches tests passed 6 files / 59 tests. Full
+frontend Vitest passed 49 files / 546 tests, and `npm run build` completed
+successfully. `npx nuxi typecheck` still reports the known 91 pre-existing
+diagnostics, with zero diagnostics in the Breaches files touched by the new
+frontend package. `git diff --check` was clean. The backend code content is the
+same content covered by the full Go test/vet/build evidence recorded in the
+2026-07-20 sessions; backend gates were not rerun during this commit-only
+session.
+
+**Remaining gate:** authenticated browser UAT for the redesigned Breaches page
+has not been run. Before any push decision, verify desktop/tablet/mobile,
+light/dark themes, EN/TH/ZH, override permission and conflict behavior, check-
+group drawer loading, console errors, and network failures. The Oracle dirty
+migration at version `20260615000003` remains a production-deployment blocker
+and is unrelated to these local commits.
+
+## Session: Latest-Available AUM and THB FX (2026-07-20, IMS-LATEST-AUM)
+
+**Status:** COMPLETE LOCALLY; NOT COMMITTED OR PRODUCTION-DEPLOYED. This
+session implements the owner's explicit policy that both `company` and `mine`
+must use each portfolio's latest available valuation, rather than withholding
+the whole total when one portfolio has not been valued on the newest scope
+date. Cross-currency amounts use the latest valid authoritative FX quote into
+the configured reporting currency (`THB` in the current environment).
+
+**Backend behavior:** the valuation-summary adapter still includes active
+`LIVE` portfolios only. A portfolio's older latest snapshot and a snapshot
+flagged with stale inputs are now included instead of excluded. Missing
+valuations, currency changes across the latest/previous pair, and missing,
+invalid, wrong-symbol, or wrong-quote-currency FX remain fail-closed and return
+`INCOMPLETE`; no currency is omitted or assumed at 1:1. Cross-currency AUM is
+the latest local AUM multiplied by the latest `FX_<BASE><REPORTING>` quote.
+Today's cross-currency P&L converts the local cumulative-P&L delta with that
+same latest quote, so the summary does not manufacture historical FX movement
+from mismatched quote dates. The response adds
+`latest_available_portfolio_count` and `oldest_included_business_date` while
+retaining the newest included valuation as `business_date`.
+
+**Market-data correction:** direct canonical lookup now enriches an existing
+legacy `market_symbols` row from reference-data provider mappings, so
+`FX_USDTHB` resolves to Yahoo's executable symbol `USDTHB=X`. The persisted
+legacy asset type remains `UNKNOWN` because that table's existing check
+constraint does not accept `FX`; canonical FX identity stays in reference
+data. The cache was cleared only for the exact key
+`marketdata:quote:FX_USDTHB`, then a normal live refresh fetched and persisted
+the real Yahoo quote `33.62000000 THB` dated 2026-07-20. No valuation row was
+created or changed.
+
+**Frontend behavior:** the AUM and P&L cards consume the new freshness fields.
+When any portfolio contributes an older latest valuation, EN/TH/ZH copy states
+how many portfolios use latest-available data, the oldest included valuation
+date, and that the total is converted to the reporting currency. Normal fully
+current summaries retain the existing `As of` message.
+
+**Live proof:** the authenticated local dashboard renders `Entire company AUM`
+as `฿9.91B` and Today's P&L as `−฿2.64M`, with 7/7 portfolios included and the
+message `Latest available data used for 1 of 7 portfolios; oldest valuation
+Jul 17, 2026. Total converted to THB.` Switching to `My AUM` renders `฿5.68B`
+and `−฿725K`. Browser console warnings/errors: zero. The live company API
+returned `AVAILABLE`, `aum_today=9913070690`,
+`today_pnl=-2642684.780895069`, `included_portfolio_count=7`,
+`total_portfolio_count=7`, `latest_available_portfolio_count=1`, and
+`oldest_included_business_date=2026-07-17`.
+
+**Verification:** focused adapter, market-data, integration-handler, mapping,
+and dashboard tests passed. Full backend `go test ./... -count=1`,
+`go vet ./...`, and `go build ./...` passed. `make api-client` passed and a
+second generation changed zero hashes across all seven generated files. Full
+Vitest passed 46 files / 497 tests, and the Nuxt production build passed.
+Typecheck still reports 91 pre-existing diagnostics, with zero diagnostics in
+the files touched by this task. Browser verification covered both scope
+options and found no console warning/error.
+
+**Safety state:** work remains in the pre-existing dirty worktree; nothing is
+staged, committed, pushed, migrated, seeded, or production-deployed. Local
+backend/frontend containers were rebuilt. The only live-data write from this
+session is the real provider-sourced market-data snapshot described above.
+Existing unrelated compliance, API-documentation, localization, and other
+working-tree changes were preserved.
+
+## Session: Architecture Cleanup (2026-07-20, IMS-ARCH-CLEANUP)
+
+**Status:** COMPLETE LOCALLY; NOT COMMITTED. Owner-authorized pull-forward of
+the safe Architecture Cleanup items as the single IN PROGRESS task, scoped to
+behavior-preserving refactoring only. Work sits on `neo-develop` at `0c14c1d`
+in the same uncommitted worktree as IMS-COMPANY-AUM-VISIBILITY; every
+pre-existing dirty/untracked file and all 71 stashes were preserved. No commit,
+push, migration, seed, container restart, or live-database write occurred. The
+regulatory task (IMS-REG-TH-SEC) and all DO-NOT-MERGE blockers were not
+touched.
+
+**Item 1 — compliance dedup and N+1.** The three byte-identical holding
+market-value helpers (`assetClassHoldingMV`, `holdingMV`, `marketValue`) were
+replaced by one shared `spi.HoldingMarketValue` in `spi/data_bundle.go`; the
+three rule files now call it at their single call sites. The
+`ListPortfolioRules` catalog no longer issues one `GetCurrentVersion` query
+per rule instance (up to 500): `domain.RuleInstanceRepository` gained
+`GetCurrentVersions(ctx, ids) (map[uuid.UUID]*entity.RuleInstanceVersion,
+error)`, implemented in Postgres with a single `ANY($1)` query, and the
+adapter batch-loads before the loop. Best-effort semantics preserved — a
+lookup failure still nils `parameters` without failing the listing; the one
+granularity nuance (a batch failure nils all entries' parameters rather than
+one) is deliberate and harmless because a single query has no partial-failure
+mode. The only other `RuleInstanceRepository` implementer
+(`fakeRuleInstanceRepo` in `create_rule_instance_test.go`) implements the new
+method by delegating to its per-instance fake.
+
+**Item 2 — parameters generated-type drift.** `contract.
+PortfolioRuleCatalogEntry.Parameters` changed from `json.RawMessage` +
+`swaggertype:"object"` (which generated `Record<string, never>`) to `any` with
+the swaggertype tag removed, following the `httputil.ErrorResponse.Details`
+precedent. Producers still assign the raw pre-encoded `json.RawMessage`, so
+wire bytes are unchanged (interface-boxed RawMessage marshals its raw bytes);
+a `len > 0` guard in the adapter reproduces the previous `omitempty`
+edge-case behavior exactly. Regenerated client now types
+`parameters?: unknown`, which the existing frontend `asParameterRecord`
+normalizer already accepts.
+
+**Item 3 — @Failure 422 annotations.** Found already complete before this
+session: both `CreateExecution` and `CreateExecutionByCode` carry the
+`@Failure 422` annotation in source and the generated V1/V2 documents already
+list 422 (closed earlier by `e80f086` + `790a2f7`). Verified against
+`swagger.json`/`v2_swagger.json`; no change was needed or made.
+
+**Item 4 — zh-TW normalization.** Every pre-existing Simplified-Chinese key in
+`frontend/app/shared/i18n/messages/zh/portfolio.ts` was converted to
+Traditional, matching the conventions already used by `zh/compliance.ts` and
+this file's own Traditional sections (載入/失敗/重試/紀錄/存取權限/送出審批);
+already-Traditional sections are untouched, all `{placeholder}` tokens and key
+structure preserved. A scripted scan for Simplified-only characters over the
+final file returns zero hits. No test asserts exact zh strings (verified);
+parity/interpolation suites pass.
+
+**Item 5 — E2E cleanup helper.** `cleanupInvestmentPrereqs` in
+`backend/tests/e2e/investment_test.go` now deletes
+`investment__trade_confirmations` → `investment__executions` →
+`investment__decisions` (scoped through the fund's portfolios) before the
+portfolio/fund deletes. Trade confirmations were added beyond the checklist
+text because their `ON DELETE RESTRICT` FK on `execution_id` would otherwise
+still block the execution delete and leave the orphan chain in place.
+
+**Items 6–7 — valuation summary adapter refactor.** The duplicated
+`listAllFunds`/`listAllPortfolios` pagination loops collapsed into one generic
+`listAllPages[T]` helper. All three fail-closed guards (total drift,
+invalid/negative pagination metadata, non-advancing page short of the total)
+are preserved with byte-identical error messages — they are deliberate
+independent-review hardening and were not weakened. The per-fund portfolio
+listing loop (one exhaustive listing per scoped fund) was replaced by a single
+paginated listing filtered by active status, portfolio manager (mine scope),
+and accessible funds (mine scope only — company scope is never narrowed),
+grouped by `FundID` in memory. Equivalence argument: the scoped-fund map
+bounds both scopes exactly as the per-fund loop did (portfolios of inactive or
+out-of-scope funds are ignored by the grouping lookup), and the repository's
+`ORDER BY fund_id, code` means each fund's group preserves the same relative
+order a per-fund listing produced, so coverage counts and exclusion ordering
+are unchanged. Proven by the existing untouched adapter suite — all 25
+`TestGetValuationSummary_*` tests pass, including forced one-row pagination,
+company-ignores-AccessibleFundIDs, and the mine manager/access-intersection
+regressions.
+
+**Item 8 — compliance transport DTO mirror.** `PreTradeCheckResponse`,
+`PostTradeCheckResponse`, and `BreachSummary` are now mirrored in
+`compliance/transport/dto/response/responses.go` with `FromPreTradeCheck` /
+`FromPostTradeCheck` mapping funcs in the same style as the five endpoints the
+previous session already moved; enum-typed fields flatten to `string` with
+identical wire values, and a nil-preserving breach mapper keeps the
+`breaches` key omitted exactly as before. The two handler `@Success`
+annotations now reference the `response` DTOs and the handlers map through
+them. New wire-JSON tests prove the exact snake_case field names, the omitted
+`breaches`/`status` keys, and the envelope. Note: regenerating also
+materialized the previous session's (already-in-worktree) envelope-wrapping
+annotations for the other five compliance endpoints into the generated
+documents — the docs now match the runtime `httputil.SuccessResponse`
+envelope those endpoints always emitted.
+
+**Independent review.** Owner memory prohibits spawning subagents, so the
+required independent read-only review of items 6–7 and 8 was performed as a
+dedicated adversarial diff pass in this session against the pre-edit file
+contents held in context: pagination-guard equivalence, grouping edge cases
+(inactive funds, nil accessible-fund list, zero totals), exclusion ordering,
+DTO field-name/omitempty parity, and envelope behavior were re-verified
+line-by-line. No P0/P1 findings; the two recorded nuances are the batch
+best-effort granularity (item 1) and the envelope-schema materialization
+(item 8), both documented above.
+
+**Verification (exact commands, from `backend/` and `frontend/`):**
+
+- `gofmt -l <all 14 touched Go files>` — clean, zero output.
+- `go build ./...` and `go vet ./...` — pass.
+- `go test ./... -count=1` — exit 0, 81 packages ok, zero FAIL.
+- `go vet -tags e2e ./tests/e2e/...` — pass (E2E-tag compile).
+- `make api-client` (runs `make swagger` + `swagger-v2` + frontend
+  `api:generate`) — pass; a second full generation left all seven generated
+  files SHA-256 identical (determinism proven).
+- Focused Vitest (`i18n-messages`, `portfolio-decision-navigation`,
+  `dashboard-valuation-summary`, `portfolio-directory-kpis`) — 4 files /
+  31 tests pass.
+- Full `npm run test` — 46 files / 496 tests pass. `npm run build` — exit 0,
+  "Build complete!".
+- Scoped `git diff --check` over touched paths — clean.
+- Live browser proof was not run (consistent with prior sessions: local
+  containers run prebuilt images without source mounts; the owner verifies).
+
+**Files changed by this session (all uncommitted, nothing staged):**
+
+```text
+backend/internal/compliance/application/command/create_rule_instance_test.go
+backend/internal/compliance/domain/repository.go
+backend/internal/compliance/infrastructure/persistence/rule_instance_repository.go
+backend/internal/compliance/rules/allocation/asset_class.go
+backend/internal/compliance/rules/concentration/single_issuer.go
+backend/internal/compliance/rules/ratio/sector_exposure.go
+backend/internal/compliance/spi/data_bundle.go
+backend/internal/compliance/transport/dto/response/responses.go      (pre-existing untracked, extended)
+backend/internal/compliance/transport/dto/response/responses_test.go (pre-existing untracked, extended)
+backend/internal/compliance/transport/handler/compliance_handler.go
+backend/internal/compliance/transport/portfolio_contract_adapter.go
+backend/internal/investment/infrastructure/adapter/valuation_summary_adapter.go
+backend/pkg/contract/contracts.go
+backend/tests/e2e/investment_test.go
+frontend/app/shared/i18n/messages/zh/portfolio.ts
+backend/docs/* and frontend/app/api/ims-api.d.ts                     (regenerated, never hand-edited)
+docs/MANAGER/HANDOFF.md, docs/MANAGER/TASKS.md
+```
+
+**Concurrent-writer observation (needs owner attention).** During this session
+(2026-07-20 12:27–12:32 local), files under `docs/api/` were created/modified
+by a process outside this session: `README.md`, `portfolio-v2-api-ddd.md`,
+`watchlist-api.md` modified, and `_build_current_api_docs.py`,
+`current-api-reference.md`, `chat-api.md`, `integration-api.md`,
+`portfolio-v2-api.md`, `reference-data-api.md`, `system-api.md`,
+`watchlist-current-api.md` newly created. Nothing in this session's commands
+writes those paths (the make targets write only `backend/docs/*` and
+`ims-api.d.ts`). This session did not touch them; they violate the
+one-writer-at-a-time rule if another agent session is active — Kanta should
+identify the writer before committing anything from `docs/api/`.
+
+**Residual/deferred:** the same `swaggertype:"object"` empty-object drift
+still exists on the V1 `dto/response/responses.go` fields
+(`RuleInstanceVersion.Parameters`, `CheckRecord.ParameterSnapshot`,
+`CheckRecord.Evidence`) — out of item 2's scope, logged in `TASKS.md`.
+`nuxi typecheck` was not run (not in this task's gates; known pre-existing
+debt of 97 diagnostics in untouched legacy files).
+
+**Git state at end:** branch `neo-develop`, HEAD
+`0c14c1d547e5b9e32fea0dbda8ca6e2754b7e9c6`, index empty, 71 stashes intact
+(`stash@{0}` = `pre-neo-develop-merge-20260717-110007`). Kanta reviews and
+commits; nothing was pushed.
+
+## Session: Company AUM Visibility (2026-07-18, IMS-COMPANY-AUM-VISIBILITY)
+
+**Status:** COMPLETE LOCALLY; NOT COMMITTED OR PRODUCTION-DEPLOYED. Work is on
+`neo-develop` at base commit `0c14c1d` with an uncommitted working tree. No
+push, migration, database repair, production deployment, live-data write, or
+secret change occurred. The local backend and frontend containers were rebuilt
+and restarted on 2026-07-20 for HTTP/browser verification only.
+
+**Owner policy:** every authenticated dashboard user may see the complete
+company aggregate AUM and P&L, independent of function and fund/portfolio data
+scope. This grant is deliberately aggregate-only. Unauthenticated requests
+remain rejected, company coverage retains aggregate counts/currencies/dates and
+reason codes but omits fund/portfolio exclusion identities, and drill-down
+screens retain their existing permissions. The `mine` scope is portfolio-based:
+it includes only portfolios whose manager is the authenticated caller, inside
+funds the caller may access.
+
+**Backend:** the valuation-summary query no longer applies the dashboard-view
+function gate or IAM fund-scope filter to `scope=company`; it requests all
+active company funds from the integration provider. `scope=mine` resolves the
+caller's accessible funds, then filters active portfolios by
+`investment__portfolios.manager_user_id`; it no longer filters ownership through
+`investment__funds.manager_user_id`. The handler still requires authenticated
+claims. The provider independently enforces company scope by ignoring any
+supplied accessible-fund filter, exhausts paginated fund and portfolio lists
+instead of silently stopping at 10,000 rows, and fails rather than accepting
+inconsistent pagination metadata. Contract comments, Swagger, generated
+TypeScript declarations, and tests reflect the policy and verify that company
+responses cannot leak item-level exclusions.
+
+**Frontend:** company is now the default AUM scope for every authenticated
+dashboard session and the company/mine selector is always available. EN/TH/ZH
+incomplete-coverage copy now says “in-scope portfolios” instead of implying the
+company total is permission-filtered. The portfolio-directory copy was aligned
+because it consumes the same company summary endpoint.
+
+**Independent review:** the initial security/financial review reported no
+P0/P1 and two P2 hardening gaps: provider-level company filtering and silent
+10,000-row repository caps. Both were fixed. Narrow re-review confirmed company
+cannot be restricted by `AccessibleFundIDs`, mine remains the manager/access
+intersection, forced one-row fund/portfolio pagination includes every row, and
+no P0/P1/P2 findings remain.
+
+**Verification:** focused integration query/handler tests passed; focused
+dashboard, portfolio KPI, and i18n Vitest passed 3 files/24 tests; `make
+api-client` regenerated Swagger and the TypeScript API contract successfully.
+Full `go test ./... -count=1` passed in 76.1s, `go vet ./...` plus `go build
+./...` passed in 67.6s, full Vitest passed 46 files/495 tests in 12.5s, and the
+Nuxt production build passed in 210.1s. After independent review hardening,
+focused investment-adapter plus integration tests passed; final full `go test
+./... -count=1` passed in 53.3s and final `go vet ./...` plus `go build ./...`
+passed in 44.7s.
+
+**2026-07-20 correction and verification:** owner clarification established
+that “My AUM” means portfolios currently managed by the user, not every
+portfolio under funds managed by that user. The adapter was corrected at the
+portfolio repository filter, with crossed fund/portfolio-manager regression
+fixtures proving the distinction and the fund-access intersection. Focused
+adapter/query/handler tests passed; `make api-client` passed; full `go test
+./... -count=1`, `go vet ./...`, and `go build ./...` passed. Frontend focused
+tests passed 20/20, full Vitest passed 46 files/496 tests, and the production
+build passed; typecheck retained 97 pre-existing diagnostics with zero in the
+touched dashboard/i18n/test files. Live local HTTP proof returned `AVAILABLE`
+for `scope=mine` (5/5 admin-managed portfolios) and distinct `INCOMPLETE` for
+`scope=company` (6/7 portfolios) because one USD valuation remains stale from
+2026-07-17. This observation is superseded by the owner's later same-day
+latest-available policy and the `IMS-LATEST-AUM` implementation above; no
+valuation row was changed to manufacture completeness.
+
+**Production blocker:** the Oracle backend deployment is still not healthy.
+The latest observed container restart loop reported dirty database version
+`20260615000003`, so this policy cannot be live until that database state is
+safely investigated/repaired and a backend deployment succeeds. Editing GitHub
+secrets or the reporting-currency environment file does not resolve that dirty
+migration.
 
 ## Session: Three Production-Readiness Defects (2026-07-17, IMS-PR3-20260717)
 

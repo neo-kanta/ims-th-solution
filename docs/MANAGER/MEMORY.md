@@ -3,7 +3,7 @@ type: manager-memory
 project: IMS Thailand
 owner: Kanta
 status: active
-last_verified: 2026-07-17
+last_verified: 2026-07-21
 stability: durable
 ---
 
@@ -133,10 +133,21 @@ Important details:
   frontend formatting must not hard-code that value. Production startup must
   reject missing or invalid reporting-currency configuration rather than
   silently choosing a currency.
-- Cross-currency reporting may use only an authoritative executable-code FX
-  source for the applicable business date. Never fabricate a rate, assume 1:1,
-  omit a currency silently, or add unlike currencies. Missing or stale rates
-  make the aggregate unavailable/incomplete with explicit coverage evidence.
+- Entire-company AUM and P&L are visible to every authenticated dashboard user,
+  independent of function and fund/portfolio data-scope permissions. This
+  policy grants only the company aggregate and aggregate coverage: company
+  responses must not expose item-level fund or portfolio exclusion identities,
+  and all drill-down screens remain data-scope protected. The `mine` scope
+  includes only portfolios whose `manager_user_id` is the authenticated user,
+  still bounded by the user's accessible funds.
+- Company and mine AUM/P&L use each in-scope portfolio's latest available
+  valuation and the latest valid authoritative executable-code FX quote into
+  the configured reporting currency. A valuation older than the aggregate's
+  newest valuation date remains included, with the count and oldest included
+  valuation date disclosed in aggregate coverage. Never fabricate an FX rate,
+  assume 1:1 across currencies, omit a currency silently, or add unlike
+  currencies. A missing valuation or missing/invalid FX quote still makes the
+  aggregate unavailable/incomplete with explicit coverage evidence.
 - A `LIVE` portfolio with no active and effective compliance rule binding on
   the business date is not compliant. Return a typed not-configured result and
   block decision submission and execution creation without a false PASS record.
