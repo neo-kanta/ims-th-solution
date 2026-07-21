@@ -185,6 +185,37 @@ func (r *PostgresRuleInstanceRepository) GetCurrentVersion(
 	return v, nil
 }
 
+// GetCurrentVersions batch-loads the current version for many instances in a
+// single query. Instances without a current version are absent from the map.
+func (r *PostgresRuleInstanceRepository) GetCurrentVersions(
+	ctx context.Context, instanceIDs []uuid.UUID,
+) (map[uuid.UUID]*entity.RuleInstanceVersion, error) {
+	out := make(map[uuid.UUID]*entity.RuleInstanceVersion, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT riv.id, riv.rule_instance_id, riv.version_number, riv.parameters,
+		       riv.change_note, riv.created_by, riv.created_at
+		FROM compliance_rule_instance_versions riv
+		JOIN compliance_rule_instances ri ON ri.id = riv.rule_instance_id
+		WHERE riv.rule_instance_id = ANY($1) AND riv.version_number = ri.current_version
+	`, instanceIDs)
+	if err != nil {
+		return nil, fmt.Errorf("getting current versions: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		v, err := scanVersion(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scanning current version: %w", err)
+		}
+		out[v.RuleInstanceID] = v
+	}
+	return out, rows.Err()
+}
+
 // ListVersions returns all versions for an instance in ascending order.
 func (r *PostgresRuleInstanceRepository) ListVersions(
 	ctx context.Context, instanceID uuid.UUID,

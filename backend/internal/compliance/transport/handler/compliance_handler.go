@@ -17,6 +17,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/compliance/domain/valueobject"
+	"github.com/neo-kanta/ims-th-solution/backend/internal/compliance/transport/dto/response"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 	platformmw "github.com/neo-kanta/ims-th-solution/backend/platform/middleware"
 )
@@ -79,7 +80,7 @@ type PreTradeRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body PreTradeRequest true "Pre-trade check payload"
-// @Success 201 {object} command.PreTradeCheckResponse
+// @Success 201 {object} httputil.SuccessResponse{data=response.PreTradeCheckResponse}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -154,7 +155,7 @@ func (h *ComplianceHandler) RunPreTradeCheck(w http.ResponseWriter, r *http.Requ
 	}
 
 	// A BLOCK verdict is communicated via the response body, not HTTP 4xx.
-	httputil.Created(w, resp)
+	httputil.Created(w, response.FromPreTradeCheck(resp))
 }
 
 // ============================================================
@@ -175,7 +176,7 @@ type PostTradeRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body PostTradeRequest true "Post-trade check payload"
-// @Success 201 {object} command.PostTradeCheckResponse
+// @Success 201 {object} httputil.SuccessResponse{data=response.PostTradeCheckResponse}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -215,7 +216,7 @@ func (h *ComplianceHandler) RunPostTradeCheck(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	httputil.Created(w, resp)
+	httputil.Created(w, response.FromPostTradeCheck(resp))
 }
 
 // ============================================================
@@ -229,7 +230,7 @@ func (h *ComplianceHandler) RunPostTradeCheck(w http.ResponseWriter, r *http.Req
 // @Security BearerAuth
 // @Produce json
 // @Param groupID path string true "Check group UUID"
-// @Success 200 {object} query.CheckGroupResult
+// @Success 200 {object} httputil.SuccessResponse{data=response.CheckGroupResult}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -252,7 +253,7 @@ func (h *ComplianceHandler) GetCheckGroup(w http.ResponseWriter, r *http.Request
 		httputil.NotFound(w, "check group not found")
 		return
 	}
-	httputil.OK(w, result)
+	httputil.OK(w, response.FromCheckGroup(result))
 }
 
 // ============================================================
@@ -273,7 +274,7 @@ func (h *ComplianceHandler) GetCheckGroup(w http.ResponseWriter, r *http.Request
 // @Param date_to query string false "End business date (YYYY-MM-DD)"
 // @Param offset query int false "Offset (default 0)"
 // @Param limit query int false "Limit (default 50, max 200)"
-// @Success 200 {object} query.ListBreachesResult
+// @Success 200 {object} httputil.SuccessResponse{data=response.ListBreachesResult}
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
 // @Failure 500 {object} httputil.ErrorResponse
@@ -317,7 +318,7 @@ func (h *ComplianceHandler) ListBreaches(w http.ResponseWriter, r *http.Request)
 		httputil.InternalError(w, "failed to list breaches")
 		return
 	}
-	httputil.OK(w, result)
+	httputil.OK(w, response.FromListBreaches(result))
 }
 
 // ============================================================
@@ -337,7 +338,7 @@ type OverrideRequest struct {
 // @Produce json
 // @Param breachID path string true "Breach UUID"
 // @Param request body OverrideRequest true "Override payload"
-// @Success 201 {object} entity.Override
+// @Success 201 {object} httputil.SuccessResponse{data=response.Override}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -388,7 +389,7 @@ func (h *ComplianceHandler) OverrideBreach(w http.ResponseWriter, r *http.Reques
 		writeOverrideError(w, err)
 		return
 	}
-	httputil.Created(w, override)
+	httputil.Created(w, response.FromOverride(override))
 }
 
 // writeOverrideError maps compliance-override errors to HTTP responses.
@@ -461,7 +462,7 @@ type CreateRuleInstanceRequest struct {
 // @Accept json
 // @Produce json
 // @Param request body CreateRuleInstanceRequest true "Rule instance payload"
-// @Success 201 {object} command.CreateRuleInstanceResult
+// @Success 201 {object} httputil.SuccessResponse{data=response.CreateRuleInstanceResult}
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -525,7 +526,7 @@ func (h *ComplianceHandler) CreateRuleInstance(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	httputil.Created(w, result)
+	httputil.Created(w, response.FromCreateRuleInstance(result))
 }
 
 // writeCreateRuleInstanceError maps domain errors to HTTP responses.
@@ -567,7 +568,7 @@ func writeCreateRuleInstanceError(w http.ResponseWriter, err error) {
 // @Param is_active query bool false "Filter by active flag"
 // @Param offset query int false "Offset (default 0)"
 // @Param limit query int false "Limit (default 50, max 200)"
-// @Success 200 {object} query.ListRuleInstancesResult
+// @Success 200 {object} httputil.SuccessResponse{data=response.ListRuleInstancesResult}
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
 // @Failure 500 {object} httputil.ErrorResponse
@@ -590,7 +591,7 @@ func (h *ComplianceHandler) ListRuleInstances(w http.ResponseWriter, r *http.Req
 		httputil.InternalError(w, "failed to list rule instances")
 		return
 	}
-	httputil.OK(w, result)
+	httputil.OK(w, response.FromListRuleInstances(result))
 }
 
 // ============================================================

@@ -406,6 +406,18 @@ func cleanupInvestmentPrereqs(ctx context.Context, pool *pgxpool.Pool, fundID uu
 			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
 		`DELETE FROM investment__portfolio_transactions WHERE portfolio_id IN (
 			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
+		// Decision/execution/confirmation rows are ON DELETE RESTRICT on
+		// portfolio_id/decision_id/execution_id, so they must go before the
+		// portfolio delete — otherwise any test that created a decision leaves
+		// the portfolio and fund rows behind on every run.
+		`DELETE FROM investment__trade_confirmations WHERE decision_id IN (
+			SELECT id FROM investment__decisions WHERE portfolio_id IN (
+				SELECT id FROM investment__portfolios WHERE fund_id = $1))`,
+		`DELETE FROM investment__executions WHERE decision_id IN (
+			SELECT id FROM investment__decisions WHERE portfolio_id IN (
+				SELECT id FROM investment__portfolios WHERE fund_id = $1))`,
+		`DELETE FROM investment__decisions WHERE portfolio_id IN (
+			SELECT id FROM investment__portfolios WHERE fund_id = $1)`,
 		`DELETE FROM investment__portfolios WHERE fund_id = $1`,
 		`DELETE FROM investment__funds WHERE id = $1`,
 	}

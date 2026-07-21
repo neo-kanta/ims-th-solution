@@ -103,7 +103,7 @@ func (r *SingleIssuerRule) Evaluate(
 				continue
 			}
 			entity := resolveEntity(h.Ticker, data.Classifications)
-			mv := marketValue(h, data.MarketPrices)
+			mv := spi.HoldingMarketValue(h, data.MarketPrices)
 			entityMV[entity] = entityMV[entity].Add(mv)
 		}
 	}
@@ -215,15 +215,6 @@ func resolveEntity(ticker string, cls *spi.ClassificationSnapshot) string {
 		return ticker
 	}
 	return cls.ParentEntity(ticker)
-}
-
-func marketValue(h spi.Holding, prices *spi.MarketPriceSnapshot) decimal.Decimal {
-	if prices != nil {
-		if price, ok := prices.Prices[h.Ticker]; ok && price.IsPositive() {
-			return h.Quantity.Mul(price)
-		}
-	}
-	return h.MarketValue
 }
 
 func blockResult(msg string) spi.EvalResult {

@@ -144,6 +144,18 @@ func (a *PortfolioContractAdapter) ListPortfolioRules(
 		}
 	}
 
+	// Best-effort: surface the current parameter snapshots so the portfolio
+	// settings UI can render thresholds without a second round-trip. A
+	// lookup failure here must not fail the whole catalog listing.
+	instanceIDs := make([]uuid.UUID, 0, len(instances))
+	for _, inst := range instances {
+		instanceIDs = append(instanceIDs, inst.ID)
+	}
+	versions, err := a.instanceRepo.GetCurrentVersions(ctx, instanceIDs)
+	if err != nil {
+		versions = nil
+	}
+
 	out := make([]contract.PortfolioRuleCatalogEntry, 0, len(instances))
 	for _, inst := range instances {
 		entry := contract.PortfolioRuleCatalogEntry{
@@ -153,10 +165,7 @@ func (a *PortfolioContractAdapter) ListPortfolioRules(
 			Description:    inst.Description,
 			IsActive:       inst.IsActive,
 		}
-		// Best-effort: surface the current parameter snapshot so the portfolio
-		// settings UI can render thresholds without a second round-trip. A
-		// lookup failure here must not fail the whole catalog listing.
-		if version, err := a.instanceRepo.GetCurrentVersion(ctx, inst.ID); err == nil && version != nil {
+		if version := versions[inst.ID]; version != nil && len(version.Parameters) > 0 {
 			entry.Parameters = version.Parameters
 		}
 		if b, ok := latestByInstance[inst.ID]; ok {
