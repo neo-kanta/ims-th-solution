@@ -3973,7 +3973,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ListBreachesResult"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListBreachesResult"];
+                        };
                     };
                 };
                 /** @description Unauthorized */
@@ -4049,7 +4051,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Override"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["Override"];
+                        };
                     };
                 };
                 /** @description Bad Request */
@@ -4147,7 +4151,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PostTradeCheckResponse"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["PostTradeCheckResponse"];
+                        };
                     };
                 };
                 /** @description Bad Request */
@@ -4227,7 +4233,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PreTradeCheckResponse"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["PreTradeCheckResponse"];
+                        };
                     };
                 };
                 /** @description Bad Request */
@@ -4303,7 +4311,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CheckGroupResult"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["CheckGroupResult"];
+                        };
                     };
                 };
                 /** @description Bad Request */
@@ -4396,7 +4406,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ListRuleInstancesResult"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["ListRuleInstancesResult"];
+                        };
                     };
                 };
                 /** @description Unauthorized */
@@ -4453,7 +4465,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CreateRuleInstanceResult"];
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["CreateRuleInstanceResult"];
+                        };
                     };
                 };
                 /** @description Bad Request */
@@ -4625,7 +4639,7 @@ export interface paths {
         };
         /**
          * Dashboard AUM / P&L summary
-         * @description Returns official LIVE-portfolio AUM and today's P&L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
+         * @description Returns official LIVE-portfolio AUM and latest-snapshot P&L converted to the configured reporting currency with the latest available FX rate. scope=company aggregates all active company funds independent of fund data scope and omits item-level fund/portfolio exclusions; scope=mine restricts to portfolios the authenticated caller manages inside funds they may access. Each eligible portfolio contributes its newest valuation even when valuation dates differ or stale inputs are flagged; coverage reports the carried-forward count and oldest included valuation date. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total when valuations are missing or FX/currency inputs are unusable. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
          */
         get: {
             parameters: {
@@ -15188,10 +15202,9 @@ export interface components {
             businessDate?: string;
             checkGroupID?: string;
             checkRecordID?: string;
-            /** @description nil for portfolio-only checks (no fund_id) */
             contractID?: string;
             createdAt?: string;
-            evidence?: Record<string, never>;
+            evidence?: components["schemas"]["Evidence"];
             id?: string;
             message?: string;
             portfolioID?: string;
@@ -15326,38 +15339,26 @@ export interface components {
         };
         CheckRecord: {
             businessDate?: string;
-            /** @description groups all records from a single check request */
             checkGroupID?: string;
             checkedAt?: string;
-            /** @description actor ID or "system" */
             checkedBy?: string;
-            /** @description nil for portfolio-only checks (no fund_id) */
             contractID?: string;
             createdAt?: string;
-            /** @description SHA-256 of the DataBundle used */
             dataSnapshotHash?: string;
-            /** @description binding-level severity applied */
             effectiveSeverity?: string;
-            /** Format: int64 */
             evalDurationMs?: number;
-            /** @description structured evidence */
             evidence?: Record<string, never>;
-            /** @description after severity cap */
             finalVerdict?: string;
             id?: string;
             message?: string;
-            /** @description nil for periodic checks */
             orderID?: string;
-            /** @description frozen copy of params used */
             parameterSnapshot?: Record<string, never>;
             portfolioID?: string;
             ruleInstanceID?: string;
             ruleInstanceVersion?: number;
             ruleTypeID?: string;
-            /** @description empty for portfolio-wide periodic checks */
             ticker?: string;
             timing?: string;
-            /** @description raw verdict from rule */
             verdict?: string;
         };
         ComplianceBreachPreviewResponse: {
@@ -15792,6 +15793,15 @@ export interface components {
                 [key: string]: unknown;
             };
             stage_number?: number;
+        };
+        Evidence: {
+            metrics?: {
+                [key: string]: string;
+            };
+            references?: {
+                [key: string]: string;
+            };
+            threshold_breached?: components["schemas"]["ThresholdBreach"];
         };
         ExecuteTransitionRequest: {
             /**
@@ -16362,16 +16372,12 @@ export interface components {
             operationType?: string;
         };
         Override: {
-            /** @description second-level approval if required */
             approvedBy?: string;
             breachID?: string;
             createdAt?: string;
-            /** @description original officer if delegated */
             delegatedFrom?: string;
             id?: string;
-            /** @description compliance officer with IRG_OVERRIDE_BREACH permission */
             overriddenBy?: string;
-            /** @description mandatory — justification */
             reason?: string;
         };
         OverrideRequest: {
@@ -16772,46 +16778,41 @@ export interface components {
             force_post?: boolean;
             reason: string;
         };
+        RuleEffectiveWindow: {
+            valid_from?: string;
+            valid_to?: string;
+        };
         RuleInstance: {
             createdAt?: string;
             createdBy?: string;
-            /** @description pointer to the active version number */
             currentVersion?: number;
             description?: string;
-            effectiveWindow?: Record<string, never>;
+            effectiveWindow?: components["schemas"]["RuleEffectiveWindow"];
             id?: string;
             isActive?: boolean;
-            /** @description human-friendly name */
             name?: string;
-            /** @description stable SPI type ID, e.g. "concentration.single_issuer" */
             ruleTypeID?: string;
             updatedAt?: string;
         };
         RuleInstanceDetail: {
             createdAt?: string;
             createdBy?: string;
-            /** @description pointer to the active version number */
             currentVersion?: number;
             description?: string;
-            effectiveWindow?: Record<string, never>;
+            effectiveWindow?: components["schemas"]["RuleEffectiveWindow"];
             id?: string;
             isActive?: boolean;
-            /** @description human-friendly name */
             name?: string;
-            /** @description stable SPI type ID, e.g. "concentration.single_issuer" */
             ruleTypeID?: string;
             type_metadata?: components["schemas"]["RuleMetadata"];
             updatedAt?: string;
         };
         RuleInstanceVersion: {
-            /** @description nil if no approval required */
             approvedBy?: string;
-            /** @description why this version was created */
             changeReason?: string;
             createdAt?: string;
             createdBy?: string;
             id?: string;
-            /** @description validated against rule type schema at write time */
             parameters?: Record<string, never>;
             ruleInstanceID?: string;
             versionNumber?: number;
@@ -17106,6 +17107,13 @@ export interface components {
             team_name?: string;
             updated_at?: string;
         };
+        ThresholdBreach: {
+            actual?: string;
+            limit?: string;
+            metric_name?: string;
+            operator?: string;
+            unit?: string;
+        };
         ThresholdRuleRequest: {
             cooldown_minutes?: number;
             currency?: string;
@@ -17364,6 +17372,8 @@ export interface components {
             exclusions?: components["schemas"]["ValuationSummaryExclusionDTO"][];
             included_fund_count?: number;
             included_portfolio_count?: number;
+            latest_available_portfolio_count?: number;
+            oldest_included_business_date?: string;
             total_fund_count?: number;
             total_portfolio_count?: number;
         };
@@ -17688,9 +17698,12 @@ export interface components {
             /**
              * @description Parameters is the rule instance's current configured parameter set
              *     (e.g. {"asset_class":"EQUITY","max_percent_nav":60}), so the portfolio
-             *     settings UI can render thresholds without a second round-trip.
+             *     settings UI can render thresholds without a second round-trip. Producers
+             *     assign pre-encoded JSON (json.RawMessage); the type is `any` because the
+             *     value's shape is rule-type-specific and a narrower Go type would generate
+             *     a false empty-object OpenAPI schema.
              */
-            parameters?: Record<string, never>;
+            parameters?: unknown;
             rule_instance_id?: string;
             rule_type_id?: string;
         };

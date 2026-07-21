@@ -10,7 +10,10 @@ import type { paths } from "./ims-api";
 export type ImsOpenApiClient = Client<paths>;
 
 interface ApiEnvelope<T> {
-  data: T;
+  // Swagger models httputil.SuccessResponse.data as optional because the
+  // generic Go field is overridden by each endpoint annotation. Runtime
+  // success responses still require it, which the unwrap helpers enforce.
+  data?: T;
   message?: string;
 }
 
@@ -73,12 +76,9 @@ export function assertOpenApiResponse(result: OpenApiResult<unknown>): void {
 }
 
 /**
- * Defensive envelope unwrap for endpoints whose Swagger annotations describe
- * the *inner* shape, but whose runtime response is wrapped by
- * `platform/httputil.OK` as `{data, message?}`. openapi-typescript honours
- * the annotation, so `client.GET(...)` returns the inner shape's type while
- * the JSON body is actually the envelope. Use this when you cannot trust the
- * Swagger to match the wire envelope.
+ * Defensive envelope unwrap for both accurately documented
+ * `httputil.SuccessResponse{data=...}` endpoints and older endpoints whose
+ * annotations still describe only the inner shape.
  *
  * Shared with the workflow store and the dashboard tasks composable so the
  * "swallow the envelope" rule lives in exactly one place.
@@ -97,7 +97,17 @@ export function unwrapOpenApiResponse<T>(result: OpenApiResult<T>): T {
     throw new OpenApiRequestError(result.response, "API response did not include data");
   }
 
-  return isApiEnvelope<T>(result.data) ? result.data.data : result.data;
+  if (isApiEnvelope<T>(result.data)) {
+    if (result.data.data === undefined) {
+      throw new OpenApiRequestError(
+        result.response,
+        "API response envelope did not include data",
+      );
+    }
+    return result.data.data;
+  }
+
+  return result.data;
 }
 
 function createAuthedClient(baseUrl: string): ImsOpenApiClient {

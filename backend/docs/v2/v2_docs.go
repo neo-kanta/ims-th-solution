@@ -2756,8 +2756,7 @@ const docTemplatev2 = `{
                     "type": "string"
                 },
                 "parameters": {
-                    "description": "Parameters is the rule instance's current configured parameter set\n(e.g. {\"asset_class\":\"EQUITY\",\"max_percent_nav\":60}), so the portfolio\nsettings UI can render thresholds without a second round-trip.",
-                    "type": "object"
+                    "description": "Parameters is the rule instance's current configured parameter set\n(e.g. {\"asset_class\":\"EQUITY\",\"max_percent_nav\":60}), so the portfolio\nsettings UI can render thresholds without a second round-trip. Producers\nassign pre-encoded JSON (json.RawMessage); the type is ` + "`" + `any` + "`" + ` because the\nvalue's shape is rule-type-specific and a narrower Go type would generate\na false empty-object OpenAPI schema."
                 },
                 "rule_instance_id": {
                     "type": "string"

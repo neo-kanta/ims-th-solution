@@ -3455,7 +3455,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ListBreachesResult"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListBreachesResult"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
@@ -3519,7 +3531,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/Override"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/Override"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3594,7 +3618,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/PostTradeCheckResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/PostTradeCheckResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3657,7 +3693,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/PreTradeCheckResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/PreTradeCheckResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3715,7 +3763,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/CheckGroupResult"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/CheckGroupResult"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3796,7 +3856,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ListRuleInstancesResult"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ListRuleInstancesResult"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
@@ -3851,7 +3923,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/CreateRuleInstanceResult"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/CreateRuleInstanceResult"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -3969,7 +4053,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns official LIVE-portfolio AUM and today's P\u0026L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.",
+                "description": "Returns official LIVE-portfolio AUM and latest-snapshot P\u0026L converted to the configured reporting currency with the latest available FX rate. scope=company aggregates all active company funds independent of fund data scope and omits item-level fund/portfolio exclusions; scope=mine restricts to portfolios the authenticated caller manages inside funds they may access. Each eligible portfolio contributes its newest valuation even when valuation dates differ or stale inputs are flagged; coverage reports the carried-forward count and oldest included valuation date. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total when valuations are missing or FX/currency inputs are unusable. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.",
                 "produces": [
                     "application/json"
                 ],
@@ -11245,14 +11329,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "contractID": {
-                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
                     "type": "string"
                 },
                 "evidence": {
-                    "type": "object"
+                    "$ref": "#/definitions/Evidence"
                 },
                 "id": {
                     "type": "string"
@@ -11533,41 +11616,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "checkGroupID": {
-                    "description": "groups all records from a single check request",
                     "type": "string"
                 },
                 "checkedAt": {
                     "type": "string"
                 },
                 "checkedBy": {
-                    "description": "actor ID or \"system\"",
                     "type": "string"
                 },
                 "contractID": {
-                    "description": "nil for portfolio-only checks (no fund_id)",
                     "type": "string"
                 },
                 "createdAt": {
                     "type": "string"
                 },
                 "dataSnapshotHash": {
-                    "description": "SHA-256 of the DataBundle used",
                     "type": "string"
                 },
                 "effectiveSeverity": {
-                    "description": "binding-level severity applied",
                     "type": "string"
                 },
                 "evalDurationMs": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 },
                 "evidence": {
-                    "description": "structured evidence",
                     "type": "object"
                 },
                 "finalVerdict": {
-                    "description": "after severity cap",
                     "type": "string"
                 },
                 "id": {
@@ -11577,11 +11652,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "orderID": {
-                    "description": "nil for periodic checks",
                     "type": "string"
                 },
                 "parameterSnapshot": {
-                    "description": "frozen copy of params used",
                     "type": "object"
                 },
                 "portfolioID": {
@@ -11597,14 +11670,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ticker": {
-                    "description": "empty for portfolio-wide periodic checks",
                     "type": "string"
                 },
                 "timing": {
                     "type": "string"
                 },
                 "verdict": {
-                    "description": "raw verdict from rule",
                     "type": "string"
                 }
             }
@@ -12852,6 +12923,26 @@ const docTemplate = `{
                 },
                 "stage_number": {
                     "type": "integer"
+                }
+            }
+        },
+        "Evidence": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "references": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "threshold_breached": {
+                    "$ref": "#/definitions/ThresholdBreach"
                 }
             }
         },
@@ -14437,7 +14528,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "approvedBy": {
-                    "description": "second-level approval if required",
                     "type": "string"
                 },
                 "breachID": {
@@ -14447,18 +14537,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "delegatedFrom": {
-                    "description": "original officer if delegated",
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
                 "overriddenBy": {
-                    "description": "compliance officer with IRG_OVERRIDE_BREACH permission",
                     "type": "string"
                 },
                 "reason": {
-                    "description": "mandatory — justification",
                     "type": "string"
                 }
             }
@@ -15618,6 +15705,17 @@ const docTemplate = `{
                 }
             }
         },
+        "RuleEffectiveWindow": {
+            "type": "object",
+            "properties": {
+                "valid_from": {
+                    "type": "string"
+                },
+                "valid_to": {
+                    "type": "string"
+                }
+            }
+        },
         "RuleInstance": {
             "type": "object",
             "properties": {
@@ -15628,14 +15726,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "currentVersion": {
-                    "description": "pointer to the active version number",
                     "type": "integer"
                 },
                 "description": {
                     "type": "string"
                 },
                 "effectiveWindow": {
-                    "type": "object"
+                    "$ref": "#/definitions/RuleEffectiveWindow"
                 },
                 "id": {
                     "type": "string"
@@ -15644,11 +15741,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "name": {
-                    "description": "human-friendly name",
                     "type": "string"
                 },
                 "ruleTypeID": {
-                    "description": "stable SPI type ID, e.g. \"concentration.single_issuer\"",
                     "type": "string"
                 },
                 "updatedAt": {
@@ -15666,14 +15761,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "currentVersion": {
-                    "description": "pointer to the active version number",
                     "type": "integer"
                 },
                 "description": {
                     "type": "string"
                 },
                 "effectiveWindow": {
-                    "type": "object"
+                    "$ref": "#/definitions/RuleEffectiveWindow"
                 },
                 "id": {
                     "type": "string"
@@ -15682,11 +15776,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "name": {
-                    "description": "human-friendly name",
                     "type": "string"
                 },
                 "ruleTypeID": {
-                    "description": "stable SPI type ID, e.g. \"concentration.single_issuer\"",
                     "type": "string"
                 },
                 "type_metadata": {
@@ -15701,11 +15793,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "approvedBy": {
-                    "description": "nil if no approval required",
                     "type": "string"
                 },
                 "changeReason": {
-                    "description": "why this version was created",
                     "type": "string"
                 },
                 "createdAt": {
@@ -15718,7 +15808,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "parameters": {
-                    "description": "validated against rule type schema at write time",
                     "type": "object"
                 },
                 "ruleInstanceID": {
@@ -16550,6 +16639,26 @@ const docTemplate = `{
                 }
             }
         },
+        "ThresholdBreach": {
+            "type": "object",
+            "properties": {
+                "actual": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "string"
+                },
+                "metric_name": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
         "ThresholdRuleRequest": {
             "type": "object",
             "properties": {
@@ -17315,6 +17424,12 @@ const docTemplate = `{
                 },
                 "included_portfolio_count": {
                     "type": "integer"
+                },
+                "latest_available_portfolio_count": {
+                    "type": "integer"
+                },
+                "oldest_included_business_date": {
+                    "type": "string"
                 },
                 "total_fund_count": {
                     "type": "integer"
