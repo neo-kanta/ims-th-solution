@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { useI18n } from "~/composables/useI18n";
 import AppButton from "~/shared/ui/AppButton.vue";
+
+const { t } = useI18n();
 
 interface Props {
   total: number;
@@ -51,16 +54,16 @@ function onLimitChange(e: Event) {
 </script>
 
 <template>
-  <div class="pager" role="navigation" aria-label="Pagination">
+  <div class="pager" role="navigation" :aria-label="t('compliance.pager.navLabel')">
     <span class="pager__range">
       <strong>{{ start.toLocaleString("en-US") }}</strong>–<strong>{{
         end.toLocaleString("en-US")
       }}</strong>
-      of <strong>{{ total.toLocaleString("en-US") }}</strong>
+      {{ t("compliance.pager.of") }} <strong>{{ total.toLocaleString("en-US") }}</strong>
     </span>
 
     <label class="pager__limit">
-      <span>Per page</span>
+      <span>{{ t("compliance.pager.perPage") }}</span>
       <select :value="limit" class="pager__select" @change="onLimitChange">
         <option v-for="size in PAGE_SIZES" :key="size" :value="size">
           {{ size }}
@@ -75,7 +78,7 @@ function onLimitChange(e: Event) {
         :disabled="!hasPrev"
         @click="prev"
       >
-        ← Prev
+        {{ t("compliance.pager.prev") }}
       </AppButton>
       <AppButton
         variant="ghost"
@@ -83,7 +86,7 @@ function onLimitChange(e: Event) {
         :disabled="!hasNext"
         @click="next"
       >
-        Next →
+        {{ t("compliance.pager.next") }}
       </AppButton>
     </div>
   </div>

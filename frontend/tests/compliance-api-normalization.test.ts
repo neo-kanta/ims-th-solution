@@ -4,6 +4,9 @@ import type { components } from "../app/api/ims-api";
 
 import {
   normalizeComplianceBreach,
+  normalizeComplianceCheckGroupResult,
+  normalizeComplianceEvidence,
+  normalizeComplianceOverride,
   normalizeCompliancePortfolio,
   normalizeComplianceRule,
 } from "../app/features/compliance/lib/formatters";
@@ -88,5 +91,122 @@ describe("compliance generated API normalization", () => {
         status: "ACTIVE",
       }),
     ).toMatchObject({ code: "A02-CORE", name: "Core Portfolio" });
+  });
+});
+
+describe("normalizeComplianceEvidence", () => {
+  it("normalizes metrics, references, and a threshold breach together", () => {
+    const evidence = normalizeComplianceEvidence({
+      metrics: { single_issuer_pct: "11.2" },
+      references: { issuer: "KBANK" },
+      threshold_breached: {
+        actual: "11.2",
+        limit: "10",
+        metric_name: "single_issuer_pct",
+        operator: ">",
+        unit: "%",
+      },
+    });
+
+    expect(evidence).toEqual({
+      metrics: { single_issuer_pct: "11.2" },
+      references: { issuer: "KBANK" },
+      threshold_breached: {
+        actual: "11.2",
+        limit: "10",
+        metric_name: "single_issuer_pct",
+        operator: ">",
+        unit: "%",
+      },
+    });
+  });
+
+  it("returns undefined rather than an empty object for missing/absent evidence", () => {
+    expect(normalizeComplianceEvidence(undefined)).toBeUndefined();
+    expect(normalizeComplianceEvidence(null)).toBeUndefined();
+    expect(normalizeComplianceEvidence({})).toBeUndefined();
+  });
+
+  it("degrades a malformed payload to 'no evidence' instead of throwing", () => {
+    expect(normalizeComplianceEvidence({ metrics: "not-an-object" })).toBeUndefined();
+    expect(normalizeComplianceEvidence("just a string")).toBeUndefined();
+  });
+
+  it("keeps only string-valued metric entries", () => {
+    const evidence = normalizeComplianceEvidence({
+      metrics: { good: "1", bad: 2 },
+    });
+    expect(evidence?.metrics).toEqual({ good: "1" });
+  });
+});
+
+describe("normalizeComplianceCheckGroupResult", () => {
+  it("normalizes nested records and breaches under the check group", () => {
+    const result = normalizeComplianceCheckGroupResult({
+      check_group_id: "group-1",
+      records: [
+        {
+          id: "record-1",
+          checkGroupID: "group-1",
+          portfolioID: "portfolio-1",
+          ruleTypeID: "cash.availability",
+          ruleInstanceID: "rule-1",
+          verdict: "BLOCK",
+          effectiveSeverity: "BLOCK",
+          finalVerdict: "BLOCK",
+          businessDate: "2026-07-20",
+          createdAt: "2026-07-20T10:12:00Z",
+        },
+      ],
+      breaches: [
+        {
+          id: "breach-1",
+          checkRecordID: "record-1",
+          checkGroupID: "group-1",
+          portfolioID: "portfolio-1",
+          ruleTypeID: "cash.availability",
+          ruleInstanceID: "rule-1",
+          severity: "BLOCK",
+          verdict: "BLOCK",
+          status: "OPEN",
+          businessDate: "2026-07-20",
+          createdAt: "2026-07-20T10:12:00Z",
+        },
+      ],
+    });
+
+    expect(result.check_group_id).toBe("group-1");
+    expect(result.records).toHaveLength(1);
+    expect(result.records[0]?.finalVerdict).toBe("BLOCK");
+    expect(result.breaches).toHaveLength(1);
+    expect(result.breaches[0]?.id).toBe("breach-1");
+  });
+
+  it("defaults missing records/breaches arrays to empty rather than throwing", () => {
+    const result = normalizeComplianceCheckGroupResult({ check_group_id: "group-2" });
+    expect(result.records).toEqual([]);
+    expect(result.breaches).toEqual([]);
+  });
+});
+
+describe("normalizeComplianceOverride", () => {
+  it("normalizes the generated Override DTO without exposing internals beyond the typed shape", () => {
+    const override = normalizeComplianceOverride({
+      id: "override-1",
+      breachID: "breach-1",
+      reason: "Manager pre-approved this concentration limit breach.",
+      overriddenBy: "user-1",
+      createdAt: "2026-07-20T10:20:00Z",
+    });
+
+    expect(override).toEqual({
+      id: "override-1",
+      breachID: "breach-1",
+      reason: "Manager pre-approved this concentration limit breach.",
+      overriddenBy: "user-1",
+      delegatedFrom: undefined,
+      approvedBy: undefined,
+      createdAt: "2026-07-20T10:20:00Z",
+    });
   });
 });

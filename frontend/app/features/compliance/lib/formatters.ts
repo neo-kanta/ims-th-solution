@@ -11,7 +11,11 @@ import type {
   ComplianceBackendSeverity,
   ComplianceBreach,
   ComplianceBreachStatus,
+  ComplianceCheckGroupResult,
+  ComplianceCheckRecord,
   ComplianceEffectiveWindow,
+  ComplianceEvidence,
+  ComplianceOverride,
   CompliancePortfolioOption,
   ComplianceRule,
   ComplianceRuleCategory,
@@ -24,6 +28,9 @@ type ApiBreach = components["schemas"]["Breach"];
 type ApiPortfolio = components["schemas"]["PortfolioResponse"];
 type ApiRule = components["schemas"]["RuleInstanceDetail"];
 type ApiRuleMetadata = components["schemas"]["RuleMetadata"];
+type ApiCheckGroupResult = components["schemas"]["CheckGroupResult"];
+type ApiCheckRecord = components["schemas"]["CheckRecord"];
+type ApiOverride = components["schemas"]["Override"];
 
 function requiredString(value: string | undefined, field: string): string {
   if (typeof value !== "string" || value.trim() === "") {
@@ -138,6 +145,46 @@ function normalizeEffectiveWindow(value: unknown): ComplianceEffectiveWindow | u
   return from || to ? { from, to } : undefined;
 }
 
+function stringMap(value: unknown): Record<string, string> | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+  const entries = Object.entries(record).filter(
+    (entry): entry is [string, string] => typeof entry[1] === "string",
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+/**
+ * `evidence` is optional and best-effort on both `Breach` and `CheckRecord` —
+ * some rule types don't populate it, and `CheckRecord.evidence` currently
+ * erases to `Record<string, never>` in the generated client (pre-existing
+ * Swagger `swaggertype:"object"` drift, same class of issue already fixed for
+ * `PortfolioRuleCatalogEntry.Parameters`). We read defensively rather than
+ * throwing so a missing/mistyped payload degrades to "no evidence" instead of
+ * breaking the whole breach list or drawer.
+ */
+export function normalizeComplianceEvidence(value: unknown): ComplianceEvidence | undefined {
+  const record = asRecord(value);
+  if (!record) return undefined;
+
+  const metrics = stringMap(record.metrics);
+  const references = stringMap(record.references);
+  const thresholdRecord = asRecord(record.threshold_breached);
+  const threshold_breached = thresholdRecord
+    ? {
+        actual: typeof thresholdRecord.actual === "string" ? thresholdRecord.actual : undefined,
+        limit: typeof thresholdRecord.limit === "string" ? thresholdRecord.limit : undefined,
+        metric_name:
+          typeof thresholdRecord.metric_name === "string" ? thresholdRecord.metric_name : undefined,
+        operator: typeof thresholdRecord.operator === "string" ? thresholdRecord.operator : undefined,
+        unit: typeof thresholdRecord.unit === "string" ? thresholdRecord.unit : undefined,
+      }
+    : undefined;
+
+  if (!metrics && !references && !threshold_breached) return undefined;
+  return { metrics, references, threshold_breached };
+}
+
 /** Typed boundary from generated OpenAPI rule DTO to the feature's UI model. */
 export function normalizeComplianceRule(raw: ApiRule): ComplianceRule {
   return {
@@ -170,12 +217,64 @@ export function normalizeComplianceBreach(raw: ApiBreach): ComplianceBreach {
     severity: normalizeSeverity(raw.severity),
     verdict: normalizeVerdict(raw.verdict),
     status: normalizeBreachStatus(raw.status),
-    evidence: asRecord(raw.evidence),
+    evidence: normalizeComplianceEvidence(raw.evidence),
     message: raw.message ?? "",
     businessDate: requiredString(raw.businessDate, "breach business date"),
     createdAt: requiredString(raw.createdAt, "breach created time"),
     resolvedAt: raw.resolvedAt,
     resolvedBy: raw.resolvedBy,
+  };
+}
+
+/** Typed boundary from generated OpenAPI check-record DTO to the feature's UI model. */
+export function normalizeComplianceCheckRecord(raw: ApiCheckRecord): ComplianceCheckRecord {
+  return {
+    id: requiredString(raw.id, "check record id"),
+    checkGroupID: requiredString(raw.checkGroupID, "check record group id"),
+    timing: raw.timing ?? "",
+    orderID: raw.orderID,
+    portfolioID: requiredString(raw.portfolioID, "check record portfolio id"),
+    contractID: raw.contractID ?? "",
+    ticker: raw.ticker,
+    ruleTypeID: requiredString(raw.ruleTypeID, "check record rule type id"),
+    ruleInstanceID: requiredString(raw.ruleInstanceID, "check record rule instance id"),
+    ruleInstanceVersion: raw.ruleInstanceVersion ?? 0,
+    parameterSnapshot: asRecord(raw.parameterSnapshot),
+    verdict: normalizeVerdict(raw.verdict),
+    effectiveSeverity: normalizeSeverity(raw.effectiveSeverity),
+    finalVerdict: normalizeVerdict(raw.finalVerdict),
+    evidence: asRecord(raw.evidence),
+    message: raw.message ?? "",
+    dataSnapshotHash: raw.dataSnapshotHash,
+    evalDurationMs: raw.evalDurationMs,
+    checkedBy: raw.checkedBy,
+    businessDate: requiredString(raw.businessDate, "check record business date"),
+    checkedAt: raw.checkedAt ?? "",
+    createdAt: requiredString(raw.createdAt, "check record created time"),
+  };
+}
+
+/** Typed boundary from generated OpenAPI check-group DTO to the feature's UI model. */
+export function normalizeComplianceCheckGroupResult(
+  raw: ApiCheckGroupResult,
+): ComplianceCheckGroupResult {
+  return {
+    check_group_id: requiredString(raw.check_group_id, "check group id"),
+    records: (raw.records ?? []).map(normalizeComplianceCheckRecord),
+    breaches: (raw.breaches ?? []).map(normalizeComplianceBreach),
+  };
+}
+
+/** Typed boundary from generated OpenAPI override DTO to the feature's UI model. */
+export function normalizeComplianceOverride(raw: ApiOverride): ComplianceOverride {
+  return {
+    id: requiredString(raw.id, "override id"),
+    breachID: requiredString(raw.breachID, "override breach id"),
+    reason: raw.reason ?? "",
+    overriddenBy: requiredString(raw.overriddenBy, "override actor"),
+    delegatedFrom: raw.delegatedFrom,
+    approvedBy: raw.approvedBy,
+    createdAt: requiredString(raw.createdAt, "override created time"),
   };
 }
 
