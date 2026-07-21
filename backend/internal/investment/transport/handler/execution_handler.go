@@ -10,6 +10,7 @@ import (
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 
@@ -18,6 +19,7 @@ type ExecutionHandler struct {
 	decisions  domain.DecisionRepository
 	portfolios domain.PortfolioRepository
 	cmd        *command.ExecutionCommandHandler
+	pc         contract.PermissionChecker
 }
 
 func NewExecutionHandler(repo domain.ExecutionRepository, cmd *command.ExecutionCommandHandler) *ExecutionHandler {
@@ -41,6 +43,18 @@ func (h *ExecutionHandler) SetDecisionRepository(r domain.DecisionRepository) {
 func (h *ExecutionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
 	if h != nil {
 		h.portfolios = r
+	}
+}
+
+// SetPermissionChecker wires the fund-scoped data-permission checker
+// post-construction so the Portfolio V2 (portfolioCode) routes in
+// portfolio_v2_execution_handler.go enforce hasFundAccess via
+// resolvePortfolioByCode, matching the InvestmentHandler read paths.
+// Production wiring in module.go always passes a real, fail-closed checker
+// here (never nil).
+func (h *ExecutionHandler) SetPermissionChecker(pc contract.PermissionChecker) {
+	if h != nil {
+		h.pc = pc
 	}
 }
 

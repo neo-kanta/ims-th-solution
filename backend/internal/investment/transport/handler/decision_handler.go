@@ -25,6 +25,7 @@ type DecisionHandler struct {
 	batchApproval *command.DecisionBatchApprovalHandler
 	approvalStage contract.ApprovalStatusProvider
 	portfolios    domain.PortfolioRepository
+	pc            contract.PermissionChecker
 }
 
 func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCommandHandler) *DecisionHandler {
@@ -37,6 +38,18 @@ func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCom
 func (h *DecisionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
 	if h != nil {
 		h.portfolios = r
+	}
+}
+
+// SetPermissionChecker wires the fund-scoped data-permission checker
+// post-construction so the Portfolio V2 (portfolioCode) routes in
+// portfolio_v2_decision_handler.go enforce hasFundAccess via
+// resolvePortfolioByCode, matching the InvestmentHandler read paths.
+// Production wiring in module.go always passes a real, fail-closed checker
+// here (never nil) — see module.go's NewModule for the rationale.
+func (h *DecisionHandler) SetPermissionChecker(pc contract.PermissionChecker) {
+	if h != nil {
+		h.pc = pc
 	}
 }
 

@@ -38,11 +38,16 @@ func (h *InvestmentHandler) resolvePortfolioCode(w http.ResponseWriter, r *http.
 // and returns (nil, false) on any failure — callers should return
 // immediately when ok is false.
 //
-// pc may be nil: the V1 decision/execution/confirmation handlers never
-// enforced fund-scoped data permission beyond the route-level function
-// permission (middleware.RequirePermission), so their V2 counterparts pass
-// nil here to preserve that V1 behavior rather than silently tightening
-// authorization as a side effect of the portfolio-code migration.
+// pc is expected to be non-nil in production: every Portfolio V2 handler
+// (InvestmentHandler, DecisionHandler, ExecutionHandler,
+// TradeConfirmationHandler) is wired in module.go with a real
+// contract.PermissionChecker (module.go's m.permissionAdapter), which itself
+// fails closed — returning "no access" — if the underlying IAM port was
+// never configured. pc == nil is tolerated here only so unit tests that
+// construct a handler struct literal without setting pc (and are not
+// exercising fund-scope behavior) keep compiling and passing; it must never
+// happen via the production constructor/setter path. Do not pass a literal
+// nil for pc from a handler method — always pass h.pc.
 func resolvePortfolioByCode(
 	w http.ResponseWriter, r *http.Request,
 	portfolios domain.PortfolioRepository,

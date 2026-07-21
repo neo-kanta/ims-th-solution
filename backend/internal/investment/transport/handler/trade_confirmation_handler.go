@@ -10,6 +10,7 @@ import (
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 
@@ -19,6 +20,7 @@ type TradeConfirmationHandler struct {
 	portfolios    domain.PortfolioRepository
 	cmd           *command.TradeConfirmationCommandHandler
 	batchImport   *command.ConfirmationBatchImportHandler
+	pc            contract.PermissionChecker
 }
 
 func NewTradeConfirmationHandler(repo domain.TradeConfirmationRepository, cmd *command.TradeConfirmationCommandHandler) *TradeConfirmationHandler {
@@ -42,6 +44,18 @@ func (h *TradeConfirmationHandler) SetExecutionRepository(r domain.ExecutionRepo
 func (h *TradeConfirmationHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
 	if h != nil {
 		h.portfolios = r
+	}
+}
+
+// SetPermissionChecker wires the fund-scoped data-permission checker
+// post-construction so the Portfolio V2 (portfolioCode) routes in
+// portfolio_v2_execution_handler.go enforce hasFundAccess via
+// resolvePortfolioByCode, matching the InvestmentHandler read paths.
+// Production wiring in module.go always passes a real, fail-closed checker
+// here (never nil).
+func (h *TradeConfirmationHandler) SetPermissionChecker(pc contract.PermissionChecker) {
+	if h != nil {
+		h.pc = pc
 	}
 }
 

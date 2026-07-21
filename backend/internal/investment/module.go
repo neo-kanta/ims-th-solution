@@ -220,13 +220,22 @@ func NewModule(
 	m.decisionHandler.SetDecisionLineRepository(m.decisionLines)
 	m.decisionHandler.SetBatchApprovalHandler(m.decisionBatchCmd)
 	m.decisionHandler.SetPortfolioRepository(m.portfolios)
+	// Fund-scoped data-permission checker for the Portfolio V2 decision
+	// routes (portfolio_v2_decision_handler.go). m.permissionAdapter is
+	// always a non-nil *adapter.PermissionCheckerAdapter — even when iamPort
+	// is nil (test contexts only; see NewModule's doc comment) it fails
+	// closed rather than skipping the check, so this is wired unconditionally
+	// exactly like m.handler (InvestmentHandler) above.
+	m.decisionHandler.SetPermissionChecker(m.permissionAdapter)
 	m.executionHandler = handler.NewExecutionHandler(m.executions, m.executionCmd)
 	m.executionHandler.SetDecisionRepository(m.decisions)
 	m.executionHandler.SetPortfolioRepository(m.portfolios)
+	m.executionHandler.SetPermissionChecker(m.permissionAdapter)
 	m.confirmationHandler = handler.NewTradeConfirmationHandler(m.confirmations, m.confirmationCmd)
 	m.confirmationHandler.SetBatchImportHandler(m.confirmationImportCmd)
 	m.confirmationHandler.SetExecutionRepository(m.executions)
 	m.confirmationHandler.SetPortfolioRepository(m.portfolios)
+	m.confirmationHandler.SetPermissionChecker(m.permissionAdapter)
 
 	return m
 }
