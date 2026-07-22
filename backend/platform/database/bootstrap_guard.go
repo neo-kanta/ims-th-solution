@@ -21,7 +21,7 @@ func EnsureSecureBootstrap(ctx context.Context, pool *pgxpool.Pool, env string) 
 		SELECT EXISTS (
 			SELECT 1
 			FROM iam_users
-			WHERE username = 'admin'
+			WHERE username IN ('admin', 'admin2')
 			  AND password_hash = $1
 			  AND deleted_at IS NULL
 		)
@@ -30,7 +30,7 @@ func EnsureSecureBootstrap(ctx context.Context, pool *pgxpool.Pool, env string) 
 		return fmt.Errorf("checking secure bootstrap state: %w", err)
 	}
 	if hasDefaultAdmin {
-		return fmt.Errorf("insecure bootstrap blocked: default admin credentials are still present")
+		return fmt.Errorf("insecure bootstrap blocked: default privileged administrator credentials are still present")
 	}
 	return nil
 }
