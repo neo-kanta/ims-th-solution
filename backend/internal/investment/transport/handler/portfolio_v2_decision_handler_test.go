@@ -66,6 +66,9 @@ func (r *stubExecutionRepo) ListByDecision(context.Context, uuid.UUID) ([]*entit
 func (r *stubExecutionRepo) ListByFundDate(context.Context, uuid.UUID, time.Time) ([]*entity.Execution, error) {
 	return nil, nil
 }
+func (r *stubExecutionRepo) ListByPortfolio(context.Context, uuid.UUID, domain.ExecutionListFilter) ([]*entity.Execution, int, error) {
+	return nil, 0, nil
+}
 
 type stubConfirmationRepo struct {
 	byID map[uuid.UUID]*entity.TradeConfirmation
@@ -85,6 +88,9 @@ func (r *stubConfirmationRepo) ListByExecution(context.Context, uuid.UUID) ([]*e
 }
 func (r *stubConfirmationRepo) ListByFundDate(context.Context, uuid.UUID, time.Time) ([]*entity.TradeConfirmation, error) {
 	return nil, nil
+}
+func (r *stubConfirmationRepo) ListByPortfolio(context.Context, uuid.UUID, domain.TradeConfirmationListFilter) ([]*entity.TradeConfirmation, int, error) {
+	return nil, 0, nil
 }
 func (r *stubConfirmationRepo) GetByBrokerReference(context.Context, string) (*entity.TradeConfirmation, error) {
 	return nil, nil
@@ -144,11 +150,12 @@ func TestGetDecisionByCode_CrossPortfolioReturns404(t *testing.T) {
 			decisionID: {ID: decisionID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Get("/portfolios/{portfolioCode}/decisions/{decisionId}", h.GetDecisionByCode)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/portfolios/PORT-A/decisions/"+decisionID.String(), nil))
+	r.ServeHTTP(w, withUserClaims(httptest.NewRequest(http.MethodGet, "/portfolios/PORT-A/decisions/"+decisionID.String(), nil)))
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404 (cross-portfolio decision must not be visible); body=%s", w.Code, w.Body.String())
 	}
@@ -164,11 +171,12 @@ func TestGetDecisionByCode_SamePortfolioReturns200(t *testing.T) {
 			decisionID: {ID: decisionID, PortfolioID: portfolioA},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Get("/portfolios/{portfolioCode}/decisions/{decisionId}", h.GetDecisionByCode)
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/portfolios/PORT-A/decisions/"+decisionID.String(), nil))
+	r.ServeHTTP(w, withUserClaims(httptest.NewRequest(http.MethodGet, "/portfolios/PORT-A/decisions/"+decisionID.String(), nil)))
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
 	}
@@ -185,6 +193,7 @@ func TestSubmitDecisionByCode_CrossPortfolioReturns404(t *testing.T) {
 			decisionID: {ID: decisionID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/decisions/{decisionId}/submit", h.SubmitDecisionByCode)
@@ -207,6 +216,7 @@ func TestCancelDecisionByCode_CrossPortfolioReturns404(t *testing.T) {
 			decisionID: {ID: decisionID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/decisions/{decisionId}/cancel", h.CancelDecisionByCode)
@@ -216,6 +226,35 @@ func TestCancelDecisionByCode_CrossPortfolioReturns404(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404; body=%s", w.Code, w.Body.String())
+	}
+}
+
+// TestGetDecisionByCode_NilPermissionCheckerFailsClosed proves
+// resolvePortfolioByCode (the shared {portfolioCode} resolver behind every
+// V2 decision/execution/confirmation route) denies access rather than
+// silently allowing it when the handler's permission checker was never
+// wired — mirroring the fail-closed guarantee v1_data_scope_test.go already
+// proves for the V1 routes. Production wiring in module.go always sets a
+// real checker, but this test pins the resolver's own contract regardless
+// of wiring correctness elsewhere.
+func TestGetDecisionByCode_NilPermissionCheckerFailsClosed(t *testing.T) {
+	t.Parallel()
+	portfolioA := uuid.New()
+	decisionID := uuid.New()
+
+	h := &DecisionHandler{
+		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
+			decisionID: {ID: decisionID, PortfolioID: portfolioA},
+		}},
+		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		// pc intentionally left nil.
+	}
+	r := chi.NewRouter()
+	r.Get("/portfolios/{portfolioCode}/decisions/{decisionId}", h.GetDecisionByCode)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, withUserClaims(httptest.NewRequest(http.MethodGet, "/portfolios/PORT-A/decisions/"+decisionID.String(), nil)))
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403 (nil permission checker must deny, not silently allow); body=%s", w.Code, w.Body.String())
 	}
 }
 
@@ -250,6 +289,7 @@ func TestCreateExecutionByCode_DecisionFromOtherPortfolioReturns404(t *testing.T
 		}},
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/decisions/{decisionId}/executions", h.CreateExecutionByCode)
@@ -273,6 +313,7 @@ func TestFillExecutionByCode_CrossPortfolioReturns404(t *testing.T) {
 			executionID: {ID: executionID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/executions/{executionId}/fill", h.FillExecutionByCode)
@@ -296,6 +337,7 @@ func TestCancelExecutionByCode_CrossPortfolioReturns404(t *testing.T) {
 			executionID: {ID: executionID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/executions/{executionId}/cancel", h.CancelExecutionByCode)
@@ -322,6 +364,7 @@ func TestRecordConfirmationByCode_ExecutionFromOtherPortfolioReturns404(t *testi
 		}},
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{}},
 		portfolios:    newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:            &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/executions/{executionId}/confirmations", h.RecordConfirmationByCode)
@@ -345,6 +388,7 @@ func TestResolveConfirmationByCode_CrossPortfolioReturns404(t *testing.T) {
 			confirmationID: {ID: confirmationID, PortfolioID: portfolioB},
 		}},
 		portfolios: newOwnedPortfolioRepo("PORT-A", portfolioA),
+		pc:         &fakeV2PermissionChecker{Global: true},
 	}
 	r := chi.NewRouter()
 	r.Post("/portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve", h.ResolveConfirmationByCode)

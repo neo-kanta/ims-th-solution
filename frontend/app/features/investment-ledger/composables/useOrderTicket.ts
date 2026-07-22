@@ -148,7 +148,35 @@ export type OrderTicketStage =
   | "confirming"
   | "posted";
 
-export function useOrderTicket() {
+/**
+ * Injectable simulate/post calls. Defaults to the legacy portfolio-UUID
+ * routes (`investmentLedgerApi`). Callers on a portfolio-code-routed
+ * workspace (Portfolio V2) should inject `portfolioApi.simulateTransaction`/
+ * `portfolioApi.postTransaction` instead — the identifier passed to `open()`
+ * then becomes a portfolio code rather than a UUID. The two are wire-
+ * compatible: both routes decode/return the same generated
+ * `PostTransactionRequest`/`TransactionSimulationResponse`/`TransactionResponse`
+ * schemas, so no logic here needs to change, only which endpoint is called.
+ */
+export interface OrderTicketDeps {
+  simulate: (
+    portfolioIdentifier: string,
+    payload: ApiPostTransactionRequest,
+  ) => Promise<ApiTransactionSimulation>;
+  post: (
+    portfolioIdentifier: string,
+    payload: ApiPostTransactionRequest,
+  ) => Promise<ApiTransaction>;
+}
+
+const defaultDeps: OrderTicketDeps = {
+  simulate: (portfolioId, payload) =>
+    investmentLedgerApi.simulateTransaction(portfolioId, payload),
+  post: (portfolioId, payload) =>
+    investmentLedgerApi.postTransaction(portfolioId, payload),
+};
+
+export function useOrderTicket(deps: OrderTicketDeps = defaultDeps) {
   const draft = reactive<OrderTicketDraft>(emptyDraft());
   const stage = ref<OrderTicketStage>("edit");
   const portfolioId = ref<string | null>(null);
@@ -274,10 +302,7 @@ export function useOrderTicket() {
     successMessage.value = null;
     try {
       const payload = buildTransactionRequest(draft);
-      const result = await investmentLedgerApi.simulateTransaction(
-        portfolioId.value,
-        payload,
-      );
+      const result = await deps.simulate(portfolioId.value, payload);
       lastSimulation.value = result;
       lastSimulatedPayload.value = payload;
       stage.value = "simulated";
@@ -322,7 +347,7 @@ export function useOrderTicket() {
     posting.value = true;
     postError.value = null;
     try {
-      const result = await investmentLedgerApi.postTransaction(
+      const result = await deps.post(
         portfolioId.value,
         lastSimulatedPayload.value,
       );

@@ -103,11 +103,13 @@ func (e *ErrCodeAlreadyExists) Error() string {
 }
 
 // ErrAmbiguousPortfolioCode is raised by PortfolioRepository.GetByCode when
-// more than one alive portfolio shares the requested code. The DB only
-// enforces code uniqueness per fund today (uq_inv_portfolios_fund_code_alive)
-// — Portfolio V2 (docs/api/portfolio-v2-api-ddd.md) assumes code is globally
-// unique, so until a global constraint lands, GetByCode must refuse to guess
-// which portfolio the caller means rather than silently returning one.
+// more than one alive portfolio shares the requested code. The DB enforces
+// global active-code uniqueness via uq_inv_portfolios_code_alive (migration
+// 20260703000001_investment__portfolio_v2_hardening), so this should be
+// unreachable in a correctly-migrated database — GetByCode still refuses to
+// guess which portfolio the caller means, as defense-in-depth against
+// pre-constraint legacy data or a future regression, rather than silently
+// returning one.
 type ErrAmbiguousPortfolioCode struct {
 	Code  string
 	Count int

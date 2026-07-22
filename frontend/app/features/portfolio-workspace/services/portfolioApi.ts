@@ -9,15 +9,30 @@
  * (see the migration checklist in the DDD doc).
  *
  * Endpoints used:
- *   GET /api/v2/portfolios/{portfolioCode}              — portfolio detail by code
- *   GET /api/v2/portfolios/{portfolioCode}/holdings      — current holdings
- *   GET /api/v2/portfolios/{portfolioCode}/cash          — cash balances
- *   GET /api/v2/portfolios/{portfolioCode}/transactions  — ledger history
+ *   GET  /api/v2/portfolios                                — list portfolios (accessible funds)
+ *   POST /api/v2/portfolios                                — create a portfolio under a fund_code
+ *   GET  /api/v2/portfolios/{portfolioCode}                 — portfolio detail by code
+ *   PATCH /api/v2/portfolios/{portfolioCode}                — update mutable descriptive metadata
+ *   GET  /api/v2/portfolios/{portfolioCode}/holdings        — current holdings
+ *   GET  /api/v2/portfolios/{portfolioCode}/cash            — cash balances
+ *   GET  /api/v2/portfolios/{portfolioCode}/transactions    — ledger history
+ *   POST /api/v2/portfolios/{portfolioCode}/transactions/simulate — pre-trade preview
+ *   POST /api/v2/portfolios/{portfolioCode}/transactions    — post to ledger
+ *   GET  /api/v2/portfolios/{portfolioCode}/executions      — trade executions (list)
+ *   GET  /api/v2/portfolios/{portfolioCode}/executions/{id} — trade execution (detail)
+ *   GET  /api/v2/portfolios/{portfolioCode}/confirmations       — trade confirmations (list)
+ *   GET  /api/v2/portfolios/{portfolioCode}/confirmations/{id}  — trade confirmation (detail)
+ *   POST /api/v2/portfolios/{portfolioCode}/valuations/run  — trigger a valuation run
  */
 import { unwrapOpenApiResponse, useOpenApiClientV2 } from "~/api/openapi";
 import type { components } from "~/api/ims-api";
 
 export type ApiPortfolioV2 = components["schemas"]["PortfolioResponse"];
+export type ApiPortfolioListV2 = components["schemas"]["PortfolioListResponse"];
+export type ApiCreatePortfolioV2Request =
+  components["schemas"]["CreatePortfolioV2Request"];
+export type ApiPatchPortfolioV2Request =
+  components["schemas"]["PatchPortfolioV2Request"];
 export type ApiHoldingV2 = components["schemas"]["HoldingResponse"];
 export type ApiCashBalanceV2 = components["schemas"]["CashBalanceResponse"];
 export type ApiTransactionV2 = components["schemas"]["TransactionResponse"];
@@ -25,8 +40,66 @@ export type ApiTransactionListV2 =
   components["schemas"]["TransactionListResponse"];
 export type ApiValuationV2 = components["schemas"]["ValuationResponse"];
 export type ApiValuationListV2 = components["schemas"]["ValuationListResponse"];
+export type ApiPostTransactionRequestV2 =
+  components["schemas"]["PostTransactionRequest"];
+export type ApiTransactionSimulationV2 =
+  components["schemas"]["TransactionSimulationResponse"];
+export type ApiExecutionV2 = components["schemas"]["ExecutionResponse"];
+export type ApiExecutionListV2 = components["schemas"]["ExecutionListResponse"];
+export type ApiTradeConfirmationV2 =
+  components["schemas"]["TradeConfirmationResponse"];
+export type ApiTradeConfirmationListV2 =
+  components["schemas"]["TradeConfirmationListResponse"];
+export type ApiRunValuationRequest =
+  components["schemas"]["RunValuationRequest"];
+export type ApiResolveConfirmationRequest =
+  components["schemas"]["ResolveConfirmationRequest"];
 
 export const portfolioApi = {
+  /** List portfolios visible to the caller, optionally filtered by fund/status. */
+  async list(
+    query: {
+      fund_code?: string;
+      status?: string;
+      page?: number;
+      limit?: number;
+    } = {},
+  ): Promise<ApiPortfolioListV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET("/portfolios", { params: { query } });
+    return unwrapOpenApiResponse<ApiPortfolioListV2>(response);
+  },
+
+  /**
+   * Create a portfolio under a fund resolved by business `fund_code`. The
+   * request body must never include `fund_id` — the backend resolves fund
+   * scope from `fund_code` alone (Portfolio V2 identity rule).
+   */
+  async create(body: ApiCreatePortfolioV2Request): Promise<ApiPortfolioV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST("/portfolios", { body });
+    return unwrapOpenApiResponse<ApiPortfolioV2>(response);
+  },
+
+  /**
+   * Update mutable descriptive metadata only (name/description/benchmark/
+   * risk_profile/strategy_code/manager_user_id/style_id) using optimistic
+   * concurrency via `expected_version`. Never changes fund association,
+   * code, portfolio_type, or lifecycle status — the backend does not expose
+   * those as patchable fields.
+   */
+  async update(
+    portfolioCode: string,
+    body: ApiPatchPortfolioV2Request,
+  ): Promise<ApiPortfolioV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.PATCH("/portfolios/{portfolioCode}", {
+      params: { path: { portfolioCode } },
+      body,
+    });
+    return unwrapOpenApiResponse<ApiPortfolioV2>(response);
+  },
+
   /** Resolve a portfolio by its business code. Throws on 404. */
   async getByCode(portfolioCode: string): Promise<ApiPortfolioV2> {
     const client = useOpenApiClientV2();
@@ -93,5 +166,125 @@ export const portfolioApi = {
       { params: { path: { portfolioCode }, query } },
     );
     return unwrapOpenApiResponse<ApiTransactionListV2>(response);
+  },
+
+  /**
+   * Preview the ledger/cash/position/compliance impact of a transaction
+   * without posting it, resolved by business code (Portfolio V2).
+   */
+  async simulateTransaction(
+    portfolioCode: string,
+    body: ApiPostTransactionRequestV2,
+  ): Promise<ApiTransactionSimulationV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST(
+      "/portfolios/{portfolioCode}/transactions/simulate",
+      { params: { path: { portfolioCode } }, body },
+    );
+    return unwrapOpenApiResponse<ApiTransactionSimulationV2>(response);
+  },
+
+  /**
+   * Post a transaction to the ledger, resolved by business code (Portfolio
+   * V2). The backend re-runs pre-trade compliance using the actual posted
+   * values before committing.
+   */
+  async postTransaction(
+    portfolioCode: string,
+    body: ApiPostTransactionRequestV2,
+  ): Promise<ApiTransactionV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST(
+      "/portfolios/{portfolioCode}/transactions",
+      { params: { path: { portfolioCode } }, body },
+    );
+    return unwrapOpenApiResponse<ApiTransactionV2>(response);
+  },
+
+  /** Trade executions for a portfolio, resolved by business code. */
+  async listExecutions(
+    portfolioCode: string,
+    query: { status?: string; page?: number; limit?: number } = {},
+  ): Promise<ApiExecutionListV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/executions",
+      { params: { path: { portfolioCode }, query } },
+    );
+    return unwrapOpenApiResponse<ApiExecutionListV2>(response);
+  },
+
+  /** One trade execution that belongs to the resolved portfolio. */
+  async getExecution(
+    portfolioCode: string,
+    executionId: string,
+  ): Promise<ApiExecutionV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/executions/{executionId}",
+      { params: { path: { portfolioCode, executionId } } },
+    );
+    return unwrapOpenApiResponse<ApiExecutionV2>(response);
+  },
+
+  /** Trade confirmations for a portfolio, resolved by business code. */
+  async listConfirmations(
+    portfolioCode: string,
+    query: { status?: string; page?: number; limit?: number } = {},
+  ): Promise<ApiTradeConfirmationListV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/confirmations",
+      { params: { path: { portfolioCode }, query } },
+    );
+    return unwrapOpenApiResponse<ApiTradeConfirmationListV2>(response);
+  },
+
+  /** One trade confirmation that belongs to the resolved portfolio. */
+  async getConfirmation(
+    portfolioCode: string,
+    confirmationId: string,
+  ): Promise<ApiTradeConfirmationV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/confirmations/{confirmationId}",
+      { params: { path: { portfolioCode, confirmationId } } },
+    );
+    return unwrapOpenApiResponse<ApiTradeConfirmationV2>(response);
+  },
+
+  /**
+   * Resolve a PENDING_REVIEW/MISMATCHED trade confirmation to a target
+   * status, resolved by business code. The backend records who resolved it
+   * and when — never sent from the client.
+   */
+  async resolveConfirmation(
+    portfolioCode: string,
+    confirmationId: string,
+    body: ApiResolveConfirmationRequest,
+  ): Promise<ApiTradeConfirmationV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST(
+      "/portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve",
+      { params: { path: { portfolioCode, confirmationId } }, body },
+    );
+    return unwrapOpenApiResponse<ApiTradeConfirmationV2>(response);
+  },
+
+  /**
+   * Manually trigger the valuation runner for a portfolio, resolved by
+   * business code. Rejected by the backend for MODEL portfolios, which have
+   * no official valuation.
+   */
+  async runValuation(
+    portfolioCode: string,
+    body: ApiRunValuationRequest,
+  ): Promise<ApiValuationV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST(
+      "/portfolios/{portfolioCode}/valuations/run",
+      { params: { path: { portfolioCode } }, body },
+    );
+    return unwrapOpenApiResponse<ApiValuationV2>(response);
   },
 };

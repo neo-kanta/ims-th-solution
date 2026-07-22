@@ -234,6 +234,16 @@ func (r *PostgresDecisionRepository) List(ctx context.Context, f domain.Decision
 			"(decision_number ILIKE $%d OR instrument_code ILIKE $%d OR research_report_no ILIKE $%d)",
 			len(args), len(args), len(args)))
 	}
+	// Data permission: AccessibleFundIDs nil means unrestricted; a non-nil
+	// empty slice means the caller has zero fund access, so short-circuit to
+	// an empty result without querying (mirrors fund_repository.go and
+	// portfolio_repository.go's List implementations).
+	if f.AccessibleFundIDs != nil {
+		if len(f.AccessibleFundIDs) == 0 {
+			return []*entity.Decision{}, 0, nil
+		}
+		add("fund_id = ANY($%d)", f.AccessibleFundIDs)
+	}
 	whereClause := strings.Join(where, " AND ")
 
 	var total int

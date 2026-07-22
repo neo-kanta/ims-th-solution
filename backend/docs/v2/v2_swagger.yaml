@@ -143,6 +143,54 @@ definitions:
       ordered_quantity:
         type: string
     type: object
+  CreatePortfolioV2Request:
+    properties:
+      base_currency:
+        type: string
+      benchmark:
+        type: string
+      code:
+        maxLength: 40
+        type: string
+      description:
+        type: string
+      fund_code:
+        maxLength: 40
+        type: string
+      has_units:
+        type: boolean
+      inception_date:
+        type: string
+      manager_user_id:
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      portfolio_type:
+        enum:
+        - LIVE
+        - SIMULATION
+        - MODEL
+        type: string
+      risk_profile:
+        type: string
+      strategy_code:
+        type: string
+      style_id:
+        type: string
+      tax_lot_method:
+        type: string
+      valuation_currency:
+        type: string
+    required:
+    - base_currency
+    - code
+    - fund_code
+    - inception_date
+    - name
+    - portfolio_type
+    - valuation_currency
+    type: object
   DecisionLineResponse:
     properties:
       amount:
@@ -279,6 +327,19 @@ definitions:
       error:
         type: string
     type: object
+  ExecutionListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ExecutionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
   ExecutionResponse:
     properties:
       broker_reference:
@@ -356,6 +417,28 @@ definitions:
       version:
         type: integer
     type: object
+  PatchPortfolioV2Request:
+    properties:
+      benchmark:
+        type: string
+      description:
+        type: string
+      expected_version:
+        minimum: 1
+        type: integer
+      manager_user_id:
+        type: string
+      name:
+        type: string
+      risk_profile:
+        type: string
+      strategy_code:
+        type: string
+      style_id:
+        type: string
+    required:
+    - expected_version
+    type: object
   PortfolioBreachView:
     properties:
       breach_id:
@@ -374,6 +457,19 @@ definitions:
         type: string
       verdict:
         type: string
+    type: object
+  PortfolioListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/PortfolioResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
     type: object
   PortfolioPostTradeRequest:
     properties:
@@ -610,6 +706,32 @@ definitions:
     - business_date
     - reason
     type: object
+  RunValuationRequest:
+    properties:
+      business_date:
+        type: string
+      fx_rates:
+        additionalProperties:
+          type: string
+        type: object
+      total_units:
+        type: string
+    required:
+    - business_date
+    type: object
+  TradeConfirmationListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/TradeConfirmationResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
   TradeConfirmationResponse:
     properties:
       broker_reference:
@@ -811,6 +933,111 @@ info:
   title: IMS Thailand API — Portfolio V2
   version: 2.0.0
 paths:
+  /portfolios:
+    get:
+      description: List portfolios visible to the authenticated user, scoped to their
+        accessible funds (Portfolio V2).
+      parameters:
+      - description: Fund code
+        in: query
+        name: fund_code
+        type: string
+      - description: Portfolio status
+        in: query
+        name: status
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PortfolioListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolios (V2)
+      tags:
+      - Investment - Portfolios V2
+    post:
+      consumes:
+      - application/json
+      description: Create a portfolio under a fund, resolved by business fund_code
+        (Portfolio V2). Request body must not include fund_id.
+      parameters:
+      - description: Portfolio create payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreatePortfolioV2Request'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/PortfolioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Portfolio (V2)
+      tags:
+      - Investment - Portfolios V2
   /portfolios/{portfolioCode}:
     get:
       description: Retrieve one portfolio by its business code (Portfolio V2).
@@ -854,6 +1081,64 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Portfolio By Code
+      tags:
+      - Investment - Portfolios V2
+    patch:
+      consumes:
+      - application/json
+      description: Update mutable descriptive metadata on a portfolio, resolved by
+        business code (Portfolio V2), using optimistic version control. Never changes
+        fund association, code, or lifecycle status.
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Portfolio patch payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/PatchPortfolioV2Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/PortfolioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Portfolio By Code
       tags:
       - Investment - Portfolios V2
   /portfolios/{portfolioCode}/cash:
@@ -1216,6 +1501,115 @@ paths:
       security:
       - BearerAuth: []
       summary: Deactivate Portfolio Compliance Rule Binding (V2)
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/confirmations:
+    get:
+      description: List trade confirmations for a portfolio, resolved by business
+        code (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Confirmation status filter
+        in: query
+        name: status
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TradeConfirmationListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Trade Confirmations By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/confirmations/{confirmationId}:
+    get:
+      description: Retrieve one trade confirmation that belongs to the resolved portfolio
+        (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Confirmation UUID
+        in: path
+        name: confirmationId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TradeConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Portfolio Trade Confirmation By Code
       tags:
       - Investment - Portfolios V2
   /portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve:
@@ -1589,6 +1983,115 @@ paths:
       security:
       - BearerAuth: []
       summary: Submit Portfolio Decision By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/executions:
+    get:
+      description: List trade executions for a portfolio, resolved by business code
+        (Portfolio V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Execution status filter
+        in: query
+        name: status
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 50, max 200)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ExecutionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Portfolio Executions By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/executions/{executionId}:
+    get:
+      description: Retrieve one execution that belongs to the resolved portfolio (Portfolio
+        V2).
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Execution UUID
+        in: path
+        name: executionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Portfolio Execution By Code
       tags:
       - Investment - Portfolios V2
   /portfolios/{portfolioCode}/executions/{executionId}/cancel:
@@ -2156,6 +2659,65 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Latest Portfolio Valuation By Code
+      tags:
+      - Investment - Portfolios V2
+  /portfolios/{portfolioCode}/valuations/run:
+    post:
+      consumes:
+      - application/json
+      description: Manually triggers the valuation runner for a portfolio, resolved
+        by business code (Portfolio V2). Rejected for MODEL portfolios, which have
+        no official valuation.
+      parameters:
+      - description: Portfolio code
+        in: path
+        name: portfolioCode
+        required: true
+        type: string
+      - description: Valuation run payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RunValuationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ValuationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Run Portfolio Valuation By Code
       tags:
       - Investment - Portfolios V2
 schemes:

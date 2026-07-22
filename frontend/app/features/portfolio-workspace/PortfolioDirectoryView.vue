@@ -2,6 +2,8 @@
 import { onMounted } from "vue";
 
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
+import AppButton from "~/shared/ui/AppButton.vue";
+import IMSPermissionGuard from "~/shared/ui/IMSPermissionGuard.vue";
 import { useI18n } from "~/composables/useI18n";
 import { useMyPortfolios } from "./composables/useMyPortfolios";
 import PortfolioKpiStrip from "./components/PortfolioKpiStrip.vue";
@@ -51,6 +53,10 @@ function writeResearch(fundId: string) {
     query: { fund_id: fundId },
   });
 }
+
+function createPortfolio() {
+  void router.push("/portfolios/new");
+}
 </script>
 
 <template>
@@ -64,6 +70,11 @@ function writeResearch(fundId: string) {
           <span class="portfolio-directory-page__date-label">{{ t("portfolio.page.asOf") }}</span>
           <span class="portfolio-directory-page__date-value">{{ businessDate }}</span>
         </div>
+        <IMSPermissionGuard permission="INVESTMENT_PORTFOLIO_MANAGE">
+          <AppButton variant="primary" size="sm" @click="createPortfolio">
+            {{ t("portfolio.directory.createPortfolio") }}
+          </AppButton>
+        </IMSPermissionGuard>
       </template>
     </AppPageHeader>
 

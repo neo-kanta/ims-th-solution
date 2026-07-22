@@ -91,6 +91,9 @@ func (*statusExecutionRepo) ListByDecision(context.Context, uuid.UUID) ([]*entit
 func (*statusExecutionRepo) ListByFundDate(context.Context, uuid.UUID, time.Time) ([]*entity.Execution, error) {
 	return nil, nil
 }
+func (*statusExecutionRepo) ListByPortfolio(context.Context, uuid.UUID, domain.ExecutionListFilter) ([]*entity.Execution, int, error) {
+	return nil, 0, nil
+}
 
 func complianceStatusDecision(status contract.ComplianceStatus) *entity.Decision {
 	qty := decimal.NewFromInt(100)
@@ -163,6 +166,7 @@ func TestSubmitDecisionByCode_LiveNotConfigured_ReturnsTyped422WithoutPersistenc
 	cmd.SetPortfolioRepository(portfolioRepo)
 	h := NewDecisionHandler(decisionRepo, cmd)
 	h.SetPortfolioRepository(portfolioRepo)
+	h.SetPermissionChecker(&fakeV2PermissionChecker{Global: true})
 
 	router := chi.NewRouter()
 	router.Post("/portfolios/{portfolioCode}/decisions/{decisionId}/submit", h.SubmitDecisionByCode)
@@ -238,6 +242,7 @@ func TestCreateExecutionByCode_LiveUnavailable_ReturnsTyped422WithoutPersistence
 	h := NewExecutionHandler(executionRepo, cmd)
 	h.SetDecisionRepository(decisionRepo)
 	h.SetPortfolioRepository(portfolioRepo)
+	h.SetPermissionChecker(&fakeV2PermissionChecker{Global: true})
 
 	router := chi.NewRouter()
 	router.Post("/portfolios/{portfolioCode}/decisions/{decisionId}/executions", h.CreateExecutionByCode)

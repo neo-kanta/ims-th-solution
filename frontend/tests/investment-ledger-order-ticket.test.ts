@@ -278,3 +278,42 @@ describe("useOrderTicket lifecycle", () => {
     expect(ticket.stage.value).toBe("simulated");
   });
 });
+
+describe("injectable simulate/post deps (Portfolio V2 reuse)", () => {
+  it("defaults to investmentLedgerApi when no deps are supplied (backward compatible)", async () => {
+    simulateMock.mockResolvedValueOnce({
+      compliance: { verdict: "PASS", breaches: [], rules_evaluated: 1 },
+      cash: { current_balance: "1000", projected_balance: "500", cash_impact: "-500", currency: "THB" },
+      position: { current_quantity: "0", projected_quantity: "100" },
+    });
+
+    const ticket = useOrderTicket();
+    ticket.open("portfolio-uuid-1");
+    withFilledDraft(ticket);
+    await ticket.simulate();
+
+    expect(simulateMock).toHaveBeenCalledWith("portfolio-uuid-1", expect.any(Object));
+  });
+
+  it("routes simulate/post through injected deps instead of investmentLedgerApi, so a portfolio-code caller (Portfolio V2) never touches the legacy UUID route", async () => {
+    const v2Simulate = vi.fn().mockResolvedValueOnce({
+      compliance: { verdict: "PASS", breaches: [], rules_evaluated: 1 },
+      cash: { current_balance: "1000", projected_balance: "500", cash_impact: "-500", currency: "THB" },
+      position: { current_quantity: "0", projected_quantity: "100" },
+    });
+    const v2Post = vi.fn().mockResolvedValueOnce({ id: "txn-v2-1", status: "POSTED" });
+
+    const ticket = useOrderTicket({ simulate: v2Simulate, post: v2Post });
+    ticket.open("PORT-CODE-1");
+    withFilledDraft(ticket);
+
+    await ticket.simulate();
+    expect(v2Simulate).toHaveBeenCalledWith("PORT-CODE-1", expect.any(Object));
+    expect(simulateMock).not.toHaveBeenCalled();
+
+    await ticket.post();
+    expect(v2Post).toHaveBeenCalledTimes(1);
+    expect(postMock).not.toHaveBeenCalled();
+    expect(ticket.stage.value).toBe("posted");
+  });
+});

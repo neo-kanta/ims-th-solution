@@ -41,6 +41,17 @@ type DecisionListFilter struct {
 	ProcessType      string
 	ProductType      string
 	ResearchReportNo string
+
+	// AccessibleFundIDs is injected by the transport layer's data-permission
+	// check (accessibleFundIDs in transport/handler/investment_handler.go),
+	// mirroring PortfolioListFilter.AccessibleFundIDs and
+	// FundListFilter.AccessibleFundIDs. nil means unrestricted (caller has
+	// global/company-wide data scope); a non-nil empty slice means the
+	// caller has zero fund access and the query must return no rows.
+	// Internal callers that already operate inside an authorised scope (e.g.
+	// the approval engine, or a Portfolio V2 handler that already resolved
+	// and authorized a single portfolio) should leave this nil.
+	AccessibleFundIDs []uuid.UUID
 }
 
 // DecisionRepository persists investment Decision aggregates.
@@ -102,6 +113,16 @@ type DecisionLineRepository interface {
 	ReplaceLines(ctx context.Context, tx pgx.Tx, decisionID uuid.UUID, lines []*entity.DecisionLine) error
 }
 
+// ExecutionListFilter restricts ExecutionRepository.ListByPortfolio. The
+// caller has already resolved and authorized a single portfolio (via
+// resolvePortfolioByCode's hasFundAccess check), so this filter carries no
+// separate AccessibleFundIDs field — portfolio scoping IS the access check.
+type ExecutionListFilter struct {
+	Status *vo.ExecutionStatus
+	Page   int
+	Limit  int
+}
+
 // ExecutionRepository persists Execution rows.
 type ExecutionRepository interface {
 	Create(ctx context.Context, tx pgx.Tx, e *entity.Execution) error
@@ -109,6 +130,20 @@ type ExecutionRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Execution, error)
 	ListByDecision(ctx context.Context, decisionID uuid.UUID) ([]*entity.Execution, error)
 	ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.Execution, error)
+
+	// ListByPortfolio returns paginated executions for a single portfolio,
+	// optionally filtered by status. Backs the Portfolio V2
+	// GET /portfolios/{portfolioCode}/executions endpoint.
+	ListByPortfolio(ctx context.Context, portfolioID uuid.UUID, f ExecutionListFilter) ([]*entity.Execution, int, error)
+}
+
+// TradeConfirmationListFilter restricts
+// TradeConfirmationRepository.ListByPortfolio. See ExecutionListFilter's doc
+// comment for why no AccessibleFundIDs field is needed here.
+type TradeConfirmationListFilter struct {
+	Status *vo.TradeConfirmationStatus
+	Page   int
+	Limit  int
 }
 
 // TradeConfirmationRepository persists TradeConfirmation rows.
@@ -118,6 +153,11 @@ type TradeConfirmationRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.TradeConfirmation, error)
 	ListByExecution(ctx context.Context, executionID uuid.UUID) ([]*entity.TradeConfirmation, error)
 	ListByFundDate(ctx context.Context, fundID uuid.UUID, businessDate time.Time) ([]*entity.TradeConfirmation, error)
+
+	// ListByPortfolio returns paginated trade confirmations for a single
+	// portfolio, optionally filtered by status. Backs the Portfolio V2
+	// GET /portfolios/{portfolioCode}/confirmations endpoint.
+	ListByPortfolio(ctx context.Context, portfolioID uuid.UUID, f TradeConfirmationListFilter) ([]*entity.TradeConfirmation, int, error)
 
 	// GetByBrokerReference returns the existing confirmation for a broker
 	// reference string, or nil. Used by the batch importer to dedupe rows

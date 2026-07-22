@@ -4019,6 +4019,45 @@ definitions:
       updated_at:
         type: string
     type: object
+  TradeConfirmationResponse:
+    properties:
+      broker_reference:
+        type: string
+      business_date:
+        type: string
+      confirmed_amount:
+        type: string
+      confirmed_price:
+        type: string
+      confirmed_quantity:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      decision_id:
+        type: string
+      discrepancy_reason:
+        type: string
+      execution_id:
+        type: string
+      fund_id:
+        type: string
+      id:
+        type: string
+      import_batch_id:
+        type: string
+      portfolio_id:
+        type: string
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
   TransactionListResponse:
     properties:
       items:
@@ -7723,6 +7762,48 @@ paths:
       summary: Create Investment Decision
       tags:
       - Investment - Decisions
+  /investment/decisions/{id}:
+    get:
+      description: Retrieve one investment decision by UUID. Requires data-permission
+        on the decision's fund.
+      parameters:
+      - description: Decision UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Decision
+      tags:
+      - Investment - Decisions
   /investment/decisions/{id}/cancel:
     post:
       consumes:
@@ -7800,6 +7881,10 @@ paths:
             $ref: '#/definitions/ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/ErrorResponse'
         "404":
@@ -8028,6 +8113,55 @@ paths:
       tags:
       - Investment - Decisions
   /investment/executions:
+    get:
+      description: List executions for a decision, or for a fund+business_date. Requires
+        data-permission on the resolved fund.
+      parameters:
+      - description: Filter by decision UUID
+        in: query
+        name: decision_id
+        type: string
+      - description: Filter by fund UUID (requires business_date)
+        in: query
+        name: fund_id
+        type: string
+      - description: Business date YYYY-MM-DD (required with fund_id)
+        in: query
+        name: business_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Investment Executions
+      tags:
+      - Investment - Executions
     post:
       consumes:
       - application/json
@@ -8075,6 +8209,48 @@ paths:
       security:
       - BearerAuth: []
       summary: Create Investment Execution
+      tags:
+      - Investment - Executions
+  /investment/executions/{id}:
+    get:
+      description: Retrieve one execution by UUID. Requires data-permission on the
+        execution's fund.
+      parameters:
+      - description: Execution UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Investment Execution
       tags:
       - Investment - Executions
   /investment/funds:
@@ -10161,6 +10337,98 @@ paths:
       summary: Submit Investment Research Report
       tags:
       - Investment - Research
+  /investment/trade-confirmations:
+    get:
+      description: List trade confirmations for an execution, or for a fund+business_date.
+        Requires data-permission on the resolved fund.
+      parameters:
+      - description: Filter by execution UUID
+        in: query
+        name: execution_id
+        type: string
+      - description: Filter by fund UUID (requires business_date)
+        in: query
+        name: fund_id
+        type: string
+      - description: Business date YYYY-MM-DD (required with fund_id)
+        in: query
+        name: business_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Trade Confirmations
+      tags:
+      - Investment - Trade Confirmations
+  /investment/trade-confirmations/{id}:
+    get:
+      description: Retrieve one trade confirmation by UUID. Requires data-permission
+        on the confirmation's fund.
+      parameters:
+      - description: Confirmation UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/TradeConfirmationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Trade Confirmation
+      tags:
+      - Investment - Trade Confirmations
   /market-data/history:
     get:
       description: Get daily price bars for a symbol from the configured provider

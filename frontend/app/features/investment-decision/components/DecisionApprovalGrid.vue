@@ -7,32 +7,51 @@ import AppDataTable from "~/shared/ui/AppDataTable.vue";
 import type { TableColumn } from "~/shared/ui/AppDataTable.vue";
 import AppStatusBadge from "~/shared/ui/AppStatusBadge.vue";
 import type { ApiDecision } from "../services/decisionApprovalApi";
+import { executionStateTone, type ExecutionLifecycleState } from "../lib/executionState";
 
 interface Props {
   items: ApiDecision[];
   loading?: boolean;
   error?: string | null;
   selectedIds?: string[];
+  /** Resolved portfolio_id -> business code, populated by the parent's lookup composable. */
+  portfolioCodesById?: Record<string, string>;
+  /** Resolved decision id -> real execution-lifecycle state (see lib/executionState.ts). */
+  executionStatesById?: Record<string, ExecutionLifecycleState>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   error: null,
   selectedIds: () => [],
+  portfolioCodesById: () => ({}),
+  executionStatesById: () => ({}),
 });
 
 const emit = defineEmits<{
   "select-change": [ids: string[]];
   "row-click": [item: ApiDecision];
+  "open-decision": [item: ApiDecision];
+  "open-executions": [item: ApiDecision];
 }>();
 
 const { t } = useI18n();
+
+function portfolioCode(item: ApiDecision): string {
+  if (!item.portfolio_id) return "—";
+  return props.portfolioCodesById[item.portfolio_id] ?? t("approval.decisionWorkbench.table.resolving", "Resolving…");
+}
 
 const columns = computed<TableColumn[]>(() => [
   {
     key: "decision_number",
     label: t("approval.decisionWorkbench.table.decisionNumber", "Decision number"),
     width: "156px",
+  },
+  {
+    key: "portfolio",
+    label: t("approval.decisionWorkbench.table.portfolio", "Portfolio"),
+    width: "110px",
   },
   {
     key: "business_date",
@@ -82,12 +101,48 @@ const columns = computed<TableColumn[]>(() => [
     width: "132px",
   },
   {
+    key: "execution",
+    label: t("approval.decisionWorkbench.execution.columnLabel", "Execution"),
+    width: "150px",
+  },
+  {
     key: "actions",
     label: t("approval.decisionWorkbench.table.action", "Action"),
-    width: "92px",
+    width: "150px",
     align: "right",
   },
 ]);
+
+function executionState(item: ApiDecision): ExecutionLifecycleState | null {
+  return item.id ? (props.executionStatesById[item.id] ?? null) : null;
+}
+
+function executionStateLabel(state: ExecutionLifecycleState | null): string {
+  switch (state) {
+    case "draft":
+      return t("approval.decisionWorkbench.execution.state.draft", "Draft");
+    case "pending_approval":
+      return t("approval.decisionWorkbench.execution.state.pendingApproval", "Pending approval");
+    case "executable":
+      return t("approval.decisionWorkbench.execution.state.executable", "Executable");
+    case "rejected":
+      return t("approval.decisionWorkbench.execution.state.rejected", "Rejected");
+    case "cancelled":
+      return t("approval.decisionWorkbench.execution.state.cancelled", "Cancelled");
+    case "compliance_blocked":
+      return t("approval.decisionWorkbench.execution.state.complianceBlocked", "Compliance hold");
+    case "execution_pending":
+      return t("approval.decisionWorkbench.execution.state.executionPending", "Execution pending");
+    case "partially_filled":
+      return t("approval.decisionWorkbench.execution.state.partiallyFilled", "Partially filled");
+    case "filled":
+      return t("approval.decisionWorkbench.execution.state.filled", "Filled");
+    case "execution_cancelled":
+      return t("approval.decisionWorkbench.execution.state.executionCancelled", "Execution cancelled");
+    default:
+      return t("approval.decisionWorkbench.execution.state.unknown", "Unknown");
+  }
+}
 
 function statusType(status: string | undefined): string {
   switch (status) {
@@ -168,6 +223,10 @@ function humanize(value: string | undefined): string {
       <span class="decision-grid__no">{{ item.decision_number ?? "—" }}</span>
     </template>
 
+    <template #[`cell(portfolio)`]="{ item }">
+      <span class="decision-grid__no">{{ portfolioCode(item) }}</span>
+    </template>
+
     <template #[`cell(process_type)`]="{ item }">
       {{ humanize(item.process_type) }}
     </template>
@@ -214,10 +273,36 @@ function humanize(value: string | undefined): string {
       />
     </template>
 
+    <template #[`cell(execution)`]="{ item }">
+      <AppStatusBadge
+        :status="executionStateTone(executionState(item) ?? 'unknown')"
+        :label="executionStateLabel(executionState(item))"
+        size="sm"
+      />
+    </template>
+
     <template #[`cell(actions)`]="{ item }">
-      <AppButton variant="ghost" size="xs" @click.stop="emit('row-click', item)">
-        {{ t("approval.decisionWorkbench.table.inspect", "Inspect") }}
-      </AppButton>
+      <div class="decision-grid__actions">
+        <AppButton variant="ghost" size="xs" @click.stop="emit('row-click', item)">
+          {{ t("approval.decisionWorkbench.table.inspect", "Inspect") }}
+        </AppButton>
+        <AppButton
+          variant="ghost"
+          size="xs"
+          :disabled="!item.portfolio_id"
+          @click.stop="emit('open-decision', item)"
+        >
+          {{ t("approval.decisionWorkbench.table.openDecision", "Open") }}
+        </AppButton>
+        <AppButton
+          variant="ghost"
+          size="xs"
+          :disabled="!item.portfolio_id"
+          @click.stop="emit('open-executions', item)"
+        >
+          {{ t("approval.decisionWorkbench.execution.viewExecutions", "Executions") }}
+        </AppButton>
+      </div>
     </template>
   </AppDataTable>
 </template>
@@ -253,5 +338,11 @@ function humanize(value: string | undefined): string {
 
 .decision-grid__empty {
   color: var(--text-tertiary, #6e7781);
+}
+
+.decision-grid__actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
 }
 </style>

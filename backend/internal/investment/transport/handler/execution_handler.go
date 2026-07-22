@@ -47,11 +47,15 @@ func (h *ExecutionHandler) SetPortfolioRepository(r domain.PortfolioRepository) 
 }
 
 // SetPermissionChecker wires the fund-scoped data-permission checker
-// post-construction so the Portfolio V2 (portfolioCode) routes in
-// portfolio_v2_execution_handler.go enforce hasFundAccess via
-// resolvePortfolioByCode, matching the InvestmentHandler read paths.
+// post-construction. Used both by the Portfolio V2 (portfolioCode) routes in
+// portfolio_v2_execution_handler.go (via resolvePortfolioByCode's
+// hasFundAccess check) and by the V1 {id}-keyed execution routes in this
+// file (ListExecutions/GetExecution), which previously had no fund/portfolio
+// data-scope enforcement at all beyond the route-level function permission.
 // Production wiring in module.go always passes a real, fail-closed checker
-// here (never nil).
+// here (never nil) — a nil pc makes every fund-scope check in this file deny
+// access, so an unwired handler fails closed rather than silently allowing
+// cross-fund reads.
 func (h *ExecutionHandler) SetPermissionChecker(pc contract.PermissionChecker) {
 	if h != nil {
 		h.pc = pc
@@ -59,12 +63,42 @@ func (h *ExecutionHandler) SetPermissionChecker(pc contract.PermissionChecker) {
 }
 
 // ListExecutions handles GET /investment/executions?decision_id=&fund_id=&business_date=.
+// @Summary List Investment Executions
+// @Description List executions for a decision, or for a fund+business_date. Requires data-permission on the resolved fund.
+// @Tags Investment - Executions
+// @Security BearerAuth
+// @Produce json
+// @Param decision_id query string false "Filter by decision UUID"
+// @Param fund_id query string false "Filter by fund UUID (requires business_date)"
+// @Param business_date query string false "Business date YYYY-MM-DD (required with fund_id)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/executions [get]
 func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if v := q.Get("decision_id"); v != "" {
 		id, err := parseUUID(v)
 		if err != nil {
 			httputil.BadRequest(w, "invalid decision_id")
+			return
+		}
+		// Data permission: resolve the decision's fund and verify access
+		// before revealing any execution under it.
+		decision, err := h.decisions.GetByID(r.Context(), id)
+		if err != nil {
+			httputil.InternalError(w, err.Error())
+			return
+		}
+		if decision == nil {
+			httputil.NotFound(w, "decision not found")
+			return
+		}
+		if !hasFundAccess(r.Context(), h.pc, decision.FundID) {
+			httputil.Forbidden(w, "no access to this decision")
 			return
 		}
 		items, err := h.executions.ListByDecision(r.Context(), id)
@@ -90,6 +124,11 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 			httputil.BadRequest(w, "business_date required (YYYY-MM-DD)")
 			return
 		}
+		// Data permission: verify access to the requested fund directly.
+		if !hasFundAccess(r.Context(), h.pc, id) {
+			httputil.Forbidden(w, "no access to this fund")
+			return
+		}
 		items, err := h.executions.ListByFundDate(r.Context(), id, bd)
 		if err != nil {
 			httputil.InternalError(w, err.Error())
@@ -105,6 +144,20 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 	httputil.BadRequest(w, "decision_id or (fund_id+business_date) is required")
 }
 
+// GetExecution handles GET /investment/executions/{id}.
+// @Summary Get Investment Execution
+// @Description Retrieve one execution by UUID. Requires data-permission on the execution's fund.
+// @Tags Investment - Executions
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Execution UUID"
+// @Success 200 {object} response.ExecutionResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/executions/{id} [get]
 func (h *ExecutionHandler) GetExecution(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -118,6 +171,12 @@ func (h *ExecutionHandler) GetExecution(w http.ResponseWriter, r *http.Request) 
 	}
 	if e == nil {
 		httputil.NotFound(w, "execution not found")
+		return
+	}
+	// Data permission: verify the execution's fund is within the caller's
+	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
+	if !hasFundAccess(r.Context(), h.pc, e.FundID) {
+		httputil.Forbidden(w, "no access to this execution")
 		return
 	}
 	httputil.OK(w, response.FromExecution(e))

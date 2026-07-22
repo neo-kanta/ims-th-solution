@@ -42,6 +42,9 @@ func (r *fakeExecutionRepo) GetByID(_ context.Context, _ uuid.UUID) (*entity.Exe
 func (r *fakeExecutionRepo) ListByDecision(_ context.Context, _ uuid.UUID) ([]*entity.Execution, error) {
 	return nil, nil
 }
+func (r *fakeExecutionRepo) ListByPortfolio(_ context.Context, _ uuid.UUID, _ domain.ExecutionListFilter) ([]*entity.Execution, int, error) {
+	return nil, 0, nil
+}
 func (r *fakeExecutionRepo) ListByFundDate(_ context.Context, _ uuid.UUID, _ time.Time) ([]*entity.Execution, error) {
 	return nil, nil
 }

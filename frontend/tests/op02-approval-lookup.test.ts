@@ -31,4 +31,16 @@ describe("OP-02 approval lookup", () => {
       business_date_from: "2026-07-15",
     });
   });
+
+  it("round-trips the business portfolio_code filter through the URL query", () => {
+    const filters = approvalFiltersFromQuery({ portfolio_code: "PF-001" });
+
+    expect(filters).toEqual({ portfolio_code: "PF-001" });
+    expect(approvalFiltersToQuery(filters)).toEqual({ portfolio_code: "PF-001" });
+  });
+
+  it("never resolves portfolio_code into the internal portfolio_id filter by itself", () => {
+    const filters = cleanApprovalFilters({ portfolio_code: "PF-001" });
+    expect(filters).not.toHaveProperty("portfolio_id");
+  });
 });

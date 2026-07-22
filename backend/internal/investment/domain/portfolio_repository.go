@@ -60,13 +60,14 @@ type PortfolioRepository interface {
 	GetByFundCode(ctx context.Context, fundID uuid.UUID, code string) (*entity.Portfolio, error)
 	// GetByCode resolves a portfolio by its business code alone, for the
 	// portfolio-first V2 API (docs/api/portfolio-v2-api-ddd.md). Alive rows
-	// only. NOTE: the DB only enforces uniqueness of code per fund today
-	// (uq_inv_portfolios_fund_code_alive); global code uniqueness across
-	// funds is a V2 design assumption, not yet a DB constraint (see
-	// docs/api/portfolio-v2-api-ddd.md section 12, Phase 0 hardening, for the
-	// deferred fix). Until that constraint lands, implementations MUST NOT
-	// silently pick one row when several alive portfolios share a code —
-	// they must return (nil, *domain.ErrAmbiguousPortfolioCode) instead.
+	// only. The DB enforces global (not just per-fund) active-code
+	// uniqueness via the uq_inv_portfolios_code_alive unique index, added in
+	// migration 20260703000001_investment__portfolio_v2_hardening (alongside
+	// the pre-existing per-fund uq_inv_portfolios_fund_code_alive).
+	// Implementations still MUST NOT silently pick one row if more than one
+	// alive portfolio is ever found sharing a code (e.g. data imported before
+	// the constraint existed, or a future regression) — they must return
+	// (nil, *domain.ErrAmbiguousPortfolioCode) instead of guessing.
 	GetByCode(ctx context.Context, code string) (*entity.Portfolio, error)
 	List(ctx context.Context, filter PortfolioListFilter) ([]*entity.Portfolio, int, error)
 	Update(ctx context.Context, tx pgx.Tx, p *entity.Portfolio) error

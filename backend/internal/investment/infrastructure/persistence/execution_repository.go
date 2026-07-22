@@ -130,6 +130,56 @@ func (r *PostgresExecutionRepository) ListByFundDate(ctx context.Context, fundID
 	return out, rows.Err()
 }
 
+// ListByPortfolio returns paginated executions for a single portfolio,
+// optionally filtered by status. Backs the Portfolio V2
+// GET /portfolios/{portfolioCode}/executions endpoint — the caller has
+// already resolved and authorized the portfolio via resolvePortfolioByCode,
+// so no separate fund-scope filter is applied here.
+func (r *PostgresExecutionRepository) ListByPortfolio(ctx context.Context, portfolioID uuid.UUID, f domain.ExecutionListFilter) ([]*entity.Execution, int, error) {
+	page := f.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := f.Limit
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	offset := (page - 1) * limit
+
+	where := "WHERE portfolio_id = $1"
+	args := []any{portfolioID}
+	if f.Status != nil {
+		args = append(args, string(*f.Status))
+		where += fmt.Sprintf(" AND status = $%d", len(args))
+	}
+
+	var total int
+	countQ := "SELECT COUNT(*) FROM investment__executions " + where
+	if err := r.pool.QueryRow(ctx, countQ, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count executions by portfolio: %w", err)
+	}
+
+	args = append(args, limit, offset)
+	listQ := executionSelect + " " + where + fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	rows, err := r.pool.Query(ctx, listQ, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list executions by portfolio: %w", err)
+	}
+	defer rows.Close()
+	out := []*entity.Execution{}
+	for rows.Next() {
+		e, err := scanExecution(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return out, total, nil
+}
+
 func scanExecution(row rowScanner) (*entity.Execution, error) {
 	e := &entity.Execution{}
 	var (

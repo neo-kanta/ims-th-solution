@@ -84,6 +84,17 @@ watch(
     <PortfolioWorkspaceHeader :portfolio="ctx.portfolio.value" />
 
     <AppCard :title="t('portfolio.ledger.title')" :subtitle="t('portfolio.ledger.subtitle')">
+      <template v-if="!ctx.isModel.value" #header-actions>
+        <IMSPermissionGuard permission="INVESTMENT_LEDGER_SIMULATE">
+          <NuxtLink
+            :to="`/portfolios/${encodeURIComponent(props.portfolioCode)}/ledger/new`"
+            class="portfolio-ledger__new-entry"
+          >
+            + {{ t("portfolio.ledger.newEntry") }}
+          </NuxtLink>
+        </IMSPermissionGuard>
+      </template>
+
       <div v-if="loading && transactions.length === 0" class="portfolio-ledger__notice" role="status">
         {{ t("portfolio.ledger.loading") }}
       </div>
@@ -174,6 +185,19 @@ watch(
 .portfolio-ledger__table td {
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-subtle, #d0d7de);
+}
+
+.portfolio-ledger__new-entry {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border-subtle, #d0d7de);
+  background: var(--action-primary, #0969da);
+  color: var(--text-on-primary, #ffffff);
+  border-radius: var(--radius-md, 5px);
+  padding: 5px 10px;
+  cursor: pointer;
 }
 
 .portfolio-ledger__mono {

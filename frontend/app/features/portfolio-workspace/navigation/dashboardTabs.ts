@@ -40,10 +40,40 @@ export const portfolioWorkspaceDashboardTabs: DashboardTabProvider = {
           icon: "decision",
         },
         {
+          key: "executions",
+          label: t("portfolio.workspaceTabs.executions"),
+          to: `/portfolios/${code}/executions`,
+          icon: "execution",
+        },
+        {
+          key: "confirmations",
+          label: t("portfolio.workspaceTabs.confirmations"),
+          to: `/portfolios/${code}/confirmations`,
+          icon: "execution",
+        },
+        {
           key: "compliance",
           label: t("portfolio.workspaceTabs.compliance"),
           to: `/portfolios/${code}/compliance`,
           icon: "compliance",
+        },
+        {
+          key: "valuations",
+          label: t("portfolio.workspaceTabs.valuations"),
+          to: `/portfolios/${code}/valuations`,
+          icon: "trend-up",
+        },
+        {
+          key: "watchlists",
+          label: t("portfolio.workspaceTabs.watchlists"),
+          to: `/portfolios/${code}/watchlists`,
+          icon: "list",
+        },
+        {
+          key: "settings",
+          label: t("portfolio.workspaceTabs.settings"),
+          to: `/portfolios/${code}/settings`,
+          icon: "system",
         },
       ];
     });

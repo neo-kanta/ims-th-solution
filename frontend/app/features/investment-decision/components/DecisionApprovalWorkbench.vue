@@ -8,10 +8,21 @@ import AppCard from "~/shared/ui/AppCard.vue";
 import AppErrorState from "~/shared/ui/AppErrorState.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
 import AppToast from "~/shared/ui/AppToast.vue";
+import { portfolioApi } from "~/features/portfolio-workspace/services/portfolioApi";
+import {
+  decisionDetailPath,
+  executionsListPath,
+} from "~/features/portfolio-decision/lib/decisionRoutes";
 import {
   useDecisionApprovalList,
   useDecisionBatchAction,
 } from "../composables/useDecisionApproval";
+import { usePortfolioCodeLookup } from "../composables/usePortfolioCodeLookup";
+import { useDecisionExecutionState } from "../composables/useDecisionExecutionState";
+import {
+  deriveExecutionLifecycleState,
+  type ExecutionLifecycleState,
+} from "../lib/executionState";
 import {
   approvalFiltersFromQuery,
   approvalFiltersToQuery,
@@ -33,10 +44,13 @@ const route = useRoute();
 const router = useRouter();
 const list = useDecisionApprovalList();
 const batchAction = useDecisionBatchAction();
+const codeLookup = usePortfolioCodeLookup();
+const executionState = useDecisionExecutionState();
 
 const activeFilters = ref<DecisionApprovalFilters>(
   approvalFiltersFromQuery(route.query),
 );
+const portfolioCodeError = ref<string | null>(null);
 const selectedIds = ref<string[]>([]);
 const drawerOpen = ref(false);
 const drawerDecisionId = ref<string | null>(null);
@@ -64,8 +78,43 @@ const activeLookup = computed(
     t("approval.decisionWorkbench.queue.allPending", "All pending decisions"),
 );
 
+const executionStatesById = computed<Record<string, ExecutionLifecycleState>>(() => {
+  const map: Record<string, ExecutionLifecycleState> = {};
+  for (const item of list.items.value) {
+    if (!item.id) continue;
+    const execution = executionState.executionFor(item.id);
+    map[item.id] = deriveExecutionLifecycleState(item.status, execution?.status);
+  }
+  return map;
+});
+
 async function loadList() {
-  await list.fetchList(activeFilters.value);
+  portfolioCodeError.value = null;
+  const { portfolio_code: code, ...rest } = activeFilters.value;
+  const effectiveFilters: DecisionApprovalFilters = { ...rest };
+
+  if (code) {
+    try {
+      const portfolio = await portfolioApi.getByCode(code);
+      if (!portfolio.id) throw new Error("no id");
+      effectiveFilters.portfolio_id = portfolio.id;
+    } catch {
+      portfolioCodeError.value = t(
+        "approval.decisionWorkbench.lookup.portfolioCodeNotFound",
+        "Portfolio code not found or not accessible to you.",
+      );
+      list.items.value = [];
+      list.total.value = 0;
+      return;
+    }
+  }
+
+  await list.fetchList(effectiveFilters);
+  await codeLookup.resolveMany(list.items.value.map((item) => item.portfolio_id));
+  const visibleCodes = list.items.value
+    .map((item) => (item.portfolio_id ? codeLookup.codesById.value[item.portfolio_id] : undefined))
+    .filter((c): c is string => Boolean(c));
+  void executionState.loadForPortfolioCodes(visibleCodes);
 }
 
 function writeQuery() {
@@ -83,6 +132,7 @@ function onSearch(filters: DecisionApprovalFilters) {
 
 function onReset() {
   activeFilters.value = {};
+  portfolioCodeError.value = null;
   list.page.value = 1;
   selectedIds.value = [];
   actionMode.value = null;
@@ -98,6 +148,20 @@ function onRowClick(item: ApiDecision) {
   if (!item.id) return;
   drawerDecisionId.value = item.id;
   drawerOpen.value = true;
+}
+
+async function openDecisionRoute(item: ApiDecision) {
+  if (!item.id || !item.portfolio_id) return;
+  const code = await codeLookup.resolve(item.portfolio_id);
+  if (!code) return;
+  void router.push(decisionDetailPath(code, item.id));
+}
+
+async function openExecutionsRoute(item: ApiDecision) {
+  if (!item.portfolio_id) return;
+  const code = await codeLookup.resolve(item.portfolio_id);
+  if (!code) return;
+  void router.push(executionsListPath(code));
 }
 
 function openApprove() {
@@ -255,6 +319,7 @@ onMounted(() => {
       <DecisionSearchFilter
         :initial-filters="activeFilters"
         :loading="list.loading.value"
+        :portfolio-code-error="portfolioCodeError"
         @search="onSearch"
         @reset="onReset"
       />
@@ -390,8 +455,12 @@ onMounted(() => {
         :items="list.items.value"
         :loading="list.loading.value"
         :selected-ids="selectedIds"
+        :portfolio-codes-by-id="codeLookup.codesById.value"
+        :execution-states-by-id="executionStatesById"
         @select-change="onSelectChange"
         @row-click="onRowClick"
+        @open-decision="openDecisionRoute"
+        @open-executions="openExecutionsRoute"
       />
 
       <div v-if="!list.forbidden.value && list.total.value > list.limit.value" class="decision-workbench__pagination">
@@ -427,6 +496,10 @@ onMounted(() => {
       :open="drawerOpen"
       :decision-id="drawerDecisionId"
       @close="drawerOpen = false"
+      @view-full-decision="(portfolioCode, decisionId) => {
+        drawerOpen = false;
+        void router.push(decisionDetailPath(portfolioCode, decisionId));
+      }"
     />
 
     <AppToast v-model="toastVisible" :message="toastMessage" :tone="toastTone" />

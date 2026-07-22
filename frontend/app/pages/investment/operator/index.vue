@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "~/composables/useI18n";
+import { useAuthStore } from "~/stores/useAuthStore";
 import { useFundWorkspace } from "~/features/investment-workspace/composables/useFundWorkspace";
 import { todayBangkokIso } from "~/features/my-funds/lib/derive";
 import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
 import type { ApiWorkflowState } from "~/features/my-funds/types";
-import type { AppTranslationKey } from "~/composables/useI18n";
+import {
+  OPERATOR_CATALOG,
+  deriveCapability,
+  filterOperatorRows,
+  type OperatorCatalogRow,
+} from "~/features/operator/lib/operatorCatalog";
 
 import AppCard from "~/shared/ui/AppCard.vue";
 import AppPageHeader from "~/shared/ui/AppPageHeader.vue";
@@ -20,6 +26,7 @@ definePageMeta({
 
 const { t } = useI18n();
 const router = useRouter();
+const auth = useAuthStore();
 
 // Fund workspace state
 const { funds, activeFund, loadFunds, setActiveFund } = useFundWorkspace();
@@ -31,62 +38,39 @@ const businessDate = computed(() => workflowState.value?.businessDate || todayBa
 
 // Operations Catalog directory state
 const catalogSearchQuery = ref("");
-interface OperatorWorkflowDefinition {
-  code: "OP-01" | "OP-02" | "OP-03";
-  titleKey: AppTranslationKey;
-  descriptionKey: AppTranslationKey;
-  requiresFund: boolean;
-  routePath: (fundId: string) => string;
-}
 
-interface OperatorWorkflow extends OperatorWorkflowDefinition {
-  title: string;
-  description: string;
+interface OperatorWorkflow extends OperatorCatalogRow {
+  statusVariant: "success" | "warning" | "locked";
 }
-
-const catalogDefinitions: readonly OperatorWorkflowDefinition[] = [
-  {
-    code: "OP-01",
-    titleKey: "operator.directory.workflows.op01.title",
-    descriptionKey: "operator.directory.workflows.op01.description",
-    requiresFund: false,
-    routePath: () => `/investment/operator/decision/new`,
-  },
-  {
-    code: "OP-02",
-    titleKey: "operator.directory.workflows.op02.title",
-    descriptionKey: "operator.directory.workflows.op02.description",
-    requiresFund: false,
-    routePath: () => `/investment/decision`,
-  },
-  {
-    code: "OP-03",
-    titleKey: "operator.directory.workflows.op03.title",
-    descriptionKey: "operator.directory.workflows.op03.description",
-    requiresFund: true,
-    routePath: (fundId: string) => `/investment/operator/${fundId}/decisions`,
-  },
-];
 
 const catalogWorkflows = computed<OperatorWorkflow[]>(() =>
-  catalogDefinitions.map((workflow) => ({
-    ...workflow,
-    title: t(workflow.titleKey),
-    description: t(workflow.descriptionKey),
-  })),
+  OPERATOR_CATALOG.map((workflow) => {
+    const capability = deriveCapability(workflow, (code) => auth.hasPermission(code));
+    const statusLabel =
+      capability === "denied"
+        ? t("operator.directory.status.permissionRequired")
+        : capability === "limited"
+          ? t("operator.directory.status.limited")
+          : t("operator.status.ready");
+    const statusVariant: OperatorWorkflow["statusVariant"] =
+      capability === "denied" ? "locked" : capability === "limited" ? "warning" : "success";
+
+    return {
+      ...workflow,
+      title: t(workflow.titleKey),
+      description: t(workflow.descriptionKey),
+      capability,
+      statusLabel,
+      statusVariant,
+    };
+  }),
 );
 
-const filteredCatalog = computed(() => {
-  const query = catalogSearchQuery.value.toLowerCase().trim();
-  if (!query) return catalogWorkflows.value;
-  return catalogWorkflows.value.filter(
-    (op) =>
-      op.code.toLowerCase().includes(query) ||
-      op.title.toLowerCase().includes(query) ||
-      op.description.toLowerCase().includes(query) ||
-      t("operator.status.ready").toLowerCase().includes(query)
-  );
-});
+const filteredCatalog = computed(() => filterOperatorRows(catalogWorkflows.value, catalogSearchQuery.value));
+
+function limitedReason(op: OperatorWorkflow): string {
+  return op.limitedReasonKey ? t(op.limitedReasonKey) : "";
+}
 
 async function refreshWorkflowState() {
   if (!activeFundId.value) return;
@@ -109,9 +93,14 @@ function onFundChange(event: Event) {
 }
 
 function openWorkflow(op: OperatorWorkflow) {
-  if (op.requiresFund && !activeFundId.value) return;
-  const path = op.routePath(activeFundId.value);
-  void router.push(path);
+  if (op.capability === "denied") return;
+  void router.push(op.routePath);
+}
+
+function onRowKeydown(event: KeyboardEvent, op: OperatorWorkflow) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  openWorkflow(op);
 }
 
 // Watchers
@@ -187,20 +176,37 @@ onMounted(async () => {
                 v-for="op in filteredCatalog"
                 :key="op.code"
                 class="clickable-row"
+                :class="{ 'clickable-row--denied': op.capability === 'denied' }"
+                tabindex="0"
+                role="button"
+                :aria-disabled="op.capability === 'denied'"
+                :aria-label="`${op.code} ${op.title} — ${op.statusLabel}`"
                 @click="openWorkflow(op)"
+                @keydown="onRowKeydown($event, op)"
               >
                 <td class="mono bold">{{ op.code }}</td>
                 <td class="bold">{{ op.title }}</td>
-                <td class="text-secondary">{{ op.description }}</td>
+                <td class="text-secondary">
+                  {{ op.description }}
+                  <p v-if="op.capability === 'limited'" class="limited-note">
+                    {{ limitedReason(op) }}
+                  </p>
+                </td>
                 <td>
-                  <span class="status-pill status-pill--ready">
-                    {{ t("operator.status.ready") }}
+                  <span
+                    class="status-pill"
+                    :class="`status-pill--${op.statusVariant}`"
+                    :title="op.capability === 'denied' ? t('operator.directory.status.permissionRequiredHint') : ''"
+                  >
+                    {{ op.statusLabel }}
                   </span>
                 </td>
                 <td class="center" @click.stop>
                   <AppButton
                     variant="secondary"
                     size="xs"
+                    :disabled="op.capability === 'denied'"
+                    :title="op.capability === 'denied' ? t('operator.directory.status.permissionRequiredHint') : ''"
                     @click="openWorkflow(op)"
                   >
                     {{ t("operator.actions.open") }}
@@ -316,9 +322,26 @@ onMounted(async () => {
   border-radius: 12px;
 }
 
-.status-pill--ready {
+.status-pill--success {
   background: rgba(26, 127, 55, 0.15);
   color: var(--state-success, #1a7f37);
+}
+
+.status-pill--warning {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--state-warning, #9a6700);
+}
+
+.status-pill--locked {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-tertiary, #64748b);
+}
+
+.limited-note {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
 }
 
 /* Table styling */
@@ -339,6 +362,10 @@ onMounted(async () => {
   text-align: left;
   border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
+}
+
+.operator-table td.text-secondary {
+  white-space: normal;
 }
 
 .operator-table th {
@@ -365,6 +392,19 @@ onMounted(async () => {
 
 .clickable-row:hover {
   background: var(--bg-card-hover);
+}
+
+.clickable-row:focus-visible {
+  outline: 2px solid var(--border-focus, #0969da);
+  outline-offset: -2px;
+}
+
+.clickable-row--denied {
+  cursor: not-allowed;
+}
+
+.clickable-row--denied:hover {
+  background: none;
 }
 
 /* Helpers */
