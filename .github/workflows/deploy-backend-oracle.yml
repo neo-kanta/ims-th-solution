@@ -95,6 +95,7 @@ jobs:
             fi
 
             cleanup_failed_deploy() {
+              $DOCKER rm -f "${CONTAINER_NAME}-migrate" >/dev/null 2>&1 || true
               $DOCKER logs --tail 100 "${CONTAINER_NAME}-new" || true
               $DOCKER rm -f "${CONTAINER_NAME}-new" >/dev/null 2>&1 || true
             }
@@ -105,6 +106,19 @@ jobs:
             $DOCKER pull "$IMAGE"
 
             $DOCKER network inspect "$DOCKER_NETWORK" >/dev/null 2>&1 || $DOCKER network create "$DOCKER_NETWORK"
+
+            # Apply migrations before removing the currently running backend. If a
+            # migration fails, the deployment stops here and the existing service
+            # remains available. The application container repeats this safely and
+            # receives ErrNoChange after a successful preflight.
+            echo "Running database migration preflight..."
+            $DOCKER rm -f "${CONTAINER_NAME}-migrate" >/dev/null 2>&1 || true
+            $DOCKER run --rm \
+              --name "${CONTAINER_NAME}-migrate" \
+              --network "$DOCKER_NETWORK" \
+              --env-file "$ENV_FILE" \
+              --entrypoint /app/migrate \
+              "$IMAGE" up
 
             $DOCKER rm -f "${CONTAINER_NAME}-new" >/dev/null 2>&1 || true
             $DOCKER rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
