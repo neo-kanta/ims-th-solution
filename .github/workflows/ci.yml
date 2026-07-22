@@ -121,6 +121,7 @@ jobs:
       ADMIN_IP_ALLOWLIST: ""
       MARKET_DATA_PROVIDER: mock
       MARKET_DATA_PRIMARY_PROVIDER: mock
+      REPORTING_CURRENCY: THB
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       NUXT_PUBLIC_API_BASE_URL: http://localhost:8080/api/v1
       NUXT_API_BASE_URL: http://localhost:8080/api/v1
