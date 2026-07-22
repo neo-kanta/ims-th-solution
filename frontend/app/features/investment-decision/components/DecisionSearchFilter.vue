@@ -13,10 +13,13 @@ const props = withDefaults(
   defineProps<{
     initialFilters?: DecisionApprovalFilters;
     loading?: boolean;
+    /** Set when the last portfolio-code lookup failed (unknown/inaccessible code). */
+    portfolioCodeError?: string | null;
   }>(),
   {
     initialFilters: () => ({}),
     loading: false,
+    portfolioCodeError: null,
   },
 );
 
@@ -32,6 +35,7 @@ const processType = ref("");
 const productType = ref("");
 const dateFrom = ref("");
 const dateTo = ref("");
+const portfolioCode = ref("");
 
 const processTypes = computed(() => [
   {
@@ -71,6 +75,7 @@ function hydrate(filters: DecisionApprovalFilters) {
   productType.value = filters.product_type ?? "";
   dateFrom.value = filters.business_date_from ?? "";
   dateTo.value = filters.business_date_to ?? "";
+  portfolioCode.value = filters.portfolio_code ?? "";
 }
 
 function onSearch() {
@@ -83,6 +88,7 @@ function onSearch() {
       product_type: productType.value,
       business_date_from: dateFrom.value,
       business_date_to: dateTo.value,
+      portfolio_code: portfolioCode.value,
     }),
   );
 }
@@ -153,6 +159,25 @@ watch(
     </div>
 
     <div class="decision-filter__secondary">
+      <label class="decision-filter__field" for="op02-portfolio-code">
+        <span class="decision-filter__label">
+          {{ t("approval.decisionWorkbench.lookup.portfolioCodeLabel", "Portfolio code") }}
+        </span>
+        <AppInput
+          id="op02-portfolio-code"
+          v-model="portfolioCode"
+          type="search"
+          :disabled="loading"
+          :placeholder="t(
+            'approval.decisionWorkbench.lookup.portfolioCodePlaceholder',
+            'e.g. PF-001',
+          )"
+        />
+        <span v-if="portfolioCodeError" class="decision-filter__error" role="alert">
+          {{ portfolioCodeError }}
+        </span>
+      </label>
+
       <label class="decision-filter__field" for="op02-process-type">
         <span class="decision-filter__label">
           {{ t("approval.decisionWorkbench.lookup.processTypeLabel", "Process") }}
@@ -211,10 +236,16 @@ watch(
 
 .decision-filter__secondary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
   gap: var(--space-3, 12px);
   padding-top: var(--space-3, 12px);
   border-top: 1px solid var(--border-subtle, #d0d7de);
+}
+
+.decision-filter__error {
+  color: var(--alert-danger-text, #cf222e);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .decision-filter__field {

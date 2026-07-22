@@ -220,13 +220,24 @@ func NewModule(
 	m.decisionHandler.SetDecisionLineRepository(m.decisionLines)
 	m.decisionHandler.SetBatchApprovalHandler(m.decisionBatchCmd)
 	m.decisionHandler.SetPortfolioRepository(m.portfolios)
+	// Fund-scoped data-permission checker for both the V1 {id}-keyed decision
+	// routes (decision_handler.go's ListDecisions/GetDecision/
+	// GetDecisionWithLines/ListApprovalItems) and the Portfolio V2
+	// portfolioCode routes (portfolio_v2_decision_handler.go).
+	// m.permissionAdapter is always a non-nil *adapter.PermissionCheckerAdapter
+	// — even when iamPort is nil (test contexts only; see NewModule's doc
+	// comment) it fails closed rather than skipping the check, so this is
+	// wired unconditionally exactly like m.handler (InvestmentHandler) above.
+	m.decisionHandler.SetPermissionChecker(m.permissionAdapter)
 	m.executionHandler = handler.NewExecutionHandler(m.executions, m.executionCmd)
 	m.executionHandler.SetDecisionRepository(m.decisions)
 	m.executionHandler.SetPortfolioRepository(m.portfolios)
+	m.executionHandler.SetPermissionChecker(m.permissionAdapter)
 	m.confirmationHandler = handler.NewTradeConfirmationHandler(m.confirmations, m.confirmationCmd)
 	m.confirmationHandler.SetBatchImportHandler(m.confirmationImportCmd)
 	m.confirmationHandler.SetExecutionRepository(m.executions)
 	m.confirmationHandler.SetPortfolioRepository(m.portfolios)
+	m.confirmationHandler.SetPermissionChecker(m.permissionAdapter)
 
 	return m
 }
@@ -473,15 +484,25 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 	r.Route("/portfolios", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodePortfolioView))
+			r.Get("/", h.ListPortfoliosV2)
 			r.Get("/{portfolioCode}", h.GetPortfolioByCode)
 			r.Get("/{portfolioCode}/holdings", h.GetHoldingsByCode)
 			r.Get("/{portfolioCode}/cash", h.GetCashByCode)
 			r.Get("/{portfolioCode}/transactions", h.ListTransactionsByCode)
 		})
 		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodePortfolioManage))
+			r.Post("/", h.CreatePortfolioV2)
+			r.Patch("/{portfolioCode}", h.PatchPortfolioByCode)
+		})
+		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationView))
 			r.Get("/{portfolioCode}/valuations", h.ListValuationsByCode)
 			r.Get("/{portfolioCode}/valuations/latest", h.GetLatestValuationByCode)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(pc, invperm.CodeValuationRun))
+			r.Post("/{portfolioCode}/valuations/run", h.RunValuationByCode)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerSimulate))
@@ -520,6 +541,11 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 		// ── Executions (Milestone 5) ────────────────────────────────────
 		if eh := m.executionHandler; eh != nil {
 			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeExecutionView))
+				r.Get("/{portfolioCode}/executions", eh.ListExecutionsByCode)
+				r.Get("/{portfolioCode}/executions/{executionId}", eh.GetExecutionByCode)
+			})
+			r.Group(func(r chi.Router) {
 				r.Use(middleware.RequirePermission(pc, invperm.CodeExecutionManage))
 				r.Post("/{portfolioCode}/decisions/{decisionId}/executions", eh.CreateExecutionByCode)
 				r.Post("/{portfolioCode}/executions/{executionId}/fill", eh.FillExecutionByCode)
@@ -529,6 +555,11 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 
 		// ── Trade confirmations (Milestone 5) ───────────────────────────
 		if ch := m.confirmationHandler; ch != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeConfirmationView))
+				r.Get("/{portfolioCode}/confirmations", ch.ListConfirmationsByCode)
+				r.Get("/{portfolioCode}/confirmations/{confirmationId}", ch.GetConfirmationByCode)
+			})
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.RequirePermission(pc, invperm.CodeConfirmationManage))
 				r.Post("/{portfolioCode}/executions/{executionId}/confirmations", ch.RecordConfirmationByCode)

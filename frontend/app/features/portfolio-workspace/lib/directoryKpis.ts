@@ -11,6 +11,8 @@ const EMPTY_COVERAGE: ValuationSummaryCoverageDTO = {
   totalPortfolioCount: 0,
   includedPortfolioCount: 0,
   excludedPortfolioCount: 0,
+  latestAvailablePortfolioCount: 0,
+  oldestIncludedBusinessDate: null,
   excludedCurrencies: [],
   excludedBusinessDates: [],
   exclusionReasons: [],

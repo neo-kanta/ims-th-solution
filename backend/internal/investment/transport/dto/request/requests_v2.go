@@ -47,3 +47,49 @@ type RecordConfirmationV2Request struct {
 	BrokerReference   string     `json:"broker_reference"`
 	ImportBatchID     *uuid.UUID `json:"import_batch_id"`
 }
+
+// CreatePortfolioV2Request is the JSON body for POST /api/v2/portfolios.
+//
+// Unlike V1's CreatePortfolioRequest, this accepts a business fund_code
+// instead of a raw fund_id — the handler resolves fund_code to the internal
+// fund_id server-side via the fund repository (never trusting a
+// client-supplied fund_id/portfolio_id/contract_id per
+// docs/MANAGER/MEMORY.md's V2 request-body rule) and verifies the caller has
+// data-permission on the resolved fund before creating the portfolio.
+type CreatePortfolioV2Request struct {
+	FundCode          string     `json:"fund_code"          validate:"required,max=40"`
+	PortfolioType     string     `json:"portfolio_type"     validate:"required,oneof=LIVE SIMULATION MODEL"`
+	Code              string     `json:"code"               validate:"required,max=40"`
+	Name              string     `json:"name"               validate:"required,max=255"`
+	Description       string     `json:"description"`
+	BaseCurrency      string     `json:"base_currency"      validate:"required,len=3"`
+	ValuationCurrency string     `json:"valuation_currency" validate:"required,len=3"`
+	StrategyCode      string     `json:"strategy_code"`
+	StyleID           *uuid.UUID `json:"style_id"`
+	ManagerUserID     *uuid.UUID `json:"manager_user_id"`
+	Benchmark         string     `json:"benchmark"`
+	RiskProfile       string     `json:"risk_profile"`
+	InceptionDate     string     `json:"inception_date"     validate:"required"`
+	HasUnits          bool       `json:"has_units"`
+	TaxLotMethod      string     `json:"tax_lot_method"`
+}
+
+// PatchPortfolioV2Request is the JSON body for
+// PATCH /api/v2/portfolios/{portfolioCode}.
+//
+// Deliberately excludes fund association, code, and any status/lifecycle
+// field — this endpoint updates only already-established descriptive
+// metadata. Lifecycle transitions (status changes) are out of scope; use the
+// dedicated approval/onboarding flows instead. Uses the same
+// expected_version optimistic-concurrency convention as
+// request.UpdatePortfolioRequest/DeletePortfolioRequest.
+type PatchPortfolioV2Request struct {
+	ExpectedVersion int        `json:"expected_version" validate:"required,min=1"`
+	Name            *string    `json:"name"`
+	Description     *string    `json:"description"`
+	StrategyCode    *string    `json:"strategy_code"`
+	StyleID         *uuid.UUID `json:"style_id"`
+	ManagerUserID   *uuid.UUID `json:"manager_user_id"`
+	Benchmark       *string    `json:"benchmark"`
+	RiskProfile     *string    `json:"risk_profile"`
+}

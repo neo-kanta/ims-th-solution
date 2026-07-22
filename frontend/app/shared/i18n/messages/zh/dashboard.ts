@@ -83,7 +83,11 @@ export const zhDashboardMessages = {
     metricNoData: "此范围暂无官方估值数据。",
     metricIncomplete: "官方估值覆盖不完整，因此暂不显示汇总金额。",
     metricIncompleteCoverage:
-      "已纳入 {included}/{total} 个授权投资组合，因此暂不显示汇总金额。",
+      "已纳入范围内 {included}/{total} 个投资组合，因此暂不显示汇总金额。",
+    metricIncompleteStaleCoverage:
+      "已纳入 {included}/{total} 个投资组合；{date} 的估值数据已过期，因此暂不显示全公司总额。",
+    metricLatestAvailableCoverage:
+      "{count}/{total} 个投资组合采用最新可用数据；最早估值日期为 {date}。总额已换算为 {currency}。",
     metricLoadError: "加载失败",
     metricAsOf: "截至 {time}",
     metricReportingCurrency: "报告币种：{currency}",

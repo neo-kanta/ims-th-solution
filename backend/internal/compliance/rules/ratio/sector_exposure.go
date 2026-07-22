@@ -115,7 +115,7 @@ func (r *SectorExposureRule) Evaluate(
 			if sector != p.Sector {
 				continue
 			}
-			sectorMV = sectorMV.Add(holdingMV(h, data.MarketPrices))
+			sectorMV = sectorMV.Add(spi.HoldingMarketValue(h, data.MarketPrices))
 		}
 	}
 
@@ -199,15 +199,6 @@ func (r *SectorExposureRule) Explain(input spi.CheckInput, result spi.EvalResult
 }
 
 // --- helpers ---
-
-func holdingMV(h spi.Holding, prices *spi.MarketPriceSnapshot) decimal.Decimal {
-	if prices != nil {
-		if price, ok := prices.Prices[h.Ticker]; ok && price.IsPositive() {
-			return h.Quantity.Mul(price)
-		}
-	}
-	return h.MarketValue
-}
 
 func sectorBlock(msg string) spi.EvalResult {
 	return spi.EvalResult{

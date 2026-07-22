@@ -17,6 +17,13 @@ export interface DecisionApprovalFilters {
   page?: number;
   limit?: number;
   portfolio_id?: string;
+  /**
+   * UI-only business portfolio code (never sent to the API — the endpoint
+   * only accepts `portfolio_id`). Callers resolve this to `portfolio_id`
+   * client-side before calling `listApprovalItems`; kept here so it can
+   * round-trip through the URL query and re-hydrate the filter form.
+   */
+  portfolio_code?: string;
   fund_id?: string;
   business_date_from?: string;
   business_date_to?: string;

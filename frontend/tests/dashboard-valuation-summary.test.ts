@@ -42,6 +42,8 @@ function makeCoverage(
     totalPortfolioCount: 1,
     includedPortfolioCount: 1,
     excludedPortfolioCount: 0,
+    latestAvailablePortfolioCount: 0,
+    oldestIncludedBusinessDate: "2026-07-14",
     excludedCurrencies: [],
     excludedBusinessDates: [],
     exclusionReasons: [],
@@ -87,6 +89,8 @@ describe("normalizeValuationSummary (API integration mapping)", () => {
         total_portfolio_count: 2,
         included_portfolio_count: 1,
         excluded_portfolio_count: 1,
+        latest_available_portfolio_count: 1,
+        oldest_included_business_date: "2026-07-13",
         excluded_currencies: ["USD"],
         excluded_business_dates: ["2026-07-13"],
         exclusion_reasons: ["MISSING_FX"],
@@ -121,6 +125,8 @@ describe("normalizeValuationSummary (API integration mapping)", () => {
         totalPortfolioCount: 2,
         includedPortfolioCount: 1,
         excludedPortfolioCount: 1,
+        latestAvailablePortfolioCount: 1,
+        oldestIncludedBusinessDate: "2026-07-13",
         excludedCurrencies: ["USD"],
         excludedBusinessDates: ["2026-07-13"],
         exclusionReasons: ["MISSING_FX"],
@@ -178,25 +184,16 @@ describe("normalizeValuationSummary (API integration mapping)", () => {
 
 });
 
-describe("defaultAumScope (permission-driven default)", () => {
-  it("defaults to company only when the caller has wildcard data scope", () => {
-    expect(defaultAumScope(true)).toBe("company");
-  });
-
-  it("defaults to mine for a restricted (non-wildcard) data scope", () => {
-    expect(defaultAumScope(false)).toBe("mine");
+describe("defaultAumScope", () => {
+  it("defaults every authenticated dashboard session to company", () => {
+    expect(defaultAumScope()).toBe("company");
   });
 });
 
-describe("buildScopeOptions (permission-driven visibility)", () => {
-  it("offers both options to a caller with wildcard company-wide access", () => {
-    const options = buildScopeOptions(true, t);
+describe("buildScopeOptions", () => {
+  it("offers company and mine to every authenticated dashboard user", () => {
+    const options = buildScopeOptions(t);
     expect(options.map((o) => o.key)).toEqual(["company", "mine"]);
-  });
-
-  it("hides the company option for a restricted caller — no unauthorized company-wide option is exposed", () => {
-    const options = buildScopeOptions(false, t);
-    expect(options.map((o) => o.key)).toEqual(["mine"]);
   });
 });
 
@@ -228,6 +225,22 @@ describe("buildAumMetric", () => {
     expect(metric.helperText).toContain("21:30");
   });
 
+  it("shows the oldest valuation date when latest available portfolio data is used", () => {
+    const metric = buildAumMetric(makeSummary({
+      coverage: makeCoverage({
+        totalPortfolioCount: 7,
+        includedPortfolioCount: 7,
+        latestAvailablePortfolioCount: 1,
+        oldestIncludedBusinessDate: "2026-07-17",
+      }),
+    }), false, t);
+
+    expect(metric.value).not.toBe("-");
+    expect(metric.helperText).toContain("Latest available data used for 1 of 7 portfolios");
+    expect(metric.helperText).toContain("Jul 17, 2026");
+    expect(metric.helperText).toContain("THB");
+  });
+
   it("explains incomplete coverage instead of rendering a partial AUM", () => {
     const metric = buildAumMetric(
       makeSummary({
@@ -246,7 +259,30 @@ describe("buildAumMetric", () => {
     );
 
     expect(metric.value).toBe("-");
-    expect(metric.helperText).toContain("3 of 4 authorized portfolios");
+    expect(metric.helperText).toContain("3 of 4 in-scope portfolios");
+  });
+
+  it("explains when stale valuation data keeps the company total unavailable", () => {
+    const metric = buildAumMetric(
+      makeSummary({
+        status: "INCOMPLETE",
+        dataAvailable: false,
+        aumToday: null,
+        coverage: makeCoverage({
+          totalPortfolioCount: 7,
+          includedPortfolioCount: 6,
+          excludedPortfolioCount: 1,
+          excludedBusinessDates: ["2026-07-17"],
+          exclusionReasons: ["STALE_VALUATION"],
+        }),
+      }),
+      false,
+      t,
+    );
+
+    expect(metric.value).toBe("-");
+    expect(metric.helperText).toContain("Stale valuation data from Jul 17, 2026");
+    expect(metric.helperText).toContain("company total unavailable");
   });
 });
 

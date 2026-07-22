@@ -51,6 +51,17 @@ type Holding struct {
 	MarketValue decimal.Decimal `json:"market_value"`
 }
 
+// HoldingMarketValue values a holding for exposure math: a positive live price
+// from the snapshot wins; otherwise the stored MarketValue stands.
+func HoldingMarketValue(h Holding, prices *MarketPriceSnapshot) decimal.Decimal {
+	if prices != nil {
+		if price, ok := prices.Prices[h.Ticker]; ok && price.IsPositive() {
+			return h.Quantity.Mul(price)
+		}
+	}
+	return h.MarketValue
+}
+
 // PendingOrderInfo is an unconfirmed order affecting available quantity/cash.
 type PendingOrderInfo struct {
 	OrderID  uuid.UUID       `json:"order_id"`

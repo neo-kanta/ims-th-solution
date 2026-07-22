@@ -294,6 +294,30 @@ type ValuationListResponse struct {
 	Limit int                 `json:"limit"`
 }
 
+// ExecutionListResponse documents the shape of
+// PaginatedResponse[ExecutionResponse] for Swagger — swag cannot parse Go
+// generic instantiations directly in @Success annotations, so Portfolio V2's
+// GET /portfolios/{portfolioCode}/executions handler documents this
+// concrete type instead (see PortfolioListResponse/TransactionListResponse
+// above for the same pattern on other V2 paginated list endpoints).
+type ExecutionListResponse struct {
+	Items []ExecutionResponse `json:"items"`
+	Total int                 `json:"total"`
+	Page  int                 `json:"page"`
+	Limit int                 `json:"limit"`
+}
+
+// TradeConfirmationListResponse documents the shape of
+// PaginatedResponse[TradeConfirmationResponse] for Swagger. See
+// ExecutionListResponse's doc comment for why this concrete type exists
+// alongside the generic runtime type.
+type TradeConfirmationListResponse struct {
+	Items []TradeConfirmationResponse `json:"items"`
+	Total int                         `json:"total"`
+	Page  int                         `json:"page"`
+	Limit int                         `json:"limit"`
+}
+
 // ComputeFundAUMResponse is the body returned by
 // POST /investment/funds/{id}/aum/compute. `idempotent` is true when a
 // snapshot for (fund, date, source=INTERNAL) already existed and the

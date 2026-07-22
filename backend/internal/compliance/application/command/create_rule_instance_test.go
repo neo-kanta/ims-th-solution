@@ -92,6 +92,16 @@ func (f *fakeRuleInstanceRepo) GetCurrentVersion(_ context.Context, instanceID u
 	return &last, nil
 }
 
+func (f *fakeRuleInstanceRepo) GetCurrentVersions(ctx context.Context, instanceIDs []uuid.UUID) (map[uuid.UUID]*entity.RuleInstanceVersion, error) {
+	out := make(map[uuid.UUID]*entity.RuleInstanceVersion, len(instanceIDs))
+	for _, id := range instanceIDs {
+		if v, err := f.GetCurrentVersion(ctx, id); err == nil && v != nil {
+			out[id] = v
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeRuleInstanceRepo) ListVersions(_ context.Context, instanceID uuid.UUID) ([]entity.RuleInstanceVersion, error) {
 	return f.versions[instanceID], nil
 }

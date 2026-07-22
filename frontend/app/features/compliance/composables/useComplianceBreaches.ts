@@ -1,5 +1,6 @@
 import { ref } from "vue";
 
+import { extractComplianceErrorMessage, isComplianceConflict } from "../lib/errors";
 import { complianceApi } from "../services/complianceApi";
 import type {
   ComplianceBreach,
@@ -7,18 +8,6 @@ import type {
   ComplianceOverride,
   ComplianceOverrideRequest,
 } from "../types";
-
-function extractErrorMessage(err: unknown, fallback: string): string {
-  if (!err || typeof err !== "object") return fallback;
-  const data = (err as { data?: { error?: unknown; message?: unknown } }).data;
-  if (data) {
-    if (typeof data.error === "string" && data.error.trim()) return data.error;
-    if (typeof data.message === "string" && data.message.trim()) return data.message;
-  }
-  const message = (err as { message?: unknown }).message;
-  if (typeof message === "string" && message.trim()) return message;
-  return fallback;
-}
 
 /**
  * Compliance breach listing — Phase 1.
@@ -53,7 +42,7 @@ export function useComplianceBreachesList() {
       limit.value = payload.limit ?? limit.value;
     } catch (err) {
       if (currentRequest !== requestId) return;
-      error.value = extractErrorMessage(err, "Failed to load compliance breaches.");
+      error.value = extractComplianceErrorMessage(err, "Failed to load compliance breaches.");
       items.value = [];
       total.value = 0;
     } finally {
@@ -84,36 +73,22 @@ export function useComplianceBreachesList() {
 export function useComplianceBreachOverride() {
   const submitting = ref(false);
   const error = ref<string | null>(null);
+  const conflict = ref(false);
   const lastResult = ref<ComplianceOverride | null>(null);
 
-  function extractErrorMessage(err: unknown, fallback: string): string {
-    if (!err || typeof err !== "object") return fallback;
-    const data = (err as { data?: { error?: unknown; message?: unknown } }).data;
-    if (data) {
-      if (typeof data.error === "string" && data.error.trim()) return data.error;
-      if (typeof data.message === "string" && data.message.trim()) return data.message;
-    }
-    const status = (err as { status?: unknown; statusCode?: unknown }).status;
-    const code =
-      typeof status === "number"
-        ? status
-        : typeof (err as { statusCode?: unknown }).statusCode === "number"
-          ? ((err as { statusCode?: unknown }).statusCode as number)
-          : null;
-    const message = (err as { message?: unknown }).message;
-    const base =
-      typeof message === "string" && message.trim() ? message : fallback;
-    return code ? `${code} · ${base}` : base;
-  }
-
   async function override(breachId: string, payload: ComplianceOverrideRequest) {
+    if (submitting.value) {
+      throw new Error("An override submission is already in progress.");
+    }
     submitting.value = true;
     error.value = null;
+    conflict.value = false;
     try {
       lastResult.value = await complianceApi.overrideBreach(breachId, payload);
       return lastResult.value;
     } catch (err) {
-      error.value = extractErrorMessage(err, "Failed to record override.");
+      conflict.value = isComplianceConflict(err);
+      error.value = extractComplianceErrorMessage(err, "Failed to record override.");
       throw err;
     } finally {
       submitting.value = false;
@@ -122,8 +97,9 @@ export function useComplianceBreachOverride() {
 
   function reset() {
     error.value = null;
+    conflict.value = false;
     lastResult.value = null;
   }
 
-  return { submitting, error, lastResult, override, reset };
+  return { submitting, error, conflict, lastResult, override, reset };
 }

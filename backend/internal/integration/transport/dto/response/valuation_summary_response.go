@@ -27,20 +27,23 @@ type ValuationSummaryDTO struct {
 	Coverage        ValuationSummaryCoverageDTO `json:"coverage"`
 }
 
-// ValuationSummaryCoverageDTO explains exactly how much of the authorized
-// scope contributed to an official aggregate. Exclusions use business codes,
-// never internal UUIDs.
+// ValuationSummaryCoverageDTO explains exactly how much of the requested scope
+// contributed to an official aggregate. Mine-scope exclusions use business
+// codes, never internal UUIDs. Company scope omits item-level exclusions
+// because the aggregate is visible to every authenticated dashboard user.
 type ValuationSummaryCoverageDTO struct {
-	TotalFundCount         int                            `json:"total_fund_count"`
-	IncludedFundCount      int                            `json:"included_fund_count"`
-	ExcludedFundCount      int                            `json:"excluded_fund_count"`
-	TotalPortfolioCount    int                            `json:"total_portfolio_count"`
-	IncludedPortfolioCount int                            `json:"included_portfolio_count"`
-	ExcludedPortfolioCount int                            `json:"excluded_portfolio_count"`
-	ExcludedCurrencies     []string                       `json:"excluded_currencies"`
-	ExcludedBusinessDates  []string                       `json:"excluded_business_dates"`
-	ExclusionReasons       []string                       `json:"exclusion_reasons"`
-	Exclusions             []ValuationSummaryExclusionDTO `json:"exclusions"`
+	TotalFundCount                int                            `json:"total_fund_count"`
+	IncludedFundCount             int                            `json:"included_fund_count"`
+	ExcludedFundCount             int                            `json:"excluded_fund_count"`
+	TotalPortfolioCount           int                            `json:"total_portfolio_count"`
+	IncludedPortfolioCount        int                            `json:"included_portfolio_count"`
+	ExcludedPortfolioCount        int                            `json:"excluded_portfolio_count"`
+	LatestAvailablePortfolioCount int                            `json:"latest_available_portfolio_count"`
+	OldestIncludedBusinessDate    string                         `json:"oldest_included_business_date,omitempty"`
+	ExcludedCurrencies            []string                       `json:"excluded_currencies"`
+	ExcludedBusinessDates         []string                       `json:"excluded_business_dates"`
+	ExclusionReasons              []string                       `json:"exclusion_reasons"`
+	Exclusions                    []ValuationSummaryExclusionDTO `json:"exclusions"`
 }
 
 // ValuationSummaryExclusionDTO identifies an omitted official input and the
@@ -86,16 +89,20 @@ func FromValuationSummary(s *domain.ValuationSummary) ValuationSummaryDTO {
 
 func fromValuationSummaryCoverage(c contract.ValuationSummaryCoverage) ValuationSummaryCoverageDTO {
 	dto := ValuationSummaryCoverageDTO{
-		TotalFundCount:         c.TotalFundCount,
-		IncludedFundCount:      c.IncludedFundCount,
-		ExcludedFundCount:      c.ExcludedFundCount,
-		TotalPortfolioCount:    c.TotalPortfolioCount,
-		IncludedPortfolioCount: c.IncludedPortfolioCount,
-		ExcludedPortfolioCount: c.ExcludedPortfolioCount,
-		ExcludedCurrencies:     append([]string{}, c.ExcludedCurrencies...),
-		ExcludedBusinessDates:  make([]string, 0, len(c.ExcludedBusinessDates)),
-		ExclusionReasons:       make([]string, 0, len(c.ExclusionReasons)),
-		Exclusions:             make([]ValuationSummaryExclusionDTO, 0, len(c.Exclusions)),
+		TotalFundCount:                c.TotalFundCount,
+		IncludedFundCount:             c.IncludedFundCount,
+		ExcludedFundCount:             c.ExcludedFundCount,
+		TotalPortfolioCount:           c.TotalPortfolioCount,
+		IncludedPortfolioCount:        c.IncludedPortfolioCount,
+		ExcludedPortfolioCount:        c.ExcludedPortfolioCount,
+		LatestAvailablePortfolioCount: c.LatestAvailablePortfolioCount,
+		ExcludedCurrencies:            append([]string{}, c.ExcludedCurrencies...),
+		ExcludedBusinessDates:         make([]string, 0, len(c.ExcludedBusinessDates)),
+		ExclusionReasons:              make([]string, 0, len(c.ExclusionReasons)),
+		Exclusions:                    make([]ValuationSummaryExclusionDTO, 0, len(c.Exclusions)),
+	}
+	if !c.OldestIncludedBusinessDate.IsZero() {
+		dto.OldestIncludedBusinessDate = c.OldestIncludedBusinessDate.Format("2006-01-02")
 	}
 	for _, businessDate := range c.ExcludedBusinessDates {
 		if !businessDate.IsZero() {

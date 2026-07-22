@@ -11,7 +11,55 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/domain"
+	refdomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
 )
+
+func TestGetQuoteUsesReferenceDataProviderMapping(t *testing.T) {
+	t.Parallel()
+	asOf := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+	yahoo := &fakeProvider{
+		name: domain.ProviderYahoo,
+		quote: &domain.Quote{
+			Symbol:   "USDTHB=X",
+			Price:    decimal.RequireFromString("36.25"),
+			Currency: "THB",
+			AsOf:     asOf,
+		},
+	}
+	repo := &fakeRepository{mapping: &domain.SymbolMapping{
+		Symbol:    "FX_USDTHB",
+		AssetType: domain.AssetTypeUnknown,
+	}}
+	resolver := newFakeResolver()
+	resolver.addSecurity(refdomain.Security{
+		ID:        "fx-usdthb",
+		IMSSymbol: "FX_USDTHB",
+		Name:      "USD / THB",
+		AssetType: refdomain.AssetTypeFX,
+		Currency:  "THB",
+		Status:    refdomain.SecurityStatusActive,
+		ProviderMappings: []refdomain.ProviderMapping{{
+			SecurityID:     "fx-usdthb",
+			ProviderCode:   domain.ProviderYahoo,
+			ProviderSymbol: "USDTHB=X",
+			MappingStatus:  refdomain.MappingStatusActive,
+		}},
+	})
+	service := NewService(Config{
+		PrimaryProvider:  domain.ProviderYahoo,
+		FallbackProvider: domain.ProviderYahoo,
+	}, []domain.MarketDataProvider{yahoo}, repo, repo, nil)
+	service.SetSecurityResolver(resolver)
+
+	quote, err := service.GetQuote(context.Background(), "FX_USDTHB")
+	require.NoError(t, err)
+	require.Equal(t, "USDTHB=X", yahoo.lastSymbol)
+	require.Equal(t, "FX_USDTHB", quote.Symbol)
+	require.NotNil(t, repo.savedQuote)
+	require.Equal(t, "FX_USDTHB", repo.savedQuote.Symbol)
+	require.NotNil(t, repo.upsertedMapping)
+	require.Equal(t, "USDTHB=X", repo.upsertedMapping.YahooFinanceSymbol)
+}
 
 func TestGetQuoteFallsBackFromPrimaryToSecondaryProvider(t *testing.T) {
 	primary := &fakeProvider{
@@ -347,9 +395,12 @@ type fakeRepository struct {
 	dailyBars       []domain.PriceBar
 	logs            []domain.ProviderRequestLog
 	mapping         *domain.SymbolMapping
+	upsertedMapping *domain.SymbolMapping
 }
 
 func (r *fakeRepository) UpsertSymbol(ctx context.Context, mapping domain.SymbolMapping) error {
+	copy := mapping
+	r.upsertedMapping = &copy
 	return nil
 }
 

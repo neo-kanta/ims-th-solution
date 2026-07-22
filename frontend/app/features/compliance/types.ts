@@ -40,6 +40,22 @@ export type ComplianceRuleDerivedStatus =
 
 export type ComplianceBreachStatus = "OPEN" | "OVERRIDDEN" | "RESOLVED";
 
+/** Mirrors backend spi.ThresholdBreach (snake_case JSON). */
+export interface ComplianceThresholdBreach {
+  actual?: string;
+  limit?: string;
+  metric_name?: string;
+  operator?: string;
+  unit?: string;
+}
+
+/** Mirrors backend spi.Evidence (snake_case JSON). Optional and best-effort. */
+export interface ComplianceEvidence {
+  metrics?: Record<string, string>;
+  references?: Record<string, string>;
+  threshold_breached?: ComplianceThresholdBreach;
+}
+
 /**
  * Effective window — backend value object. The generated OpenAPI typing
  * is currently an opaque `Record<string, never>`; we render defensively
@@ -103,7 +119,7 @@ export interface ComplianceBreach {
   severity: ComplianceBackendSeverity;
   verdict: ComplianceVerdict;
   status: ComplianceBreachStatus;
-  evidence?: Record<string, unknown>;
+  evidence?: ComplianceEvidence;
   message: string;
   businessDate: string;
   createdAt: string;

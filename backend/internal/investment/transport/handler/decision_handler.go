@@ -25,6 +25,7 @@ type DecisionHandler struct {
 	batchApproval *command.DecisionBatchApprovalHandler
 	approvalStage contract.ApprovalStatusProvider
 	portfolios    domain.PortfolioRepository
+	pc            contract.PermissionChecker
 }
 
 func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCommandHandler) *DecisionHandler {
@@ -37,6 +38,23 @@ func NewDecisionHandler(repo domain.DecisionRepository, cmd *command.DecisionCom
 func (h *DecisionHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
 	if h != nil {
 		h.portfolios = r
+	}
+}
+
+// SetPermissionChecker wires the fund-scoped data-permission checker
+// post-construction. Used both by the Portfolio V2 (portfolioCode) routes in
+// portfolio_v2_decision_handler.go (via resolvePortfolioByCode's
+// hasFundAccess check) and by the V1 {id}-keyed decision routes in this file
+// (ListDecisions/GetDecision/GetDecisionWithLines/ListApprovalItems), which
+// previously had no fund/portfolio data-scope enforcement at all beyond the
+// route-level function permission. Production wiring in module.go always
+// passes a real, fail-closed checker here (never nil) — a nil pc makes every
+// fund-scope check in this file deny access (hasFundAccess/accessibleFundIDs
+// both treat nil pc as "no access"), so an unwired handler fails closed
+// rather than silently allowing cross-fund reads.
+func (h *DecisionHandler) SetPermissionChecker(pc contract.PermissionChecker) {
+	if h != nil {
+		h.pc = pc
 	}
 }
 
@@ -119,6 +137,12 @@ func (h *DecisionHandler) ListDecisions(w http.ResponseWriter, r *http.Request) 
 	filter.InstrumentCode = strings.TrimSpace(q.Get("instrument_code"))
 	filter.Search = strings.TrimSpace(q.Get("search"))
 
+	// Data permission: scope to the funds the user can access, matching
+	// InvestmentHandler.ListPortfolios's accessibleFundIDs pattern. nil means
+	// unrestricted (global/company-wide data scope); a non-nil empty slice
+	// means zero fund access, and the repository returns no rows.
+	filter.AccessibleFundIDs = accessibleFundIDs(r.Context(), h.pc)
+
 	items, total, err := h.decisions.List(r.Context(), filter)
 	if err != nil {
 		httputil.InternalError(w, err.Error())
@@ -132,6 +156,19 @@ func (h *DecisionHandler) ListDecisions(w http.ResponseWriter, r *http.Request) 
 }
 
 // GetDecision handles GET /investment/decisions/{id}.
+// @Summary Get Investment Decision
+// @Description Retrieve one investment decision by UUID. Requires data-permission on the decision's fund.
+// @Tags Investment - Decisions
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Decision UUID"
+// @Success 200 {object} response.DecisionResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/decisions/{id} [get]
 func (h *DecisionHandler) GetDecision(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -145,6 +182,12 @@ func (h *DecisionHandler) GetDecision(w http.ResponseWriter, r *http.Request) {
 	}
 	if d == nil {
 		httputil.NotFound(w, "decision not found")
+		return
+	}
+	// Data permission: verify the decision's fund is within the caller's
+	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
+	if !hasFundAccess(r.Context(), h.pc, d.FundID) {
+		httputil.Forbidden(w, "no access to this decision")
 		return
 	}
 	httputil.OK(w, response.FromDecision(d))
@@ -439,6 +482,9 @@ func (h *DecisionHandler) ListApprovalItems(w http.ResponseWriter, r *http.Reque
 		filter.Status = &s
 	}
 
+	// Data permission: scope to the funds the user can access (see ListDecisions).
+	filter.AccessibleFundIDs = accessibleFundIDs(r.Context(), h.pc)
+
 	items, total, err := h.decisions.List(r.Context(), filter)
 	if err != nil {
 		httputil.InternalError(w, err.Error())
@@ -476,6 +522,7 @@ func (h *DecisionHandler) ListApprovalItems(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} response.DecisionResponse
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
 // @Failure 404 {object} httputil.ErrorResponse
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /investment/decisions/{id}/details [get]
@@ -492,6 +539,12 @@ func (h *DecisionHandler) GetDecisionWithLines(w http.ResponseWriter, r *http.Re
 	}
 	if d == nil {
 		httputil.NotFound(w, "decision not found")
+		return
+	}
+	// Data permission: verify the decision's fund is within the caller's
+	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
+	if !hasFundAccess(r.Context(), h.pc, d.FundID) {
+		httputil.Forbidden(w, "no access to this decision")
 		return
 	}
 	if h.lines != nil {

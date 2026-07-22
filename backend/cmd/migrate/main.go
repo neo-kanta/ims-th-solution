@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -18,9 +19,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	direction := "up"
+	command := "up"
 	if len(os.Args) > 1 {
-		direction = os.Args[1]
+		command = os.Args[1]
 	}
 
 	migrationsPath := os.Getenv("MIGRATIONS_PATH")
@@ -37,14 +38,26 @@ func main() {
 	}
 	defer m.Close()
 
-	if direction == "up" {
+	if command == "up" {
 		slog.Info("Running migrations UP...")
 		err = m.Up()
-	} else if direction == "down" {
+	} else if command == "down" {
 		slog.Info("Running migrations DOWN (1 step)...")
 		err = m.Steps(-1)
+	} else if command == "force" {
+		if len(os.Args) != 3 {
+			slog.Error("Force requires exactly one migration version", "usage", "migrate force <version>")
+			os.Exit(1)
+		}
+		version, parseErr := strconv.Atoi(os.Args[2])
+		if parseErr != nil || version < 0 {
+			slog.Error("Invalid migration version", "version", os.Args[2])
+			os.Exit(1)
+		}
+		slog.Warn("Forcing migration version; verify the database schema before continuing", "version", version)
+		err = m.Force(version)
 	} else {
-		slog.Error("Invalid direction", "direction", direction)
+		slog.Error("Invalid migration command", "command", command, "usage", "migrate [up|down|force <version>]")
 		os.Exit(1)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/market_data/domain"
+	refdomain "github.com/neo-kanta/ims-th-solution/backend/internal/reference_data/domain"
 )
 
 const maxSymbolLength = 64
@@ -367,7 +368,7 @@ func (s *Service) fetchQuoteWithOrder(ctx context.Context, symbol string, order 
 			applyMapping(q, mapping)
 			q.Stale = false
 			q.StaleReason = ""
-			s.persistQuote(ctx, *q)
+			s.persistQuote(ctx, *q, mapping)
 			if s.cache != nil {
 				_ = s.cache.SetQuote(ctx, *q, s.cfg.CacheTTL)
 			}
@@ -458,16 +459,26 @@ func (s *Service) logRequest(ctx context.Context, providerName, operation, symbo
 	_ = s.logger.LogProviderRequest(ctx, log)
 }
 
-func (s *Service) persistQuote(ctx context.Context, quote domain.Quote) {
+func (s *Service) persistQuote(ctx context.Context, quote domain.Quote, mapping *domain.SymbolMapping) {
 	if s.repo == nil {
 		return
+	}
+	alphaVantageSymbol := providerSymbol(quote.Provider, domain.ProviderAlphaVantage, quote.Symbol)
+	yahooSymbol := providerSymbol(quote.Provider, domain.ProviderYahoo, quote.Symbol)
+	if mapping != nil {
+		if mapping.AlphaVantageSymbol != "" {
+			alphaVantageSymbol = mapping.AlphaVantageSymbol
+		}
+		if mapping.YahooFinanceSymbol != "" {
+			yahooSymbol = mapping.YahooFinanceSymbol
+		}
 	}
 	_ = s.repo.UpsertSymbol(ctx, domain.SymbolMapping{
 		Symbol:             quote.Symbol,
 		AssetType:          quote.AssetType,
 		Currency:           quote.Currency,
-		AlphaVantageSymbol: providerSymbol(quote.Provider, domain.ProviderAlphaVantage, quote.Symbol),
-		YahooFinanceSymbol: providerSymbol(quote.Provider, domain.ProviderYahoo, quote.Symbol),
+		AlphaVantageSymbol: alphaVantageSymbol,
+		YahooFinanceSymbol: yahooSymbol,
 	})
 	_ = s.repo.SaveQuote(ctx, quote)
 }
@@ -486,14 +497,66 @@ func (s *Service) persistHistory(ctx context.Context, symbol, provider string, b
 }
 
 func (s *Service) symbolMapping(ctx context.Context, symbol string) *domain.SymbolMapping {
-	if s.repo == nil {
-		return nil
+	var mapping *domain.SymbolMapping
+	if s.repo != nil {
+		persisted, err := s.repo.GetSymbolMapping(ctx, symbol)
+		if err == nil && persisted != nil {
+			mapping = persisted
+		}
 	}
-	mapping, err := s.repo.GetSymbolMapping(ctx, symbol)
-	if err != nil {
-		return nil
+	if s.securityResolver == nil {
+		return mapping
+	}
+
+	security, err := s.securityResolver.GetSecurityByIMSSymbol(ctx, symbol)
+	if err != nil || security == nil {
+		security, err = s.securityResolver.GetSecurityByDisplaySymbol(ctx, symbol)
+	}
+	if err != nil || security == nil || security.Status != refdomain.SecurityStatusActive {
+		return mapping
+	}
+
+	if mapping == nil {
+		mapping = &domain.SymbolMapping{Symbol: security.IMSSymbol}
+	}
+	if mapping.Name == "" {
+		mapping.Name = security.Name
+	}
+	if mapping.AssetType == "" || mapping.AssetType == domain.AssetTypeUnknown {
+		mapping.AssetType = supportedMarketDataAssetType(security.AssetType)
+	}
+	if mapping.Currency == "" {
+		mapping.Currency = security.Currency
+	}
+	for _, providerCode := range s.providerOrder() {
+		providerMapping, resolveErr := s.securityResolver.ResolveProviderSymbol(ctx, security.ID, providerCode)
+		if resolveErr != nil || providerMapping == nil || providerMapping.MappingStatus != refdomain.MappingStatusActive {
+			continue
+		}
+		switch providerCode {
+		case domain.ProviderAlphaVantage:
+			mapping.AlphaVantageSymbol = providerMapping.ProviderSymbol
+		case domain.ProviderYahoo:
+			mapping.YahooFinanceSymbol = providerMapping.ProviderSymbol
+		}
 	}
 	return mapping
+}
+
+func supportedMarketDataAssetType(assetType refdomain.AssetType) domain.AssetType {
+	switch assetType {
+	case refdomain.AssetTypeEquity:
+		return domain.AssetTypeEquity
+	case refdomain.AssetTypeETF:
+		return domain.AssetTypeETF
+	case refdomain.AssetTypeMutualFund:
+		return domain.AssetTypeMutualFund
+	default:
+		// market_symbols is a legacy cache table whose current constraint only
+		// supports this smaller taxonomy. Canonical FX identity remains owned by
+		// reference_data; store UNKNOWN here instead of failing quote persistence.
+		return domain.AssetTypeUnknown
+	}
 }
 
 func mappedProviderSymbol(mapping *domain.SymbolMapping, providerName, fallback string) string {

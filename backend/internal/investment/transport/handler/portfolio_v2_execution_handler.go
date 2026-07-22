@@ -72,7 +72,7 @@ func (h *ExecutionHandler) loadOwnedExecution(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId}/executions [post]
 func (h *ExecutionHandler) CreateExecutionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -143,7 +143,7 @@ func (h *ExecutionHandler) CreateExecutionByCode(w http.ResponseWriter, r *http.
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/executions/{executionId}/fill [post]
 func (h *ExecutionHandler) FillExecutionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -211,7 +211,7 @@ func (h *ExecutionHandler) FillExecutionByCode(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/executions/{executionId}/cancel [post]
 func (h *ExecutionHandler) CancelExecutionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -258,7 +258,7 @@ func (h *ExecutionHandler) CancelExecutionByCode(w http.ResponseWriter, r *http.
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/executions/{executionId}/confirmations [post]
 func (h *TradeConfirmationHandler) RecordConfirmationByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -336,7 +336,7 @@ func (h *TradeConfirmationHandler) RecordConfirmationByCode(w http.ResponseWrite
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/confirmations/{confirmationId}/resolve [post]
 func (h *TradeConfirmationHandler) ResolveConfirmationByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}

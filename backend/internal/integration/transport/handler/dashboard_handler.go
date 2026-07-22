@@ -105,7 +105,7 @@ func (h *DashboardHandler) GetMyTasks(w http.ResponseWriter, r *http.Request) {
 // GetValuationSummary handles GET /integration/dashboard/valuation-summary.
 //
 // @Summary      Dashboard AUM / P&L summary
-// @Description  Returns official LIVE-portfolio AUM and today's P&L converted to the configured reporting currency. scope=company aggregates every authorized fund; scope=mine restricts to funds the authenticated caller manages. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total; coverage reports exact included/excluded fund and portfolio counts plus stable exclusion reasons for missing, stale, wrong-date, invalid, or currency-mismatched valuation/FX inputs. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
+// @Description  Returns official LIVE-portfolio AUM and latest-snapshot P&L converted to the configured reporting currency with the latest available FX rate. scope=company aggregates all active company funds independent of fund data scope and omits item-level fund/portfolio exclusions; scope=mine restricts to portfolios the authenticated caller manages inside funds they may access. Each eligible portfolio contributes its newest valuation even when valuation dates differ or stale inputs are flagged; coverage reports the carried-forward count and oldest included valuation date. status is AVAILABLE, NO_DATA, or INCOMPLETE. INCOMPLETE returns data_available=false and no usable numeric total when valuations are missing or FX/currency inputs are unusable. SIMULATION and MODEL portfolios are excluded as NON_OFFICIAL_PORTFOLIO.
 // @Tags         Integration
 // @Produce      json
 // @Param        scope  query  string  false  "company (default) or mine"

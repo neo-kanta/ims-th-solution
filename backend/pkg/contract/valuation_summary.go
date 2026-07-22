@@ -13,31 +13,35 @@ import (
 type ValuationSummaryScope string
 
 const (
-	// ValuationSummaryScopeCompany aggregates every fund the caller's data
-	// scope allows (i.e. all data the authenticated user is authorized to
-	// see — not necessarily literally every fund in the system).
+	// ValuationSummaryScopeCompany aggregates every active company fund for an
+	// authenticated dashboard caller. It is intentionally independent of the
+	// caller's fund/portfolio data scope; consumers must not expose item-level
+	// fund or portfolio identities from this aggregate response.
 	ValuationSummaryScopeCompany ValuationSummaryScope = "company"
-	// ValuationSummaryScopeMine restricts the aggregate to funds the caller
-	// manages (Fund.ManagerUserID == UserID), still bounded by data scope.
+	// ValuationSummaryScopeMine restricts the aggregate to portfolios the caller
+	// manages (Portfolio.ManagerUserID == UserID), still bounded by fund data
+	// scope.
 	ValuationSummaryScopeMine ValuationSummaryScope = "mine"
 )
 
 // ValuationSummaryRequest is the input to ValuationSummaryProvider.
 //
 // AccessibleFundIDs mirrors the accessibleFundIDs() convention used by the
-// investment module's own handlers: nil means "no filter" (the caller's
-// data scope is the "*" wildcard), a non-nil slice (possibly empty)
-// restricts the aggregate to exactly those fund IDs.
+// investment module's own handlers: nil means "no filter" and a non-nil slice
+// (possibly empty) restricts the aggregate to exactly those fund IDs. Company
+// scope always uses nil by policy; mine scope remains data-scope bounded.
 type ValuationSummaryRequest struct {
 	Scope             ValuationSummaryScope
 	UserID            uuid.UUID
 	AccessibleFundIDs []uuid.UUID
 }
 
-// ValuationSummaryStatus states whether an authoritative reporting-currency
-// total can be presented. INCOMPLETE deliberately carries no usable total:
-// callers may inspect Coverage for audit/operational diagnostics, but must not
-// present a partial subtotal as company or manager AUM.
+// ValuationSummaryStatus states whether a reporting-currency total can be
+// presented. AVAILABLE may use the latest available snapshot per portfolio,
+// so callers must inspect Coverage freshness metadata before describing the
+// aggregate as a same-day total. INCOMPLETE deliberately carries no usable
+// total: callers may inspect Coverage for audit/operational diagnostics, but
+// must not present a partial subtotal as company or manager AUM.
 type ValuationSummaryStatus string
 
 const (
@@ -90,14 +94,23 @@ type ValuationSummaryCoverage struct {
 	TotalPortfolioCount    int
 	IncludedPortfolioCount int
 	ExcludedPortfolioCount int
-	ExcludedCurrencies     []string
-	ExcludedBusinessDates  []time.Time
-	ExclusionReasons       []ValuationSummaryExclusionReason
-	Exclusions             []ValuationSummaryExclusion
+	// LatestAvailablePortfolioCount counts included LIVE portfolios whose
+	// newest valuation is older than the aggregate BusinessDate or is marked
+	// as containing stale inputs. Those portfolios still contribute by explicit
+	// owner policy, while the freshness metadata keeps the mixed-date total
+	// visible to consumers.
+	LatestAvailablePortfolioCount int
+	// OldestIncludedBusinessDate is the oldest latest-snapshot date among the
+	// included LIVE portfolios. It is zero when no portfolio is included.
+	OldestIncludedBusinessDate time.Time
+	ExcludedCurrencies         []string
+	ExcludedBusinessDates      []time.Time
+	ExclusionReasons           []ValuationSummaryExclusionReason
+	Exclusions                 []ValuationSummaryExclusion
 }
 
-// ValuationSummaryResult is the official aggregate AUM / today's P&L for the
-// requested scope, expressed in the configured reporting Currency.
+// ValuationSummaryResult is the official latest-available aggregate AUM / P&L
+// for the requested scope, expressed in the configured reporting Currency.
 // DataAvailable is true only for AVAILABLE. NO_DATA and INCOMPLETE must be
 // rendered as unavailable; INCOMPLETE exposes Coverage diagnostics but no
 // usable partial numeric total.
@@ -113,8 +126,8 @@ type ValuationSummaryResult struct {
 	Coverage        ValuationSummaryCoverage
 }
 
-// ValuationSummaryProvider aggregates today's AUM and P&L across a scoped
-// set of funds. Implemented by the investment module; consumed by the
+// ValuationSummaryProvider aggregates latest-available AUM and P&L across a
+// scoped set of funds. Implemented by the investment module; consumed by the
 // integration module's dashboard valuation-summary endpoint.
 type ValuationSummaryProvider interface {
 	GetValuationSummary(ctx context.Context, req ValuationSummaryRequest) (*ValuationSummaryResult, error)

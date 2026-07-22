@@ -17,8 +17,8 @@ const (
 	ValuationScopeMine    ValuationScope = "mine"
 )
 
-// ValuationSummary is the dashboard read model for aggregate AUM and today's
-// P&L, scoped to either "company" or "mine".
+// ValuationSummary is the dashboard read model for aggregate latest-available
+// AUM and P&L, scoped to either "company" or "mine".
 //
 // DataAvailable is false when no fund in scope has a valuation snapshot yet
 // (or the caller lacks dashboard permission) — the numeric fields are zero

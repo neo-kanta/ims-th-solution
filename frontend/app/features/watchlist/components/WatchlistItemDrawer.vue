@@ -18,6 +18,16 @@ interface Props {
   saving?: boolean;
   securitySearchResults?: WatchlistSecurity[];
   securitySearchLoading?: boolean;
+  /**
+   * Locks the scope selector to PORTFOLIO + a fixed portfolio id and hides
+   * the ability to change either — used by the portfolio-workspace
+   * Watchlists page so a user cannot silently create a PERSONAL item or an
+   * item scoped to a different portfolio while "inside" this portfolio's
+   * workspace. Undefined/false preserves the original free-choice behavior
+   * for the general /watchlists page.
+   */
+  lockScope?: boolean;
+  lockPortfolioId?: string | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +37,8 @@ const props = withDefaults(defineProps<Props>(), {
   saving: false,
   securitySearchResults: () => [],
   securitySearchLoading: false,
+  lockScope: false,
+  lockPortfolioId: null,
 });
 
 const emit = defineEmits<{
@@ -69,6 +81,15 @@ watch(
         status: r.status ?? "ENABLED",
         metric_type: r.metric_type,
       }));
+      rulesModified.value = false;
+    } else if (props.lockScope) {
+      scopeType.value = "PORTFOLIO";
+      portfolioId.value = props.lockPortfolioId;
+      selectedSecurity.value = null;
+      securityQuery.value = "";
+      pinned.value = false;
+      note.value = "";
+      rules.value = [blankRule()];
       rulesModified.value = false;
     } else {
       scopeType.value = "PERSONAL";
@@ -199,7 +220,7 @@ const defaultCurrency = computed(() => selectedSecurity.value?.currency ?? props
         :portfolios="portfolios"
         :portfolios-loading="portfoliosLoading"
         :portfolios-error="portfoliosError"
-        :disabled="mode === 'edit'"
+        :disabled="mode === 'edit' || lockScope"
         @update:scope-type="scopeType = $event"
         @update:portfolio-id="portfolioId = $event"
       />

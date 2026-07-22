@@ -1,252 +1,320 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
+/**
+ * Compact filter toolbar for the Breaches queue — replaces the former
+ * permanent left filter rail. Every change applies immediately (no separate
+ * Apply step): a status click, a portfolio/rule pick, or a date edit updates
+ * `modelValue` right away, and the page shell resets pagination and refetches
+ * in response.
+ *
+ * Contract filtering is intentionally omitted here — the only contract
+ * identity available client-side today is a raw UUID list
+ * (`authStore.permissions.contracts`) with no human-readable label, and the
+ * UX requirement is that a filter must resolve to a business label before it
+ * can be exposed. See the Breaches page report for this backend gap.
+ */
+import { computed, onMounted } from "vue";
 
 import { useI18n } from "~/composables/useI18n";
-import AppButton from "~/shared/ui/AppButton.vue";
-import AppCard from "~/shared/ui/AppCard.vue";
+import AppDateRangeField from "~/shared/ui/AppDateRangeField.vue";
+import AppIcon from "~/shared/ui/AppIcon.vue";
 
 import { useCompliancePortfolioDirectory } from "../composables/useCompliancePortfolioDirectory";
-import type { ComplianceBreachListFilters, ComplianceBreachStatus } from "../types";
+import {
+  defaultBreachFilterState,
+  hasNonDefaultFilters,
+  type BreachFilterState,
+  type BreachStatusChoice,
+} from "../lib/breachFilters";
+import { RULE_CATALOG } from "../lib/ruleTypeCatalog";
+import ComplianceFilterCombobox, {
+  type ComplianceComboboxOption,
+} from "./ComplianceFilterCombobox.vue";
 
-interface Props {
-  modelValue: ComplianceBreachListFilters;
-  loading?: boolean;
-}
+const state = defineModel<BreachFilterState>({ required: true });
 
-const props = withDefaults(defineProps<Props>(), {
-  loading: false,
-});
-
-const emit = defineEmits<{
-  "update:modelValue": [value: ComplianceBreachListFilters];
-  apply: [];
-  reset: [];
-}>();
+defineProps<{ loading?: boolean }>();
 
 const { t } = useI18n();
-const authStore = useAuthStore();
 const portfolios = useCompliancePortfolioDirectory();
-
-type StatusChoice = "any" | ComplianceBreachStatus;
-
-interface FormState {
-  status: StatusChoice;
-  ruleTypeId: string;
-  dateFrom: string;
-  dateTo: string;
-  portfolioId: string;
-  contractId: string;
-}
-
-function initialFrom(filters: ComplianceBreachListFilters): FormState {
-  return {
-    status: (filters.status as StatusChoice) ?? "any",
-    ruleTypeId: filters.rule_type_id ?? "",
-    dateFrom: filters.date_from ?? "",
-    dateTo: filters.date_to ?? "",
-    portfolioId: filters.portfolio_id ?? "",
-    contractId: filters.contract_id ?? "",
-  };
-}
-
-const form = reactive<FormState>(initialFrom(props.modelValue));
-
-watch(
-  () => props.modelValue,
-  (next) => {
-    const fresh = initialFrom(next);
-    form.status = fresh.status;
-    form.ruleTypeId = fresh.ruleTypeId;
-    form.dateFrom = fresh.dateFrom;
-    form.dateTo = fresh.dateTo;
-    form.portfolioId = fresh.portfolioId;
-    form.contractId = fresh.contractId;
-  },
-  { deep: true },
-);
-
-// Auth store exposes the contracts the user is authorised to see; we present
-// them as a select so the filter never asks for a raw UUID when scoped.
-const authorisedContractIds = computed<string[]>(() => {
-  const list = authStore.permissions?.contracts;
-  return Array.isArray(list) ? list : [];
-});
-
-const hasPortfolioOptions = computed(() => portfolios.items.value.length > 0);
-const hasContractOptions = computed(
-  () => authorisedContractIds.value.length > 0,
-);
-
-function shortenId(id: string, len = 8): string {
-  if (!id) return "";
-  return id.length > 12 ? `${id.slice(0, len)}…${id.slice(-4)}` : id;
-}
-
-function buildFilters(): ComplianceBreachListFilters {
-  const next: ComplianceBreachListFilters = {};
-  if (form.status !== "any") next.status = form.status;
-  if (form.ruleTypeId.trim()) next.rule_type_id = form.ruleTypeId.trim();
-  if (form.dateFrom) next.date_from = form.dateFrom;
-  if (form.dateTo) next.date_to = form.dateTo;
-  if (form.portfolioId.trim()) next.portfolio_id = form.portfolioId.trim();
-  if (form.contractId.trim()) next.contract_id = form.contractId.trim();
-  return next;
-}
-
-function apply() {
-  emit("update:modelValue", buildFilters());
-  emit("apply");
-}
-
-function reset() {
-  form.status = "any";
-  form.ruleTypeId = "";
-  form.dateFrom = "";
-  form.dateTo = "";
-  form.portfolioId = "";
-  form.contractId = "";
-  emit("update:modelValue", {});
-  emit("reset");
-}
 
 onMounted(() => {
   void portfolios.ensureLoaded();
 });
+
+const statusOptions = computed<{ value: BreachStatusChoice; label: string }[]>(() => [
+  { value: "OPEN", label: t("compliance.postTrade.toolbar.statusOpen") },
+  { value: "OVERRIDDEN", label: t("compliance.postTrade.toolbar.statusOverridden") },
+  { value: "RESOLVED", label: t("compliance.postTrade.toolbar.statusResolved") },
+  { value: "ALL", label: t("compliance.postTrade.toolbar.statusAll") },
+]);
+
+function setStatus(next: BreachStatusChoice) {
+  if (state.value.status === next) return;
+  state.value = { ...state.value, status: next };
+}
+
+const portfolioOptions = computed<ComplianceComboboxOption[]>(() =>
+  portfolios.items.value.map((p) => ({
+    value: p.id,
+    label: p.code,
+    sublabel: p.name,
+  })),
+);
+
+function setPortfolio(portfolioId: string) {
+  state.value = { ...state.value, portfolioId };
+}
+
+const ruleOptions = computed(() => {
+  const options = RULE_CATALOG.map((entry) => ({
+    value: entry.typeId,
+    label: t(entry.labelKey),
+  })).sort((a, b) => a.label.localeCompare(b.label));
+
+  const current = state.value.ruleTypeId;
+  if (current && !options.some((o) => o.value === current)) {
+    options.unshift({ value: current, label: current });
+  }
+  return options;
+});
+
+function onRuleChange(event: Event) {
+  state.value = { ...state.value, ruleTypeId: (event.target as HTMLSelectElement).value };
+}
+
+const dateFrom = computed({
+  get: () => state.value.dateFrom,
+  set: (value: string) => {
+    state.value = { ...state.value, dateFrom: value };
+  },
+});
+const dateTo = computed({
+  get: () => state.value.dateTo,
+  set: (value: string) => {
+    state.value = { ...state.value, dateTo: value };
+  },
+});
+
+interface Chip {
+  key: string;
+  label: string;
+  remove: () => void;
+}
+
+const chips = computed<Chip[]>(() => {
+  const list: Chip[] = [];
+  const s = state.value;
+
+  if (s.ruleTypeId) {
+    const entry = RULE_CATALOG.find((r) => r.typeId === s.ruleTypeId);
+    const label = t("compliance.postTrade.toolbar.chipRule", {
+      label: entry ? t(entry.labelKey) : s.ruleTypeId,
+    });
+    list.push({ key: "rule", label, remove: () => setRuleTypeId("") });
+  }
+
+  if (s.portfolioId) {
+    const portfolio = portfolios.byId.value.get(s.portfolioId);
+    const label = t("compliance.postTrade.toolbar.chipPortfolio", {
+      label: portfolio ? portfolio.code : s.portfolioId,
+    });
+    list.push({ key: "portfolio", label, remove: () => setPortfolio("") });
+  }
+
+  if (s.dateFrom && s.dateTo) {
+    list.push({
+      key: "dateRange",
+      label: t("compliance.postTrade.toolbar.chipDateRange", { from: s.dateFrom, to: s.dateTo }),
+      remove: () => {
+        state.value = { ...state.value, dateFrom: "", dateTo: "" };
+      },
+    });
+  } else if (s.dateFrom) {
+    list.push({
+      key: "dateFrom",
+      label: t("compliance.postTrade.toolbar.chipDateFrom", { date: s.dateFrom }),
+      remove: () => {
+        state.value = { ...state.value, dateFrom: "" };
+      },
+    });
+  } else if (s.dateTo) {
+    list.push({
+      key: "dateTo",
+      label: t("compliance.postTrade.toolbar.chipDateTo", { date: s.dateTo }),
+      remove: () => {
+        state.value = { ...state.value, dateTo: "" };
+      },
+    });
+  }
+
+  return list;
+});
+
+function setRuleTypeId(ruleTypeId: string) {
+  state.value = { ...state.value, ruleTypeId };
+}
+
+const showClearAll = computed(() => hasNonDefaultFilters(state.value));
+
+function clearAll() {
+  state.value = defaultBreachFilterState();
+}
 </script>
 
 <template>
-  <AppCard :title="t('compliance.postTrade.filters.title')">
-    <form class="breach-filters" @submit.prevent="apply">
-      <label class="breach-filters__field">
-        <span class="breach-filters__label">
-          {{ t("compliance.postTrade.filters.status") }}
-        </span>
-        <select v-model="form.status" class="form-control">
-          <option value="any">{{ t("compliance.postTrade.filters.any") }}</option>
-          <option value="OPEN">{{ t("compliance.postTrade.filters.open") }}</option>
-          <option value="OVERRIDDEN">
-            {{ t("compliance.postTrade.filters.overridden") }}
-          </option>
-          <option value="RESOLVED">
-            {{ t("compliance.postTrade.filters.resolved") }}
-          </option>
-        </select>
-      </label>
-
-      <label class="breach-filters__field">
-        <span class="breach-filters__label">
-          {{ t("compliance.postTrade.filters.ruleTypeId") }}
-        </span>
-        <input
-          v-model="form.ruleTypeId"
-          type="text"
-          class="form-control"
-          placeholder="e.g. concentration.single_issuer"
-        />
-      </label>
-
-      <div class="breach-filters__row">
-        <label class="breach-filters__field">
-          <span class="breach-filters__label">
-            {{ t("compliance.postTrade.filters.dateFrom") }}
-          </span>
-          <input v-model="form.dateFrom" type="date" class="form-control" />
-        </label>
-        <label class="breach-filters__field">
-          <span class="breach-filters__label">
-            {{ t("compliance.postTrade.filters.dateTo") }}
-          </span>
-          <input v-model="form.dateTo" type="date" class="form-control" />
-        </label>
+  <div class="breach-toolbar">
+    <div class="breach-toolbar__row">
+      <div
+        class="breach-toolbar__segment"
+        role="radiogroup"
+        :aria-label="t('compliance.postTrade.toolbar.statusLabel')"
+      >
+        <button
+          v-for="opt in statusOptions"
+          :key="opt.value"
+          type="button"
+          role="radio"
+          :aria-checked="state.status === opt.value"
+          class="breach-toolbar__segment-btn"
+          :class="{ 'is-active': state.status === opt.value }"
+          :disabled="loading"
+          @click="setStatus(opt.value)"
+        >
+          {{ opt.label }}
+        </button>
       </div>
 
-      <label class="breach-filters__field">
-        <span class="breach-filters__label">
-          {{ t("compliance.postTrade.filters.portfolio") }}
-        </span>
-        <select
-          v-if="hasPortfolioOptions"
-          v-model="form.portfolioId"
-          class="form-control"
-        >
-          <option value="">{{ t("compliance.postTrade.filters.portfolioAny") }}</option>
-          <option v-for="p in portfolios.items.value" :key="p.id" :value="p.id">
-            {{ p.code }} — {{ p.name }} ({{ p.base_currency }})
-          </option>
-        </select>
-        <input
-          v-else
-          v-model="form.portfolioId"
-          type="text"
-          class="form-control"
-          :placeholder="
-            portfolios.loading.value
-              ? t('compliance.postTrade.filters.portfolioLoading')
-              : t('compliance.postTrade.filters.portfolioId')
-          "
+      <div class="breach-toolbar__field breach-toolbar__field--portfolio">
+        <label class="breach-toolbar__label" for="breach-toolbar-portfolio">
+          {{ t("compliance.postTrade.toolbar.portfolioLabel") }}
+        </label>
+        <ComplianceFilterCombobox
+          input-id="breach-toolbar-portfolio"
+          :model-value="state.portfolioId"
+          :options="portfolioOptions"
+          :disabled="!!portfolios.error.value"
+          :loading="portfolios.loading.value"
+          :placeholder="t('compliance.postTrade.toolbar.portfolioPlaceholder')"
+          :field-label="t('compliance.postTrade.toolbar.portfolioLabel')"
+          :loading-text="t('compliance.postTrade.toolbar.portfolioLoading')"
+          :empty-text="t('compliance.postTrade.toolbar.portfolioEmpty')"
+          :change-label="t('compliance.postTrade.toolbar.portfolioChange')"
+          @update:model-value="setPortfolio"
         />
-        <span
-          v-if="form.portfolioId && hasPortfolioOptions"
-          class="breach-filters__hint"
-        >
-          <code>{{ shortenId(form.portfolioId) }}</code>
-        </span>
-      </label>
-
-      <label class="breach-filters__field">
-        <span class="breach-filters__label">
-          {{ t("compliance.postTrade.filters.contract") }}
-        </span>
-        <select
-          v-if="hasContractOptions"
-          v-model="form.contractId"
-          class="form-control"
-        >
-          <option value="">{{ t("compliance.postTrade.filters.contractAny") }}</option>
-          <option v-for="id in authorisedContractIds" :key="id" :value="id">
-            {{ shortenId(id) }}
-          </option>
-        </select>
-        <input
-          v-else
-          v-model="form.contractId"
-          type="text"
-          class="form-control"
-          :placeholder="t('compliance.postTrade.filters.contractId')"
-        />
-      </label>
-
-      <div class="breach-filters__actions">
-        <AppButton variant="primary" size="sm" :loading="loading" @click="apply">
-          {{ t("compliance.postTrade.filters.apply") }}
-        </AppButton>
-        <AppButton variant="ghost" size="sm" @click="reset">
-          {{ t("compliance.postTrade.filters.reset") }}
-        </AppButton>
       </div>
-    </form>
-  </AppCard>
+
+      <div class="breach-toolbar__field">
+        <label class="breach-toolbar__label" for="breach-toolbar-rule">
+          {{ t("compliance.postTrade.toolbar.ruleLabel") }}
+        </label>
+        <select
+          id="breach-toolbar-rule"
+          class="form-control"
+          :value="state.ruleTypeId"
+          @change="onRuleChange"
+        >
+          <option value="">{{ t("compliance.postTrade.toolbar.ruleAny") }}</option>
+          <option v-for="opt in ruleOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="breach-toolbar__field">
+        <span class="breach-toolbar__label">
+          {{ t("compliance.postTrade.toolbar.dateRangeLabel") }}
+        </span>
+        <AppDateRangeField v-model:start="dateFrom" v-model:end="dateTo" />
+      </div>
+    </div>
+
+    <p v-if="portfolios.error.value" class="breach-toolbar__notice" role="status">
+      {{ t("compliance.postTrade.toolbar.portfolioUnavailable") }}
+    </p>
+
+    <div v-if="chips.length || showClearAll" class="breach-toolbar__chips">
+      <span class="breach-toolbar__chips-label">
+        {{ t("compliance.postTrade.toolbar.activeFilters") }}
+      </span>
+      <button
+        v-for="chip in chips"
+        :key="chip.key"
+        type="button"
+        class="breach-toolbar__chip"
+        :aria-label="`${t('compliance.postTrade.toolbar.removeFilter')}: ${chip.label}`"
+        @click="chip.remove"
+      >
+        {{ chip.label }}
+        <AppIcon name="close" size="xs" />
+      </button>
+      <button
+        v-if="showClearAll"
+        type="button"
+        class="breach-toolbar__clear"
+        @click="clearAll"
+      >
+        {{ t("compliance.postTrade.toolbar.clearAll") }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.breach-filters {
+.breach-toolbar {
   display: grid;
-  gap: var(--space-4);
-}
-
-.breach-filters__field {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.breach-filters__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
 
-.breach-filters__label {
+.breach-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.breach-toolbar__segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-card-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  align-self: flex-end;
+}
+
+.breach-toolbar__segment-btn {
+  border: none;
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.breach-toolbar__segment-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.breach-toolbar__segment-btn.is-active {
+  background: var(--action-primary, #0969da);
+  color: #fff;
+}
+
+.breach-toolbar__field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 12rem;
+}
+
+.breach-toolbar__field--portfolio {
+  min-width: 16rem;
+}
+
+.breach-toolbar__label {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
@@ -256,7 +324,7 @@ onMounted(() => {
 
 .form-control {
   width: 100%;
-  height: var(--size-control-md);
+  height: var(--size-control-md, 36px);
   padding: 0 var(--space-3);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -271,18 +339,77 @@ onMounted(() => {
   box-shadow: var(--shadow-focus);
 }
 
-.breach-filters__hint {
+.breach-toolbar__notice {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--alert-warning-border, #d4a72c);
+  border-radius: var(--radius-md);
+  background: var(--alert-warning-bg);
+  color: var(--alert-warning-text);
   font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
 }
 
-.breach-filters__hint code {
-  font-family: var(--font-family-mono);
-}
-
-.breach-filters__actions {
+.breach-toolbar__chips {
   display: flex;
-  gap: var(--space-2);
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.breach-toolbar__chips-label {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.breach-toolbar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card-muted);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.breach-toolbar__chip:hover {
+  background: var(--bg-card-hover, #f0f2f4);
+}
+
+.breach-toolbar__clear {
+  border: none;
+  background: transparent;
+  color: var(--action-primary, #0969da);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 0 var(--space-1);
+}
+
+@media (max-width: 768px) {
+  .breach-toolbar__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .breach-toolbar__segment {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  .breach-toolbar__segment-btn {
+    flex: 1;
+  }
+
+  .breach-toolbar__field,
+  .breach-toolbar__field--portfolio {
+    min-width: 0;
+  }
 }
 </style>

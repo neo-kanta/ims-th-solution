@@ -346,7 +346,7 @@ func assetClassExposure(
 			if ac != assetClass {
 				continue
 			}
-			classMV = classMV.Add(assetClassHoldingMV(h, data.MarketPrices))
+			classMV = classMV.Add(spi.HoldingMarketValue(h, data.MarketPrices))
 		}
 	}
 
@@ -372,15 +372,6 @@ func assetClassExposure(
 
 	pct = classMV.Div(nav)
 	return pct, classMV, nav, true
-}
-
-func assetClassHoldingMV(h spi.Holding, prices *spi.MarketPriceSnapshot) decimal.Decimal {
-	if prices != nil {
-		if price, ok := prices.Prices[h.Ticker]; ok && price.IsPositive() {
-			return h.Quantity.Mul(price)
-		}
-	}
-	return h.MarketValue
 }
 
 func assetClassBlock(msg string) spi.EvalResult {

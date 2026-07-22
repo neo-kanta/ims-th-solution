@@ -15,3 +15,7 @@ export function newDecisionPath(portfolioCode: string): string {
 export function decisionDetailPath(portfolioCode: string, decisionId: string): string {
   return `${decisionsListPath(portfolioCode)}/${encodeURIComponent(decisionId)}`;
 }
+
+export function executionsListPath(portfolioCode: string): string {
+  return `/portfolios/${encodeURIComponent(portfolioCode)}/executions`;
+}

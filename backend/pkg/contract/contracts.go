@@ -2,7 +2,6 @@ package contract
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -256,8 +255,11 @@ type PortfolioRuleCatalogEntry struct {
 	IsActive       bool      `json:"is_active"`
 	// Parameters is the rule instance's current configured parameter set
 	// (e.g. {"asset_class":"EQUITY","max_percent_nav":60}), so the portfolio
-	// settings UI can render thresholds without a second round-trip.
-	Parameters json.RawMessage           `json:"parameters,omitempty" swaggertype:"object"`
+	// settings UI can render thresholds without a second round-trip. Producers
+	// assign pre-encoded JSON (json.RawMessage); the type is `any` because the
+	// value's shape is rule-type-specific and a narrower Go type would generate
+	// a false empty-object OpenAPI schema.
+	Parameters any                       `json:"parameters,omitempty"`
 	Binding    *PortfolioRuleBindingView `json:"binding,omitempty"`
 }
 

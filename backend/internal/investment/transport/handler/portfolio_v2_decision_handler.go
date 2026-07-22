@@ -67,7 +67,7 @@ func (h *DecisionHandler) loadOwnedDecision(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions [get]
 func (h *DecisionHandler) ListDecisionsByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -103,7 +103,7 @@ func (h *DecisionHandler) ListDecisionsByCode(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions [post]
 func (h *DecisionHandler) CreateDecisionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -178,7 +178,7 @@ func (h *DecisionHandler) CreateDecisionByCode(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId} [get]
 func (h *DecisionHandler) GetDecisionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -206,7 +206,7 @@ func (h *DecisionHandler) GetDecisionByCode(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId}/submit [post]
 func (h *DecisionHandler) SubmitDecisionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}
@@ -245,7 +245,7 @@ func (h *DecisionHandler) SubmitDecisionByCode(w http.ResponseWriter, r *http.Re
 // @Failure 500 {object} httputil.ErrorResponse
 // @Router /portfolios/{portfolioCode}/decisions/{decisionId}/cancel [post]
 func (h *DecisionHandler) CancelDecisionByCode(w http.ResponseWriter, r *http.Request) {
-	p, ok := resolvePortfolioByCode(w, r, h.portfolios, nil)
+	p, ok := resolvePortfolioByCode(w, r, h.portfolios, h.pc)
 	if !ok {
 		return
 	}

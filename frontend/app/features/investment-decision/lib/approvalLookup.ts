@@ -7,6 +7,7 @@ const ROUTE_FILTER_KEYS = [
   "product_type",
   "business_date_from",
   "business_date_to",
+  "portfolio_code",
 ] as const satisfies readonly (keyof DecisionApprovalFilters)[];
 
 function firstString(value: unknown): string {

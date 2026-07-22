@@ -20,6 +20,9 @@ type RuleInstanceRepository interface {
 	// Version management — append-only
 	CreateVersion(ctx context.Context, version *entity.RuleInstanceVersion) error
 	GetCurrentVersion(ctx context.Context, instanceID uuid.UUID) (*entity.RuleInstanceVersion, error)
+	// GetCurrentVersions batch-loads the current version for many instances in
+	// one query. Instances without a current version are absent from the map.
+	GetCurrentVersions(ctx context.Context, instanceIDs []uuid.UUID) (map[uuid.UUID]*entity.RuleInstanceVersion, error)
 	ListVersions(ctx context.Context, instanceID uuid.UUID) ([]entity.RuleInstanceVersion, error)
 }
 

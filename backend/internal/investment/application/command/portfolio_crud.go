@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -112,6 +113,30 @@ func (h *PortfolioCommandHandler) Create(ctx context.Context, req CreatePortfoli
 		return nil, fmt.Errorf("checking existing portfolio code: %w", err)
 	}
 	if existing != nil {
+		return nil, &domain.ErrCodeAlreadyExists{Resource: "portfolio", Code: req.Code}
+	}
+
+	// Belt-and-suspenders global uniqueness check. The database enforces
+	// global (not just per-fund) active-code uniqueness via the
+	// uq_inv_portfolios_code_alive unique index (migration
+	// 20260703000001_investment__portfolio_v2_hardening), but the
+	// GetByFundCode check above only catches a same-fund collision. Without
+	// this check, a cross-fund code collision would reach the INSERT and
+	// surface as a raw unique-constraint violation (undifferentiated 500)
+	// instead of the typed ErrCodeAlreadyExists conflict every other
+	// duplicate-code path in this handler already returns. This is
+	// defense-in-depth — the DB constraint is authoritative and still
+	// applies even if this check is ever bypassed or races a concurrent
+	// insert.
+	globalExisting, err := h.portfolios.GetByCode(ctx, req.Code)
+	if err != nil {
+		var ambiguous *domain.ErrAmbiguousPortfolioCode
+		if errors.As(err, &ambiguous) {
+			return nil, &domain.ErrCodeAlreadyExists{Resource: "portfolio", Code: req.Code}
+		}
+		return nil, fmt.Errorf("checking global portfolio code uniqueness: %w", err)
+	}
+	if globalExisting != nil {
 		return nil, &domain.ErrCodeAlreadyExists{Resource: "portfolio", Code: req.Code}
 	}
 

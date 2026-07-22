@@ -130,6 +130,56 @@ func (r *PostgresTradeConfirmationRepository) ListByFundDate(ctx context.Context
 	return out, rows.Err()
 }
 
+// ListByPortfolio returns paginated trade confirmations for a single
+// portfolio, optionally filtered by status. Backs the Portfolio V2
+// GET /portfolios/{portfolioCode}/confirmations endpoint — the caller has
+// already resolved and authorized the portfolio via resolvePortfolioByCode,
+// so no separate fund-scope filter is applied here.
+func (r *PostgresTradeConfirmationRepository) ListByPortfolio(ctx context.Context, portfolioID uuid.UUID, f domain.TradeConfirmationListFilter) ([]*entity.TradeConfirmation, int, error) {
+	page := f.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := f.Limit
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	offset := (page - 1) * limit
+
+	where := "WHERE portfolio_id = $1"
+	args := []any{portfolioID}
+	if f.Status != nil {
+		args = append(args, string(*f.Status))
+		where += fmt.Sprintf(" AND status = $%d", len(args))
+	}
+
+	var total int
+	countQ := "SELECT COUNT(*) FROM investment__trade_confirmations " + where
+	if err := r.pool.QueryRow(ctx, countQ, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count trade confirmations by portfolio: %w", err)
+	}
+
+	args = append(args, limit, offset)
+	listQ := confirmationSelect + " " + where + fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	rows, err := r.pool.Query(ctx, listQ, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list trade confirmations by portfolio: %w", err)
+	}
+	defer rows.Close()
+	out := []*entity.TradeConfirmation{}
+	for rows.Next() {
+		c, err := scanConfirmation(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		out = append(out, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return out, total, nil
+}
+
 // GetByBrokerReference returns the existing confirmation for a non-empty
 // broker reference, or nil. Used by the batch importer to dedupe rows
 // against confirmations already persisted by earlier batches.

@@ -64,6 +64,19 @@ func newV2PortfolioHandler(pc *fakeV2PermissionChecker, repo domain.PortfolioRep
 // fakeV2PermissionChecker grants data access only for fund IDs in Allowed.
 type fakeV2PermissionChecker struct {
 	Allowed map[string]bool
+	// Global, when true, makes HasDataPermission grant access to every fund —
+	// simulates the real AuthorizationService.HasDataPermission's "*" wildcard
+	// scope handling (a caller holding the "*" data-permission scope sees
+	// every contract/fund) for single-record GET handlers that call
+	// hasFundAccess directly (GetDecision, GetExecution, GetConfirmation).
+	Global bool
+	// Contracts, when non-nil, is returned as-is by GetAccessibleContracts —
+	// e.g. []string{"*"} simulates a global/company-wide data-scope caller
+	// for accessibleFundIDs-based list endpoints (ListDecisions,
+	// ListApprovalItems, ListPortfoliosV2). Left nil (default), list
+	// endpoints see a caller with zero fund access, matching the fail-closed
+	// default of a real IAM port with no granted scopes.
+	Contracts []string
 }
 
 func (c *fakeV2PermissionChecker) HasFunctionPermission(uuid.UUID, string) (bool, error) {
@@ -71,11 +84,17 @@ func (c *fakeV2PermissionChecker) HasFunctionPermission(uuid.UUID, string) (bool
 }
 
 func (c *fakeV2PermissionChecker) HasDataPermission(_ uuid.UUID, contractID string) (bool, error) {
+	if c.Global {
+		return true, nil
+	}
+	if c.Allowed == nil {
+		return false, nil
+	}
 	return c.Allowed[contractID], nil
 }
 
 func (c *fakeV2PermissionChecker) GetAccessibleContracts(uuid.UUID) ([]string, error) {
-	return nil, nil
+	return c.Contracts, nil
 }
 
 func withUserClaims(req *http.Request) *http.Request {

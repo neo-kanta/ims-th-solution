@@ -15,6 +15,8 @@ import { useApi } from "~/composables/useApi";
 
 import {
   normalizeComplianceBreach,
+  normalizeComplianceCheckGroupResult,
+  normalizeComplianceOverride,
   normalizeCompliancePortfolio,
   normalizeComplianceRule,
 } from "../lib/formatters";
@@ -69,6 +71,8 @@ interface SuccessEnvelope<T> {
 type ApiBreachList = components["schemas"]["ListBreachesResult"];
 type ApiPortfolioList = components["schemas"]["PortfolioListResponse"];
 type ApiRuleList = components["schemas"]["ListRuleInstancesResult"];
+type ApiOverride = components["schemas"]["Override"];
+type ApiCheckGroupResult = components["schemas"]["CheckGroupResult"];
 type BreachListQuery = NonNullable<
   paths["/compliance/breaches"]["get"]["parameters"]["query"]
 >;
@@ -232,24 +236,26 @@ export const complianceApi = {
     breachId: string,
     payload: ComplianceOverrideRequest,
   ): Promise<ComplianceOverride> {
-    const { apiFetch } = useApi();
-    const response = await apiFetch<SuccessEnvelope<ComplianceOverride>>(
-      `/compliance/breaches/${encodeURIComponent(breachId)}/override`,
-      { method: "POST", body: payload },
-    );
-    return unwrap(response);
+    const client = useOpenApiClient();
+    const response = await client.POST("/compliance/breaches/{breachID}/override", {
+      params: { path: { breachID: breachId } },
+      body: payload,
+    });
+    const data = unwrapOpenApiResponse<ApiOverride>(response);
+    return normalizeComplianceOverride(data);
   },
 
   /**
    * Fetch all records + breaches for one check group id. Used by the audit
-   * trail page and the post-trade inbox detail drawer.
+   * trail page and the breach queue detail drawer.
    */
   async getCheckGroup(groupId: string): Promise<ComplianceCheckGroupResult> {
-    const { apiFetch } = useApi();
-    const response = await apiFetch<SuccessEnvelope<ComplianceCheckGroupResult>>(
-      `/compliance/checks/${encodeURIComponent(groupId)}`,
-    );
-    return unwrap(response);
+    const client = useOpenApiClient();
+    const response = await client.GET("/compliance/checks/{groupID}", {
+      params: { path: { groupID: groupId } },
+    });
+    const data = unwrapOpenApiResponse<ApiCheckGroupResult>(response);
+    return normalizeComplianceCheckGroupResult(data);
   },
 
   /**

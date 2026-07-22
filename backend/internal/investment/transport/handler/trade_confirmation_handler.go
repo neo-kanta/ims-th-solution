@@ -10,6 +10,7 @@ import (
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/valueobject"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/request"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/transport/dto/response"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 	"github.com/neo-kanta/ims-th-solution/backend/platform/httputil"
 )
 
@@ -19,6 +20,7 @@ type TradeConfirmationHandler struct {
 	portfolios    domain.PortfolioRepository
 	cmd           *command.TradeConfirmationCommandHandler
 	batchImport   *command.ConfirmationBatchImportHandler
+	pc            contract.PermissionChecker
 }
 
 func NewTradeConfirmationHandler(repo domain.TradeConfirmationRepository, cmd *command.TradeConfirmationCommandHandler) *TradeConfirmationHandler {
@@ -42,6 +44,20 @@ func (h *TradeConfirmationHandler) SetExecutionRepository(r domain.ExecutionRepo
 func (h *TradeConfirmationHandler) SetPortfolioRepository(r domain.PortfolioRepository) {
 	if h != nil {
 		h.portfolios = r
+	}
+}
+
+// SetPermissionChecker wires the fund-scoped data-permission checker
+// post-construction. Used both by the Portfolio V2 (portfolioCode) routes
+// (via resolvePortfolioByCode's hasFundAccess check) and by the V1
+// {id}-keyed confirmation routes in this file
+// (ListConfirmations/GetConfirmation), which previously had no fund/
+// portfolio data-scope enforcement at all beyond the route-level function
+// permission. Production wiring in module.go always passes a real,
+// fail-closed checker here (never nil).
+func (h *TradeConfirmationHandler) SetPermissionChecker(pc contract.PermissionChecker) {
+	if h != nil {
+		h.pc = pc
 	}
 }
 
@@ -115,13 +131,43 @@ func (h *TradeConfirmationHandler) ImportBatch(w http.ResponseWriter, r *http.Re
 	httputil.Created(w, resp)
 }
 
-// ListConfirmations supports filtering by execution_id or fund_id+business_date.
+// ListConfirmations handles GET /investment/trade-confirmations.
+// @Summary List Trade Confirmations
+// @Description List trade confirmations for an execution, or for a fund+business_date. Requires data-permission on the resolved fund.
+// @Tags Investment - Trade Confirmations
+// @Security BearerAuth
+// @Produce json
+// @Param execution_id query string false "Filter by execution UUID"
+// @Param fund_id query string false "Filter by fund UUID (requires business_date)"
+// @Param business_date query string false "Business date YYYY-MM-DD (required with fund_id)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/trade-confirmations [get]
 func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if v := q.Get("execution_id"); v != "" {
 		id, err := parseUUID(v)
 		if err != nil {
 			httputil.BadRequest(w, "invalid execution_id")
+			return
+		}
+		// Data permission: resolve the execution's fund and verify access
+		// before revealing any confirmation under it.
+		execution, err := h.executions.GetByID(r.Context(), id)
+		if err != nil {
+			httputil.InternalError(w, err.Error())
+			return
+		}
+		if execution == nil {
+			httputil.NotFound(w, "execution not found")
+			return
+		}
+		if !hasFundAccess(r.Context(), h.pc, execution.FundID) {
+			httputil.Forbidden(w, "no access to this execution")
 			return
 		}
 		items, err := h.confirmations.ListByExecution(r.Context(), id)
@@ -147,6 +193,11 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 			httputil.BadRequest(w, "business_date required (YYYY-MM-DD)")
 			return
 		}
+		// Data permission: verify access to the requested fund directly.
+		if !hasFundAccess(r.Context(), h.pc, id) {
+			httputil.Forbidden(w, "no access to this fund")
+			return
+		}
 		items, err := h.confirmations.ListByFundDate(r.Context(), id, bd)
 		if err != nil {
 			httputil.InternalError(w, err.Error())
@@ -162,6 +213,20 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 	httputil.BadRequest(w, "execution_id or (fund_id+business_date) is required")
 }
 
+// GetConfirmation handles GET /investment/trade-confirmations/{id}.
+// @Summary Get Trade Confirmation
+// @Description Retrieve one trade confirmation by UUID. Requires data-permission on the confirmation's fund.
+// @Tags Investment - Trade Confirmations
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Confirmation UUID"
+// @Success 200 {object} response.TradeConfirmationResponse
+// @Failure 400 {object} httputil.ErrorResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 500 {object} httputil.ErrorResponse
+// @Router /investment/trade-confirmations/{id} [get]
 func (h *TradeConfirmationHandler) GetConfirmation(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -175,6 +240,12 @@ func (h *TradeConfirmationHandler) GetConfirmation(w http.ResponseWriter, r *htt
 	}
 	if c == nil {
 		httputil.NotFound(w, "trade confirmation not found")
+		return
+	}
+	// Data permission: verify the confirmation's fund is within the caller's
+	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
+	if !hasFundAccess(r.Context(), h.pc, c.FundID) {
+		httputil.Forbidden(w, "no access to this trade confirmation")
 		return
 	}
 	httputil.OK(w, response.FromTradeConfirmation(c))

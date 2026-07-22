@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useI18n } from "~/composables/useI18n";
 import AppButton from "~/shared/ui/AppButton.vue";
@@ -8,6 +8,7 @@ import AppErrorState from "~/shared/ui/AppErrorState.vue";
 import AppLoadingState from "~/shared/ui/AppLoadingState.vue";
 import AppStatusBadge from "~/shared/ui/AppStatusBadge.vue";
 import { useDecisionDetail } from "../composables/useDecisionApproval";
+import { usePortfolioCodeLookup } from "../composables/usePortfolioCodeLookup";
 
 const props = defineProps<{
   open: boolean;
@@ -16,19 +17,32 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
+  "view-full-decision": [portfolioCode: string, decisionId: string];
 }>();
 
 const { t } = useI18n();
 const { decision, loading, error, fetch, clear } = useDecisionDetail();
+const codeLookup = usePortfolioCodeLookup();
+const resolvedPortfolioCode = ref<string | null>(null);
 
 watch(
   () => props.decisionId,
-  (id) => {
-    if (id) void fetch(id);
-    else clear();
+  async (id) => {
+    resolvedPortfolioCode.value = null;
+    if (id) {
+      await fetch(id);
+      resolvedPortfolioCode.value = await codeLookup.resolve(decision.value?.portfolio_id);
+    } else {
+      clear();
+    }
   },
   { immediate: true },
 );
+
+function onViewFullDecision() {
+  if (!resolvedPortfolioCode.value || !props.decisionId) return;
+  emit("view-full-decision", resolvedPortfolioCode.value, props.decisionId);
+}
 
 const headerFields = computed(() => {
   if (!decision.value) return [];
@@ -218,9 +232,19 @@ function statusLabel(status: string | undefined): string {
             />
             <template v-else-if="decision">
               <section class="drawer__section">
-                <h3 class="drawer__section-title">
-                  {{ t("approval.decisionWorkbench.drawer.orderHeader", "Decision header") }}
-                </h3>
+                <div class="drawer__section-row">
+                  <h3 class="drawer__section-title">
+                    {{ t("approval.decisionWorkbench.drawer.orderHeader", "Decision header") }}
+                  </h3>
+                  <AppButton
+                    variant="secondary"
+                    size="xs"
+                    :disabled="!resolvedPortfolioCode"
+                    @click="onViewFullDecision"
+                  >
+                    {{ t("approval.decisionWorkbench.drawer.viewFullDecision", "View full decision") }}
+                  </AppButton>
+                </div>
                 <AppDescriptionList :items="headerFields" />
               </section>
 
@@ -368,6 +392,17 @@ function statusLabel(status: string | undefined): string {
   font-weight: var(--font-weight-semibold, 600);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.drawer__section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+}
+
+.drawer__section-row .drawer__section-title {
+  margin-bottom: 0;
 }
 
 .drawer__empty {
