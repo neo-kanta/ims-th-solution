@@ -1,0 +1,26 @@
+info:
+  name: create-execution
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{investment-base-url}}/executions"
+  body:
+    type: json
+    data: |-
+      {
+        "decision_id": "{{investment-decision-id}}",
+        "broker_reference": "{{investment-external-ref}}",
+        "ordered_quantity": "{{investment-quantity}}",
+        "ordered_amount": "{{investment-gross-amount}}"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

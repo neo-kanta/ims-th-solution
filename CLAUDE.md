@@ -34,7 +34,10 @@ make contract-check
 make test
 make test-unit
 make test-integration
+make e2e-db-setup
 make test-e2e
+make test-e2e-backend
+make test-e2e-ci
 make lint
 
 # Build and generated clients
@@ -62,17 +65,17 @@ cd frontend && npm run build
 1. Load config and logging.
 2. Connect PostgreSQL; run secure bootstrap check.
 3. Optionally connect Redis when `RATE_LIMIT_BACKEND=redis`.
-4. Wire audit, IAM, compliance, workflow, investment, reference data, market data, integration, permissions, approval, notification, and chat modules.
-5. Wire cross-module callbacks: investment ↔ approval subject callbacks, workflow confirmation gate, contract catalog, and market-data quote provider.
-6. Wire notification as the workflow stuck-day operator notifier.
-7. Start the workflow scheduler on an hourly loop.
-8. Mount `/health`, `/metrics`, `/swagger/*`, and `/api/v1`.
+4. Wire audit, IAM, compliance, workflow, investment, reference data, market data, integration, permissions, approval, watchlist, notification, and chat modules.
+5. Wire cross-module callbacks: investment ↔ approval subject callbacks, workflow confirmation gate, contract catalog, market-data quote provider, and watchlist's security resolver/quote provider/portfolio scope/notifier.
+6. Wire notification as the workflow stuck-day operator notifier and the watchlist alert notifier.
+7. Start the workflow scheduler on an hourly loop and the notification worker.
+8. Mount `/health`, `/metrics`, `/swagger/*`, `/swagger/v2/*`, `/api/v1`, and `/api/v2`.
 
 Public API:
 
 - `GET /health`
 - `GET /metrics` (Prometheus scrape endpoint)
-- `GET /swagger/*`
+- `GET /swagger/*` and `GET /swagger/v2/*`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
 
@@ -87,9 +90,11 @@ Authenticated API groups:
 - Reference data under `/api/v1/reference-data/*`
 - Integration (user dashboard/tasks) under `/api/v1/integration/*`
 - Permissions under `/api/v1/permissions/*`
-- Approval under `/api/v1/approval/*`
+- Approval under `/api/v1/approvals/*` and `/api/v1/approval-config/*`
 - Notification under `/api/v1/notifications/*`
+- Watchlist under `/api/v1/watchlists/*`
 - Chat (conditionally mounted when LLM provider is configured) under `/api/v1/chat/*`
+- Portfolio V2 (additive, portfolio-code identity; documented at `/swagger/v2/*` not `/swagger/*`) under `/api/v2/portfolios/*` — see `docs/api/portfolio-v2-api-ddd.md`. Only the investment module exposes V2 routes so far.
 
 ## Module Status
 
@@ -103,9 +108,10 @@ Authenticated API groups:
 | `market_data`    | Active | Quote/history providers, import, provider health, Redis cache, PostgreSQL persistence.                     |
 | `approval`       | Active | Approval flows, groups, teams, inbox, subject callbacks for research reports, decisions, and portfolios.   |
 | `permissions`    | Active | Account/group management, function permissions, data permissions, effective-permissions view, role hierarchy.|
-| `notification`   | Active | Notification engine; provides `ApprovalNotifier` and workflow stuck-day `OperatorNotifier`. No UI nav.     |
+| `notification`   | Active | Notification engine; provides `ApprovalNotifier`, workflow stuck-day `OperatorNotifier`, and watchlist alert notifier. No UI nav. |
 | `reference_data` | Active | Thai market holidays, currencies, markets, instruments; provides `Resolver()` to market data. No UI nav.   |
 | `integration`    | Active | User dashboard snapshot and task summary endpoints (`/integration/dashboard/me`, `/integration/tasks/my`). |
+| `watchlist`      | Active | Personal/portfolio watchlist items, market-price threshold rules, alert events, acknowledgement, manual evaluation, notification integration. |
 | `chat`           | Active | AI financial assistant via Anthropic LLM + MCP. Conditionally mounted; rest of API unaffected if disabled. |
 
 ## Backend Placement Rules
@@ -230,6 +236,7 @@ Seed behavior:
 - Local backend runs from `backend` and can load `backend/.env` if present.
 - Do not commit real secrets.
 - `APP_JWT_SECRET`, `MFA_ENCRYPTION_KEY`, and `ALPHA_VANTAGE_API_KEY` are required outside development/test according to `backend/platform/config/config.go`. `ANTHROPIC_API_KEY` is also required when the chat module is active — `LLM_PROVIDER` defaults to `anthropic`, so the key is effectively required in most deployments unless you explicitly set a different provider.
+- `REPORTING_CURRENCY` is required unconditionally in every environment, including development and test and any CI job that runs `migrate`/`server` — unlike the vars above, there is no development/test carve-out. It must be an uppercase, recognized ISO 4217 code (e.g. `THB`); `infra/env/.env.*` templates already set it. Omitting it fails config load with `REPORTING_CURRENCY is required` (this broke the `e2e-iam` CI job once — see commit `144d1a2`).
 - Redis is optional only when `RATE_LIMIT_BACKEND=memory`; if set to `redis`, backend startup requires a reachable Redis instance.
 - Chat module: `LLM_PROVIDER` defaults to `anthropic`; without a matching `ANTHROPIC_API_KEY` the `/chat` route is silently not mounted — no startup error, but all chat endpoints 404.
 - `CHAT_WRITE_ENABLED=true` enables mutating MCP tools; default is read-only.

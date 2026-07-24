@@ -1,9 +1,15 @@
 # Portfolio V2 API - DDD Design
 
-**Status:** target design, not current implementation  
+**Status:** design reference; an implemented subset is live under `/api/v2`
+**Current runtime contract:** [portfolio-v2-api.md](portfolio-v2-api.md)
 **Primary bounded context:** Portfolio Management  
 **Base path:** `/api/v2/portfolios`  
 **Design decision:** public API routes use `portfolioCode`; `portfolio_id` remains the internal operational and accounting source of truth.
+
+This document preserves the broader DDD target and therefore includes future
+routes that are not mounted. The current server implements the 25 operations
+listed in `portfolio-v2-api.md`; use that document and the V2 Swagger spec for
+consumer integration.
 
 ## 1. Purpose
 

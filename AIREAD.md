@@ -65,6 +65,7 @@ ims-th-solution/
 │   │   ├── reference_data/     # Thai holidays, currencies, markets, instruments
 │   │   ├── compliance/         # IRG / pre-trade / post-trade rule hooks
 │   │   ├── integration/        # User dashboard snapshot + task summary endpoints
+│   │   ├── watchlist/          # Personal/portfolio watchlists, price-threshold alerts
 │   │   └── chat/               # AI financial assistant (Anthropic LLM + MCP)
 │   ├── platform/               # Cross-cutting: config, DB, middleware, logging, errors, clock, metrics
 │   └── pkg/                    # Shared kernel: types, enums, inter-module contracts
@@ -86,9 +87,14 @@ ims-th-solution/
 │   │   │   ├── investment-workspace/
 │   │   │   ├── market-data/
 │   │   │   ├── my-funds/
+│   │   │   ├── notifications/
+│   │   │   ├── operator/       # Portfolio V2 operator screens (decisions/execution)
 │   │   │   ├── permissions/
+│   │   │   ├── portfolio-decision/  # Portfolio V2 (portfolio-code) decision workflow
+│   │   │   ├── portfolio-workspace/ # Portfolio V2 (portfolio-code) directory/holdings/cash
 │   │   │   ├── settings/
 │   │   │   ├── shell/          # App shell: navigation, dashboard tab registry
+│   │   │   ├── watchlist/
 │   │   │   └── workflow/
 │   │   ├── layouts/            # default, auth, dashboard
 │   │   ├── middleware/         # auth.ts, permission.ts
@@ -223,10 +229,11 @@ Enterprise-grade, server-side enforced:
 ### 4.5 Supporting Modules
 
 - **Audit / Change Log:** Configuration for which tables to audit, query interface for audit records
-- **Notification:** Approval notifier and workflow stuck-day operator notifier; no dedicated user nav
+- **Notification:** Approval notifier, workflow stuck-day operator notifier, and watchlist alert notifier; no dedicated user nav
 - **Reference Data:** Markets (SET, TFEX, foreign), currencies, instrument types, Thai holidays; exposes a `Resolver()` used by market data
 - **Compliance/IRG:** Extension points for blacklist/whitelist, investment ratio, instrument restriction, credit rating rules
 - **Integration:** User dashboard snapshot and personal task-summary endpoints
+- **Watchlist:** Personal/portfolio watchlist items with market-price threshold rules, alert events, acknowledgement, and manual evaluation; depends on reference-data's resolver, market-data's quote provider, investment's portfolio-scope resolver, and notification's alert notifier
 
 ### 4.6 AI Chat Assistant
 
@@ -250,6 +257,22 @@ An AI financial assistant backed by the Anthropic Claude API (or a compatible LL
 - `CHAT_MCP_SERVERS_CONFIG` — optional path to mcp-servers.yaml; when absent, spawns the bundled ims-mcp binary
 - `CHAT_MCP_IMS_BIN` — override path to the ims-mcp binary
 - `IMS_API_BASE_URL` — forwarded to the MCP server so its tools reach the IMS REST API
+
+### 4.7 Portfolio V2 (portfolio-code identity)
+
+An additive API generation that identifies portfolios by business `portfolioCode`
+instead of internal UUIDs, mounted alongside V1 rather than replacing it.
+
+- Routes: `/api/v2/portfolios/*`, separate from `/api/v1/investment/*`.
+- Own Swagger spec/basePath at `/swagger/v2/*` (Swagger 2.0 only supports one
+  basePath per spec, so V2 cannot share the V1 document — see
+  `backend/cmd/server/swagger_v2_docs.go`).
+- Frontend consumes it via `useOpenApiClientV2()` in `frontend/app/api/openapi.ts`,
+  called from the `portfolio-decision/` and `portfolio-workspace/` feature service
+  layers; the `operator/` feature builds on top of those.
+- Only the `investment` module exposes V2 routes so far; this is expected to grow
+  as other modules migrate to portfolio-code identity.
+- Design/contract reference: `docs/api/portfolio-v2-api-ddd.md`.
 
 ---
 
@@ -365,6 +388,9 @@ DB_USER=ims_app
 DB_PASSWORD=<password>
 DB_SSL_MODE=disable
 DB_MAX_CONNECTIONS=25
+
+# Reporting currency (required in EVERY environment, no dev/test default)
+REPORTING_CURRENCY=THB
 
 # Rate limiting (optional Redis backend)
 RATE_LIMIT_BACKEND=memory   # or "redis"
