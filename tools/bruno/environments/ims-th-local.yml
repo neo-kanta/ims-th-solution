@@ -265,7 +265,7 @@ variables:
   - name: compliance-check-group-id
     value: ""
   - name: compliance-breach-id
-    value: ""
+    value: d000d000-0000-0000-0000-000000000001
   - name: compliance-rule-name
     value: Sample Compliance Rule
   - name: compliance-rule-description
@@ -277,7 +277,7 @@ variables:
   - name: compliance-effective-to
     value: ""
   - name: compliance-rule-type-id
-    value: ""
+    value: concentration.single_issuer
   - name: compliance-change-reason
     value: initial creation from Bruno
   - name: compliance-rule-parameters

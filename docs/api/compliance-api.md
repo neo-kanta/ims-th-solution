@@ -9,6 +9,102 @@ Compliance APIs support pre-trade validation before Investment Decision approval
 ## Authentication
 All compliance endpoints require Bearer JWT through `/api/v1`.
 
+### Local API and interactive documentation
+
+- API base URL: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/swagger/index.html`
+- Authorization header: `Authorization: Bearer <access-token>`
+
+The frontend reads the configured base URL from
+`NUXT_PUBLIC_API_BASE_URL`; the development default is the local URL above.
+
+## Success response contract
+
+Every successful compliance HTTP response uses the standard envelope:
+
+```json
+{
+  "data": {},
+  "message": "optional"
+}
+```
+
+Rule and breach records use the camel-case field names published by Swagger
+and consumed by the generated frontend client. They never use Go struct names
+such as `ID`, `RuleTypeID`, or `CheckRecordID` on the wire.
+
+Example `GET /compliance/rules?offset=0&limit=200` response:
+
+```json
+{
+  "data": {
+    "instances": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "ruleTypeID": "concentration.single_issuer",
+        "name": "Single issuer limit",
+        "description": "Limit one issuer exposure",
+        "currentVersion": 1,
+        "isActive": true,
+        "effectiveWindow": {
+          "valid_from": "2026-07-20T00:00:00Z"
+        },
+        "createdBy": "22222222-2222-2222-2222-222222222222",
+        "createdAt": "2026-07-20T00:00:00Z",
+        "updatedAt": "2026-07-20T00:00:00Z",
+        "type_metadata": {
+          "type_id": "concentration.single_issuer",
+          "version": "1.0.0",
+          "category": "MANDATE",
+          "default_severity": "BLOCK",
+          "supported_timings": ["PRE_TRADE"],
+          "supported_scopes": ["PORTFOLIO"],
+          "overridable": true,
+          "description": "Single issuer limit"
+        }
+      }
+    ],
+    "total": 1,
+    "offset": 0,
+    "limit": 200
+  }
+}
+```
+
+Example `GET /compliance/breaches?status=OPEN&offset=0&limit=50`
+record fields:
+
+```json
+{
+  "data": {
+    "breaches": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "checkRecordID": "44444444-4444-4444-4444-444444444444",
+        "checkGroupID": "55555555-5555-5555-5555-555555555555",
+        "portfolioID": "66666666-6666-6666-6666-666666666666",
+        "ruleTypeID": "cash.availability",
+        "ruleInstanceID": "77777777-7777-7777-7777-777777777777",
+        "severity": "BLOCK",
+        "verdict": "BLOCK",
+        "status": "OPEN",
+        "evidence": {
+          "metrics": {
+            "available_cash": "100.00"
+          }
+        },
+        "message": "Insufficient cash",
+        "businessDate": "2026-07-20T00:00:00Z",
+        "createdAt": "2026-07-20T00:00:00Z"
+      }
+    ],
+    "total": 1,
+    "offset": 0,
+    "limit": 50
+  }
+}
+```
+
 ## Authorization / Permission
 Route groups enforce `WORKFLOW_EXECUTE`, `IRG_VIEW_RULES`, `IRG_OVERRIDE_BREACH`, and `IRG_EDIT_RULE_INSTANCE`.
 
@@ -58,7 +154,7 @@ No request body.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 200 | OK | ListBreachesResult |
+| 200 | OK | SuccessResponse<ListBreachesResult> |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
 | 500 | Internal Server Error | ErrorResponse |
@@ -97,7 +193,7 @@ Schema: `OverrideRequest`.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 201 | Created | Override |
+| 201 | Created | SuccessResponse<Override> |
 | 400 | Bad Request | ErrorResponse |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
@@ -141,7 +237,7 @@ Schema: `PostTradeRequest`.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 201 | Created | PostTradeCheckResponse |
+| 201 | Created | SuccessResponse<PostTradeCheckResponse> |
 | 400 | Bad Request | ErrorResponse |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
@@ -191,7 +287,7 @@ Schema: `PreTradeRequest`.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 201 | Created | PreTradeCheckResponse |
+| 201 | Created | SuccessResponse<PreTradeCheckResponse> |
 | 400 | Bad Request | ErrorResponse |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
@@ -226,7 +322,7 @@ No request body.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 200 | OK | CheckGroupResult |
+| 200 | OK | SuccessResponse<CheckGroupResult> |
 | 400 | Bad Request | ErrorResponse |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
@@ -265,7 +361,7 @@ No request body.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 200 | OK | ListRuleInstancesResult |
+| 200 | OK | SuccessResponse<ListRuleInstancesResult> |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |
 | 500 | Internal Server Error | ErrorResponse |
@@ -311,7 +407,7 @@ Schema: `CreateRuleInstanceRequest`.
 #### Response
 | HTTP Status | Description | Schema |
 | --- | --- | --- |
-| 201 | Created | CreateRuleInstanceResult |
+| 201 | Created | SuccessResponse<CreateRuleInstanceResult> |
 | 400 | Bad Request | ErrorResponse |
 | 401 | Unauthorized | ErrorResponse |
 | 403 | Forbidden | ErrorResponse |

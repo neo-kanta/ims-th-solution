@@ -1,6 +1,6 @@
 # IMS Thailand Frontend
 
-This package contains the Nuxt 4 frontend for IMS Thailand. It provides the authenticated app shell, login flow, dashboard, settings console, and placeholder route surfaces used while backend features are still being built out.
+This package contains the Nuxt 4 frontend for IMS Thailand. It provides the authenticated app shell, login flow, dashboard, and feature-owned screens for investment (research, decisions, ledger, portfolio workspace/decision), compliance, approval, permissions, market data, watchlist, notifications, chat, and settings.
 
 ## Stack
 
@@ -30,10 +30,26 @@ frontend/
 |   |-- assets/css/                  # Global styles
 |   |-- composables/                 # Thin Nuxt composables such as useI18n/useApi
 |   |-- features/
+|   |   |-- approval/                # Approval inbox, groups/teams, subject timelines
 |   |   |-- auth/                    # Auth helpers and types
+|   |   |-- chat/                    # AI assistant chat UI
+|   |   |-- compliance/              # IRG rule builder, breach inbox, checks
 |   |   |-- dashboard/               # Dashboard screen and dashboard-specific logic
+|   |   |-- investment-decision/     # V1 investment decision workflow
+|   |   |-- investment-ledger/       # V1 ledger views
+|   |   |-- investment-research/     # Analysis report workflow
+|   |   |-- investment-workspace/    # V1 fund/portfolio workspace
+|   |   |-- market-data/             # Quote/history screens
+|   |   |-- my-funds/                # Manager's fund views
+|   |   |-- notifications/           # Notification center
+|   |   |-- operator/                # Portfolio V2 operator decision/execution screens
+|   |   |-- permissions/             # Permission governance UI
+|   |   |-- portfolio-decision/      # Portfolio V2 (portfolio-code) decision workflow
+|   |   |-- portfolio-workspace/     # Portfolio V2 (portfolio-code) directory/holdings/cash
 |   |   |-- settings/                # Settings/admin screen and service clients
-|   |   `-- shell/                   # Navigation and shell-specific helpers
+|   |   |-- shell/                   # Navigation and dashboard tab registry
+|   |   |-- watchlist/               # Personal/portfolio watchlist and alerts
+|   |   `-- workflow/                # Business-day workflow state UI
 |   |-- layouts/                     # default, auth, dashboard
 |   |-- middleware/                  # auth and permission guards
 |   |-- pages/                       # Route shells and file-based routing
@@ -133,13 +149,23 @@ The frontend can generate typed API paths and schemas from the backend Swagger o
 npm run api:generate
 ```
 
-From the repository root, `make api-client` first refreshes `backend/docs/swagger.json` and then regenerates `app/api/generated/schema.d.ts`.
+From the repository root, `make api-client` first refreshes `backend/docs/swagger.json`/`backend/docs/v2/v2_swagger.json` and then regenerates `app/api/ims-api.d.ts`.
 
-Use `useOpenApiClient()` from `app/api/openapi.ts` when a feature needs a typed client backed by Swagger:
+Use `useOpenApiClient()` from `app/api/openapi.ts` when a feature needs a typed V1 client backed by Swagger:
 
 ```ts
 const client = useOpenApiClient();
 const me = unwrapOpenApiResponse(await client.GET("/auth/me"));
+```
+
+Use `useOpenApiClientV2()` from the same module for the additive Portfolio V2
+(portfolio-code) API at `/api/v2/portfolios/*`:
+
+```ts
+const clientV2 = useOpenApiClientV2();
+const portfolio = unwrapOpenApiResponse(
+  await clientV2.GET("/portfolios/{portfolioCode}", { params: { path: { portfolioCode } } }),
+);
 ```
 
 ## Auth and Routing

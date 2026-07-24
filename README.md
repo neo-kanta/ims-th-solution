@@ -10,6 +10,7 @@ IMS Thailand is a modular investment-management platform for the Thailand PoC. T
 - **Seeds:** Go-side permission catalog upserts plus SQL seed files in `database/seeds`.
 - **Local infrastructure:** Docker Compose services for PostgreSQL, Redis, backend, frontend, and Mailpit from `infra/`.
 - **API documentation:** Swagger output under `backend/docs`, JSON at `/swagger/doc.json`, and UI at `/swagger/index.html`.
+- **Portfolio V2:** Additive, portfolio-code-identity API mounted at `/api/v2/portfolios/*`, documented separately at `/swagger/v2/*` (own Swagger 2.0 spec/basePath). Only the `investment` module exposes V2 routes so far; the V1 API keeps serving unchanged. See [docs/api/portfolio-v2-api-ddd.md](docs/api/portfolio-v2-api-ddd.md).
 - **AI assistant:** Optional chat module that uses an LLM provider plus MCP-grounded IMS tools. If provider configuration is missing, `/chat` is disabled while the rest of the API stays up.
 
 ## Tech Stack
@@ -162,7 +163,7 @@ Public or unauthenticated routes:
 
 - `GET /health`
 - `GET /metrics`
-- `GET /swagger/*`
+- `GET /swagger/*` and `GET /swagger/v2/*`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
 
@@ -183,6 +184,7 @@ Authenticated API groups:
 - `/api/v1/notifications/*` for notification center, email outbox, health, test email, and retry operations.
 - `/api/v1/watchlists/*` for watchlist items, alerts, acknowledgement, and manual evaluation.
 - `/api/v1/chat*` for streaming chat and chat session/message history when the chat module is configured.
+- `/api/v2/portfolios/*` for the additive Portfolio V2 portfolio-code API (investment module only, documented at `/swagger/v2/*`).
 
 Most non-auth routes are permission-gated by backend middleware. Frontend guards are for UX only; backend permissions and data-scope checks are the source of truth.
 
@@ -256,6 +258,7 @@ Backend configuration is read from environment variables, with local defaults fo
 Important local configuration areas:
 
 - Core app/database: `APP_ENV`, `APP_PORT`, `APP_JWT_SECRET`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+- Reporting currency: `REPORTING_CURRENCY` (e.g. `THB`) — required in **every** environment, including development, test, and CI; an uppercase, recognized ISO 4217 code. Unlike `APP_JWT_SECRET`/`ALPHA_VANTAGE_API_KEY`, there is no development/test default — omitting it fails config load.
 - Redis/rate limiting: `RATE_LIMIT_BACKEND`, `REDIS_ADDR`, `REDIS_PASSWORD`, `REDIS_DB`.
 - Market data: `MARKET_DATA_PROVIDER` or `MARKET_DATA_PRIMARY_PROVIDER`, `MARKET_DATA_FALLBACK_PROVIDER`, `ALPHA_VANTAGE_API_KEY`, quote staleness/refresh variables.
 - Notification email: `NOTIFICATION_EMAIL_ENABLED`, `NOTIFICATION_EMAIL_WORKER_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS_MODE`, `SMTP_FROM_ADDRESS`, `APP_PUBLIC_BASE_URL`.

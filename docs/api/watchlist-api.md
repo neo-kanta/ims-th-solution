@@ -1,13 +1,14 @@
 # Watchlist API Documentation
 
-**Status:** Design/API contract proposal  
-**State:** Pre-implementation documentation. This document defines the proposed API contract only. Do not implement code, create migrations, or modify generated Swagger files from this document without a separate implementation task.
+**Status:** original design/API contract; the Watchlist module is now implemented
+**Current runtime contract:** [watchlist-current-api.md](watchlist-current-api.md)
+**State:** This document preserves the design rationale and future-policy discussion. Use the current runtime document, mounted router, handlers, and Swagger annotations for client integration.
 
 Primary architecture reference: [docs/architecture/watchlist-backend-design.md](../architecture/watchlist-backend-design.md)
 
 ## API Overview
 
-The Watchlist API manages saved security monitoring lists and market-price threshold alerts. Watchlist is a standalone backend module planned at `backend/internal/watchlist`.
+The Watchlist API manages saved security monitoring lists and market-price threshold alerts. Watchlist is implemented as a standalone backend module at `backend/internal/watchlist`.
 
 Supported in v1:
 
