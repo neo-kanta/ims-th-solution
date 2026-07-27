@@ -468,7 +468,7 @@ func (h *InvestmentHandler) GetPortfolio(w http.ResponseWriter, r *http.Request)
 		httputil.NotFound(w, "portfolio not found")
 		return
 	}
-	if !hasFundAccess(r.Context(), h.pc, p.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, portfolioScopeID(p)) {
 		httputil.Forbidden(w, "no access to this portfolio")
 		return
 	}
@@ -512,7 +512,7 @@ func (h *InvestmentHandler) GetPortfolioByCode(w http.ResponseWriter, r *http.Re
 		httputil.NotFound(w, "portfolio not found")
 		return
 	}
-	if !hasFundAccess(r.Context(), h.pc, p.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, portfolioScopeID(p)) {
 		httputil.Forbidden(w, "no access to this portfolio")
 		return
 	}
@@ -565,7 +565,9 @@ func (h *InvestmentHandler) CreatePortfolio(w http.ResponseWriter, r *http.Reque
 	}
 
 	p, err := h.portfolioCmd.Create(r.Context(), command.CreatePortfolioRequest{
-		FundID:            req.FundID,
+		// Legacy V1 route: fund_id is always required here (unlike V2's
+		// optional fund_code — see portfolio_v2_handler.go CreatePortfolioV2).
+		FundID:            &req.FundID,
 		PortfolioType:     portfolioType,
 		Code:              req.Code,
 		Name:              req.Name,
@@ -832,14 +834,16 @@ func (h *InvestmentHandler) ListCashBalances(w http.ResponseWriter, r *http.Requ
 
 // PostTransaction handles POST /investment/portfolios/{id}/transactions.
 // @Summary Post Portfolio Transaction
-// @Description Post a buy, sell, cash, or other portfolio transaction into the ledger.
+// @Description Post a buy, sell, cash, or other portfolio transaction into the ledger. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).
 // @Tags Investment - Ledger
 // @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Portfolio UUID"
+// @Param Idempotency-Key header string false "Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated."
 // @Param request body request.PostTransactionRequest true "Transaction post payload"
-// @Success 201 {object} response.TransactionResponse
+// @Success 201 {object} response.TransactionResponse "Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement)"
+// @Success 202 {object} response.CashRequestResponse "LIVE cash movement staged for approval (pending)"
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -866,6 +870,11 @@ func (h *InvestmentHandler) PostTransaction(w http.ResponseWriter, r *http.Reque
 	res, err := h.postTxn.Handle(r.Context(), cmdReq)
 	if err != nil {
 		writeDomainError(w, err)
+		return
+	}
+	// A LIVE cash movement is staged for approval, not posted (Stage 2 gate).
+	if res.Pending {
+		httputil.Accepted(w, response.FromCashRequest(res.CashRequest))
 		return
 	}
 	httputil.Created(w, response.FromTransaction(res.Transaction))
@@ -985,8 +994,12 @@ func (h *InvestmentHandler) parsePostTransactionCommand(
 		SourceExecutionID: req.SourceExecutionID,
 		ExternalRef:       req.ExternalRef,
 		Reason:            req.Reason,
-		ActorID:           actor,
-		AllowForcePost:    req.ForcePost && hasPermission(r.Context(), h.pc, actor, invperm.CodeLedgerForcePost),
+		// Optional request-level idempotency for LIVE cash-movement submits. A
+		// retry carrying the same Idempotency-Key resolves to the original cash
+		// request instead of creating a duplicate. Ignored for immediate posts.
+		IdempotencyKey: strings.TrimSpace(r.Header.Get("Idempotency-Key")),
+		ActorID:        actor,
+		AllowForcePost: req.ForcePost && hasPermission(r.Context(), h.pc, actor, invperm.CodeLedgerForcePost),
 	}
 	if req.Side != "" {
 		s := vo.OrderSide(req.Side)
@@ -1034,7 +1047,7 @@ func (h *InvestmentHandler) ReverseTransaction(w http.ResponseWriter, r *http.Re
 		httputil.NotFound(w, "transaction not found")
 		return
 	}
-	if !hasFundAccess(r.Context(), h.pc, original.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, transactionScopeID(original)) {
 		httputil.Forbidden(w, "no access to this transaction")
 		return
 	}
@@ -2027,13 +2040,55 @@ func hasFundAccess(ctx context.Context, pc contract.PermissionChecker, fundID uu
 	return ok
 }
 
+// portfolioScopeID returns the data-permission scope id to check for p: its
+// fund when bound to one, or its own id for a fund-less portfolio (the
+// "Bind with Fund: N" path). hasFundAccess/HasDataPermission is scope-string
+// generic — it doesn't care whether the id represents a fund or a portfolio.
+func portfolioScopeID(p *entity.Portfolio) uuid.UUID {
+	if p.FundID != nil {
+		return *p.FundID
+	}
+	return p.ID
+}
+
+// decisionScopeID/executionScopeID/confirmationScopeID mirror
+// portfolioScopeID for the trading-workflow entities: fund scope when bound
+// to a fund, otherwise the owning portfolio's id.
+func decisionScopeID(d *entity.Decision) uuid.UUID {
+	if d.FundID != nil {
+		return *d.FundID
+	}
+	return d.PortfolioID
+}
+
+func executionScopeID(e *entity.Execution) uuid.UUID {
+	if e.FundID != nil {
+		return *e.FundID
+	}
+	return e.PortfolioID
+}
+
+func confirmationScopeID(c *entity.TradeConfirmation) uuid.UUID {
+	if c.FundID != nil {
+		return *c.FundID
+	}
+	return c.PortfolioID
+}
+
+func transactionScopeID(t *entity.PortfolioTransaction) uuid.UUID {
+	if t.FundID != nil {
+		return *t.FundID
+	}
+	return t.PortfolioID
+}
+
 // checkPortfolioAccess looks up the portfolio's fund and validates access.
 func checkPortfolioAccess(ctx context.Context, pc contract.PermissionChecker, portfolios domain.PortfolioRepository, portfolioID uuid.UUID) bool {
 	p, err := portfolios.GetByID(ctx, portfolioID)
 	if err != nil || p == nil {
 		return false
 	}
-	return hasFundAccess(ctx, pc, p.FundID)
+	return hasFundAccess(ctx, pc, portfolioScopeID(p))
 }
 
 func dateRangeParams(r *http.Request) (time.Time, time.Time) {

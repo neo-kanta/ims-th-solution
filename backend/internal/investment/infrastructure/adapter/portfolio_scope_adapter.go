@@ -25,6 +25,13 @@ func NewPortfolioScopeAdapter(portfolios domain.PortfolioRepository, funds domai
 
 // GetPortfolioScope returns scope info for the given portfolio.
 // Returns nil, nil when the portfolio or its parent fund does not exist.
+//
+// For a fund-less portfolio (FundID == nil), there is no fund to resolve, so
+// FundID falls back to the portfolio's own id — callers use it purely as a
+// generic data-permission scope-check string (see
+// contract.PermissionChecker.HasDataPermission), which doesn't care whether
+// the id represents a fund or a portfolio. FundCode/FundName are left blank
+// in that case.
 func (a *PortfolioScopeAdapter) GetPortfolioScope(ctx context.Context, portfolioID uuid.UUID) (*contract.PortfolioScopeInfo, error) {
 	p, err := a.portfolios.GetByID(ctx, portfolioID)
 	if err != nil {
@@ -33,7 +40,15 @@ func (a *PortfolioScopeAdapter) GetPortfolioScope(ctx context.Context, portfolio
 	if p == nil {
 		return nil, nil
 	}
-	f, err := a.funds.GetByID(ctx, p.FundID)
+	if p.FundID == nil {
+		return &contract.PortfolioScopeInfo{
+			PortfolioID:   p.ID,
+			PortfolioCode: p.Code,
+			PortfolioName: p.Name,
+			FundID:        p.ID,
+		}, nil
+	}
+	f, err := a.funds.GetByID(ctx, *p.FundID)
 	if err != nil {
 		return nil, fmt.Errorf("portfolio scope: fund lookup: %w", err)
 	}

@@ -3,7 +3,7 @@ type: manager-memory
 project: IMS Thailand
 owner: Kanta
 status: active
-last_verified: 2026-07-21
+last_verified: 2026-07-24
 stability: durable
 ---
 
@@ -35,9 +35,17 @@ not authoritative while they still contain TODO placeholders.
 - Portfolio is the primary business identity for investment operations.
 - Users work with a human-readable `portfolioCode` in URLs and V2 endpoints.
   UUIDs remain internal database identities and must not be normal UI labels.
-- Fund-optional portfolio development is not in the roadmap. Preserve the
-  current required fund association and do not implement fund-less portfolios
-  unless the owner explicitly reopens that feature.
+- Fund policy: `FUND_OPTIONAL` (owner decision D1, 2026-07-24 — "what I want is
+  fundless"). This supersedes the earlier 2026-07-15 fund-required decision.
+  Portfolios and their financial activity may exist with no fund association;
+  `fund_id` is nullable across portfolio and trading tables. A fund-less
+  portfolio's own id is its data-permission/workflow/compliance scope key.
+  Hard constraint: fund-less financial activity must NEVER skip EOD close,
+  compliance evaluation, approval, valuation, reporting, permission, or audit
+  controls merely because no fund id exists — "no fund" means "use the
+  portfolio as scope", not "skip the gate". All layers
+  (workflow/compliance/permissions/reporting/migrations/tests/UI) must express
+  this single policy; do not reintroduce a fund-required assumption anywhere.
 - Portfolio types are `LIVE`, `SIMULATION`, and `MODEL`:
   - `LIVE`: real managed portfolio, official ledger/valuation, approvals, and
     compliance apply.
@@ -164,6 +172,13 @@ Important details:
 - Never put production customer data, account numbers, credentials, tokens,
   private keys, or secrets into an external AI prompt.
 - Use sanitized or synthetic financial data in tests and AI sessions.
+- Production migration/bootstrap paths must never assign privileges or data
+  scope to named demo identities. Demo users, memberships, grants, and datasets
+  must be behind an enforced development/test-only seed boundary; a directory
+  name or SQL comment is not an environment control. When an unsafe historical
+  migration may already have run, a new forward corrective migration must
+  remove only the exact migration-owned demo grants while preserving legitimate
+  production role catalogs and administrator-created assignments.
 
 ## Engineering Operating Rules
 
@@ -185,8 +200,10 @@ Important details:
 
 ## Known Strategic Gaps
 
-- Fund-less portfolios remain unsupported by explicit owner decision; this is
-  no longer an implementation backlog item.
+- Fund-less portfolios are SUPPORTED by explicit owner decision D1 (2026-07-24,
+  `FUND_OPTIONAL`). The remaining work is not "should we do it" but ensuring
+  every module (workflow/compliance/permissions/reporting/audit) applies the
+  same controls to fund-less activity as to fund-bound activity.
 - Thai SEC/BOT regulatory logic is not complete; `regulatory.thai_sec` is still
   a warning stub.
 - Basket, rebalance, and switch flows still need per-line compliance checks.

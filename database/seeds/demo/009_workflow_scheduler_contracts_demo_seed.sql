@@ -1,8 +1,35 @@
 -- =============================================================================
--- Workflow scheduler contract bridge seed
+-- Workflow scheduler contract bridge seed (development/test only)
 -- =============================================================================
--- Temporary bridge data until a contract/fund master module owns active
--- contracts. Scheduler OPEN_DAY reads this table, not workflow history.
+-- Formerly the always-run database/seeds/005_workflow_scheduler_contracts_seed.sql.
+-- Moved here because every row it inserts is synthetic demo data: six
+-- "IMS-DEMO-*" contracts (five active with no end date, one inactive/stale)
+-- backing the temporary workflow__scheduler_contracts bridge table that
+-- backend/internal/workflow/infrastructure/persistence/scheduler_repository.go
+-- (PostgresWorkflowSchedulerContractSource.ListActiveContracts) reads to
+-- decide which contracts the workflow scheduler opens/closes each business
+-- day. Letting synthetic contracts reach the production scheduler is exactly
+-- the class of defect this seed reorganization exists to close, so this file
+-- now only runs when APP_ENV is development or test (see
+-- backend/cmd/seed/sql_seeds.go).
+--
+-- Verified before moving this file: workflow__scheduler_contracts has no
+-- foreign key pointing at it, and no other reference seed (checked:
+-- 002_workflow_seed.sql, which seeds workflow__day_states/
+-- __transition_log/__approval_records) joins or depends on these rows —
+-- workflow__day_states.contract_id is a plain UUID column with a fixed
+-- legacy placeholder value, not a foreign key to this table. Moving this
+-- file does not break any reference seed.
+--
+-- Practical implication, intentional: with this file demo-only, a production
+-- (or any non-opted-in) deployment now seeds ZERO rows into
+-- workflow__scheduler_contracts. This is correct by design, not an oversight
+-- — see database/seeds/README.md, "Production has no seeded scheduler
+-- contracts by design": the table is an explicitly temporary bridge ("until a
+-- contract/fund master module owns active contracts", per this file's own
+-- original header) and production scheduling must be driven by real
+-- contract/fund data once that module exists, never by synthetic demo rows.
+-- =============================================================================
 
 BEGIN;
 

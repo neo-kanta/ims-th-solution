@@ -1,0 +1,21 @@
+info:
+  name: get-trade-confirmation
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{investment-base-url}}/trade-confirmations/:confirmationId"
+  params:
+    - name: confirmationId
+      value: "{{investment-trade-confirmation-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

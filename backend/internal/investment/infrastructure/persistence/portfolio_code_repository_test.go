@@ -90,7 +90,7 @@ func TestIntegrationGetByCode_AmbiguousCodeReturnsExplicitError(t *testing.T) {
 	makePortfolio := func(fundID uuid.UUID) *entity.Portfolio {
 		return &entity.Portfolio{
 			ID:                uuid.New(),
-			FundID:            fundID,
+			FundID:            &fundID,
 			Code:              sharedCode,
 			Name:              "Test Portfolio",
 			BaseCurrency:      "THB",
@@ -114,7 +114,8 @@ func TestIntegrationGetByCode_AmbiguousCodeReturnsExplicitError(t *testing.T) {
 	got, err := repo.GetByCode(ctx, sharedCode)
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	require.Equal(t, fundA, got.FundID)
+	require.NotNil(t, got.FundID)
+	require.Equal(t, fundA, *got.FundID)
 
 	// A second, different fund reuses the same code — the DB allows this
 	// because uniqueness is only enforced per (fund_id, code).
@@ -196,15 +197,17 @@ func TestIntegrationGetByCode_IgnoresSoftDeletedDuplicates(t *testing.T) {
 	inception := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
 	const sharedCode = "SOFT-DUP"
 
+	aliveFundID := uuid.New()
+	deletedFundID := uuid.New()
 	alive := &entity.Portfolio{
-		ID: uuid.New(), FundID: uuid.New(), Code: sharedCode, Name: "Alive",
+		ID: uuid.New(), FundID: &aliveFundID, Code: sharedCode, Name: "Alive",
 		BaseCurrency: "THB", ValuationCurrency: "THB", InceptionDate: inception,
 		Status: vo.PortfolioStatusActive, TaxLotMethod: vo.TaxLotMethod("AVERAGE"),
 		Version: 1, CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),
 		CreatedBy: &actor, UpdatedBy: &actor,
 	}
 	deleted := &entity.Portfolio{
-		ID: uuid.New(), FundID: uuid.New(), Code: sharedCode, Name: "Deleted",
+		ID: uuid.New(), FundID: &deletedFundID, Code: sharedCode, Name: "Deleted",
 		BaseCurrency: "THB", ValuationCurrency: "THB", InceptionDate: inception,
 		Status: vo.PortfolioStatusClosed, TaxLotMethod: vo.TaxLotMethod("AVERAGE"),
 		Version: 1, CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(),

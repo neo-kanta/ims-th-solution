@@ -96,6 +96,11 @@ jobs:
       # are real secrets — this environment only ever holds synthetic E2E
       # fixture data (see tests/e2e/support/testUsers.ts).
       APP_ENV: test
+      # The seeder is reference-only unless demo seeding is explicitly opted in.
+      # This E2E database intentionally needs the demo identities (ben/green/neo)
+      # the Portfolio/IAM flows log in as, so opt in here. Honored only because
+      # APP_ENV is test (see backend/cmd/seed/resolveDemoSeeding).
+      INCLUDE_DEMO_SEEDS: "true"
       DB_HOST: localhost
       DB_PORT: "5437"
       DB_NAME: ims_e2e
@@ -150,7 +155,7 @@ jobs:
         working-directory: backend
         run: go run cmd/migrate/main.go up
 
-      - name: Seed base catalog + reference data
+      - name: Seed base catalog + reference + demo data (INCLUDE_DEMO_SEEDS=true, APP_ENV=test)
         working-directory: backend
         run: go run ./cmd/seed
 

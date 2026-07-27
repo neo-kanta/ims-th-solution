@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/valueobject"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
 // ApprovalRuntimeService drives the approval lifecycle: submit, approve, reject,
@@ -598,8 +601,9 @@ func (s *ApprovalRuntimeService) submitApprovalTx(ctx context.Context, req *enti
 	return createdTasks, err
 }
 
-// notifyRevoked fires the subject-sync OnRejected callback after a revoke
-// and records any callback failure in the audit trail for operator replay.
+// notifyRevoked fires the subject-sync OnRejected callback after a revoke,
+// records any callback failure in the audit trail, and persists a durable,
+// operator-retriable SyncFailure record (see persistSyncFailure).
 func (s *ApprovalRuntimeService) notifyRevoked(ctx context.Context, req *entity.ApprovalRequest, reason string) {
 	sync, ok := s.subjectSyncs[req.SubjectType]
 	if !ok {
@@ -621,6 +625,47 @@ func (s *ApprovalRuntimeService) notifyRevoked(ctx context.Context, req *entity.
 			"error":               serr.Error(),
 			"retryable":           true,
 		})
+		s.persistSyncFailure(ctx, req, vo.SyncFailureOutcomeRevoked, reason, serr)
+	}
+}
+
+// persistSyncFailure durably records a failed subject-sync callback so an
+// operator can discover and bounded-retry it later (see RetrySyncFailure).
+// Best-effort by necessity: the approval decision already committed and
+// cannot be rolled back for this; if even the persistence insert fails, the
+// audit log entry (already recorded by the caller) remains the only trace,
+// same as before this feature existed — this never makes the failure worse.
+func (s *ApprovalRuntimeService) persistSyncFailure(
+	ctx context.Context,
+	req *entity.ApprovalRequest,
+	outcome vo.SyncFailureOutcome,
+	reason string,
+	callbackErr error,
+) {
+	now := s.now()
+	rec := &entity.SyncFailure{
+		ID:                uuid.New(),
+		ApprovalRequestID: req.ID,
+		SubjectType:       req.SubjectType,
+		SubjectID:         req.SubjectID,
+		Outcome:           outcome,
+		Reason:            reason,
+		AttemptCount:      1,
+		MaxAttempts:       defaultSyncFailureMaxAttempts,
+		LastError:         callbackErr.Error(),
+		Status:            vo.SyncFailureStatusPending,
+		CreatedAt:         now,
+		UpdatedAt:         now,
+	}
+	if err := s.runTx(ctx, func(tx pgx.Tx) error {
+		return s.repo.CreateSyncFailure(ctx, tx, rec)
+	}); err != nil {
+		slog.Error("failed to persist approval sync-failure replay record",
+			"request_id", req.ID.String(),
+			"subject_type", string(req.SubjectType),
+			"outcome", string(outcome),
+			"error", err,
+		)
 	}
 }
 
@@ -707,17 +752,64 @@ func (s *ApprovalRuntimeService) authorizeAction(ctx context.Context, task *enti
 	return uuid.Nil, false, domain.NewError(domain.ErrNotAssigned, domain.ErrNotAssigned.Error())
 }
 
+// classifySubjectAccessErr maps an error returned by a cross-module
+// SubjectAccessPort implementation into the approval module's error taxonomy.
+//
+// Port implementations live in other modules (investment, etc.) and by DDD
+// import-boundary rules can never construct this module's *domain.DomainError
+// themselves. They instead signal a GENUINE object-level denial by returning an
+// error that wraps contract.ErrSubjectAccessDenied; that is mapped to a
+// fail-closed Forbidden (403). Any OTHER non-nil error is an infrastructure or
+// unexpected failure (repository error, IAM outage, context cancellation, nil
+// dependency) and must surface as 5xx, operator-visible — never silently coerced
+// into an authorization decision (MEMORY.md: "Bad client input returns a 4xx
+// response. Infrastructure and unexpected errors return 5xx").
+//
+// The vague Forbidden message avoids leaking subject existence. Infrastructure
+// errors are logged with context here (the caller receives the raw error, which
+// writeError maps to a generic 500 without leaking internals to the client).
+func (s *ApprovalRuntimeService) classifySubjectAccessErr(err error, st vo.SubjectType, subjectID, actorID uuid.UUID) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, contract.ErrSubjectAccessDenied) {
+		return domain.Forbidden("not found or not accessible")
+	}
+	slog.Error("subject access check failed",
+		"subject_type", string(st),
+		"subject_id", subjectID.String(),
+		"actor_id", actorID.String(),
+		"error", err)
+	return err
+}
+
+// missingSubjectAccessPortErr signals that no subject-access port is registered
+// for a subject type. That is an infrastructure MISCONFIGURATION — a required
+// per-subject-type authorization port was not wired at startup — not a
+// user-level access denial. It must surface as an operator-visible 5xx, never a
+// 403 that would silently mask the wiring gap. Fail-closed is preserved: the
+// action is still blocked; only the classification (and operator visibility)
+// changes. Returns a plain (non-domain-kind) error so writeError maps it to 500.
+func (s *ApprovalRuntimeService) missingSubjectAccessPortErr(st vo.SubjectType, subjectID, actorID uuid.UUID) error {
+	slog.Error("no subject access port configured for subject type — failing closed as infrastructure misconfiguration (5xx)",
+		"subject_type", string(st),
+		"subject_id", subjectID.String(),
+		"actor_id", actorID.String())
+	return errors.New("subject access port not configured for subject type: " + string(st))
+}
+
 // checkSubjectView authorises a read for the given actor on a subject.
-// Zero actorID is always rejected. Missing port → ErrForbidden (fail closed).
+// Zero actorID is always rejected. Missing port → infrastructure 5xx (fail
+// closed): a missing port is a wiring gap, not a user denial.
 func (s *ApprovalRuntimeService) checkSubjectView(ctx context.Context, actorID uuid.UUID, st vo.SubjectType, subjectID uuid.UUID) error {
 	if actorID == uuid.Nil {
 		return domain.Validation("actor_id is required")
 	}
 	port, ok := s.subjectAccessPorts[st]
 	if !ok {
-		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
+		return s.missingSubjectAccessPortErr(st, subjectID, actorID)
 	}
-	return port.CanViewApprovalSubject(ctx, actorID, st, subjectID)
+	return s.classifySubjectAccessErr(port.CanViewApprovalSubject(ctx, actorID, st, subjectID), st, subjectID, actorID)
 }
 
 // checkSubjectSubmit authorises a submit for the given actor on a subject.
@@ -727,9 +819,9 @@ func (s *ApprovalRuntimeService) checkSubjectSubmit(ctx context.Context, actorID
 	}
 	port, ok := s.subjectAccessPorts[st]
 	if !ok {
-		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
+		return s.missingSubjectAccessPortErr(st, subjectID, actorID)
 	}
-	return port.CanSubmitApprovalSubject(ctx, actorID, st, subjectID)
+	return s.classifySubjectAccessErr(port.CanSubmitApprovalSubject(ctx, actorID, st, subjectID), st, subjectID, actorID)
 }
 
 // checkSubjectAct authorises a write action (approve/reject/revoke/cancel/withdraw).
@@ -739,9 +831,9 @@ func (s *ApprovalRuntimeService) checkSubjectAct(ctx context.Context, actorID uu
 	}
 	port, ok := s.subjectAccessPorts[st]
 	if !ok {
-		return domain.Forbidden("no subject access port configured for subject type: " + string(st))
+		return s.missingSubjectAccessPortErr(st, subjectID, actorID)
 	}
-	return port.CanActOnApprovalSubject(ctx, actorID, st, subjectID, action)
+	return s.classifySubjectAccessErr(port.CanActOnApprovalSubject(ctx, actorID, st, subjectID, action), st, subjectID, actorID)
 }
 
 // createStageTasks resolves and persists the tasks for a stage and appends a
@@ -859,6 +951,7 @@ func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uu
 					"error":               serr.Error(),
 					"retryable":           true,
 				})
+				s.persistSyncFailure(ctx, req, vo.SyncFailureOutcomeApproved, "", serr)
 			}
 		}
 	case outcome.rejected:
@@ -879,6 +972,7 @@ func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uu
 					"error":               serr.Error(),
 					"retryable":           true,
 				})
+				s.persistSyncFailure(ctx, req, vo.SyncFailureOutcomeRejected, req.RejectionReason, serr)
 			}
 		}
 	default:
@@ -886,6 +980,110 @@ func (s *ApprovalRuntimeService) runPostAction(ctx context.Context, requestID uu
 			s.notifier.NotifyApprovalTaskCreated(ctx, req, t)
 		}
 	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Subject-sync failure replay (G2 item 4)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// defaultSyncFailureMaxAttempts bounds how many times an operator may retry a
+// single sync-failure record before it is marked EXHAUSTED and needs manual
+// investigation rather than another automatic-looking retry click.
+const defaultSyncFailureMaxAttempts = 5
+
+// ListSyncFailures returns the operator-facing sync-failure inbox.
+func (s *ApprovalRuntimeService) ListSyncFailures(ctx context.Context, f domain.SyncFailureFilter) ([]*entity.SyncFailure, int, error) {
+	return s.repo.ListSyncFailures(ctx, f)
+}
+
+// RetrySyncFailure re-invokes the subject-sync callback for a persisted
+// failure record. It is operator-triggered (no background scheduler exists
+// for this yet — see G6/G8), row-locks the record so concurrent retry clicks
+// cannot double-spend an attempt, and is a strict no-op once the record is
+// no longer PENDING or has exhausted MaxAttempts.
+func (s *ApprovalRuntimeService) RetrySyncFailure(ctx context.Context, id uuid.UUID, actorID uuid.UUID) (*entity.SyncFailure, error) {
+	var result *entity.SyncFailure
+	// callbackErr is deliberately captured OUTSIDE the transaction closure and
+	// never returned from it: returning it would roll back the very
+	// attempt-count/status/last_error write this retry exists to make durable,
+	// silently undoing the bounded-retry mechanism on every failed attempt.
+	// Only a genuine persistence/lookup error below aborts (rolls back) the tx.
+	var callbackErr error
+	err := s.runTx(ctx, func(tx pgx.Tx) error {
+		rec, err := s.repo.GetSyncFailureForUpdate(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		if rec == nil {
+			return domain.NotFound("sync failure record not found")
+		}
+		if !rec.CanRetry() {
+			result = rec
+			return domain.NewError(domain.ErrSyncFailureNotRetryable, domain.ErrSyncFailureNotRetryable.Error())
+		}
+
+		sync, ok := s.subjectSyncs[rec.SubjectType]
+		if !ok {
+			return domain.NewError(domain.ErrSyncFailureNotRetryable, "no subject-sync callback is registered for this subject type")
+		}
+
+		switch rec.Outcome {
+		case vo.SyncFailureOutcomeApproved:
+			callbackErr = sync.OnApproved(ctx, rec.SubjectType, rec.SubjectID, rec.ApprovalRequestID)
+		case vo.SyncFailureOutcomeRejected, vo.SyncFailureOutcomeRevoked:
+			callbackErr = sync.OnRejected(ctx, rec.SubjectType, rec.SubjectID, rec.ApprovalRequestID, rec.Reason)
+		default:
+			callbackErr = fmt.Errorf("unrecognised sync-failure outcome %q", rec.Outcome)
+		}
+
+		now := s.now()
+		rec.UpdatedAt = now
+		if callbackErr == nil {
+			rec.Status = vo.SyncFailureStatusResolved
+			rec.ResolvedAt = &now
+			resolvedBy := actorID
+			rec.ResolvedBy = &resolvedBy
+			s.audit.Record(ctx, &actorID, "APPROVAL_SYNC_RETRY_SUCCEEDED", "APPROVAL_REQUEST", rec.ApprovalRequestID.String(), map[string]any{
+				"sync_failure_id": rec.ID.String(),
+				"subject_type":    string(rec.SubjectType),
+				"subject_id":      rec.SubjectID.String(),
+				"outcome":         string(rec.Outcome),
+				"attempt_count":   rec.AttemptCount,
+			})
+		} else {
+			rec.AttemptCount++
+			rec.LastError = callbackErr.Error()
+			if rec.AttemptCount >= rec.MaxAttempts {
+				rec.Status = vo.SyncFailureStatusExhausted
+			}
+			s.audit.Record(ctx, &actorID, "APPROVAL_SYNC_RETRY_FAILED", "APPROVAL_REQUEST", rec.ApprovalRequestID.String(), map[string]any{
+				"sync_failure_id": rec.ID.String(),
+				"subject_type":    string(rec.SubjectType),
+				"subject_id":      rec.SubjectID.String(),
+				"outcome":         string(rec.Outcome),
+				"attempt_count":   rec.AttemptCount,
+				"status":          string(rec.Status),
+				"error":           callbackErr.Error(),
+			})
+		}
+
+		if err := s.repo.UpdateSyncFailure(ctx, tx, rec); err != nil {
+			// A genuine persistence error: abort/roll back for real, and
+			// discard callbackErr — it's moot if we can't even record the
+			// attempt happened.
+			callbackErr = nil
+			return fmt.Errorf("persisting sync-failure retry outcome: %w", err)
+		}
+		result = rec
+		return nil // commit — the attempt-count/status write must land even
+		// when callbackErr != nil, or the bounded retry never advances.
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Report the callback failure to the caller (so an operator sees the
+	// retry did not resolve) even though the attempt was durably recorded.
+	return result, callbackErr
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -914,9 +1112,17 @@ func (s *ApprovalRuntimeService) GetMyInbox(ctx context.Context, f domain.InboxF
 	}
 	var permitted []*domain.InboxItem
 	for _, item := range items {
-		if s.checkSubjectView(ctx, f.UserID, item.Request.SubjectType, item.Request.SubjectID) == nil {
+		err := s.checkSubjectView(ctx, f.UserID, item.Request.SubjectType, item.Request.SubjectID)
+		if err == nil {
 			permitted = append(permitted, item)
+			continue
 		}
+		if errors.Is(err, domain.ErrForbidden) {
+			continue // genuine denial — filter the row out (fail-closed)
+		}
+		// Infrastructure failure during the access check: do not return a
+		// silently truncated inbox; surface the error (5xx).
+		return nil, 0, err
 	}
 	return permitted, len(permitted), nil
 }
@@ -934,9 +1140,17 @@ func (s *ApprovalRuntimeService) ListRequests(ctx context.Context, f domain.Requ
 	}
 	var permitted []*entity.ApprovalRequest
 	for _, r := range all {
-		if s.checkSubjectView(ctx, f.ViewerID, r.SubjectType, r.SubjectID) == nil {
+		err := s.checkSubjectView(ctx, f.ViewerID, r.SubjectType, r.SubjectID)
+		if err == nil {
 			permitted = append(permitted, r)
+			continue
 		}
+		if errors.Is(err, domain.ErrForbidden) {
+			continue // genuine denial — filter the row out (fail-closed)
+		}
+		// Infrastructure failure during the access check: do not return a
+		// silently truncated list; surface the error (5xx).
+		return nil, 0, err
 	}
 	return permitted, len(permitted), nil
 }
@@ -950,10 +1164,15 @@ func (s *ApprovalRuntimeService) GetApprovalRequest(ctx context.Context, request
 	if req == nil {
 		return nil, domain.NotFound("approval request not found")
 	}
-	// Return NotFound (not Forbidden) so the response does not reveal request existence
-	// to a caller who cannot view the subject.
+	// Return NotFound (not Forbidden) on a genuine denial so the response does
+	// not reveal request existence to a caller who cannot view the subject. An
+	// infrastructure failure during the check must surface as 5xx, not be masked
+	// as a 404.
 	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-		return nil, domain.NotFound("approval request not found")
+		if errors.Is(err, domain.ErrForbidden) {
+			return nil, domain.NotFound("approval request not found")
+		}
+		return nil, err
 	}
 	tasks, err := s.repo.ListTasksByRequest(ctx, requestID)
 	if err != nil {
@@ -1034,7 +1253,10 @@ func (s *ApprovalRuntimeService) GetApprovalTimeline(ctx context.Context, reques
 		return nil, domain.NotFound("approval request not found")
 	}
 	if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-		return nil, domain.NotFound("approval request not found")
+		if errors.Is(err, domain.ErrForbidden) {
+			return nil, domain.NotFound("approval request not found")
+		}
+		return nil, err // infrastructure failure — surface as 5xx, not masked as 404
 	}
 	return s.repo.ListEvents(ctx, requestID)
 }
@@ -1053,9 +1275,12 @@ func (s *ApprovalRuntimeService) GetSubjectApprovalStatus(ctx context.Context, s
 	}
 	if req != nil && viewerID != uuid.Nil {
 		if err := s.checkSubjectView(ctx, viewerID, req.SubjectType, req.SubjectID); err != nil {
-			// Return nil (not found) — do not reveal that a request exists for
-			// a subject the caller cannot access.
-			return nil, nil
+			if errors.Is(err, domain.ErrForbidden) {
+				// Return nil (not found) — do not reveal that a request exists
+				// for a subject the caller cannot access.
+				return nil, nil
+			}
+			return nil, err // infrastructure failure — surface as 5xx
 		}
 	}
 	return req, nil

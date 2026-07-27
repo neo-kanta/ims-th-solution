@@ -48,6 +48,8 @@ function validationMessage(error: DecisionValidationError | undefined): string {
 // stale response for a portfolio the user has already navigated away from is
 // never rendered as if it were current (compares the loaded descriptor's own
 // code against the route's portfolioCode rather than trusting call order).
+// hasFund is intentionally omitted — decisions on a fund-less portfolio are
+// fully supported (Phase 2), so fund status no longer gates this page.
 const pageState = computed(() =>
   resolveDecisionNewPageState({
     portfolioCode: props.portfolioCode,

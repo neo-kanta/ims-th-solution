@@ -120,7 +120,7 @@ func TestGetPortfolioByCode_ValidCodeReturnsPortfolio(t *testing.T) {
 	fundID := uuid.New()
 	portfolio := &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fundID,
+		FundID:            &fundID,
 		Code:              "TH-EQ-01",
 		Name:              "Thailand Equity Portfolio",
 		BaseCurrency:      "THB",
@@ -191,7 +191,7 @@ func TestGetPortfolioByCode_DoesNotRequireUUID(t *testing.T) {
 	fundID := uuid.New()
 	portfolio := &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fundID,
+		FundID:            &fundID,
 		Code:              "A02-CORE",
 		BaseCurrency:      "THB",
 		ValuationCurrency: "THB",

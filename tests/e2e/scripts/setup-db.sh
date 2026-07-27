@@ -39,8 +39,11 @@ fi
 echo "==> Running migrations against $DB_NAME"
 (cd "$REPO_ROOT/backend" && go run cmd/migrate/main.go up)
 
-echo "==> Running base seed (permission catalog + reference/demo data) against $DB_NAME"
-(cd "$REPO_ROOT/backend" && go run ./cmd/seed)
+echo "==> Running base seed (permission catalog + reference + demo data) against $DB_NAME"
+# The seeder is reference-only unless demo seeding is explicitly opted in. The
+# E2E suite logs in as the demo identities (ben/green/neo), so opt in here.
+# INCLUDE_DEMO_SEEDS is honored only because .env.e2e sets APP_ENV=test.
+(cd "$REPO_ROOT/backend" && INCLUDE_DEMO_SEEDS="${INCLUDE_DEMO_SEEDS:-true}" go run ./cmd/seed)
 
 echo "==> Running E2E fixture seed (e2e_admin, e2e_manager, ...) against $DB_NAME"
 (cd "$REPO_ROOT/backend" && go run ./cmd/seed-e2e)

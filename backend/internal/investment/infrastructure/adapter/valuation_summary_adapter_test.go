@@ -26,7 +26,7 @@ func newFund(ccy string, manager *uuid.UUID) *entity.Fund {
 func newPortfolio(fundID uuid.UUID) *entity.Portfolio {
 	return &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fundID,
+		FundID:            &fundID,
 		PortfolioType:     vo.PortfolioTypeLive,
 		Status:            vo.PortfolioStatusActive,
 		BaseCurrency:      "THB",
@@ -319,7 +319,7 @@ func TestGetValuationSummary_MixedCurrencyConvertsAtLatestFX(t *testing.T) {
 	usdFund := newFund("USD", nil)
 	pThbA := newPortfolio(thbFundA.ID)
 	pThbB := newPortfolio(thbFundB.ID)
-	pUsd := &entity.Portfolio{ID: uuid.New(), FundID: usdFund.ID, PortfolioType: vo.PortfolioTypeLive, Status: vo.PortfolioStatusActive, BaseCurrency: "USD", ValuationCurrency: "USD"}
+	pUsd := &entity.Portfolio{ID: uuid.New(), FundID: &usdFund.ID, PortfolioType: vo.PortfolioTypeLive, Status: vo.PortfolioStatusActive, BaseCurrency: "USD", ValuationCurrency: "USD"}
 
 	valRepo := &fakeValuationRepo{history: map[uuid.UUID][]*entity.ValuationSnapshot{
 		pThbA.ID: snapshotPair(pThbA.ID, today, decimal.NewFromInt(100), decimal.Zero, decimal.Zero, decimal.NewFromInt(100), decimal.Zero, decimal.Zero),
@@ -363,7 +363,7 @@ func TestGetValuationSummary_LatestFXDoesNotInventHistoricalFXMovement(t *testin
 	fund := newFund("USD", nil)
 	portfolio := &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fund.ID,
+		FundID:            &fund.ID,
 		PortfolioType:     vo.PortfolioTypeLive,
 		Status:            vo.PortfolioStatusActive,
 		BaseCurrency:      "USD",
@@ -410,7 +410,7 @@ func TestGetValuationSummary_ExternalFlowsUseClosingFXConvention(t *testing.T) {
 			fund := newFund("USD", nil)
 			portfolio := &entity.Portfolio{
 				ID:                uuid.New(),
-				FundID:            fund.ID,
+				FundID:            &fund.ID,
 				PortfolioType:     vo.PortfolioTypeLive,
 				Status:            vo.PortfolioStatusActive,
 				BaseCurrency:      "USD",
@@ -512,7 +512,7 @@ func TestGetValuationSummary_ValuationCurrencyChangeIsIncomplete(t *testing.T) {
 	fund := newFund("USD", nil)
 	portfolio := &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fund.ID,
+		FundID:            &fund.ID,
 		PortfolioType:     vo.PortfolioTypeLive,
 		Status:            vo.PortfolioStatusActive,
 		BaseCurrency:      "USD",
@@ -803,7 +803,7 @@ func (r *fakePortfolioRepo) GetByCode(context.Context, string) (*entity.Portfoli
 func (r *fakePortfolioRepo) List(_ context.Context, filter domain.PortfolioListFilter) ([]*entity.Portfolio, int, error) {
 	out := []*entity.Portfolio{}
 	for _, p := range r.portfolios {
-		if filter.FundID != nil && p.FundID != *filter.FundID {
+		if filter.FundID != nil && (p.FundID == nil || *p.FundID != *filter.FundID) {
 			continue
 		}
 		if filter.Status != nil && p.Status != *filter.Status {
@@ -815,7 +815,7 @@ func (r *fakePortfolioRepo) List(_ context.Context, filter domain.PortfolioListF
 		if filter.AccessibleFundIDs != nil {
 			allowed := false
 			for _, id := range filter.AccessibleFundIDs {
-				if id == p.FundID {
+				if p.FundID != nil && id == *p.FundID {
 					allowed = true
 					break
 				}

@@ -17,7 +17,10 @@
  *   GET  /api/v2/portfolios/{portfolioCode}/cash            — cash balances
  *   GET  /api/v2/portfolios/{portfolioCode}/transactions    — ledger history
  *   POST /api/v2/portfolios/{portfolioCode}/transactions/simulate — pre-trade preview
- *   POST /api/v2/portfolios/{portfolioCode}/transactions    — post to ledger
+ *   POST /api/v2/portfolios/{portfolioCode}/transactions    — post to ledger (201) or, for a
+ *       LIVE cash movement, stage it for approval (202, CashRequestResponse)
+ *   GET  /api/v2/portfolios/{portfolioCode}/cash-requests    — submitter's LIVE cash-approval requests
+ *   POST /api/v2/portfolios/{portfolioCode}/cash-requests/{id}/cancel — cancel a PENDING request
  *   GET  /api/v2/portfolios/{portfolioCode}/executions      — trade executions (list)
  *   GET  /api/v2/portfolios/{portfolioCode}/executions/{id} — trade execution (detail)
  *   GET  /api/v2/portfolios/{portfolioCode}/confirmations       — trade confirmations (list)
@@ -54,6 +57,17 @@ export type ApiRunValuationRequest =
   components["schemas"]["RunValuationRequest"];
 export type ApiResolveConfirmationRequest =
   components["schemas"]["ResolveConfirmationRequest"];
+export type ApiCashRequestV2 = components["schemas"]["CashRequestResponse"];
+export type ApiCashRequestListV2 =
+  components["schemas"]["CashRequestListResponse"];
+export type ApiCancelCashRequestV2Request =
+  components["schemas"]["CancelCashRequestV2Request"];
+
+// Re-exported for convenience so most call sites only need one import; the
+// implementation lives in lib/cashRequestGuard.ts (no Nuxt-aliased imports)
+// so it can also be imported directly in plain Vitest without mocking this
+// module's `~/api/openapi` dependency.
+export { isCashRequestResponse } from "../lib/cashRequestGuard";
 
 export const portfolioApi = {
   /** List portfolios visible to the caller, optionally filtered by fund/status. */
@@ -187,18 +201,69 @@ export const portfolioApi = {
   /**
    * Post a transaction to the ledger, resolved by business code (Portfolio
    * V2). The backend re-runs pre-trade compliance using the actual posted
-   * values before committing.
+   * values before committing. For a LIVE cash movement (CASH_IN/CASH_OUT/
+   * FEE/DIVIDEND) the backend does not post immediately — it stages the
+   * movement for approval and returns a pending CashRequestResponse
+   * instead (HTTP 202). Use `isCashRequestResponse` to distinguish the two
+   * shapes at the call site.
+   *
+   * `idempotencyKey`, when supplied, is sent as the `Idempotency-Key` header
+   * so a retried submission (e.g. a network error after the request actually
+   * reached the backend) resolves to the original LIVE cash request instead
+   * of creating a duplicate. Ignored server-side for immediate (non-gated)
+   * posts.
    */
   async postTransaction(
     portfolioCode: string,
     body: ApiPostTransactionRequestV2,
-  ): Promise<ApiTransactionV2> {
+    idempotencyKey?: string,
+  ): Promise<ApiTransactionV2 | ApiCashRequestV2> {
     const client = useOpenApiClientV2();
     const response = await client.POST(
       "/portfolios/{portfolioCode}/transactions",
-      { params: { path: { portfolioCode } }, body },
+      {
+        params: { path: { portfolioCode } },
+        body,
+        ...(idempotencyKey
+          ? { headers: { "Idempotency-Key": idempotencyKey } }
+          : {}),
+      },
     );
-    return unwrapOpenApiResponse<ApiTransactionV2>(response);
+    return unwrapOpenApiResponse<ApiTransactionV2 | ApiCashRequestV2>(response);
+  },
+
+  /**
+   * The submitter's LIVE cash-approval requests for a portfolio, resolved
+   * by business code. Optional status filter (PENDING/APPROVED/REJECTED/
+   * CANCELLED).
+   */
+  async listCashRequests(
+    portfolioCode: string,
+    query: { status?: string; page?: number; limit?: number } = {},
+  ): Promise<ApiCashRequestListV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.GET(
+      "/portfolios/{portfolioCode}/cash-requests",
+      { params: { path: { portfolioCode }, query } },
+    );
+    return unwrapOpenApiResponse<ApiCashRequestListV2>(response);
+  },
+
+  /**
+   * Cancel a PENDING LIVE cash-approval request. Only the submitter may
+   * cancel; after cancel, approvers can no longer act on it.
+   */
+  async cancelCashRequest(
+    portfolioCode: string,
+    cashRequestId: string,
+    body: ApiCancelCashRequestV2Request = {},
+  ): Promise<ApiCashRequestV2> {
+    const client = useOpenApiClientV2();
+    const response = await client.POST(
+      "/portfolios/{portfolioCode}/cash-requests/{cashRequestId}/cancel",
+      { params: { path: { portfolioCode, cashRequestId } }, body },
+    );
+    return unwrapOpenApiResponse<ApiCashRequestV2>(response);
   },
 
   /** Trade executions for a portfolio, resolved by business code. */

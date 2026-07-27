@@ -18,6 +18,7 @@ import { usePortfolioCreateForm } from "../app/features/portfolio-workspace/comp
 import { portfolioOverviewPath } from "../app/features/portfolio-workspace/lib/portfolioRoutes";
 
 const validValues = {
+  bindFund: true,
   fund_code: "TH-FUND-01",
   portfolio_type: "LIVE",
   code: "PF-001",

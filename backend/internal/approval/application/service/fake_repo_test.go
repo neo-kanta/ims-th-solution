@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/entity"
 	vo "github.com/neo-kanta/ims-th-solution/backend/internal/approval/domain/valueobject"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
 // fakeRepo is an in-memory implementation of domain.Repository for unit tests.
@@ -27,6 +29,7 @@ type fakeRepo struct {
 	tasks         map[uuid.UUID]*entity.ApprovalTask
 	events        []*entity.ApprovalEvent
 	signatures    []*entity.ApprovalSignatureRecord
+	syncFailures  map[uuid.UUID]*entity.SyncFailure
 	seq           int
 }
 
@@ -40,6 +43,7 @@ func newFakeRepo() *fakeRepo {
 		configs:       map[uuid.UUID]*entity.ApprovalProcessConfig{},
 		requests:      map[uuid.UUID]*entity.ApprovalRequest{},
 		tasks:         map[uuid.UUID]*entity.ApprovalTask{},
+		syncFailures:  map[uuid.UUID]*entity.SyncFailure{},
 	}
 }
 
@@ -451,6 +455,49 @@ func (f *fakeRepo) ListSignatures(_ context.Context, requestID uuid.UUID) ([]*en
 	return out, nil
 }
 
+func (f *fakeRepo) CreateSyncFailure(_ context.Context, _ pgx.Tx, sf *entity.SyncFailure) error {
+	if sf.ID == uuid.Nil {
+		sf.ID = uuid.New()
+	}
+	cp := *sf
+	f.syncFailures[sf.ID] = &cp
+	return nil
+}
+
+func (f *fakeRepo) GetSyncFailure(_ context.Context, id uuid.UUID) (*entity.SyncFailure, error) {
+	sf, ok := f.syncFailures[id]
+	if !ok {
+		return nil, nil
+	}
+	cp := *sf
+	return &cp, nil
+}
+
+func (f *fakeRepo) GetSyncFailureForUpdate(_ context.Context, _ pgx.Tx, id uuid.UUID) (*entity.SyncFailure, error) {
+	return f.GetSyncFailure(context.Background(), id)
+}
+
+func (f *fakeRepo) ListSyncFailures(_ context.Context, filter domain.SyncFailureFilter) ([]*entity.SyncFailure, int, error) {
+	var out []*entity.SyncFailure
+	for _, sf := range f.syncFailures {
+		if filter.Status != "" && sf.Status != filter.Status {
+			continue
+		}
+		out = append(out, sf)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.Before(out[j].CreatedAt) })
+	return out, len(out), nil
+}
+
+func (f *fakeRepo) UpdateSyncFailure(_ context.Context, _ pgx.Tx, sf *entity.SyncFailure) error {
+	if _, ok := f.syncFailures[sf.ID]; !ok {
+		return fmt.Errorf("sync failure %s not found", sf.ID)
+	}
+	cp := *sf
+	f.syncFailures[sf.ID] = &cp
+	return nil
+}
+
 // ── test helpers ──
 
 // newTestRuntime builds a runtime service backed by the fake repo with a no-op
@@ -485,19 +532,35 @@ func newBareTestRuntime(repo *fakeRepo) *ApprovalRuntimeService {
 	return svc
 }
 
-// denyingSubjectPort rejects every subject access check. Used to verify that
-// the approval engine correctly enforces ErrForbidden when the owning module
-// denies access.
+// denyingSubjectPort rejects every subject access check with a GENUINE denial —
+// mirroring a real cross-module port, it wraps contract.ErrSubjectAccessDenied
+// (never a *domain.DomainError, which ports outside this module cannot build).
+// Used to verify the engine maps a genuine denial to ErrForbidden (403).
 type denyingSubjectPort struct{}
 
 func (denyingSubjectPort) CanViewApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
-	return domain.Forbidden("access denied by test port")
+	return fmt.Errorf("access denied by test port: %w", contract.ErrSubjectAccessDenied)
 }
 func (denyingSubjectPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
-	return domain.Forbidden("access denied by test port")
+	return fmt.Errorf("access denied by test port: %w", contract.ErrSubjectAccessDenied)
 }
 func (denyingSubjectPort) CanActOnApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID, domain.ApprovalAction) error {
-	return domain.Forbidden("access denied by test port")
+	return fmt.Errorf("access denied by test port: %w", contract.ErrSubjectAccessDenied)
+}
+
+// infraFailingSubjectPort returns a raw infrastructure-style error (NOT wrapping
+// contract.ErrSubjectAccessDenied) from every check, simulating an IAM outage or
+// repository failure. The engine must surface this as 5xx, not coerce it to 403.
+type infraFailingSubjectPort struct{}
+
+func (infraFailingSubjectPort) CanViewApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return errors.New("iam permission service unavailable")
+}
+func (infraFailingSubjectPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
+	return errors.New("iam permission service unavailable")
+}
+func (infraFailingSubjectPort) CanActOnApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID, domain.ApprovalAction) error {
+	return errors.New("iam permission service unavailable")
 }
 
 // selectiveSubjectPort allows CanView only for subjects in the allowed set;
@@ -510,7 +573,7 @@ func (s selectiveSubjectPort) CanViewApprovalSubject(_ context.Context, _ uuid.U
 	if s.allowed[subjectID] {
 		return nil
 	}
-	return domain.Forbidden("access denied by selective test port")
+	return fmt.Errorf("access denied by selective test port: %w", contract.ErrSubjectAccessDenied)
 }
 func (s selectiveSubjectPort) CanSubmitApprovalSubject(context.Context, uuid.UUID, vo.SubjectType, uuid.UUID) error {
 	return nil

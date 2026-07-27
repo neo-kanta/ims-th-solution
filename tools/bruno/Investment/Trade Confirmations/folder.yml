@@ -1,0 +1,6 @@
+info:
+  name: Trade Confirmations
+  type: folder
+
+request:
+  auth: inherit

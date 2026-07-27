@@ -2456,6 +2456,121 @@ const docTemplate = `{
                 }
             }
         },
+        "/approvals/sync-failures": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Operator-facing inbox of approval decisions whose post-commit business-module callback (subject sync) failed. Never blocks or reverses the approval decision itself.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "List approval subject-sync failures",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Status filter: PENDING, RESOLVED, or EXHAUSTED (default: all)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SyncFailureListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/approvals/sync-failures/{id}/retry": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Re-invokes the failed business-module callback for a persisted sync-failure record. No-op (409) once the record is RESOLVED/EXHAUSTED or has no registered callback for its subject type. Bounded: each record has a fixed max_attempts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Approval - Runtime"
+                ],
+                "summary": "Retry an approval subject-sync failure",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sync failure record UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Retry attempted; check status/last_error — a 200 does not by itself mean the retry succeeded, only that the attempt was recorded",
+                        "schema": {
+                            "$ref": "#/definitions/SyncFailureResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/approvals/tasks/{taskId}/approve": {
             "post": {
                 "security": [
@@ -6956,7 +7071,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger.",
+                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).",
                 "consumes": [
                     "application/json"
                 ],
@@ -6976,6 +7091,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated.",
+                        "name": "Idempotency-Key",
+                        "in": "header"
+                    },
+                    {
                         "description": "Transaction post payload",
                         "name": "request",
                         "in": "body",
@@ -6987,9 +7108,15 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement)",
                         "schema": {
                             "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "LIVE cash movement staged for approval (pending)",
+                        "schema": {
+                            "$ref": "#/definitions/CashRequestResponse"
                         }
                     },
                     "400": {
@@ -11797,6 +11924,62 @@ const docTemplate = `{
                 }
             }
         },
+        "CashRequestResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decided_at": {
+                    "type": "string"
+                },
+                "decided_by": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "memo": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "resulting_txn_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                },
+                "value_date": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
         "ChangePasswordRequest": {
             "type": "object",
             "required": [
@@ -15002,6 +15185,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fund_id": {
+                    "description": "FundID is omitted for a fund-less portfolio (\"Bind with Fund: N\").",
                     "type": "string"
                 },
                 "has_units": {
@@ -16687,6 +16871,73 @@ const docTemplate = `{
             "properties": {
                 "data": {},
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "SyncFailureListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SyncFailureResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "SyncFailureResponse": {
+            "type": "object",
+            "properties": {
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "attempt_count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "outcome": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "resolved_at": {
+                    "type": "string"
+                },
+                "resolved_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject_id": {
+                    "type": "string"
+                },
+                "subject_type": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain"
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/domain/entity"
+	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
 // ── stubs ──────────────────────────────────────────────────────────────────
@@ -31,6 +32,16 @@ type stubDecisionRepo struct {
 
 func (r *stubDecisionRepo) GetByID(_ context.Context, _ uuid.UUID) (*entity.Decision, error) {
 	return r.decision, r.err
+}
+
+type stubCashRequestRepo struct {
+	domain.PortfolioCashRequestRepository
+	req *entity.PortfolioCashRequest
+	err error
+}
+
+func (r *stubCashRequestRepo) GetByID(_ context.Context, _ uuid.UUID) (*entity.PortfolioCashRequest, error) {
+	return r.req, r.err
 }
 
 type stubIAM struct {
@@ -183,7 +194,7 @@ func TestInvestmentSubjectAccessor_DecisionWithContract_IAMAllows(t *testing.T) 
 	t.Parallel()
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		stubIAM{ok: true},
 	)
 	if err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "INVESTMENT_DECISION", uuid.New()); err != nil {
@@ -210,7 +221,7 @@ func TestInvestmentSubjectAccessor_Portfolio_Unsupported_Denies(t *testing.T) {
 	// because resolveContractID hits the default arm and returns "unsupported subject type".
 	a := NewInvestmentSubjectAccessor(
 		&stubResearchRepo{report: &entity.ResearchReport{ApplicableContractID: contractPtr(uuid.New())}},
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		stubIAM{ok: true},
 	)
 	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "PORTFOLIO", uuid.New())
@@ -247,6 +258,152 @@ func TestInvestmentSubjectAccessor_CanAct_NilIAM_Denies(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Error classification: genuine DENIAL (wraps contract.ErrSubjectAccessDenied →
+// 403) vs INFRASTRUCTURE failure (raw error, NOT wrapping the sentinel → 5xx).
+// A denial must still deny and an infra failure must still deny (fail-closed);
+// only the error classification differs so the approval engine picks 403 vs 5xx.
+// ─────────────────────────────────────────────────────────────────────────────
+
+func isDenied(err error) bool { return errors.Is(err, contract.ErrSubjectAccessDenied) }
+
+// ── genuine denials wrap the sentinel ────────────────────────────────────────
+
+func TestClassify_IAMDataDenied_IsSentinelDenial(t *testing.T) {
+	t.Parallel()
+	cid := uuid.New()
+	a := NewInvestmentSubjectAccessor(
+		&stubResearchRepo{report: &entity.ResearchReport{ApplicableContractID: &cid}},
+		nil,
+		stubIAM{ok: false}, // IAM legitimately denies data permission
+	)
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if !isDenied(err) {
+		t.Fatalf("IAM !ok must be a sentinel denial, got %v", err)
+	}
+}
+
+func TestClassify_SubjectNotFound_IsSentinelDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(
+		&stubResearchRepo{report: nil}, // GetByID returns (nil, nil): not found
+		nil,
+		stubIAM{ok: true},
+	)
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if !isDenied(err) {
+		t.Fatalf("subject-not-found must be a sentinel denial, got %v", err)
+	}
+}
+
+func TestClassify_UnsupportedSubjectType_IsSentinelDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(nil, nil, stubIAM{ok: true})
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "UNKNOWN_TYPE", uuid.New())
+	if !isDenied(err) {
+		t.Fatalf("unsupported subject type must be a sentinel denial, got %v", err)
+	}
+}
+
+func TestClassify_ComplianceReleaseFuncDenied_IsSentinelDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(
+		nil,
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
+		iamWithFuncPerm{dataOK: true, funcOK: false}, // lacks the function permission
+	)
+	err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve")
+	if !isDenied(err) {
+		t.Fatalf("missing function permission must be a sentinel denial, got %v", err)
+	}
+}
+
+// ── infrastructure failures do NOT wrap the sentinel ─────────────────────────
+
+func TestClassify_NilIAM_IsInfraNotDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(
+		&stubResearchRepo{report: &entity.ResearchReport{ApplicableContractID: contractPtr(uuid.New())}},
+		nil,
+		nil, // nil dependency = infrastructure/wiring failure
+	)
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if err == nil {
+		t.Fatal("expected deny (fail-closed) with nil IAM")
+	}
+	if isDenied(err) {
+		t.Fatalf("nil dependency must be an infra error (not sentinel), got %v", err)
+	}
+}
+
+func TestClassify_NilRepo_IsInfraNotDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(nil, nil, stubIAM{ok: true}) // nil research repo
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if err == nil {
+		t.Fatal("expected deny (fail-closed) with nil research repo")
+	}
+	if isDenied(err) {
+		t.Fatalf("nil repository must be an infra error (not sentinel), got %v", err)
+	}
+}
+
+func TestClassify_RepoError_IsInfraNotDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(
+		&stubResearchRepo{err: errors.New("db timeout")},
+		nil,
+		stubIAM{ok: true},
+	)
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if err == nil {
+		t.Fatal("expected deny (fail-closed) on repo error")
+	}
+	if isDenied(err) {
+		t.Fatalf("repository error must be an infra error (not sentinel), got %v", err)
+	}
+}
+
+func TestClassify_IAMError_IsInfraNotDenial(t *testing.T) {
+	t.Parallel()
+	cid := uuid.New()
+	a := NewInvestmentSubjectAccessor(
+		&stubResearchRepo{report: &entity.ResearchReport{ApplicableContractID: &cid}},
+		nil,
+		stubIAM{err: errors.New("iam unavailable")},
+	)
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "RESEARCH_REPORT", uuid.New())
+	if err == nil {
+		t.Fatal("expected deny (fail-closed) on IAM error")
+	}
+	if isDenied(err) {
+		t.Fatalf("IAM error must be an infra error (not sentinel), got %v", err)
+	}
+}
+
+func TestClassify_CashTransactionRepoError_IsInfraNotDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(nil, nil, stubIAM{ok: true})
+	a.SetCashRequestRepository(&stubCashRequestRepo{err: errors.New("db timeout")})
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "CASH_TRANSACTION", uuid.New())
+	if err == nil {
+		t.Fatal("expected deny (fail-closed) on cash-request repo error")
+	}
+	if isDenied(err) {
+		t.Fatalf("cash-request repo error must be an infra error (not sentinel), got %v", err)
+	}
+}
+
+func TestClassify_CashTransactionNotFound_IsSentinelDenial(t *testing.T) {
+	t.Parallel()
+	a := NewInvestmentSubjectAccessor(nil, nil, stubIAM{ok: true})
+	a.SetCashRequestRepository(&stubCashRequestRepo{req: nil}) // not found
+	err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "CASH_TRANSACTION", uuid.New())
+	if !isDenied(err) {
+		t.Fatalf("cash-request not-found must be a sentinel denial, got %v", err)
+	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMPLIANCE_RELEASE authorization tests (BLOCKER 3)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -271,7 +428,7 @@ func TestComplianceRelease_CanAct_BothPermissions_Allowed(t *testing.T) {
 	t.Parallel()
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		iamWithFuncPerm{dataOK: true, funcOK: true},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err != nil {
@@ -284,7 +441,7 @@ func TestComplianceRelease_CanAct_DataPermissionOnly_Denied(t *testing.T) {
 	// Has data permission but NOT the compliance release function permission — must deny.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		iamWithFuncPerm{dataOK: true, funcOK: false},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err == nil {
@@ -297,7 +454,7 @@ func TestComplianceRelease_CanAct_NoDataPermission_Denied(t *testing.T) {
 	// Has function permission but not data permission — must deny.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		iamWithFuncPerm{dataOK: false, funcOK: true},
 	)
 	if err := a.CanActOnApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New(), "approve"); err == nil {
@@ -311,7 +468,7 @@ func TestComplianceRelease_CanView_DataPermissionOnly_Allowed(t *testing.T) {
 	// only act (approve/reject) does. Viewing is gated by data permission only.
 	a := NewInvestmentSubjectAccessor(
 		nil,
-		&stubDecisionRepo{decision: &entity.Decision{FundID: uuid.New()}},
+		&stubDecisionRepo{decision: &entity.Decision{FundID: func() *uuid.UUID { v := uuid.New(); return &v }()}},
 		iamWithFuncPerm{dataOK: true, funcOK: false}, // no function perm
 	)
 	if err := a.CanViewApprovalSubject(context.Background(), uuid.New(), "COMPLIANCE_RELEASE", uuid.New()); err != nil {

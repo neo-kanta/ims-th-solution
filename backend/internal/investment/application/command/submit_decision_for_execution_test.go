@@ -159,7 +159,7 @@ func draftDecision() *entity.Decision {
 	price := decimal.NewFromFloat(35.5)
 	return &entity.Decision{
 		ID:             uuid.New(),
-		FundID:         uuid.New(),
+		FundID:         func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:    uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,

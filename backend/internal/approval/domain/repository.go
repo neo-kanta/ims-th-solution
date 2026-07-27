@@ -153,6 +153,30 @@ type SignatureRepository interface {
 	ListSignatures(ctx context.Context, requestID uuid.UUID) ([]*entity.ApprovalSignatureRecord, error)
 }
 
+// SyncFailureFilter filters the operator-facing sync-failure listing.
+type SyncFailureFilter struct {
+	Status vo.SyncFailureStatus // empty means all statuses
+	Page   int
+	Limit  int
+}
+
+// SyncFailureRepository persists durable subject-sync replay records (see
+// entity.SyncFailure).
+type SyncFailureRepository interface {
+	// CreateSyncFailure inserts a new PENDING record for a just-failed
+	// subject-sync callback. Runs inside the caller's transaction so it is
+	// never lost even though the approval decision itself already committed
+	// (the caller opens a short-lived tx solely for this insert).
+	CreateSyncFailure(ctx context.Context, tx pgx.Tx, f *entity.SyncFailure) error
+	GetSyncFailure(ctx context.Context, id uuid.UUID) (*entity.SyncFailure, error)
+	// GetSyncFailureForUpdate row-locks the record for a retry attempt.
+	GetSyncFailureForUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*entity.SyncFailure, error)
+	ListSyncFailures(ctx context.Context, f SyncFailureFilter) ([]*entity.SyncFailure, int, error)
+	// UpdateSyncFailure persists the outcome of a retry attempt (attempt count,
+	// last error, status, resolved-by/at).
+	UpdateSyncFailure(ctx context.Context, tx pgx.Tx, f *entity.SyncFailure) error
+}
+
 // Repository aggregates every approval persistence concern. The Postgres
 // implementation satisfies all of them, which keeps module wiring and test
 // fakes to a single type.
@@ -164,4 +188,5 @@ type Repository interface {
 	TaskRepository
 	EventRepository
 	SignatureRepository
+	SyncFailureRepository
 }

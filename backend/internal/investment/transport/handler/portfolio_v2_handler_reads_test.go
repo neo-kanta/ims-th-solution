@@ -123,7 +123,7 @@ func newV2ReadFixture(t *testing.T) *v2ReadFixture {
 	fundID := uuid.New()
 	portfolio := &entity.Portfolio{
 		ID:                uuid.New(),
-		FundID:            fundID,
+		FundID:            &fundID,
 		Code:              "TH-EQ-01",
 		Name:              "Thailand Equity Portfolio",
 		BaseCurrency:      "THB",

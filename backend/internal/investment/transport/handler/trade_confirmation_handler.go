@@ -166,7 +166,7 @@ func (h *TradeConfirmationHandler) ListConfirmations(w http.ResponseWriter, r *h
 			httputil.NotFound(w, "execution not found")
 			return
 		}
-		if !hasFundAccess(r.Context(), h.pc, execution.FundID) {
+		if !hasFundAccess(r.Context(), h.pc, executionScopeID(execution)) {
 			httputil.Forbidden(w, "no access to this execution")
 			return
 		}
@@ -244,7 +244,7 @@ func (h *TradeConfirmationHandler) GetConfirmation(w http.ResponseWriter, r *htt
 	}
 	// Data permission: verify the confirmation's fund is within the caller's
 	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
-	if !hasFundAccess(r.Context(), h.pc, c.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, confirmationScopeID(c)) {
 		httputil.Forbidden(w, "no access to this trade confirmation")
 		return
 	}

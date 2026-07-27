@@ -15,9 +15,12 @@ import (
 // authorisation checks in batch operations. It carries only the fields needed
 // to verify access — never business details like amount, rationale, or status.
 type DecisionSubjectRef struct {
-	DecisionID        uuid.UUID
-	DecisionNumber    string
-	FundID            uuid.UUID
+	DecisionID     uuid.UUID
+	DecisionNumber string
+	// FundID is nil for a decision on a fund-less portfolio — callers fall
+	// back to PortfolioID as the data-permission scope key in that case.
+	FundID            *uuid.UUID
+	PortfolioID       uuid.UUID
 	ApprovalRequestID *uuid.UUID
 }
 
@@ -183,6 +186,55 @@ type TradeConfirmationImportRepository interface {
 
 	// ListBatchItems returns all per-row outcomes for a batch.
 	ListBatchItems(ctx context.Context, batchID uuid.UUID) ([]*entity.TradeConfirmationImportItem, error)
+}
+
+// CashRequestListFilter restricts PortfolioCashRequestRepository.ListByPortfolio.
+// The caller has already resolved and authorized a single portfolio (via
+// resolvePortfolioByCode's data-scope check), so portfolio scoping IS the
+// access check — no separate AccessibleFundIDs field is needed.
+type CashRequestListFilter struct {
+	Status *vo.CashRequestStatus
+	Page   int
+	Limit  int
+}
+
+// PortfolioCashRequestRepository persists the mutable LIVE cash-movement
+// approval requests. Unlike the append-only ledger this entity supports status
+// transitions via Update. Implementations live in infrastructure/persistence/.
+type PortfolioCashRequestRepository interface {
+	// Create inserts a brand-new PENDING request in the supplied transaction.
+	Create(ctx context.Context, tx pgx.Tx, r *entity.PortfolioCashRequest) error
+
+	// GetByID returns the request or nil when missing (read via pool).
+	GetByID(ctx context.Context, id uuid.UUID) (*entity.PortfolioCashRequest, error)
+
+	// GetByIdempotencyKey returns the existing request for a (portfolioID, key)
+	// pair or nil when none exists (read via pool). Backs request-level
+	// idempotency: a retry with the same key resolves to the original request
+	// rather than creating a duplicate. The caller must not pass an empty key.
+	GetByIdempotencyKey(ctx context.Context, portfolioID uuid.UUID, key string) (*entity.PortfolioCashRequest, error)
+
+	// GetByFingerprint returns the earliest request for a (portfolioID,
+	// fingerprint) pair or nil when none exists (read via pool). Reconciliation-
+	// only: the fingerprint is NOT uniquely indexed (two distinct client keys may
+	// carry the same payload), so implementations must return the first-submitted
+	// match deterministically. The caller must not pass an empty fingerprint.
+	GetByFingerprint(ctx context.Context, portfolioID uuid.UUID, fingerprint string) (*entity.PortfolioCashRequest, error)
+
+	// GetForUpdate locks and returns the request row inside the supplied
+	// transaction (SELECT ... FOR UPDATE). Used by the approval callback to
+	// serialize duplicate materialization attempts. Returns nil when missing.
+	GetForUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*entity.PortfolioCashRequest, error)
+
+	// Update applies a full row update (status transitions, approval_request_id,
+	// resulting_txn_id, decided_by/at). Bumps version. Runs in the supplied
+	// transaction so the callback can materialize the ledger row and flip the
+	// request status atomically.
+	Update(ctx context.Context, tx pgx.Tx, r *entity.PortfolioCashRequest) error
+
+	// ListByPortfolio returns paginated cash requests for a single portfolio,
+	// optionally filtered by status, newest first.
+	ListByPortfolio(ctx context.Context, portfolioID uuid.UUID, f CashRequestListFilter) ([]*entity.PortfolioCashRequest, int, error)
 }
 
 // InvestmentProcessGuardRepository provides read models required to decide

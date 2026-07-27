@@ -13,9 +13,10 @@ import (
 // Once persisted, no field is mutable — corrections are made by posting a new
 // row of type REVERSAL referencing this one.
 type PortfolioTransaction struct {
-	ID              uuid.UUID
-	PortfolioID     uuid.UUID
-	FundID          uuid.UUID
+	ID          uuid.UUID
+	PortfolioID uuid.UUID
+	// FundID is nil for a transaction on a fund-less portfolio.
+	FundID          *uuid.UUID
 	InstrumentID    *uuid.UUID
 	TransactionType vo.TransactionType
 	Side            *vo.OrderSide

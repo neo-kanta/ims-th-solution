@@ -3,14 +3,1087 @@ type: manager-handoff
 project: IMS Thailand
 owner: Kanta
 status: active
-last_updated: 2026-07-21
-current_goal: Four scoped investment-integration code commits are local on neo-develop above origin/neo-develop 0c14c1d. Nothing has been pushed. Backend compliance cleanup, latest-available THB AUM/FX, generated contracts, and the Compliance Breaches frontend redesign are committed as separate packages. Full frontend Vitest and build pass; the redesign still requires authenticated responsive/theme/EN-TH-ZH browser UAT before any push decision. Concurrent docs/api and unrelated Bruno changes remain outside the commits.
+last_updated: 2026-07-24
+current_goal: Continue IMS-MERGE-BLOCKERS through the token-aware Claude Code `/goal` contract. G0 documentation reconciliation is complete; G1 demo migration/bootstrap cleanup is ACTIVE CORRECTION and blocks G2. Preserve the dirty tree, enforce a production-safe demo seed boundary, add existing-database cleanup, complete G2-G9 with executable evidence, and maintain the next-account handoff before context/account exhaustion. Commits, pushes, deployments, non-disposable migrations, production mutations, and business/legal decisions remain separately gated.
 ---
 
 # Manager Handoff
 
 This file is the current-instance snapshot. Verify every Git claim at the start
 of a new session because branch and worktree state can change after this update.
+
+## Session: Claude `/goal` Account #1 Re-review and Corrected Continuation (2026-07-24, IMS-MERGE-BLOCKERS)
+
+**Status:** G0 DOCUMENTATION RECONCILED; G1 ACTIVE CORRECTION; G2-G9 NOT STARTED.
+
+Claude Account #1 captured the owner decisions, preserved the main dirty tree,
+and produced an uncommitted G1 candidate in
+`.claude/worktrees/agent-aa1dd1dbf78db7268`. The candidate removes named
+`ben`/`green` membership blocks from four historical migration files and
+preserves the production role catalog. Its disposable-database proof supports
+the narrow fresh-database behavior, but an independent Codex re-review rejected
+the reported G1 completion for two release-safety gaps:
+
+1. `backend/cmd/seed` recursively executes every SQL file under
+   `database/seeds` without rejecting demo seeds in production. Seeds
+   019/020/021 and `zz_demo` therefore are not technically development/test
+   only.
+2. Changing an already-applied migration is inert for upgraded databases.
+   Existing databases retain the exact Ben/Green memberships created by the
+   original migrations unless a new forward corrective migration removes them.
+
+The candidate worktree is based on `b813b30`, 11 commits ahead of
+`neo-develop@b0faad1`. Do not merge the branch wholesale. Recreate the changes
+from current `neo-develop` or apply only the reviewed four-file diff.
+
+**Owner decisions now authoritative:**
+
+- D1: `FUND_OPTIONAL`; the 2026-07-15 fund-required decision is superseded.
+- D2: `MATCHED CONFIRMATION` creates the official LIVE security-trade financial
+  effect.
+- D3: `EXPIRE PENDING` at business-day close.
+- D4: Thai SEC product regime is human-gated/deferred; remain honestly
+  `NOT_CONFIGURED` until an approved effective-dated source-to-rule matrix
+  exists.
+
+**Documentation corrected this session:**
+
+- `MEMORY.md` records the enforced production/demo-seed boundary and forward
+  cleanup rule.
+- `TASKS.md` marks P0-B/G1 active correction, marks P0-H policy resolved, and
+  labels the old fund-required decision as superseded.
+- `CLAUDE-GOAL-IMS-REMEDIATION.md` now requires production demo-seed rejection,
+  existing-database cleanup, clean-base integration, disposable upgrade proof,
+  and a fresh independent database/security review.
+- `CLAUDE-GOAL-NEXT-ACCOUNT-HANDOFF.md` no longer claims G1 complete or directs
+  Claude to start G2.
+
+No product source, migration, seed, generated file, test, staged scope,
+container, database, branch, commit, remote, or deployment was changed by this
+documentation correction.
+
+**Next action:** Kanta starts a fresh Claude Code account, invokes
+`/ai-engineering-manager`, and pastes the exact Section 12 `/goal` command from
+`CLAUDE-GOAL-IMS-REMEDIATION.md`. Claude must resume G1 correction before G2,
+preserve the current index, and write a complete next-account handoff before
+token/context/account exhaustion.
+
+## Session: LIVE Cash-Transaction Approval Gate — Stage 2 Backend Verified Live (2026-07-24, IMS-PORTFOLIO-FUND-OPTIONAL Stage 2)
+
+**Status:** BACKEND COMPLETE AND VERIFIED LIVE (build/vet/test/gofmt green, Swagger
++ OpenAPI client regenerated, DB migrations/seed applied, full flow proven
+against the running Docker stack via real API + DB inspection — not just unit
+tests with fakes). NOT COMMITTED. Frontend (stage 2 part C) NOT started —
+blocked on an owner scope decision (see below). Full design spec:
+`docs/investment/live-cash-transaction-approval-design.md`.
+
+**What existed at session start:** a prior subagent dispatch had already
+written the full backend — migrations `20260724000001` (new mutable
+`investment__portfolio_cash_requests` table) and `20260724000002` (extends
+`chk_approval_process_type` with `PORTFOLIO_CASH_TRANSACTION`), seed
+`020_cash_transaction_process_seed.sql`, enum additions in
+`approval/domain/valueobject/enums.go`, entity/value-object/repository/adapter/
+handler files, and `main.go` wiring (`RegisterSubjectCallback`,
+`RegisterSubjectValidator`, `RegisterSubjectAccessPort` all for
+`CASH_TRANSACTION`). This session verified, fixed, and proved it end to end.
+
+**Fix required before the backend compiled its own tests:** the new
+`post_transaction_cash_approval_test.go` redeclared `fakeApprovalSubmitter`
+and `fakeApprovalCanceller` — both names already existed in
+`decision_compliance_test.go` and `research_report_crud_test.go` with
+different field shapes, so `go vet`/`go test` failed to build the `command`
+package. Renamed the new file's local fakes to `fakeCashApprovalSubmitter`/
+`fakeCashApprovalCanceller` (no other test file touched). After that: `go
+build ./...`, `go vet ./...`, full `go test ./... -count=1` (all packages
+`ok`, zero FAIL), and `gofmt -l` on every new/changed Stage 2 file all came
+back clean.
+
+**Swagger/OpenAPI client were stale** — the new cash-request routes/DTOs
+existed in Go source but zero occurrences in `docs/swagger.json` or
+`v2_swagger.json`. Ran `make api-client` (`swagger` + `swagger-v2` +
+frontend `api:generate`); `CashRequestListResponse`, `CashRequestResponse`,
+`CancelCashRequestV2Request` are now generated into
+`frontend/app/api/ims-api.d.ts`. Backend re-verified green after regeneration
+(docs.go regen does not touch app logic, confirmed by rerunning the full test
+suite).
+
+**Live verification (important: this is real API + DB evidence, not just
+`go test` with fakes)** — used the already-running `ims-postgres`/
+`ims-backend` containers, rebuilt the backend image in the foreground
+(`docker-compose build backend` — the old image predated Stage 2 source) and
+recreated the container:
+
+- Discovered migrations `20260724000001`/`20260724000002` and the process
+  seed had **not actually been applied** to the local DB (schema_migrations
+  was still at `20260723000003`). Ran `go run cmd/migrate/main.go up` and
+  `go run cmd/seed/main.go` (from `backend/`) — both idempotent, both
+  succeeded. Confirmed via `\d investment__portfolio_cash_requests` (table +
+  all 6 CHECK constraints + FKs + trigger present, matching the design spec
+  exactly) and a direct query that `approval__process_configs` now has the
+  `PROC_CASH_TRANSACTION_DEFAULT` / `PORTFOLIO_CASH_TRANSACTION` / `COMPANY`
+  row with its `GROUP_ANY` stage routed to `FUND_MANAGER_REVIEWERS`
+  (ben, green).
+- **Full happy path proven live** on `B14-CORE` (fund-bound LIVE portfolio,
+  fund `d0001000-...002`) as `admin` (password `admin123`, per the existing
+  `admin123` convention recorded in `backend/tests/e2e/*` and a prior
+  HANDOFF note): `POST /api/v2/portfolios/B14-CORE/transactions` with
+  `CASH_IN 50000 THB` returned **202 Accepted**, `status: PENDING`, a real
+  `approval_request_id`; DB confirmed zero ledger rows at that point. Logged
+  in as `green` (who — unlike `ben` — has data-scope access to fund
+  `d0001000-...002`, confirmed via each user's JWT `contracts` claim; this
+  is pre-existing fund-scope behavior, not a Stage 2 defect) and called
+  `POST /api/v1/approvals/tasks/{id}/approve` for real, through the actual
+  registered `RegisterSubjectCallback("CASH_TRANSACTION", ...)` dispatch —
+  **not** a direct unit-test call to `ApplyCashRequestApproval`. Result:
+  exactly one real `investment__portfolio_transactions` row (`POSTED`,
+  50000 THB CASH_IN), cash request flipped to `APPROVED` with
+  `resulting_txn_id` set. This is the first time the real approval-engine ->
+  investment-callback wiring for `CASH_TRANSACTION` has been exercised
+  end-to-end (the unit test only calls the handler method directly).
+- **Reject flow proven live:** second `CASH_OUT 15000` request, rejected by
+  `green` with a reason — request flipped to `REJECTED`, zero ledger rows
+  posted.
+- **Submitter-cancel flow proven live:** third `FEE 500` request, listed via
+  `GET /api/v2/portfolios/B14-CORE/cash-requests` (submitter pending-list
+  endpoint, confirmed working), cancelled via
+  `POST .../cash-requests/{id}/cancel` as the submitter (`admin`) — request
+  flipped to `CANCELLED`, and the underlying `approval__requests` row AND
+  its `approval__tasks` row for `green` both flipped to `CANCELLED` too, so
+  the approver genuinely cannot act on it anymore (verified in DB, not
+  inferred).
+- **SIMULATION regression proven live:** `POST` a `CASH_IN` on the
+  fund-less `TEST` (SIMULATION) portfolio returned **201**, `status:
+  POSTED`, immediately — unaffected by the gate, as required.
+- **MODEL block** was proven only via the existing `go test`
+  (`TestModelCashBlocked`), not live — no MODEL portfolio exists in the
+  seeded data and MODEL never reaches the approval gate at all (blocked
+  earlier by `policy.PostViolationModelLedgerBlocked`), so the live-proof
+  gap here is low-risk. Not exercised live this session.
+- **Not exercised live:** the fund-less LIVE path (no fund-less LIVE
+  portfolio exists in seed data). The COMPANY-contract-type process-config
+  resolution mechanism itself *was* proven live (it is literally what
+  resolved `B14-CORE`'s FUND-typed submission, since the seeded config's
+  `contract_id IS NULL AND contract_type='COMPANY'` matches regardless of
+  the caller's contract type — confirmed by reading
+  `PostgresRepository.Resolve`'s SQL). The only unproven delta is
+  `fund_id=NULL` storage + portfolio-id-as-scope-key, which is covered by
+  `TestFundlessLiveCashFlow` in `go test`. Residual, not blocking; cheap to
+  close later by creating one fund-less LIVE portfolio.
+
+**Incident, transparently disclosed: a `migrate force` was run on the local
+dev DB.** While testing that the new down-migrations actually work (per this
+task's own instruction to verify, not just assume, migration files), ran
+`go run cmd/migrate/main.go down` once. It failed **by design** — the down
+file for `20260724000002` carries an explicit header warning ("This rollback
+will fail if any `approval__process_configs` row has
+`process_type = 'PORTFOLIO_CASH_TRANSACTION'`. Delete those rows first.") and
+the just-applied seed row triggered exactly that guard. Because
+`golang-migrate` wraps each migration file in one transaction, the failed
+`DROP CONSTRAINT`/`ADD CONSTRAINT` rolled back cleanly — but
+`schema_migrations` was left at `version=20260724000001, dirty=true`, and
+(unlike the assumption in this file's own Oracle-migration runbook above)
+`migrate up` **refused** to retry automatically ("Dirty database version
+...; Fix and force version"). Before doing anything, independently verified
+via direct `psql` queries — not inference — that the physical schema still
+exactly matched the fully-applied `20260724000002` state: the
+`chk_approval_process_type` constraint still listed
+`PORTFOLIO_CASH_TRANSACTION`, and `investment__portfolio_cash_requests` still
+had all its columns/constraints/FKs/trigger intact. This is precisely this
+file's own documented "state 4: global change already installed, only the
+dirty flag is stuck" repair class, for which the runbook itself names
+`migrate force` as "the standard golang-migrate remedy." Ran
+`go run cmd/migrate/main.go force 20260724000002` (local dev DB only, not
+production — the standing prohibition on `migrate force` in this file's
+Oracle section is scoped to that specific unverified production incident).
+Confirmed `schema_migrations` now reads `20260724000002, dirty=false` and a
+follow-up `migrate up` reports "No new migrations to apply." **Practical
+implication for the future:** the down-migration for
+`20260724000002` (and, by identical precedent, the pre-existing
+`20260613000006_..._portfolio_onboarding_...down.sql`, which carries the
+exact same guard/warning) cannot be run while its seed row exists — this is
+existing repo convention (confirmed identical in the portfolio-onboarding
+migration this one was modeled on), not a defect introduced this session,
+but it means neither down-migration is a clean, unconditional rollback.
+
+**Real DB mutations left behind by this session's live testing (disclosed,
+not cleaned up — append-only tables cannot be cleanly reverted):**
+
+- `B14-CORE` (LIVE portfolio) has one real, `POSTED`, 50,000 THB `CASH_IN`
+  transaction in its ledger and cash balance (materialized via the approved
+  request above). This is a genuine, permanent ledger entry, same as any
+  other test data created against this shared dev DB.
+- `TEST` (SIMULATION portfolio) has one real, `POSTED`, 1,000 THB `CASH_IN`
+  transaction.
+- Three `investment__portfolio_cash_requests` rows exist against `B14-CORE`:
+  one `APPROVED` (linked to the txn above), one `REJECTED`, one `CANCELLED`.
+- Two `approval__requests` (`APR-000003` approved, `APR-000004` rejected)
+  plus a third cancelled one, with their associated tasks/events.
+
+**Audit-attribution gap found, NOT fixed this session — a genuine hard-rule
+miss, needs an owner decision:** `INVESTMENT_CASH_REQUEST_APPROVED`/
+`_REJECTED` audit events (`post_transaction_cash_approval.go`,
+`ApplyCashRequestApproval`) are logged with **no `ActorID`** — confirmed live
+in `iam_audit_events` (`actor_id` is NULL on the APPROVED row from `green`'s
+real approval action), and `PortfolioCashRequest.DecidedBy` is set to the
+*submitter's* id, not the approver's. Root cause: `contract.ApprovalDecision`
+(the payload every `ApprovalSubjectCallback.OnApprovalDecision` receives) has
+only `SubjectType`, `SubjectID`, `RequestID`, `Approved`, `Reason` — the
+approver's identity is not part of the contract at all, so no callback
+implementation can attribute the decision to the real approver. **Verified
+this is not a Stage 2 regression**: the existing `INVESTMENT_DECISION`
+callback (`decision_approval_adapter.go` -> `DecisionCommandHandler.
+ApplyApprovalDecision`) has the byte-for-byte identical gap — same missing
+`ActorID`, same `UpdatedBy = d.SubmitterUserID` with the literal comment
+"system update; preserve submitter audit." Stage 2 faithfully copied its
+mandated template's behavior. This is a systemic gap in the shared approval
+contract, not something one subject-type callback can fix in isolation.
+Options for the owner: (a) accept as a known v1 limitation shared with
+`INVESTMENT_DECISION`, or (b) authorize a `contract.ApprovalDecision` change
+to carry `DecidedBy uuid.UUID`, which would need to touch the approval
+engine's call site plus both callback implementations — a cross-module
+change bigger than this task's scope, not made unilaterally.
+
+**Not started: frontend (Stage 2 part C).** Blocked on an explicit scope
+question the design spec itself flags (§5, "Cash-movement UI gap (G2)"):
+`PortfolioLedgerNewView.vue`'s order ticket currently only emits `BUY`/
+`SELL` (confirmed by reading the component — no `CASH_IN`/`CASH_OUT`/`FEE`/
+`DIVIDEND` input path exists anywhere in the ledger UI). Building the
+pending/cancel UI without also adding cash-movement inputs would leave the
+feature untestable in a browser; adding the inputs is additional undiscussed
+scope. Asked the owner to choose explicitly rather than deciding this
+unilaterally. Part D (live browser proof) cannot proceed until this is
+resolved, since there is currently no UI path to submit a cash movement at
+all.
+
+**Evidence this session's API/DB testing is NOT a substitute for browser
+proof:** every check above was `curl`/Node-`http`-driven API calls plus
+direct `psql` queries. Zero browser interaction occurred. Per this task's own
+brief (two real Stage 1 bugs "passed every automated gate and were caught
+only by clicking"), this backend must still be treated as browser-unverified
+until someone actually exercises the (not-yet-built) frontend.
+
+**Owner decisions (2026-07-24, via AskUserQuestion, same session):**
+1. Add CASH_IN/CASH_OUT/FEE/DIVIDEND inputs to the ledger order ticket now,
+   as part of Stage 2 frontend — do not defer. This makes the new
+   pending/cancel approval UI actually reachable and browser-testable.
+2. Accept the audit-attribution gap (no ActorID on cash-request
+   approve/reject, `DecidedBy`=submitter not approver) as a known v1
+   limitation shared with the pre-existing `INVESTMENT_DECISION` callback.
+   Do not change `contract.ApprovalDecision` in this task.
+
+**Frontend Stage 2 implementation (same session, continued after the owner
+decisions above):**
+
+- `PortfolioLedgerNewView.vue` gained a Security/Cash entry-kind toggle.
+  Security keeps the existing BUY/SELL `useOrderTicket` flow unchanged
+  (its injected `post` dep now defensively throws if it ever received a
+  pending `CashRequestResponse` instead of a `TransactionResponse` — BUY/SELL
+  is out of the gate's scope and must always post immediately per the design
+  spec; this is a guard against a future policy change silently mistyping
+  data, not an expected runtime path today).
+- New composable `composables/useCashTicket.ts` (portfolio-workspace-only,
+  not shared with the legacy V1 order ticket) mirrors `useOrderTicket`'s
+  simulate -> confirm -> post stage machine for CASH_IN/CASH_OUT/FEE/
+  DIVIDEND, using the same `simulateTransaction`/`postTransaction` V2
+  endpoints (simulate always returns a plain preview for cash too, per
+  `PostTransactionHandler.Simulate` — confirmed by reading the Go handler,
+  no pending branching there), but adds a `"pending"` stage distinct from
+  `"posted"` for the 202 outcome.
+- `portfolioApi.postTransaction`'s return type changed to a union
+  (`ApiTransactionV2 | ApiCashRequestV2`), matching the generated OpenAPI
+  type now that Swagger documents both `@Success 201` and `@Success 202`
+  for that operation. New `listCashRequests`/`cancelCashRequest` methods
+  added for the submitter's pending-list/cancel endpoints.
+- New pure discriminator `lib/cashRequestGuard.ts` (`isCashRequestResponse`,
+  keyed on the `submitted_by` field that only `CashRequestResponse` has) —
+  deliberately kept free of `~/`-aliased imports (aside from an erased
+  `import type`) so it, and anything that only needs it, can be unit-tested
+  in plain Vitest without mocking the Nuxt runtime client. `portfolioApi.ts`
+  re-exports it for call-site convenience.
+- New `components/CashRequestsPanel.vue`: lists a LIVE portfolio's cash
+  requests (type/amount/status/submitted date) with a Cancel action for
+  PENDING rows, reusing `AppStatusBadge`/`AppConfirmDialog`. Rendered on
+  `PortfolioLedgerNewView.vue` only when `ctx.portfolioType.value === 'LIVE'`
+  and refreshed after a successful cash submission or cancel.
+- `lib/ledgerGuard.ts`'s header comment corrected — it previously claimed
+  the backend has no MODEL check at all, which is now stale: MODEL cash
+  movements ARE blocked backend-side as of Stage 2 (BUY/SELL still is not,
+  which remains correctly out of scope).
+- EN/TH/ZH (zh = Traditional) copy added for the kind toggle, cash fields,
+  cash transaction type labels, the pending/posted outcome messages, the
+  LIVE-cash confirm-dialog description, and the whole new
+  `portfolio.cashRequests.*` panel namespace.
+- New `tests/portfolio-cash-ticket.test.ts` (13 tests): wire-format mapping,
+  validation, BLOCK-disables-post, the pending-vs-posted stage split (202 vs
+  201), stale-simulation invalidation, 403 classification, and the
+  `isCashRequestResponse` discriminator — mirrors
+  `investment-ledger-order-ticket.test.ts`'s structure. Had to mock the
+  whole `portfolioApi` service module (not just `~/api/openapi`) because
+  `useCashTicket.ts` statically imports `portfolioApi` for its default deps,
+  and mocking only the deeper `~/api/openapi` alias doesn't work in plain
+  Vitest (same class of gap as the Dashboard AUM/P&L session's barrel-import
+  fix) — same reasoning is why `isCashRequestResponse` was extracted to its
+  own alias-free lib file rather than left inline in `portfolioApi.ts`.
+
+**Verification (exact commands, from `frontend/`):**
+
+- `npx vitest run tests/i18n-messages.test.ts tests/i18n-core.test.ts` —
+  2 files / 10 tests pass (EN/TH/ZH key parity holds for all new keys).
+- `npx vitest run tests/portfolio-cash-ticket.test.ts` — 13/13 pass.
+- Full `npx vitest run` — 60 files / 655 tests pass (was 642-643 before this
+  session; +13 from the new file, zero regressions).
+- `npx nuxi typecheck` — exactly 91 diagnostics, byte-identical to the
+  pre-existing baseline; zero new diagnostics in any file touched this
+  session (confirmed by grepping the full typecheck output for each touched
+  path — none matched).
+- `npm run build` — Nuxt production build completes ("Build complete!").
+- Rebuilt both `ims-backend` and `ims-frontend` Docker images in the
+  foreground (`docker-compose build backend` / `... build frontend`,
+  `docker-compose up -d backend` / `... up -d frontend`) so the running
+  containers serve this session's code, not the stale pre-Stage-2 images.
+
+**UPDATE, same session — real browser verification completed.** Owner asked
+for four follow-ups: try browser UAT via the `/run` skill, close the
+fund-less LIVE residual, fix the V1 Swagger gap, and fix anything broken.
+All four done.
+
+**Browser verification (genuine click-through, not a smoke test).** No
+`chromium-cli` in this environment; used the `/run` skill's Playwright
+fallback (`examples/playwright.md`) — installed `playwright@1.61.1` in a
+scratch npm project (Chromium 1228 was already cached locally) and drove the
+already-running `ims-frontend`/`ims-backend` containers headless. First
+attempt used `page.goto()` for the second navigation and always bounced to
+`/auth/login?reason=session_restore_failed` — root-caused as a **separate,
+pre-existing bug**, not this session's code (see below). Fixed the test
+methodology (client-side navigation via real link/row clicks — the same
+path an actual user takes — instead of a forced full reload) and the full
+flow worked cleanly:
+
+- Logged in as `admin`, navigated Portfolios -> B14-CORE -> Ledger -> "New
+  entry" via real clicks (no `page.goto`).
+- Toggled to Cash movement; currency pre-filled `THB`; filled `1000`; Simulate
+  showed the compliance/cash-impact preview with no error.
+- Post transaction -> confirm dialog showed the LIVE-cash-specific pending
+  copy verbatim; confirmed -> "Submitted for approval — pending" rendered
+  (not "Transaction posted"); the new Pending cash approvals panel appeared
+  immediately with the row (type, amount, `Pending` badge, timestamp, Cancel
+  button).
+- Submitted a second request (`FEE 50`), clicked its Cancel button, confirmed
+  the cancel dialog copy, confirmed -> row flipped to `Cancelled` with no
+  further action available, the other row stayed `Pending`.
+- Zero console errors, zero page errors, across every step. Full-page
+  screenshots captured at each step (not persisted in-repo; scratch dir
+  only) — visually confirmed correct rendering, not just text-presence
+  checks.
+- MODEL-blocked notice was **not** exercised live — no MODEL portfolio
+  exists in seed data. Still only covered by `TestModelCashBlocked`
+  (`go test`). Cheap to close later; not done this pass.
+
+**Real bug found via browser testing (session-restore, NOT this session's
+code) — reported, not fixed.** Any full page reload (typed URL, bookmark,
+browser refresh) on this stack bounces an already-authenticated user to
+`/auth/login?reason=session_restore_failed`, even with a valid, unexpired
+`auth_token` cookie present. Root cause, confirmed by direct inspection:
+`middleware/auth.ts` calls `authStore.restoreSession()` on **both server and
+client** (by design, per its own comment, so SSR has permissions for the
+route-guard that follows it). On the server side this runs inside the
+`ims-frontend` container and calls `/auth/me` using
+`runtimeConfig.apiBaseUrl`, which falls back to
+`NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1` — but `localhost`
+*inside* the `ims-frontend` container is the frontend's own loopback, not
+`ims-backend`. Confirmed `docker exec ims-frontend wget -qO- http://backend:8080/health`
+succeeds (Docker Compose service-name DNS works fine) — so the SSR call to
+`localhost:8080` fails to connect, `fetchMe()` catches it and clears auth,
+and the route middleware redirects to login. `nuxt.config.ts`'s
+`runtimeConfig.apiBaseUrl` (the **server-only** value, deliberately separate
+from `runtimeConfig.public.apiBaseUrl`) already has exactly the right
+fallback chain for this (`NUXT_API_BASE_URL || NUXT_PUBLIC_API_BASE_URL ||
+hardcoded`) — nothing in `infra/docker-compose.yml`'s frontend service
+`environment:` block ever sets `NUXT_API_BASE_URL`, so it silently falls
+through to the client-facing URL. **This is invisible to normal use** —
+a human logs in (client-rendered, no SSR restore needed) and then clicks
+around (client-side Vue Router, no reload) and never triggers SSR again, so
+this only reproduces on a hard reload/typed URL/bookmark, which is exactly
+why browser UAT never caught it before and why this session's first
+Playwright attempt (which used `page.goto()` a second time) hit it
+immediately. **Not fixed** — it's a `docker-compose.yml`/env-var change
+(one line: `NUXT_API_BASE_URL: http://backend:8080/api/v1` in the frontend
+service's `environment:` block), outside this task's scope, and touches
+shared deployment config the owner should apply and verify directly rather
+than have changed silently mid-session.
+
+**Real bug found AND fixed: approval subject-access denial returned 500
+instead of 403.** While closing the fund-less-LIVE residual (see below),
+approving a cash request as `green` (who had no `permission_data_rights`
+grant for the newly created fund-less test portfolio — a legitimate,
+correct-to-deny scenario) returned **500** "an unexpected error occurred",
+not 403. Traced to `runtime_service.go`'s `checkSubjectView`/
+`checkSubjectSubmit`/`checkSubjectAct`: each correctly wraps a *missing
+port* as `domain.Forbidden(...)`, but passed the port's own returned error
+straight through unwrapped. `investSubjectAccessor.checkDataPermission`
+(`internal/investment/infrastructure/adapter/investment_subject_access.go`)
+returns a plain `errors.New("not found or not accessible")` on denial —
+never a `*domain.DomainError` (by DDD import-boundary rules, a port
+implementation in another module *cannot* construct this module's typed
+errors) — so `writeError`'s `errors.Is` switch never matched it and fell
+through to the generic 500 default. **This directly violates
+`docs/MANAGER/MEMORY.md`'s explicit rule:** "Bad client input returns a 4xx
+response. Infrastructure and unexpected errors return 5xx." A denied access
+check is not an infrastructure failure. **Pre-existing, not introduced by
+Stage 2** — the exact same `checkDataPermission` helper and the same
+fund-less-falls-back-to-portfolio-id pattern already existed for
+`INVESTMENT_DECISION` since Stage 1; Stage 2 just added the `CASH_TRANSACTION`
+case to the same shared function, inheriting the pre-existing defect. Nobody
+had exercised a genuine "authorized subject type, but actor lacks
+portfolio-level scope" denial live before (matches the repeated HANDOFF note
+that fund-less trading was never live-tested until this session).
+
+**Fix:** added `asSubjectAccessDenied(err error) error` in
+`runtime_service.go` — normalizes any non-nil error from a
+`SubjectAccessPort` into `domain.Forbidden(err.Error())` before it reaches
+`writeError`. Applied to all three call sites (`checkSubjectView`,
+`checkSubjectSubmit`, `checkSubjectAct`). Zero change to any authorization
+*decision* (fail-closed stays fail-closed) — purely fixes HTTP-status/error
+classification. Verified: `go build`/`go vet`/full `go test ./... -count=1`
+clean (including the module's existing `denyingSubjectPort`/
+`selectiveSubjectPort` test fakes, which already returned
+`domain.Forbidden(...)` themselves and continue to pass — `errors.Is` still
+matches after the re-wrap since `Unwrap()` returns the sentinel `Kind`
+directly). Rebuilt and restarted `ims-backend`; retried the exact failing
+call live: **403** `{"error":"not found or not accessible"}` — correct.
+Granted `green` a real `permission_data_rights` row for the test portfolio
+and retried: **200**, request `APPROVED`, materialized into exactly one real
+`POSTED` transaction with `fund_id` correctly `NULL` throughout. This closes
+both the residual proof (below) and the bug in one pass.
+
+**Fund-less LIVE residual — now closed with full live proof, not just unit
+tests.** Created `FL-TEST-01` (`portfolio_type=LIVE`, no `fund_code`) via
+`POST /api/v2/portfolios` as `admin`. Submitted `CASH_IN 20000 THB` -> 202
+PENDING, `fund_id` correctly absent from the response and `NULL` in the DB.
+Confirmed the `COMPANY`-scoped process-config resolution (already proven
+live via B14-CORE, since the seeded config's `contract_id IS NULL AND
+contract_type='COMPANY'` branch matches regardless of the caller's contract
+type) also works end-to-end for a genuinely fund-less submission. Approved
+as `green` after the fix + a real permission grant above -> materialized
+into one real ledger transaction, `fund_id NULL`, `POSTED`. The only
+remaining untested delta from the design spec's test matrix (§6, "fund-less
+LIVE portfolio → whole flow works") is now proven live, not just via
+`TestFundlessLiveCashFlow`.
+
+**V1 Swagger annotation gap — fixed.** Added `@Success 202
+{object} response.CashRequestResponse` to `investment_handler.go`'s
+`PostTransaction` (V1 legacy route), matching the V2 handler's existing dual
+annotation, and updated its `@Description` to mention the LIVE-cash pending
+behavior. Regenerated Swagger + the OpenAPI client (`make api-client`);
+`CashRequestResponse` is now a documented possible response for the V1
+route too. Backend `go build`/`go vet`/full `go test ./... -count=1` clean;
+frontend `npx nuxi typecheck` still exactly the 91-diagnostic baseline, zero
+new. This was low-risk/currently-unreachable (V1's order ticket only ever
+sends BUY/SELL) but is now accurate documentation regardless.
+
+**Test data created this pass (disclosed, on top of the earlier disclosed
+rows):** portfolio `FL-TEST-01` (LIVE, fund-less, one real POSTED CASH_IN
+20000 THB transaction); one additional cash request on `B14-CORE`
+(`FEE 50`, cancelled) from the click-through Cancel test; one
+`permission_data_rights` row granting `green` `APPROVE` access to
+`FL-TEST-01`'s portfolio id.
+
+**Final full gate re-run after all fixes (exact commands, from `backend/`
+and `frontend/`):** `go build ./...`, `go vet ./...`, full
+`go test ./... -count=1` (all packages `ok`) — clean. `npx nuxi typecheck`
+— 91 diagnostics, byte-identical baseline. Both `ims-backend` and
+`ims-frontend` Docker images rebuilt in the foreground a final time and
+containers restarted; re-ran the full click-through Playwright pass against
+the final images — identical clean result (one incidental console 404 for
+`FL-TEST-01`'s missing valuation snapshot, expected for a portfolio that has
+never been valued, unrelated to Stage 2).
+
+**Commit staged, not committed.** Note: `neo-develop` moved during this
+session — the owner committed `a3eb004` (watchlist permission grants,
+resolving migration `20260723000002`'s provenance) and `b0faad1` (docs/api
+generator + current API reference + Oracle runbook, resolving the
+previously-flagged `docs/api/*` provenance question) directly, in parallel.
+Neither touches this task's files; confirmed via `git show --stat` on both.
+Staged exactly 100 files (`git add` with an explicit pathspec, never `-A`)
+covering Stage 1 (fund-optional) + Stage 2 (LIVE cash-approval gate) backend,
+frontend, migrations, seed, and design docs. Deliberately left unstaged:
+`docs/MANAGER/HANDOFF.md` and `docs/MANAGER/TASKS.md` (this file mixes
+multiple unrelated sessions' entries — including the unrelated Merge-Blocker
+P0-E..P0-I documentation-only expansion — so committing the whole file would
+repeat the exact "committed the entire index" mistake this same file
+documents being caught and corrected once already, in P0-A's own history)
+and `docs/compliance/thai-sec-product-regime-decision-memo.md` (unrelated,
+pre-existing untracked file from an earlier session, never touched this
+session). Commit message prepared and given to the owner directly; not run.
+
+**Next action:** Kanta reviews the staged diff and runs the commit (or asks
+for adjustments first). Separately, decide on the `NUXT_API_BASE_URL` Docker
+env-var fix for the SSR session-restore bug — low-risk, one line, but
+deployment config the owner should apply directly. The MODEL-blocked-notice
+live check and a dedicated `docs/api/*`-generator confirmation remain open
+but low-priority.
+
+## Session: End-to-End Product/Business Flow Review Task Update (2026-07-24, IMS-MERGE-BLOCKERS)
+
+**Status:** DOCUMENTATION UPDATED; NO PRODUCT IMPLEMENTATION STARTED.
+
+Kanta requested that the 2026-07-24 read-only end-to-end IMS review be converted
+into actionable project documentation. The findings were added to the existing
+single active manager program in `TASKS.md` rather than creating a competing
+`IN PROGRESS` task.
+
+**Review baseline verified before the documentation edit:**
+
+- Branch `neo-develop`, HEAD `5334ae8`, equal to `origin/neo-develop`
+  (`0 0` ahead/behind at observation time).
+- The working tree was already broadly dirty: portfolio/investment backend and
+  frontend files, generated Swagger, manager/API docs, Bruno state, and new
+  migrations. These changes predate this documentation update and belong to
+  active/concurrent work, principally the fund-optional portfolio session.
+- This session changed only `docs/MANAGER/TASKS.md` and this handoff. It did not
+  modify product code, migrations, seeds, generated API artifacts, tests,
+  containers, databases, branches, index state, commits, remotes, or deployment.
+
+**Source-proven blocker summary now tracked in `TASKS.md`:**
+
+1. Execution fill and confirmation state are disconnected from ledger,
+   holdings, and cash.
+2. Direct ledger BUY/SELL can bypass approved decision/execution because source
+   references are optional.
+3. Fill validation lacks positive/cumulative/ordered bounds, workflow gating,
+   and compliance re-evaluation.
+4. Workflow manager approval is wired to a NOP investment summary that always
+   reports zero transactions.
+5. LIVE cash/ledger approval is owner-required but not built.
+6. Fund-less activity skips fund-scoped workflow controls while durable manager
+   docs still say fund association is mandatory.
+7. Trader/operator UI lacks execution mutations and confirmation creation but
+   reports OP-02/OP-03 as fully available.
+8. Regulatory/credit-rating stubs, approval-sync replay, audit semantics,
+   watchlist scheduling, typecheck debt, and CI lifecycle coverage remain P1
+   production-readiness work.
+
+**New ordered work packages:** P0-E authoritative trade-to-ledger lifecycle;
+P0-F real EOD activity integration; P0-G portfolio-type and LIVE ledger
+approval; P0-H human resolution of the fund-optional policy conflict; P0-I
+trader/operator frontend. Each package now records ownership, dependencies,
+acceptance evidence, failure behavior, and human gates. P1 follow-ups and
+program-wide release gates were also added.
+
+**Immediate next action:** Kanta resolves P0-H before any overlapping backend,
+migration, or frontend writer begins. Separately preserve/review Claude's active
+dirty portfolio work. After the decision, continue the existing order P0-B ->
+P0-C -> P0-D, then authorize and schedule P0-E/F/G/I in dependency order. Do not
+commit, push, execute migrations, rebuild containers, mutate a database, or
+deploy without explicit authorization.
+
+## Session: Fund-Optional Portfolios + Fund-less Ledger/Trading (2026-07-23/24, IMS-PORTFOLIO-FUND-OPTIONAL)
+
+**Status:** COMPLETE LOCALLY, deployed to local Docker containers; NOT
+committed, NOT pushed. This work is unrelated to the Merge-Blocker
+Remediation Program below and does not change that program's status — it ran
+as a separate, directly-owner-driven session (no subagent delegation, no
+worktree, no independent-review agent; worked in a single continuous session
+per the owner's standing instruction against spawning background agents).
+Two phases delivered end-to-end, plus two real production-shaped bugs found
+and fixed only via live testing with the owner after `go test`/Vitest/
+typecheck all stayed green.
+
+**Phase 1 — fund-optional portfolio creation.** Added a "Bind with Fund:
+Y/N" toggle to Create Portfolio, defaulting to **N/unchecked** (the owner
+explicitly rejected defaulting to checked — did not want to re-toggle it on
+every create). When unbound, `fund_code` is omitted entirely and the backend
+creates a portfolio with `fund_id = NULL`.
+
+- Migration `20260723000001_investment__portfolio_fund_id_nullable`: drops
+  `NOT NULL` on `investment__portfolios.fund_id`.
+- `entity.Portfolio.FundID` -> `*uuid.UUID`, propagated through persistence,
+  the command layer (`portfolio_crud.go`), and every access-control call
+  site (`resolvePortfolioByCode`, `checkPortfolioAccess`, new
+  `portfolioScopeID` helper) — a fund-less portfolio's own id becomes its
+  data-permission scope key. This reuses pre-existing infrastructure rather
+  than inventing a new one: the generic `HasDataPermission(userID, scopeID)`
+  check and `permission_data_rights.portfolio_id` (already in the schema,
+  already wired into `PermissionManageDrawer.vue`'s new Fund/Portfolio
+  scope-kind toggle added this session) — no new IAM concept was needed.
+- `docker exec`-verified end to end: DB schema, Swagger, and the generated
+  TypeScript client were all regenerated and confirmed nullable/optional.
+
+**Phase 2 — fund-less Ledger + Decision/Execution/Confirmation trading**,
+done immediately after Phase 1 at the owner's explicit follow-up request ("I
+want portfolio can do the ledger on it own"). Extended the identical
+nullable-`fund_id` treatment to `investment__portfolio_transactions`,
+`investment__decisions`, `investment__executions`,
+`investment__trade_confirmations` (migration `20260723000003` —
+`...000002` was already claimed by a concurrent session's unrelated
+permissions migration, confirmed via a duplicate-migration-file error at
+`migrate up` time).
+
+- Workflow gates (`IsTradeAllowed`/`IsTransactionLocked`/day-locking),
+  compliance `ContractID`, and the `policy.EvaluatePost` fund-active check
+  all now treat "no fund" as "skip fund-scoped state" rather than an error —
+  matching a pattern (`portfolioFundID` in
+  `portfolio_v2_compliance_handler.go`) an earlier/concurrent session had
+  already anticipated with a forward-looking comment.
+- Every `hasFundAccess` call site across decisions/executions/confirmations/
+  transactions (new `decisionScopeID`/`executionScopeID`/
+  `confirmationScopeID`/`transactionScopeID` helpers; `DecisionSubjectRef`
+  gained a `PortfolioID` field for the batch-approval path) falls back to
+  the owning portfolio's id when there is no fund, mirroring Phase 1's
+  `portfolioScopeID`.
+- Verification after each phase: `go build ./...`, `go vet ./...`,
+  `go test ./... -count=1` (81 packages, zero FAIL); full Vitest (642-643
+  tests) green; `npx nuxi typecheck` held at the exact pre-existing
+  91-diagnostic/9-file baseline throughout, zero new diagnostics in any
+  touched file.
+
+**Bug 1 (found live, fixed): `risk_profile` as a number input silently
+crashed Create Portfolio.** `<input type="number">`'s Vue `v-model` coerces
+to a JS `number`; `normalizePortfolioCreateValues` then called `.trim()` on
+it, throwing synchronously inside `form.submit()` *before* any network call
+— so the owner's DevTools Network tab showed zero requests, indistinguishable
+from the button doing nothing. Root-caused only after asking the owner to
+paste the browser console stack trace (server-side logs showed nothing
+useful — the failure never reached the backend).
+
+**Bug 2 (found live, fixed): `risk_profile` is a real DB-enforced enum, not
+free text.** `chk_inv_portfolios_risk_profile` allows only `NULL`/`LOW`/
+`MEDIUM`/`HIGH`/`SPECULATIVE`. Neither this session's number-input version
+nor the pre-existing free-text input on the Portfolio Settings page
+(`PortfolioSettingsView.vue`, predates this session, found while fixing bug
+1) ever validated against this — both would raise a raw Postgres
+`SQLSTATE 23514` on submit. Fixed both frontend inputs to pickers with the
+four real options (EN/TH/ZH), and added the missing validation server-side
+in both `CreatePortfolioV2` and the portfolio `PATCH` handler
+(`vo.RiskProfile.IsValid()` already existed in `valueobject/status.go` but
+had zero callers before this fix) so any future bad value — from any client,
+not just this frontend — returns a clean 400 instead of a leaked SQL error.
+
+**Also handled this session, unresolved root cause:** the local Docker
+environment (`ims-postgres`/`ims-backend`/`ims-frontend`/`ims-redis`/
+`ims-mailpit`) was destroyed and recreated with an empty database by
+something *outside* this session, twice (once mid-session, once again
+between messages with no command run in between). Recovered both times via
+`make migrate-up` + `go run ./cmd/seed` (idempotent, confirmed safe to
+re-run) plus manually re-binding a hand-created test portfolio the second
+time. Neither incident was triggered by any command this session ran
+(confirmed via container-recreation timestamps and command history) — most
+likely Docker Desktop restarting/resetting on the owner's machine, but this
+was never confirmed. **Flagged to the owner, not resolved — could recur.**
+
+**Deployed:** both Docker images rebuilt and containers restarted several
+times as fixes landed. Final state was confirmed live by `docker exec`-
+grepping the running containers' actually-served code (not just the git
+diff or the build log) after every fix, including the last risk_profile fix.
+
+**Explicitly NOT done / next action:**
+
+- Nothing is committed. Roughly 30+ backend files, several frontend files,
+  and 2 new migrations owned by this session (`20260723000001`,
+  `20260723000003`) are uncommitted, on top of whatever pre-existing dirty
+  working-tree state this repo already carries. The owner commits; this
+  session never does.
+- The Ledger ("add cash") and full Decision -> Execution -> Confirmation
+  trading flow were implemented and covered by `go test`/Vitest, but **never
+  exercised end-to-end in a live browser** by the owner or this session —
+  every live browser test this session ran was scoped to Create Portfolio.
+  Given that two real bugs already surfaced only through live testing (not
+  caught by any automated gate), treat the Ledger/trading paths as
+  *unverified in the browser* until someone actually clicks through them.
+  See the ready-to-use follow-up prompt below.
+- No frontend UI existed for an admin to grant a user portfolio-scoped data
+  access on a fund-less portfolio; `PermissionManageDrawer.vue` gained a
+  Fund/Portfolio scope-kind toggle this session to close that gap, but it
+  has not been exercised live either.
+
+**New requirement, specified but NOT built: cash/ledger posting must be
+gated by portfolio type.** The owner clarified this explicitly after
+reviewing the plan (not a code change yet):
+
+- `SIMULATION` portfolios: post cash/ledger transactions immediately —
+  this is already today's behavior (`PostTransactionHandler.Handle` posts
+  unconditionally for every portfolio type); no change needed for this case.
+- `MODEL` portfolios: stay fully blocked from the ledger, per the existing
+  rule (`canEnterLedgerTransaction` on the frontend already blocks this).
+  The owner's first phrasing of the requirement ("simulation/model can add
+  immediately") was corrected on follow-up — MODEL must NOT gain ledger
+  access; this was confirmed explicitly via AskUserQuestion, not assumed.
+- `LIVE` portfolios: must require a **full approval-request workflow**
+  before a cash/ledger transaction takes effect (not a lighter two-step
+  confirm) — same rigor as the existing Decision workflow: a pending
+  request routed through the approval module to an approver's inbox, only
+  posting the real transaction on approval. Confirmed explicitly via
+  AskUserQuestion (chosen over the lighter draft->confirm alternative).
+
+This is a genuinely new subsystem, not a small addition. Key constraint
+already identified: `investment__portfolio_transactions` rows are
+append-only (`trg_inv_portfolio_transactions_no_update/no_delete`), so a
+LIVE cash request **cannot** be created as a real transaction row and
+edited/approved later — it needs a new pending-request entity/table,
+submitted via the existing `contract.ApprovalSubmitter.SubmitForApproval`
+(see `backend/pkg/contract/approval.go`) and only materialized as a real
+`investment__portfolio_transactions` row inside an
+`ApprovalSubjectCallback.OnApprovalDecision` implementation once approved
+— mirroring `decision_lifecycle.go`'s `Submit()` pattern for
+`INVESTMENT_DECISION`, which is the closest existing template. No approval
+`ProcessType`/`SubjectType` for cash/ledger transactions exists in any seed
+or config today (`grep -rln "CASH_TRANSACTION\|CASH_APPROVAL"` under
+`database/seeds/` and `backend/internal/approval/` returns nothing) — this
+would be new, not a matter of wiring up something already modeled.
+
+Per advisor review this session: do NOT start this subsystem before (a)
+the Ledger/trading paths above are actually verified working in a live
+browser (see prompt below) and (b) the owner has committed the verified
+Phase 1/2 work — piling a multi-file, multi-table subsystem onto ~30+
+uncommitted files in an environment that has already self-wiped its Docker
+volume twice this session is a real data-loss risk, not just untidy.
+
+**Follow-up prompt for a fresh session (paste verbatim):**
+
+```text
+Continue the fund-optional portfolio work from IMS-PORTFOLIO-FUND-OPTIONAL
+(see docs/MANAGER/HANDOFF.md, session dated 2026-07-23/24). Do this in two
+stages — do not start stage 2 before stage 1 is verified and committed.
+
+STAGE 1 — verify the existing (uncommitted) work live, then commit it.
+
+Backend support for cash/ledger transactions and the full Decision ->
+Execution -> Confirmation trading workflow on BOTH fund-bound and
+fund-less portfolios was implemented and passes go test/vitest/typecheck,
+but has never been exercised in a live browser. Two real bugs already
+slipped past every automated gate in the adjacent Create Portfolio work (a
+client-side v-model type-coercion crash, and a DB CHECK constraint neither
+the frontend nor the backend validated against) — both were only found by
+manually clicking through the UI. Assume the same class of gap exists here
+until proven otherwise.
+
+1. Start the local stack (docker compose in infra/, or make dev) and confirm
+   admin/ben can log in.
+2. Pick one fund-bound portfolio and one fund-less portfolio (create one via
+   Create Portfolio with "Bind with Fund" off if none exists).
+3. On EACH portfolio, in the browser: add cash via the Ledger page
+   (frontend/app/features/portfolio-workspace/PortfolioLedgerNewView.vue,
+   posts through useOrderTicket.ts -> portfolioApi.simulateTransaction/
+   postTransaction -> POST /api/v2/portfolios/{code}/transactions on the
+   backend, handled by PostTransactionHandler in
+   backend/internal/investment/application/command/post_transaction.go).
+   Confirm the cash balance actually updates (PortfolioCashView.vue) and
+   check the browser console for errors, not just the network tab — the
+   risk_profile bug threw client-side before any request fired.
+4. On EACH portfolio, walk a decision through its full lifecycle in the
+   browser: New Decision -> Submit -> (approval, if wired for your test
+   user) -> Execution -> Confirmation. Entry point:
+   frontend/app/features/portfolio-decision/PortfolioDecisionNewView.vue.
+   Confirm the fund-less portfolio's decision actually reaches EXECUTED, not
+   just DRAFT/PENDING_APPROVAL.
+5. For any field you touch that maps to a DB column, grep the actual
+   database schema for a CHECK constraint before trusting the Go struct
+   field's type alone (docker exec into ims-postgres and \d the table) —
+   that is exactly what bug 2 above was.
+6. Report back: what worked, what didn't, and whether the "grant a user
+   portfolio-scoped data access on a fund-less portfolio" flow in
+   PermissionManageDrawer.vue's new Fund/Portfolio toggle actually works end
+   to end (create a fund-less portfolio as one user, grant a second user
+   access via that toggle, confirm the second user can see it).
+7. Once verified, ask the owner to commit this work before moving on —
+   ~30+ backend files, several frontend files, and 2 migrations
+   (20260723000001, 20260723000003) are uncommitted, and this environment's
+   Docker volume has self-wiped twice already this session.
+
+STAGE 2 — build portfolio-type-gated cash/ledger approval (only after
+stage 1 is committed).
+
+Requirement (confirmed explicitly with the owner via AskUserQuestion, do
+not re-derive or re-negotiate without cause):
+- SIMULATION: posts immediately. Already true today — verify only.
+- MODEL: stays fully blocked from the ledger. Do not change this.
+- LIVE: requires a full approval-request workflow. A pending cash/ledger
+  request must be submitted via contract.ApprovalSubmitter.SubmitForApproval
+  (backend/pkg/contract/approval.go) and only materialized as a real
+  investment__portfolio_transactions row inside a new
+  ApprovalSubjectCallback.OnApprovalDecision implementation once approved.
+  Use decision_lifecycle.go's Submit() (INVESTMENT_DECISION) as the closest
+  existing template for the ProcessType/SubjectType/submit/callback shape.
+  investment__portfolio_transactions rows are append-only
+  (trg_inv_portfolio_transactions_no_update/no_delete) — a LIVE cash
+  request CANNOT be created as a real transaction row and edited later; it
+  needs its own new pending-request entity and table (new migration).
+  No existing approval ProcessType/SubjectType/seed covers cash/ledger
+  transactions — confirm this is still true before assuming any wiring
+  already exists.
+
+Before writing code: confirm with the owner (a) which transaction types
+this gate applies to (the owner said "add cash", i.e. CASH_IN specifically
+— confirm whether it should also cover CASH_OUT/FEE/DIVIDEND/BUY/SELL or
+just cash movements), and (b) whether a pending LIVE cash request should be
+visible/cancelable by its submitter before an approver acts on it.
+
+Do not commit anything without the owner's explicit go-ahead. If you rebuild
+Docker images, run docker-compose build in the FOREGROUND, not backgrounded
+— backgrounded docker-compose build was silently killed twice with zero
+output in the prior session for reasons never identified.
+```
+
+## Session: Merge-Blocker Remediation Program Kickoff (2026-07-21, IMS-MERGE-BLOCKERS)
+
+**Status:** IN PROGRESS. Verified live Git state independently rather than
+trusting a stale "52 modified files" claim: branch `neo-develop`, HEAD
+`0ae1adb4a84f817f766be34963a7877446e03aa7`, tracking `origin/neo-develop`
+with `+5 -0` (exactly the five commits `8d43747`..`0ae1adb` listed in the
+prior session), and exactly 15 working-tree paths with zero untracked files.
+This matches the expected starting state given in the owner's brief exactly.
+
+**Phase 1 — mixed working-tree reconciliation (read-only; zero commits
+created):** all 15 paths were read (not classified by filename) and held.
+`tools/bruno/environments/ims-th-local.yml`'s only diff is two local-run
+values (`compliance-breach-id`, `compliance-rule-type-id`) — session-local
+test state, held per the owner's explicit instruction. `docs/api/*` (5
+modified + 8 new files) and the two new
+`tools/bruno/Investment/Executions/*.yml` files were all staged by a process
+outside any manager session (flagged unresolved since the 2026-07-20
+Architecture Cleanup session); `docs/api/_build_current_api_docs.py` is a
+clean, well-structured generator that reads only `backend/docs/swagger.json`/
+`v2/v2_swagger.json`/the legacy builder and writes only `docs/api/*.md`, and
+the regenerated docs read as accurate — but authorship is still unconfirmed,
+so nothing was executed, staged further, or committed. The five existing
+local commits were reviewed via `git show --stat` only: each has a
+single-purpose, non-overlapping file set matching its commit message: no
+scope-creep or correctness concern found. Full detail and the exact
+disposition table are in `TASKS.md`'s new Phase 1 section.
+
+**Phase 2 — P0-A dispatched, P0-B/C/D queued:** grep/read investigation (this
+session, before any delegation) confirmed the 2026-07-17 merge-review finding
+still reproduces in current code: `resolvePortfolioByCode`
+(`portfolio_v2_handler.go:46-71`) only calls `hasFundAccess` when its checker
+argument is non-nil, and `portfolio_v2_decision_handler.go` (5 sites) plus
+`portfolio_v2_execution_handler.go` (5 sites, split across `*ExecutionHandler`
+and `*TradeConfirmationHandler`) all pass a literal `nil`. Root cause:
+`DecisionHandler`/`ExecutionHandler`/`TradeConfirmationHandler` have no
+permission-checker field at all — `module.go:219-229` wires them only via
+`SetPortfolioRepository`/etc. The correct pattern already exists twice in
+the same file to copy (`InvestmentHandler`'s constructor-injected
+`m.permissionAdapter`, and `m.decisionBatchCmd.SetPermissionChecker(iamPort)`
+as a post-construction setter precedent). Exact acceptance criteria are
+recorded in `TASKS.md` under P0-A; dispatched to `frontier-backend-engineer`
+as a single writer with independent review required before any commit.
+P0-B (demo migration cleanup), P0-C (fill validation), and P0-D (compliance
+binding auditability) are queued in `TASKS.md`, not yet started.
+
+**Phase 3 — Thai SEC product-regime decision memo:** drafted
+`docs/compliance/thai-sec-product-regime-decision-memo.md` from the existing
+approved source map (`docs/compliance/thai-sec-regulatory-source-map.md`,
+verified 2026-07-15) plus `AIREAD.md`'s business description. It recommends
+retail mutual fund as the first regime (carrying forward the source map's own
+2026-07-15 recommendation), conditioned explicitly on Kanta/compliance
+confirming that matches the real licensed business — no regime is selected by
+this memo, no threshold is proposed, and `regulatory.thai_sec` is untouched.
+Ambiguities requiring legal interpretation, a draft (unapproved) source-to-
+rule skeleton, and the exact two required sign-offs are listed in the memo.
+
+**Phase 4 — Oracle migration 20260615000003 investigation (read-only, source
+only; no production access available this session):** read
+`20260615000003_workflow__global_business_date.up.sql`/`.down.sql` and the
+migration runner (`backend/platform/database/migrate.go`,
+`backend/cmd/migrate/main.go`, both using `golang-migrate/migrate/v4` with
+the Postgres driver — "Oracle" is confirmed to be a deployment nickname, not
+a literal Oracle database; the repository is exclusively PostgreSQL per
+`CLAUDE.md`). The up migration's `DO $$ ... END $$` block checks for duplicate
+`business_date` rows in `workflow__day_states` and `RAISE EXCEPTION`s before
+any `ALTER TABLE` statement runs; golang-migrate's Postgres driver wraps a
+migration file's entire body in one transaction by default. **Most likely
+state class from code alone (state #1 in the matrix below), not confirmed
+against the real database:** `schema_migrations` records version
+`20260615000003` with `dirty=true` (set before the run, never cleared because
+the run errored), while the transactional rollback means none of the four
+DDL changes (nullable `contract_id` x3, unique-constraint swap, new index)
+were actually applied — i.e., the physical schema most likely still matches
+the prior migration's shape. This is an inference from source, not a
+verified fact; no production connection, log, or query was available or used
+this session. Prior sessions record only secondhand knowledge ("the latest
+observed container restart loop reported dirty database version
+20260615000003") with no captured query output or log excerpt.
+
+**State matrix and forward-repair runbook (proposed, not executed):**
+
+1. **Dirty metadata, no relevant DDL applied (most likely per source
+   analysis above).** Prerequisite: full `pg_dump` schema+data backup of the
+   affected tables before touching anything. Validation:
+   `SELECT version, dirty FROM schema_migrations;`;
+   `SELECT is_nullable FROM information_schema.columns WHERE table_name IN
+   ('workflow__day_states','workflow__transition_log','workflow__approval_records')
+   AND column_name='contract_id';` (expect `NO` in this state);
+   `SELECT conname FROM pg_constraint WHERE conrelid =
+   'workflow__day_states'::regclass;` (expect `uq_wf_day_states_contract_date`
+   still present, `uq_wf_day_states_business_date` absent);
+   `SELECT indexname FROM pg_indexes WHERE indexname =
+   'idx_wf_transition_log_business_date';` (expect no row);
+   `SELECT business_date, count(*) FROM workflow__day_states GROUP BY
+   business_date HAVING count(*) > 1;` (this is almost certainly why the
+   migration raised — expect >=1 row). Safest repair: resolve the duplicate
+   `business_date` rows first (workflow/domain owner decides the canonical
+   row per date; do not delete without an audit trail), re-run `migrate up`
+   normally (do not `force`) once duplicates are gone — golang-migrate will
+   retry version `20260615000003` cleanly from the dirty state as long as the
+   physical schema truly matches the pre-migration shape. Rollback
+   implication: none, because nothing was physically applied. Post-repair
+   checks: re-run all four validation queries above expecting the
+   post-migration shape, confirm `dirty=false`, run
+   `go vet -tags e2e ./tests/e2e/...` compile check and the workflow test
+   suite against a disposable database seeded from a prod-shaped dump.
+   Approvals required: workflow/domain owner (duplicate-row resolution),
+   DBA (backup + repair execution), production approver (deployment restart).
+
+2. **Partially applied nullability changes only** (would mean the Postgres
+   driver did *not* wrap the file in one transaction, or a prior manual
+   intervention ran statements individually). Validation: same
+   `information_schema.columns` query as above; if `contract_id` is
+   `YES`-nullable on some but not all three tables, or nullable while the old
+   `uq_wf_day_states_contract_date` constraint is still present, this state
+   applies. Safest repair: do not `force` a version; manually complete the
+   remaining `ALTER COLUMN ... DROP NOT NULL` statements one at a time inside
+   a DBA-supervised transaction, re-validate, then let `migrate up` proceed
+   with the constraint/index portion only if it can detect it's not yet
+   applied (may require a corrective forward migration rather than reusing
+   `20260615000003` — do not edit an applied migration file). Rollback:
+   partially reversible per-column; get workflow-owner sign-off before
+   re-adding `NOT NULL` since data may already rely on nulls. Approvals:
+   DBA + workflow owner + production approver, plus a corrective-migration
+   design review before writing it.
+
+3. **Old uniqueness removed but global uniqueness not installed.**
+   Validation: `uq_wf_day_states_contract_date` absent AND
+   `uq_wf_day_states_business_date` absent from
+   `pg_constraint`/`workflow__day_states`. This is the most dangerous state —
+   the table currently has **no uniqueness protection at all** on
+   `(contract_id, business_date)` or `(business_date)`. Immediate mitigation:
+   treat as urgent even before full repair — application-level writes should
+   be paused or a temporary advisory lock/careful monitoring added if the
+   backend is live against this database, because concurrent writers could
+   insert conflicting day-state rows with zero DB-level protection.
+   Prerequisite: backup, then run the duplicate-date query immediately. If
+   clean, add `uq_wf_day_states_business_date` directly (`ADD CONSTRAINT ...
+   UNIQUE (business_date)`) via a corrective migration; if duplicates exist,
+   resolve them first under workflow-owner supervision. Rollback: re-adding
+   the old constraint requires confirming no legitimate multi-contract-same-
+   date rows were created during the unprotected window. Approvals: DBA +
+   workflow owner + production approver, treated as expedited given the live
+   data-integrity exposure.
+
+4. **Global uniqueness and index already installed (migration actually
+   succeeded; only the dirty flag is stuck).** Validation: all four
+   validation queries above show the fully-migrated shape (`contract_id`
+   nullable x3, `uq_wf_day_states_business_date` present,
+   `idx_wf_transition_log_business_date` present) but
+   `schema_migrations.dirty = true`. Safest repair: this is the one state
+   where `migrate force 20260615000003` (to clear the dirty bit without
+   re-running DDL) is the standard golang-migrate remedy — but per the
+   owner's explicit prohibition, this session does not execute it; it is
+   listed here only as the documented safe action for the DBA/production
+   approver to run themselves after confirming this exact state.
+   Prerequisite: backup (cheap, no schema change expected). Rollback: none
+   needed. Approvals: DBA/production approver confirm the four schema checks
+   before forcing.
+
+5. **Duplicate business dates blocking the migration (the DO block's own
+   detection).** Validation: the `GROUP BY business_date HAVING count(*) > 1`
+   query above returns rows. This can coexist with state 1 (most likely) or
+   state 3. Repair is the same duplicate-resolution step described in states
+   1 and 3: the workflow/domain owner picks the canonical row per duplicated
+   business date (e.g., by transition history / most-advanced state), any
+   other row is archived (not silently deleted) with an audit trail before
+   uniqueness is added. This must not be automated by an agent without
+   workflow-owner review of each duplicate.
+
+6. **Metadata and physical schema disagree in some other way not covered by
+   1-5** (e.g., version recorded but a *different* migration's DDL is
+   missing, suggesting an out-of-band manual change). Validation: run all
+   four schema queries plus `SELECT version FROM schema_migrations;` and
+   compare against the full ordered migration file list in
+   `database/migrations/`; look for any gap between what the version number
+   implies and what physically exists. Safest repair: full DBA-led schema
+   diff against a freshly migrated disposable database from the last known-
+   good version, not a guess; likely requires a bespoke corrective migration
+   designed jointly by the DBA and workflow/domain owner. No repair should
+   proceed until this comparison is complete.
+
+**Explicitly not done, per the brief's constraints:** no `migrate force`, no
+edit to `schema_migrations`, no execution of the up or down SQL, no
+constraint/index/nullability change, no data deletion/merge, no production
+container restart, no deployment rerun, no push. Production remains NO-GO
+until a DBA/workflow-owner/production-approver team runs the validation
+queries above against the real database, confirms which state applies, and
+approves the matching repair path.
+
+**P0-A completed and committed as `67efe71`** (same session, same day). The
+`frontier-backend-engineer` worker implemented the fix in an isolated
+worktree (`.claude/worktrees/agent-a85d22ca515e2d197`, branch
+`worktree-agent-a85d22ca515e2d197`) exactly as scoped: added a `pc
+contract.PermissionChecker` field + `SetPermissionChecker` setter to
+`DecisionHandler`, `ExecutionHandler`, `TradeConfirmationHandler`; wired
+`module.go` to call `SetPermissionChecker(m.permissionAdapter)`
+unconditionally for all three (verified: `m.permissionAdapter` is always
+non-nil and its `HasDataPermission`/etc. methods fail closed even if the
+wrapped `iamPort` is nil); fixed all 10 call sites from a literal `nil` to
+`h.pc`; added 20 new tests (2 per endpoint — authorized-passes-gate,
+cross-fund-403) in a new `portfolio_v2_fund_scope_test.go`.
+
+**Manager independent verification (before any commit):** re-read the full
+diff and every changed/new file myself (not just the worker's summary), then
+independently ran `go build ./...`, `go vet ./...` (both clean) and `go test
+./internal/investment/... -count=1` (all 10 investment sub-packages `ok`) in
+the isolated worktree — matching, not just trusting, the worker's claimed
+results.
+
+**Independent security review (separate fresh agent, given only the raw
+diff + acceptance criteria, not this manager's conclusions):** re-derived
+the vulnerability from source (confirmed the pre-fix `pc != nil &&
+!hasFundAccess(...)` truly no-ops on nil), traced the `module.go` wiring
+end-to-end including `PermissionCheckerAdapter`'s actual fail-closed
+implementation (not just its doc comment), grepped the whole
+`internal/investment` tree for any missed call site or alternate
+portfolio-code-resolving path (none found), manually traced source for at
+least 3 of the 10 endpoints to confirm the JSON-decode-after-permission-check
+ordering claims and the `SubmitDecisionByCode` real-lifecycle-rejection
+claim, and independently ran the full build/vet/test gate. **Result: no
+blocking findings.** One non-blocking hardening note was raised (the shared
+resolver still silently no-ops on a nil checker; the guarantee is wiring
+convention, not a structural impossibility) — logged in `TASKS.md` as
+deferred, not silently dropped.
+
+**Manager error caught and corrected during integration:** the fix was
+implemented in an isolated worktree without committing; the manager copied
+the 8 changed/new files into the main working tree (verified first that
+those exact 8 paths were byte-identical between the worktree's older base
+commit and current `neo-develop` HEAD, so no rebase/merge was needed),
+re-ran the full independent verification in the real working tree (`go
+build`, `go vet`, full `go test ./... -count=1` — 81 packages, zero `FAIL`;
+`gofmt -l` clean; `git diff --check` clean), then ran `git commit` **without
+a pathspec**, which committed the entire index — including the 10
+pre-existing staged `docs/api`/Bruno-execution paths Phase 1 had explicitly
+decided to hold. This was caught immediately by inspecting `git show --stat`
+on the new commit (18 files instead of 8) before reporting anything to
+Kanta. Corrected via `git reset --soft HEAD~1` (safe: unpushed, at the tip,
+created by this session moments earlier, nothing built on top) followed by
+`git commit -- <8 files>` with an explicit pathspec. Final commit `67efe71`
+contains exactly the 8 P0-A files; `git status` afterward reconfirmed the
+other 15 paths returned to their exact pre-commit staged/unstaged state.
+**Lesson for future sessions: always pass an explicit pathspec (`--
+<files>`) to `git commit` in this repository given the persistent held
+working-tree state — never rely on "only what I just `git add`ed" being the
+entire index.**
+
+`neo-develop` is now 6 commits ahead of `origin/neo-develop`
+(`8d43747`..`67efe71`). Nothing pushed.
+
+**Next action:** (1) Kanta reviews commit `67efe71` and the deferred
+hardening note, and decides whether to authorize P0-B (demo migration
+cleanup) to start next; (2) Kanta or a delegate runs the Phase 4 validation
+queries against the real production database (read-only) and reports
+results so the correct state/runbook row can be confirmed; (3) Kanta or the
+designated compliance expert reviews
+`thai-sec-product-regime-decision-memo.md` and either confirms retail mutual
+fund or selects a different first regime; (4) `docs/api/`/Bruno-execution
+provenance is confirmed before any of those 15 held paths are committed.
 
 ## Session: Local Investment Integration Commits on neo-develop (2026-07-21)
 
@@ -867,8 +1940,12 @@ large pre-existing dirty/untracked worktree remains and must be preserved.
 
 ## Session: P2 Reprioritization and Thai SEC Source Discovery (2026-07-15, IMS-REG-TH-SEC)
 
-**Owner decision:** do not develop optional fund association. The former P1
-feature and its seven open checkboxes were removed from the active backlog.
+**Historical owner decision, superseded 2026-07-24 by D1 `FUND_OPTIONAL`:**
+at this 2026-07-15 checkpoint the direction was not to develop optional fund
+association. Do not treat this historical session as current product policy.
+The former P1
+feature and its seven open checkboxes were removed from the active backlog at
+that time.
 Real Portfolio Regulation Rules are now the only `IN PROGRESS` manager task;
 Architecture Cleanup remains queued immediately after it. The cleanup item that
 renames legacy compliance `ContractID` is scope clarification only and must not

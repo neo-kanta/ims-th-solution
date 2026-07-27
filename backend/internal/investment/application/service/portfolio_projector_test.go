@@ -306,7 +306,7 @@ func securityTxn(portfolioID, instrumentID uuid.UUID, typ vo.TransactionType, qt
 	return &entity.PortfolioTransaction{
 		ID:              uuid.New(),
 		PortfolioID:     portfolioID,
-		FundID:          uuid.New(),
+		FundID:          func() *uuid.UUID { v := uuid.New(); return &v }(),
 		InstrumentID:    &instrumentID,
 		TransactionType: typ,
 		Quantity:        &q,
@@ -325,7 +325,7 @@ func cashTxn(portfolioID uuid.UUID, typ vo.TransactionType, net string, business
 	return &entity.PortfolioTransaction{
 		ID:              uuid.New(),
 		PortfolioID:     portfolioID,
-		FundID:          uuid.New(),
+		FundID:          func() *uuid.UUID { v := uuid.New(); return &v }(),
 		TransactionType: typ,
 		Currency:        "THB",
 		GrossAmount:     dec(net),

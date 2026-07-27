@@ -20,7 +20,8 @@ import (
 
 // CreateDecisionRequest is the input for creating a brand-new DRAFT decision.
 type CreateDecisionRequest struct {
-	FundID           uuid.UUID
+	// FundID is nil for a decision on a fund-less portfolio.
+	FundID           *uuid.UUID
 	PortfolioID      uuid.UUID
 	InstrumentID     *uuid.UUID
 	InstrumentCode   string
@@ -236,7 +237,7 @@ func (h *DecisionCommandHandler) Create(ctx context.Context, req CreateDecisionR
 		ResourceID:   d.ID.String(),
 		Details: map[string]any{
 			"decision_number": d.DecisionNumber,
-			"fund_id":         d.FundID.String(),
+			"fund_id":         d.FundID,
 			"side":            string(d.Side),
 			"instrument_code": d.InstrumentCode,
 			"business_date":   d.BusinessDate.Format("2006-01-02"),
@@ -369,9 +370,10 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		}
 	}
 
-	// Workflow gate — refuse to submit when the day is closed or locked.
-	if h.workflow != nil {
-		allowed, err := h.workflow.IsTradeAllowed(ctx, d.FundID, d.BusinessDate)
+	// Workflow gate — refuse to submit when the day is closed or locked. A
+	// fund-less decision has no fund-scoped business day to check.
+	if h.workflow != nil && d.FundID != nil {
+		allowed, err := h.workflow.IsTradeAllowed(ctx, *d.FundID, d.BusinessDate)
 		if err != nil {
 			return nil, fmt.Errorf("checking workflow trade gate: %w", err)
 		}
@@ -386,8 +388,8 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 
 	// Config-driven report gate: if the fund requires a research report for
 	// decision submission, a report must be linked before proceeding.
-	if h.funds != nil && d.FundID != uuid.Nil {
-		fund, err := h.funds.GetByID(ctx, d.FundID)
+	if h.funds != nil && d.FundID != nil {
+		fund, err := h.funds.GetByID(ctx, *d.FundID)
 		if err != nil {
 			return nil, fmt.Errorf("loading fund for report gate: %w", err)
 		}
@@ -400,6 +402,14 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		}
 	}
 
+	// contractID stays uuid.Nil for a fund-less decision — every downstream
+	// contract-scoped check here (report reference, compliance) already
+	// treats uuid.Nil as "no contract scope applies" rather than an error.
+	contractID := uuid.Nil
+	if d.FundID != nil {
+		contractID = *d.FundID
+	}
+
 	// Reference rule enforcement runs before the compliance check so that a
 	// releasable-BLOCK path also validates the linked report. The compliance
 	// early-return at line ~476 would otherwise skip this check.
@@ -410,7 +420,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		}
 		violation := policy.CanReferenceResearchReport(policy.ReportReferenceInput{
 			Report:       rep,
-			ContractID:   d.FundID,
+			ContractID:   contractID,
 			Side:         d.Side,
 			BusinessDate: d.BusinessDate,
 		})
@@ -451,7 +461,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
 			CheckGroupID: checkGroupID,
 			PortfolioID:  d.PortfolioID,
-			ContractID:   d.FundID,
+			ContractID:   contractID,
 			BusinessDate: d.BusinessDate,
 			Actor:        actorID.String(),
 			OrderID:      d.ID,
@@ -523,7 +533,6 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 			// first; only persist the status change after the submission succeeds.
 			// If submission fails the decision stays in DRAFT and can be retried.
 			nowCR := h.now()
-			ctrID := d.FundID
 			res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
 				ProcessType:      "COMPLIANCE_RELEASE",
 				SubjectType:      "COMPLIANCE_RELEASE",
@@ -531,7 +540,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 				SubjectTitle:     fmt.Sprintf("Compliance Release — %s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
 				SubjectReference: d.DecisionNumber,
 				ContractType:     "FUND",
-				ContractID:       &ctrID,
+				ContractID:       d.FundID,
 				PortfolioID:      &d.PortfolioID,
 				SubmitterID:      actorID,
 			})
@@ -567,11 +576,10 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 		// PASS and WARN both continue to the investment decision approval engine.
 	}
 
-	// Submit through approval engine when wired.
+	// Submit through approval engine when wired. ContractID is nil for a
+	// fund-less decision — the approval engine's contract-scope check
+	// already tolerates a nil ContractID (see other ContractType usages).
 	if h.approval != nil {
-		// Decisions are always fund-scoped: fund_id is required at create and
-		// NOT NULL in the DB.
-		fundID := d.FundID
 		res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
 			ProcessType:      "INVESTMENT_DECISION",
 			SubjectType:      "INVESTMENT_DECISION",
@@ -579,7 +587,7 @@ func (h *DecisionCommandHandler) Submit(ctx context.Context, decisionID, actorID
 			SubjectTitle:     fmt.Sprintf("%s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
 			SubjectReference: d.DecisionNumber,
 			ContractType:     "FUND",
-			ContractID:       &fundID,
+			ContractID:       d.FundID,
 			PortfolioID:      &d.PortfolioID,
 			SubmitterID:      actorID,
 		})
@@ -772,9 +780,10 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 		return nil
 	}
 	// Compliance release approved — re-validate before re-submitting to the
-	// investment decision approval engine.
-	if h.workflow != nil {
-		allowed, wfErr := h.workflow.IsTradeAllowed(ctx, d.FundID, d.BusinessDate)
+	// investment decision approval engine. No fund-scoped business day to
+	// check for a fund-less decision.
+	if h.workflow != nil && d.FundID != nil {
+		allowed, wfErr := h.workflow.IsTradeAllowed(ctx, *d.FundID, d.BusinessDate)
 		if wfErr != nil {
 			return fmt.Errorf("checking workflow trade gate: %w", wfErr)
 		}
@@ -791,9 +800,13 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 		if repErr != nil {
 			return fmt.Errorf("loading research report during compliance release: %w", repErr)
 		}
+		reportContractID := uuid.Nil
+		if d.FundID != nil {
+			reportContractID = *d.FundID
+		}
 		violation := policy.CanReferenceResearchReport(policy.ReportReferenceInput{
 			Report:       rep,
-			ContractID:   d.FundID,
+			ContractID:   reportContractID,
 			Side:         d.Side,
 			BusinessDate: d.BusinessDate,
 		})
@@ -808,9 +821,6 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 	if h.approval == nil {
 		return fmt.Errorf("approval engine not wired; cannot continue decision %s after compliance release", decisionID)
 	}
-	// Decisions are always fund-scoped: fund_id is required at create and
-	// NOT NULL in the DB.
-	fundID := d.FundID
 	res, err := h.approval.SubmitForApproval(ctx, contract.ApprovalSubmission{
 		ProcessType:      "INVESTMENT_DECISION",
 		SubjectType:      "INVESTMENT_DECISION",
@@ -818,7 +828,7 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 		SubjectTitle:     fmt.Sprintf("%s %s %s", d.Side, d.InstrumentCode, d.DecisionNumber),
 		SubjectReference: d.DecisionNumber,
 		ContractType:     "FUND",
-		ContractID:       &fundID,
+		ContractID:       d.FundID,
 		PortfolioID:      &d.PortfolioID,
 		SubmitterID:      d.SubmitterUserID,
 	})
@@ -854,9 +864,6 @@ func (h *DecisionCommandHandler) ApplyComplianceReleaseDecision(ctx context.Cont
 func validateCreateDecision(req CreateDecisionRequest) error {
 	if req.ActorID == uuid.Nil {
 		return &domain.ErrInvalidDecisionRequest{Field: "actor_id", Detail: "is required"}
-	}
-	if req.FundID == uuid.Nil {
-		return &domain.ErrInvalidDecisionRequest{Field: "fund_id", Detail: "is required"}
 	}
 	if req.PortfolioID == uuid.Nil {
 		return &domain.ErrInvalidDecisionRequest{Field: "portfolio_id", Detail: "is required"}

@@ -97,8 +97,9 @@ func (r *stubConfirmationRepo) GetByBrokerReference(context.Context, string) (*e
 }
 
 func newOwnedPortfolioRepo(code string, portfolioID uuid.UUID) *stubPortfolioRepo {
+	fundID := uuid.New()
 	return &stubPortfolioRepo{byCode: map[string]*entity.Portfolio{
-		code: {ID: portfolioID, Code: code, FundID: uuid.New()},
+		code: {ID: portfolioID, Code: code, FundID: &fundID},
 	}}
 }
 

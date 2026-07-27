@@ -73,11 +73,11 @@ func (r *PostgresDecisionRepository) GetByDecisionNumber(ctx context.Context, de
 func (r *PostgresDecisionRepository) FindDecisionSubjectRefByNumber(ctx context.Context, decisionNumber string) (*domain.DecisionSubjectRef, error) {
 	var ref domain.DecisionSubjectRef
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, decision_number, fund_id, approval_request_id
+		`SELECT id, decision_number, fund_id, portfolio_id, approval_request_id
 		   FROM investment__decisions
 		  WHERE decision_number = $1`,
 		decisionNumber,
-	).Scan(&ref.DecisionID, &ref.DecisionNumber, &ref.FundID, &ref.ApprovalRequestID)
+	).Scan(&ref.DecisionID, &ref.DecisionNumber, &ref.FundID, &ref.PortfolioID, &ref.ApprovalRequestID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

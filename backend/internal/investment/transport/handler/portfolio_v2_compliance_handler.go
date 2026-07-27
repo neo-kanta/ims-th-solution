@@ -32,15 +32,14 @@ import (
 // "no fund_id" branch is unreachable via production data but is exercised by
 // unit tests against fakes.
 
-// portfolioFundID returns p.FundID, or uuid.Nil if the portfolio has no fund.
-// entity.Portfolio.FundID is not currently a pointer (fund_id is NOT NULL in
-// the DB), so this is a defensive no-op today; it exists so this file needs
-// no changes when fund_id becomes optional.
+// portfolioFundID returns p.FundID, or uuid.Nil if the portfolio has no fund
+// (either p itself is nil, or it's a fund-less portfolio created with
+// "Bind with Fund: N").
 func portfolioFundID(p *entity.Portfolio) uuid.UUID {
-	if p == nil {
+	if p == nil || p.FundID == nil {
 		return uuid.Nil
 	}
-	return p.FundID
+	return *p.FundID
 }
 
 // writePortfolioComplianceError classifies pkg/contract sentinel errors

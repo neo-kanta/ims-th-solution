@@ -158,7 +158,13 @@ async function reloadAfterConflict() {
           </label>
           <label class="portfolio-settings__field">
             <span>{{ t("portfolio.settingsPage.fields.riskProfile") }}</span>
-            <input v-model="form.values.value.risk_profile" type="text" :disabled="form.busy.value" />
+            <select v-model="form.values.value.risk_profile" :disabled="form.busy.value">
+              <option value="">{{ t("portfolio.create.fields.riskProfile.placeholder") }}</option>
+              <option value="LOW">{{ t("portfolio.create.fields.riskProfile.options.low") }}</option>
+              <option value="MEDIUM">{{ t("portfolio.create.fields.riskProfile.options.medium") }}</option>
+              <option value="HIGH">{{ t("portfolio.create.fields.riskProfile.options.high") }}</option>
+              <option value="SPECULATIVE">{{ t("portfolio.create.fields.riskProfile.options.speculative") }}</option>
+            </select>
           </label>
           <label class="portfolio-settings__field">
             <span>{{ t("portfolio.settingsPage.fields.strategyCode") }}</span>

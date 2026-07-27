@@ -37,6 +37,13 @@ func Created(w http.ResponseWriter, data interface{}) {
 	JSON(w, http.StatusCreated, SuccessResponse{Data: data})
 }
 
+// Accepted writes a 202 JSON response with the given data. Used when a request
+// was accepted for asynchronous processing (e.g. staged for approval) rather
+// than fully applied.
+func Accepted(w http.ResponseWriter, data interface{}) {
+	JSON(w, http.StatusAccepted, SuccessResponse{Data: data})
+}
+
 // NoContent writes a 204 response with no body.
 func NoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)

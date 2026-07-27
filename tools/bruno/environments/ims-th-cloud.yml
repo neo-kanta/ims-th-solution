@@ -255,6 +255,10 @@ variables:
   value: Cancelled from Bruno after validation test.
 - name: investment-decision-reject-reason
   value: Rejected from Bruno batch action after validation test.
+- name: investment-execution-id
+  value: ""
+- name: investment-trade-confirmation-id
+  value: ""
 - name: compliance-base-url
   value: '{{base-url}}compliance'
 - name: compliance-portfolio-id
@@ -375,6 +379,10 @@ variables:
   value: Approved from Bruno.
 - name: approval-reason
   value: Revoked from Bruno for rework.
+- name: approval-sync-failure-id
+  value: ""
+- name: approval-sync-failure-status
+  value: PENDING
 - name: chat-base-url
   value: '{{base-url}}chat'
 - name: chat-session-id

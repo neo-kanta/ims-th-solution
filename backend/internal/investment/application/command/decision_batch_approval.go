@@ -16,6 +16,16 @@ type BatchPermissionChecker interface {
 	HasDataPermission(ctx context.Context, userID string, scopeID string) (bool, error)
 }
 
+// refScopeID returns the data-permission scope id for a decision subject
+// ref: its fund when bound to one, or its owning portfolio's id for a
+// fund-less decision — mirrors portfolioScopeID in the transport layer.
+func refScopeID(ref *domain.DecisionSubjectRef) uuid.UUID {
+	if ref.FundID != nil {
+		return *ref.FundID
+	}
+	return ref.PortfolioID
+}
+
 // BatchApproveRequest is the input for approving multiple decision headers.
 type BatchApproveRequest struct {
 	DecisionNos []string
@@ -100,7 +110,7 @@ func (h *DecisionBatchApprovalHandler) BatchApprove(ctx context.Context, req Bat
 		// Unauthorized callers receive the same "not found" response as for a
 		// nonexistent decision so they cannot infer existence from error type.
 		if h.perms != nil {
-			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.FundID.String())
+			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), refScopeID(ref).String())
 			if permErr != nil || !ok {
 				res.Error = "decision not found"
 				results = append(results, res)
@@ -148,7 +158,7 @@ func (h *DecisionBatchApprovalHandler) BatchReject(ctx context.Context, req Batc
 			continue
 		}
 		if h.perms != nil {
-			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), ref.FundID.String())
+			ok, permErr := h.perms.HasDataPermission(ctx, req.ActorID.String(), refScopeID(ref).String())
 			if permErr != nil || !ok {
 				res.Error = "decision not found"
 				results = append(results, res)

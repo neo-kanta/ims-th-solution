@@ -34,6 +34,38 @@ func (e *ErrTransactionNotFound) Error() string {
 	return fmt.Sprintf("investment transaction not found: %s", e.TransactionID)
 }
 
+// ErrCashRequestNotFound signals a cash-request lookup miss.
+type ErrCashRequestNotFound struct{ RequestID string }
+
+func (e *ErrCashRequestNotFound) Error() string {
+	return fmt.Sprintf("cash request not found: %s", e.RequestID)
+}
+
+// ErrCashRequestNotCancellable signals a cancel attempt on a request that is
+// no longer PENDING.
+type ErrCashRequestNotCancellable struct {
+	RequestID     string
+	CurrentStatus string
+}
+
+func (e *ErrCashRequestNotCancellable) Error() string {
+	return fmt.Sprintf("cash request %s cannot be cancelled from status %s", e.RequestID, e.CurrentStatus)
+}
+
+// ErrCashRequestForbidden signals that the actor is not authorised to act on
+// the cash request (e.g. cancel by a non-submitter). Maps to HTTP 403.
+type ErrCashRequestForbidden struct {
+	RequestID string
+	Reason    string
+}
+
+func (e *ErrCashRequestForbidden) Error() string {
+	if e.Reason == "" {
+		return fmt.Sprintf("not authorised to act on cash request %s", e.RequestID)
+	}
+	return fmt.Sprintf("not authorised to act on cash request %s: %s", e.RequestID, e.Reason)
+}
+
 // ErrPostPreconditionFailed wraps a violation enum from the policy layer.
 type ErrPostPreconditionFailed struct {
 	Violation string

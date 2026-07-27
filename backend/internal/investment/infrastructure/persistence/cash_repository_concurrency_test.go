@@ -117,7 +117,7 @@ func TestIntegrationCashRepositoryConcurrentFirstInsertRetry(t *testing.T) {
 				txn := &entity.PortfolioTransaction{
 					ID:              uuid.New(),
 					PortfolioID:     portfolioID,
-					FundID:          uuid.New(),
+					FundID:          func() *uuid.UUID { v := uuid.New(); return &v }(),
 					InstrumentID:    nil,
 					TransactionType: vo.TransactionTypeCashIn,
 					Quantity:        nil,

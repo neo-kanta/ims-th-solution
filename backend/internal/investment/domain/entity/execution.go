@@ -14,9 +14,10 @@ import (
 // with a real OMS, so the broker-side bookkeeping is the responsibility of the
 // downstream trade confirmation aggregate.
 type Execution struct {
-	ID                 uuid.UUID
-	DecisionID         uuid.UUID
-	FundID             uuid.UUID
+	ID         uuid.UUID
+	DecisionID uuid.UUID
+	// FundID is nil for an execution on a fund-less portfolio.
+	FundID             *uuid.UUID
 	PortfolioID        uuid.UUID
 	InstrumentID       *uuid.UUID
 	InstrumentCode     string

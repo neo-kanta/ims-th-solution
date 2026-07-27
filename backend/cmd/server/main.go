@@ -176,11 +176,13 @@ func main() {
 	approvalModule.RegisterSubjectCallback("RESEARCH_REPORT", investmentModule.ApprovalSubjectCallback())
 	approvalModule.RegisterSubjectCallback("INVESTMENT_DECISION", investmentModule.DecisionApprovalSubjectCallback())
 	approvalModule.RegisterSubjectCallback("COMPLIANCE_RELEASE", investmentModule.ComplianceReleaseSubjectCallback())
+	approvalModule.RegisterSubjectCallback("CASH_TRANSACTION", investmentModule.CashRequestApprovalSubjectCallback())
 	// PORTFOLIO approval is deferred (Option A): PortfolioApprovalCallback exists but is not
 	// registered until the subject access adapter supports PORTFOLIO (see docs/handoff/approval-subject-access-port.md).
 	approvalModule.RegisterSubjectValidator("RESEARCH_REPORT", investmentModule.ResearchReportSubjectValidator())
 	approvalModule.RegisterSubjectValidator("INVESTMENT_DECISION", investmentModule.DecisionSubjectValidator())
 	approvalModule.RegisterSubjectValidator("COMPLIANCE_RELEASE", investmentModule.ComplianceReleaseSubjectValidator())
+	approvalModule.RegisterSubjectValidator("CASH_TRANSACTION", investmentModule.CashRequestSubjectValidator())
 
 	// Register per-subject-type access ports so the approval engine enforces
 	// object-level authorisation without inspecting business-specific keys.
@@ -192,6 +194,7 @@ func main() {
 		approvalModule.RegisterSubjectAccessPort("RESEARCH_REPORT", investSubjectAccessor)
 		approvalModule.RegisterSubjectAccessPort("INVESTMENT_DECISION", investSubjectAccessor)
 		approvalModule.RegisterSubjectAccessPort("COMPLIANCE_RELEASE", investSubjectAccessor)
+		approvalModule.RegisterSubjectAccessPort("CASH_TRANSACTION", investSubjectAccessor)
 	} else {
 		slog.Warn("investment subject accessor is nil; approval subject access ports not registered — approval reads will fail closed")
 	}

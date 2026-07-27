@@ -16,9 +16,10 @@ import (
 	"github.com/neo-kanta/ims-th-solution/backend/pkg/contract"
 )
 
-// CreatePortfolioRequest creates a new Portfolio under an existing Fund.
+// CreatePortfolioRequest creates a new Portfolio, optionally under an
+// existing Fund. FundID is nil for a fund-less portfolio ("Bind with Fund: N").
 type CreatePortfolioRequest struct {
-	FundID            uuid.UUID
+	FundID            *uuid.UUID
 	PortfolioType     vo.PortfolioType
 	Code              string
 	Name              string
@@ -85,11 +86,10 @@ func (h *PortfolioCommandHandler) SetStatusHistoryRepository(r domain.PortfolioS
 	}
 }
 
-// Create persists a new Portfolio. (FundID, Code) must be unique among alive rows.
+// Create persists a new Portfolio. When FundID is set, (FundID, Code) must be
+// unique among alive rows. When FundID is nil (fund-less portfolio), only the
+// global code-uniqueness check applies.
 func (h *PortfolioCommandHandler) Create(ctx context.Context, req CreatePortfolioRequest) (*entity.Portfolio, error) {
-	if req.FundID == uuid.Nil {
-		return nil, &domain.ErrInvalidDecisionRequest{Field: "fund_id", Detail: "is required"}
-	}
 	if req.Code == "" || req.Name == "" || req.BaseCurrency == "" || req.ValuationCurrency == "" {
 		return nil, &domain.ErrInvalidDecisionRequest{Field: "code/name/currencies", Detail: "are required"}
 	}
@@ -97,23 +97,25 @@ func (h *PortfolioCommandHandler) Create(ctx context.Context, req CreatePortfoli
 		return nil, &domain.ErrInvalidDecisionRequest{Field: "actor_id", Detail: "is required"}
 	}
 
-	fund, err := h.funds.GetByID(ctx, req.FundID)
-	if err != nil {
-		return nil, fmt.Errorf("loading fund: %w", err)
-	}
-	if fund == nil {
-		return nil, &domain.ErrFundNotFound{FundID: req.FundID.String()}
-	}
-	if !fund.IsActive() {
-		return nil, &domain.ErrPostPreconditionFailed{Violation: "FUND_INACTIVE"}
-	}
+	if req.FundID != nil {
+		fund, err := h.funds.GetByID(ctx, *req.FundID)
+		if err != nil {
+			return nil, fmt.Errorf("loading fund: %w", err)
+		}
+		if fund == nil {
+			return nil, &domain.ErrFundNotFound{FundID: req.FundID.String()}
+		}
+		if !fund.IsActive() {
+			return nil, &domain.ErrPostPreconditionFailed{Violation: "FUND_INACTIVE"}
+		}
 
-	existing, err := h.portfolios.GetByFundCode(ctx, req.FundID, req.Code)
-	if err != nil {
-		return nil, fmt.Errorf("checking existing portfolio code: %w", err)
-	}
-	if existing != nil {
-		return nil, &domain.ErrCodeAlreadyExists{Resource: "portfolio", Code: req.Code}
+		existing, err := h.portfolios.GetByFundCode(ctx, *req.FundID, req.Code)
+		if err != nil {
+			return nil, fmt.Errorf("checking existing portfolio code: %w", err)
+		}
+		if existing != nil {
+			return nil, &domain.ErrCodeAlreadyExists{Resource: "portfolio", Code: req.Code}
+		}
 	}
 
 	// Belt-and-suspenders global uniqueness check. The database enforces

@@ -1,10 +1,13 @@
 -- =============================================================================
--- Ben investment operation-page access seed (idempotent)
+-- Ben investment operation-page access seed (development/test only, idempotent)
 -- =============================================================================
--- Migrations run before development users are seeded. Migration
--- 20260716000002 creates this dedicated least-privilege role and grants its
--- permissions; this seed ensures the role and Ben membership also exist after
--- a fresh migrate + seed or a later idempotent seed rerun.
+-- Formerly database/seeds/020_ben_operation_page_access_seed.sql. Migration
+-- 20260716000002 creates the dedicated least-privilege "Investment Operation
+-- Page Access" role and grants its permissions (reference, always runs); this
+-- seed ensures ben's role membership also exists after a fresh migrate + seed
+-- or a later idempotent seed rerun. This file is only executed when APP_ENV
+-- is development or test (see backend/cmd/seed/sql_seeds.go); it must never
+-- reach production.
 -- =============================================================================
 
 BEGIN;

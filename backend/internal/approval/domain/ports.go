@@ -151,8 +151,12 @@ const (
 // portfolio_id). Register one per subject type via
 // RuntimeService.RegisterSubjectAccessPort.
 //
-// All methods return nil for allow, non-nil for deny. When no port is
-// registered for a subject type the engine fails closed (ErrForbidden).
+// Return nil to allow. To deny, return an error that wraps
+// contract.ErrSubjectAccessDenied — the engine maps it to ErrForbidden (403).
+// Return a RAW (non-wrapping) error for infrastructure failures (nil
+// dependency, repository/IAM error, context timeout) so the engine surfaces a
+// 5xx instead of a spurious 403. When no port is registered for a subject type
+// the engine fails closed (ErrForbidden).
 type ApprovalSubjectAccessPort interface {
 	CanViewApprovalSubject(ctx context.Context, actorID uuid.UUID, subjectType vo.SubjectType, subjectID uuid.UUID) error
 	CanSubmitApprovalSubject(ctx context.Context, actorID uuid.UUID, subjectType vo.SubjectType, subjectID uuid.UUID) error

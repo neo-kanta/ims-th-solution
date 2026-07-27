@@ -18,6 +18,7 @@ import { useRouter } from "#imports";
 
 import AppButton from "~/shared/ui/AppButton.vue";
 import AppCard from "~/shared/ui/AppCard.vue";
+import AppCheckbox from "~/shared/ui/AppCheckbox.vue";
 import AppInput from "~/shared/ui/AppInput.vue";
 import AppSelect from "~/shared/ui/AppSelect.vue";
 import AppDateField from "~/shared/ui/AppDateField.vue";
@@ -26,7 +27,7 @@ import { useI18n } from "~/composables/useI18n";
 import { myFundsApi } from "~/features/my-funds/services/myFundsApi";
 import type { ApiFund } from "~/features/my-funds/types";
 import { usePortfolioCreateForm } from "./composables/usePortfolioCreateForm";
-import { PORTFOLIO_TYPES } from "./lib/portfolioCreateValidation";
+import { PORTFOLIO_TYPES, RISK_PROFILES, SUPPORTED_CURRENCIES } from "./lib/portfolioCreateValidation";
 import type { PortfolioCreateFieldError } from "./lib/portfolioCreateValidation";
 import type { PortfolioCreateErrorKind } from "./lib/portfolioCreateErrors";
 import { portfolioOverviewPath } from "./lib/portfolioRoutes";
@@ -81,6 +82,39 @@ const portfolioTypeOptions = computed(() =>
     label: portfolioTypeLabel(type),
   })),
 );
+
+const currencyOptions = computed(() =>
+  SUPPORTED_CURRENCIES.map((code) => ({ value: code, label: code })),
+);
+
+function riskProfileLabel(risk: (typeof RISK_PROFILES)[number]): string {
+  switch (risk) {
+    case "LOW":
+      return t("portfolio.create.fields.riskProfile.options.low");
+    case "MEDIUM":
+      return t("portfolio.create.fields.riskProfile.options.medium");
+    case "HIGH":
+      return t("portfolio.create.fields.riskProfile.options.high");
+    case "SPECULATIVE":
+      return t("portfolio.create.fields.riskProfile.options.speculative");
+    default:
+      return risk;
+  }
+}
+
+const riskProfileOptions = computed(() =>
+  RISK_PROFILES.map((risk) => ({ value: risk, label: riskProfileLabel(risk) })),
+);
+
+/** Unbinding clears any fund selection so a stale pick can't linger unseen
+ * behind the hidden field (buildPortfolioCreateRequest already omits
+ * fund_code when bindFund is false regardless, but this keeps form state
+ * consistent with what's visible). */
+function onBindFundToggle(bound: boolean) {
+  if (!bound) {
+    form.values.value.fund_code = "";
+  }
+}
 
 function fieldErrorMessage(code: PortfolioCreateFieldError | undefined): string {
   switch (code) {
@@ -200,8 +234,23 @@ function onCancel() {
       </div>
 
       <form class="portfolio-create__form" @submit.prevent="onSubmit">
+        <label class="portfolio-create__bind-fund" for="pc-bind-fund">
+          <AppCheckbox
+            id="pc-bind-fund"
+            v-model="form.values.value.bindFund"
+            :disabled="form.busy.value"
+            :label="t('portfolio.create.fields.bindFund.label')"
+            @update:model-value="onBindFundToggle"
+          />
+          <span class="portfolio-create__field-hint">{{ t("portfolio.create.fields.bindFund.help") }}</span>
+        </label>
+
         <div class="portfolio-create__grid">
-          <label class="portfolio-create__field" for="pc-fund-code">
+          <label
+            v-if="form.values.value.bindFund"
+            class="portfolio-create__field"
+            for="pc-fund-code"
+          >
             <span>{{ t("portfolio.create.fields.fundCode.label") }}</span>
             <AppSelect
               id="pc-fund-code"
@@ -275,9 +324,10 @@ function onCancel() {
 
           <label class="portfolio-create__field" for="pc-base-currency">
             <span>{{ t("portfolio.create.fields.baseCurrency.label") }}</span>
-            <AppInput
+            <AppSelect
               id="pc-base-currency"
               v-model="form.values.value.base_currency"
+              :options="currencyOptions"
               :placeholder="t('portfolio.create.fields.baseCurrency.placeholder')"
               :disabled="form.busy.value"
               :error="Boolean(form.fieldErrors.value.base_currency)"
@@ -289,9 +339,10 @@ function onCancel() {
 
           <label class="portfolio-create__field" for="pc-valuation-currency">
             <span>{{ t("portfolio.create.fields.valuationCurrency.label") }}</span>
-            <AppInput
+            <AppSelect
               id="pc-valuation-currency"
               v-model="form.values.value.valuation_currency"
+              :options="currencyOptions"
               :placeholder="t('portfolio.create.fields.valuationCurrency.placeholder')"
               :disabled="form.busy.value"
               :error="Boolean(form.fieldErrors.value.valuation_currency)"
@@ -323,9 +374,10 @@ function onCancel() {
 
           <label class="portfolio-create__field" for="pc-risk-profile">
             <span>{{ t("portfolio.create.fields.riskProfile.label") }}</span>
-            <AppInput
+            <AppSelect
               id="pc-risk-profile"
               v-model="form.values.value.risk_profile"
+              :options="riskProfileOptions"
               :placeholder="t('portfolio.create.fields.riskProfile.placeholder')"
               :disabled="form.busy.value"
             />
@@ -398,6 +450,16 @@ function onCancel() {
 .portfolio-create__form {
   display: grid;
   gap: var(--space-5, 20px);
+}
+
+.portfolio-create__bind-fund {
+  display: grid;
+  gap: 4px;
+  cursor: default;
+}
+
+.portfolio-create__bind-fund .portfolio-create__field-hint {
+  margin-left: calc(var(--space-2, 8px) + 16px);
 }
 
 .portfolio-create__grid {

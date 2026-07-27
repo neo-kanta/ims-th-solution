@@ -33,6 +33,9 @@ func RegisterRoutes(
 		r.With(middleware.RequirePermission(pc, perm.CodeWithdraw)).Post("/requests/{requestId}/withdraw", runtime.Withdraw)
 		r.With(middleware.RequirePermission(pc, perm.CodeCancel)).Post("/requests/{requestId}/cancel", runtime.Cancel)
 		r.With(middleware.RequirePermission(pc, perm.CodeRevoke)).Post("/requests/{requestId}/revoke", runtime.Revoke)
+
+		r.With(middleware.RequirePermission(pc, perm.CodeSyncView)).Get("/sync-failures", runtime.ListSyncFailures)
+		r.With(middleware.RequirePermission(pc, perm.CodeSyncRetry)).Post("/sync-failures/{id}/retry", runtime.RetrySyncFailure)
 	})
 
 	// ── Configuration: /approval-config ─────────────────────────────────────

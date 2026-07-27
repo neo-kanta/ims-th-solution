@@ -13,8 +13,12 @@ import (
 // valuation history. tax_lot_method is a forward-compatibility placeholder;
 // all current math uses average-cost.
 type Portfolio struct {
-	ID                uuid.UUID
-	FundID            uuid.UUID
+	ID uuid.UUID
+	// FundID is nil for a fund-less portfolio ("Bind with Fund: N" at
+	// creation). Access to such a portfolio is governed by a
+	// portfolio_id-scoped permission_data_rights grant instead of a
+	// fund-scoped one — see hasFundAccess call sites in the transport layer.
+	FundID            *uuid.UUID
 	PortfolioType     vo.PortfolioType
 	Code              string
 	Name              string

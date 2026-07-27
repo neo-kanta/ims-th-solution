@@ -214,7 +214,13 @@ func (a *ValuationSummaryAdapter) GetValuationSummary(
 	}
 	portfoliosByFund := make(map[uuid.UUID][]*entity.Portfolio, len(funds))
 	for _, portfolio := range scopedPortfolios {
-		portfoliosByFund[portfolio.FundID] = append(portfoliosByFund[portfolio.FundID], portfolio)
+		// Fund-less portfolios (FundID == nil) have no fund AUM to roll into
+		// and are intentionally excluded from this fund-centric summary —
+		// they group under uuid.Nil, which no real fund.ID ever matches.
+		if portfolio.FundID == nil {
+			continue
+		}
+		portfoliosByFund[*portfolio.FundID] = append(portfoliosByFund[*portfolio.FundID], portfolio)
 	}
 
 	var candidates []scopedValuation

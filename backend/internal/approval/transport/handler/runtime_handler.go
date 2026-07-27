@@ -454,3 +454,72 @@ func (h *RuntimeHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	}
 	httputil.OK(w, response.FromRequest(req))
 }
+
+// ListSyncFailures handles GET /approvals/sync-failures.
+// @Summary List approval subject-sync failures
+// @Description Operator-facing inbox of approval decisions whose post-commit business-module callback (subject sync) failed. Never blocks or reverses the approval decision itself.
+// @Tags Approval - Runtime
+// @Security BearerAuth
+// @Produce json
+// @Param status query string false "Status filter: PENDING, RESOLVED, or EXHAUSTED (default: all)"
+// @Param page query int false "Page number"
+// @Param limit query int false "Page size"
+// @Success 200 {object} response.SyncFailureListResponse
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Router /approvals/sync-failures [get]
+func (h *RuntimeHandler) ListSyncFailures(w http.ResponseWriter, r *http.Request) {
+	if _, ok := actorID(r); !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+	page, limit := pagination(r)
+	f := domain.SyncFailureFilter{
+		Status: vo.SyncFailureStatus(r.URL.Query().Get("status")),
+		Page:   page,
+		Limit:  limit,
+	}
+	items, total, err := h.svc.ListSyncFailures(r.Context(), f)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	httputil.OK(w, response.SyncFailureListResponse{
+		Items: response.FromSyncFailures(items), Total: total, Page: page, Limit: limit,
+	})
+}
+
+// RetrySyncFailure handles POST /approvals/sync-failures/{id}/retry.
+// @Summary Retry an approval subject-sync failure
+// @Description Re-invokes the failed business-module callback for a persisted sync-failure record. No-op (409) once the record is RESOLVED/EXHAUSTED or has no registered callback for its subject type. Bounded: each record has a fixed max_attempts.
+// @Tags Approval - Runtime
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Sync failure record UUID"
+// @Success 200 {object} response.SyncFailureResponse "Retry attempted; check status/last_error — a 200 does not by itself mean the retry succeeded, only that the attempt was recorded"
+// @Failure 401 {object} httputil.ErrorResponse
+// @Failure 403 {object} httputil.ErrorResponse
+// @Failure 404 {object} httputil.ErrorResponse
+// @Failure 409 {object} httputil.ErrorResponse
+// @Router /approvals/sync-failures/{id}/retry [post]
+func (h *RuntimeHandler) RetrySyncFailure(w http.ResponseWriter, r *http.Request) {
+	actor, ok := actorID(r)
+	if !ok {
+		httputil.Unauthorized(w, "not authenticated")
+		return
+	}
+	id, err := parseUUIDParam(r, "id")
+	if err != nil {
+		httputil.BadRequest(w, "invalid sync failure id")
+		return
+	}
+	rec, err := h.svc.RetrySyncFailure(r.Context(), id, actor)
+	if err != nil && rec == nil {
+		writeError(w, err)
+		return
+	}
+	// rec != nil here even when err != nil (the retry attempt itself failed but
+	// was durably recorded) — render the record either way so the operator sees
+	// the actual outcome (status/last_error), never a raw callback error.
+	httputil.OK(w, response.FromSyncFailure(rec))
+}

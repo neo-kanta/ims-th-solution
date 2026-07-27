@@ -1,0 +1,28 @@
+info:
+  name: list-sync-failures
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{approval-base-url}}/sync-failures?status={{approval-sync-failure-status}}&page={{approval-page}}&limit={{approval-limit}}"
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const item = body?.data?.items?.[0] || {};
+
+        if (item.id) {
+          bru.setEnvVar("approval-sync-failure-id", item.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

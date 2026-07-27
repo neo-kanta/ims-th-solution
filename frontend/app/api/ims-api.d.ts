@@ -2694,6 +2694,148 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approvals/sync-failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List approval subject-sync failures
+         * @description Operator-facing inbox of approval decisions whose post-commit business-module callback (subject sync) failed. Never blocks or reverses the approval decision itself.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Status filter: PENDING, RESOLVED, or EXHAUSTED (default: all) */
+                    status?: string;
+                    /** @description Page number */
+                    page?: number;
+                    /** @description Page size */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SyncFailureListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/sync-failures/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry an approval subject-sync failure
+         * @description Re-invokes the failed business-module callback for a persisted sync-failure record. No-op (409) once the record is RESOLVED/EXHAUSTED or has no registered callback for its subject type. Bounded: each record has a fixed max_attempts.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Sync failure record UUID */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Retry attempted; check status/last_error — a 200 does not by itself mean the retry succeeded, only that the attempt was recorded */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SyncFailureResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approvals/tasks/{taskId}/approve": {
         parameters: {
             query?: never;
@@ -8078,12 +8220,15 @@ export interface paths {
         put?: never;
         /**
          * Post Portfolio Transaction
-         * @description Post a buy, sell, cash, or other portfolio transaction into the ledger.
+         * @description Post a buy, sell, cash, or other portfolio transaction into the ledger. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).
          */
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /** @description Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated. */
+                    "Idempotency-Key"?: string;
+                };
                 path: {
                     /** @description Portfolio UUID */
                     id: string;
@@ -8097,13 +8242,22 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Created */
+                /** @description Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement) */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": components["schemas"]["TransactionResponse"];
+                    };
+                };
+                /** @description LIVE cash movement staged for approval (pending) */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CashRequestResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -13537,6 +13691,221 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/portfolios/{portfolioCode}/cash-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Portfolio Cash Requests By Code
+         * @description List LIVE cash-movement approval requests for a portfolio, resolved by business code (Portfolio V2). Optional status filter (PENDING/APPROVED/REJECTED/CANCELLED).
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Cash request status (PENDING, APPROVED, REJECTED, CANCELLED) */
+                    status?: string;
+                    /** @description Page number (default 1) */
+                    page?: number;
+                    /** @description Page size (default 50, max 200) */
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CashRequestListResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portfolios/{portfolioCode}/cash-requests/{cashRequestId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Portfolio Cash Request By Code
+         * @description Cancel a PENDING cash-movement approval request that belongs to the resolved portfolio (Portfolio V2). Only the submitter may cancel; after cancel, approvers can no longer act on it.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Portfolio code */
+                    portfolioCode: string;
+                    /** @description Cash request UUID */
+                    cashRequestId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Optional cancellation reason */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CancelCashRequestV2Request"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CashRequestResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Unprocessable Entity */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/portfolios/{portfolioCode}/compliance/breaches": {
         parameters: {
             query?: never;
@@ -15628,12 +15997,15 @@ export interface paths {
         put?: never;
         /**
          * Post Portfolio Transaction By Code
-         * @description Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id.
+         * @description Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).
          */
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /** @description Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated. */
+                    "Idempotency-Key"?: string;
+                };
                 path: {
                     /** @description Portfolio code */
                     portfolioCode: string;
@@ -15647,13 +16019,22 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Created */
+                /** @description Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement) */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": components["schemas"]["TransactionResponse"];
+                    };
+                };
+                /** @description LIVE cash movement staged for approval (pending) */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CashRequestResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -16471,6 +16852,25 @@ export interface components {
             currency?: string;
             current_balance?: string;
             projected_balance?: string;
+        };
+        CashRequestResponse: {
+            amount?: string;
+            approval_request_id?: string;
+            currency?: string;
+            decided_at?: string;
+            decided_by?: string;
+            fees?: string;
+            fund_id?: string;
+            id?: string;
+            memo?: string;
+            portfolio_id?: string;
+            resulting_txn_id?: string;
+            status?: string;
+            submitted_at?: string;
+            submitted_by?: string;
+            transaction_type?: string;
+            value_date?: string;
+            version?: number;
         };
         ChangePasswordRequest: {
             new_password: string;
@@ -17643,6 +18043,7 @@ export interface components {
             code?: string;
             created_at?: string;
             description?: string;
+            /** @description FundID is omitted for a fund-less portfolio ("Bind with Fund: N"). */
             fund_id?: string;
             has_units?: boolean;
             id?: string;
@@ -18234,6 +18635,28 @@ export interface components {
         SuccessResponse: {
             data?: unknown;
             message?: string;
+        };
+        SyncFailureListResponse: {
+            items?: components["schemas"]["SyncFailureResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
+        };
+        SyncFailureResponse: {
+            approval_request_id?: string;
+            attempt_count?: number;
+            created_at?: string;
+            id?: string;
+            last_error?: string;
+            max_attempts?: number;
+            outcome?: string;
+            reason?: string;
+            resolved_at?: string;
+            resolved_by?: string;
+            status?: string;
+            subject_id?: string;
+            subject_type?: string;
+            updated_at?: string;
         };
         TaskDTO: {
             actionUrl?: string;
@@ -18873,8 +19296,17 @@ export interface components {
             /** @description BLOCK | WARN | REQUIRE_APPROVAL | MONITOR */
             severity?: string;
         };
+        CancelCashRequestV2Request: {
+            reason?: string;
+        };
         CancelExecutionRequest: {
             reason: string;
+        };
+        CashRequestListResponse: {
+            items?: components["schemas"]["CashRequestResponse"][];
+            limit?: number;
+            page?: number;
+            total?: number;
         };
         /** @enum {string} */
         ComplianceStatus: "COMPLIANCE_EVALUATED" | "COMPLIANCE_NOT_CONFIGURED" | "COMPLIANCE_UNAVAILABLE";
@@ -18904,7 +19336,12 @@ export interface components {
             benchmark?: string;
             code: string;
             description?: string;
-            fund_code: string;
+            /**
+             * @description FundCode is optional — an empty value creates a fund-less portfolio
+             *     (the "Bind with Fund: N" path). Access to such a portfolio is governed
+             *     by a portfolio_id-scoped permission_data_rights grant instead.
+             */
+            fund_code?: string;
             has_units?: boolean;
             inception_date: string;
             manager_user_id?: string;

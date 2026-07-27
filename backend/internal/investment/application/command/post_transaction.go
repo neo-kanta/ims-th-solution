@@ -41,13 +41,28 @@ type PostTransactionRequest struct {
 	ExternalRef       string
 	Reason            string
 
+	// IdempotencyKey is an optional client-supplied key (Idempotency-Key header)
+	// that deduplicates a LIVE cash-movement submission across retries. Empty
+	// means the request is not deduplicated. Ignored for non-LIVE / non-cash
+	// movements (they post immediately and are not staged for approval).
+	IdempotencyKey string
+
 	ActorID        uuid.UUID
 	AllowForcePost bool
 }
 
 // PostTransactionResult is returned to the caller on success.
+//
+// Exactly one of Transaction / CashRequest is populated:
+//   - Transaction is set when the movement posted immediately to the ledger.
+//   - CashRequest is set (and Pending is true) when a LIVE-portfolio cash
+//     movement was staged for approval instead of posting. The transport layer
+//     maps a Pending result to a "submitted for approval" response, not a
+//     posted-transaction response.
 type PostTransactionResult struct {
 	Transaction *entity.PortfolioTransaction
+	CashRequest *entity.PortfolioCashRequest
+	Pending     bool
 }
 
 // SimulateTransactionResult is the dry-run preview for a transaction request.
@@ -111,9 +126,56 @@ type PostTransactionHandler struct {
 	compliance contract.ComplianceChecker
 	audit      contract.AuditLogger
 
+	// Cash-approval gate dependencies (Stage 2). Optional at construction and
+	// injected post-wire via setters to avoid a circular construction
+	// dependency with the approval module. When a LIVE cash movement is posted
+	// but these are nil, the gate fails CLOSED (rejects) rather than posting
+	// immediately and bypassing approval.
+	cashRequests      domain.PortfolioCashRequestRepository
+	approval          contract.ApprovalSubmitter
+	approvalCanceller contract.ApprovalCanceller
+	// approvalStatus lets the idempotent-retry path recover an approval that a
+	// prior attempt already submitted (step-3 / link failure) without creating a
+	// second approval request. Optional; when nil the reconcile path fails closed
+	// rather than blindly re-submitting.
+	approvalStatus contract.ApprovalStatusProvider
+
 	now    func() time.Time
 	newID  func() uuid.UUID
 	withTx transactionRunner
+}
+
+// SetCashRequestRepository injects the mutable cash-request staging repository
+// used by the LIVE cash-approval gate. Wired post-construction.
+func (h *PostTransactionHandler) SetCashRequestRepository(r domain.PortfolioCashRequestRepository) {
+	if h != nil {
+		h.cashRequests = r
+	}
+}
+
+// SetApprovalSubmitter injects the approval submitter used to push a LIVE cash
+// movement into the approval engine. Wired post-construction.
+func (h *PostTransactionHandler) SetApprovalSubmitter(s contract.ApprovalSubmitter) {
+	if h != nil {
+		h.approval = s
+	}
+}
+
+// SetApprovalCanceller injects the approval canceller used when a submitter
+// cancels a PENDING cash request. Wired post-construction.
+func (h *PostTransactionHandler) SetApprovalCanceller(c contract.ApprovalCanceller) {
+	if h != nil {
+		h.approvalCanceller = c
+	}
+}
+
+// SetApprovalStatusProvider injects the read-side approval lookup used by the
+// idempotent-retry path to re-link a cash request to an approval that a prior
+// attempt already submitted. Wired post-construction.
+func (h *PostTransactionHandler) SetApprovalStatusProvider(p contract.ApprovalStatusProvider) {
+	if h != nil {
+		h.approvalStatus = p
+	}
 }
 
 // NewPostTransactionHandler wires the handler. `now` may be nil — defaults to
@@ -167,8 +229,71 @@ func (h *PostTransactionHandler) Handle(
 		return nil, err
 	}
 
-	now := h.now()
-	tx := &entity.PortfolioTransaction{
+	// LIVE cash-movement approval gate (Stage 2). Cash movements
+	// (CASH_IN/CASH_OUT/FEE/DIVIDEND) branch on the resolved portfolio type:
+	//   LIVE       -> stage a PENDING approval request; do NOT post now. The
+	//                 real ledger row is materialized only after approval, in
+	//                 ApplyCashRequestApproval.
+	//   MODEL      -> blocked from the ledger entirely (confirmed owner policy).
+	//   SIMULATION -> fall through to the immediate post (unchanged).
+	// BUY/SELL/SUBSCRIPTION/REDEMPTION and REVERSAL are out of gate scope and
+	// always post immediately (unchanged).
+	if req.TransactionType.IsCashOnly() {
+		switch prep.portfolio.PortfolioType {
+		case vo.PortfolioTypeModel:
+			return nil, &domain.ErrPostPreconditionFailed{
+				Violation: string(policy.PostViolationModelLedgerBlocked),
+				Detail:    "MODEL portfolios have no ledger; cash movements are not permitted",
+			}
+		case vo.PortfolioTypeLive:
+			return h.submitCashForApproval(ctx, req, prep)
+		}
+		// SIMULATION (and any other non-LIVE/non-MODEL type) falls through.
+	}
+
+	tx := h.buildLedgerEntity(req, prep, txID, h.now())
+
+	// Persist + project in one DB tx. The workflow day row is locked first in
+	// this same transaction, so state transitions cannot move it out of
+	// DAY_OPEN between compliance, ledger insert, and projection updates.
+	err = h.runTransaction(ctx, func(dbtx pgx.Tx) error {
+		return h.executePostTx(ctx, dbtx, req, prep, tx)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Audit. Failure to log does not roll back the post — the audit
+	//    logger is fire-and-forget by contract.
+	_ = h.audit.LogAction(contract.AuditEntry{
+		ActorID:      req.ActorID.String(),
+		Action:       "INVESTMENT_TRANSACTION_POSTED",
+		Module:       "investment",
+		ResourceType: "INVESTMENT_TRANSACTION",
+		ResourceID:   tx.ID.String(),
+		Details: map[string]any{
+			"portfolio_id":     prep.portfolio.ID,
+			"fund_id":          prep.portfolio.FundID,
+			"transaction_type": string(req.TransactionType),
+			"net_amount":       prep.net.String(),
+			"currency":         req.Currency,
+		},
+		BusinessDate: req.BusinessDate,
+	})
+
+	return &PostTransactionResult{Transaction: tx}, nil
+}
+
+// buildLedgerEntity assembles the immutable ledger row from the request and the
+// prepared transaction. RealisedPnLBase is left zero here — it is computed
+// inside executePostTx after the position row is locked.
+func (h *PostTransactionHandler) buildLedgerEntity(
+	req PostTransactionRequest,
+	prep *preparedTransaction,
+	txID uuid.UUID,
+	now time.Time,
+) *entity.PortfolioTransaction {
+	return &entity.PortfolioTransaction{
 		ID:                    txID,
 		PortfolioID:           prep.portfolio.ID,
 		FundID:                prep.portfolio.FundID,
@@ -193,77 +318,67 @@ func (h *PostTransactionHandler) Handle(
 		CreatedAt:             now,
 		CreatedBy:             req.ActorID,
 	}
+}
 
-	// Persist + project in one DB tx. The workflow day row is locked first in
-	// this same transaction, so state transitions cannot move it out of
-	// DAY_OPEN between compliance, ledger insert, and projection updates.
-	err = h.runTransaction(ctx, func(dbtx pgx.Tx) error {
+// executePostTx runs the authoritative post pipeline inside a caller-supplied
+// DB transaction: workflow-day lock (fund-scoped), pre-trade compliance
+// enforcement, sell-like realised-PnL computation, ledger insert, and position/
+// cash projection. It NEVER opens its own transaction, so both the immediate
+// post path (Handle) and the approval-materialization path
+// (ApplyCashRequestApproval) compose it with their own transaction — giving
+// identical posting/ledger/position logic and all-or-nothing semantics.
+func (h *PostTransactionHandler) executePostTx(
+	ctx context.Context,
+	dbtx pgx.Tx,
+	req PostTransactionRequest,
+	prep *preparedTransaction,
+	tx *entity.PortfolioTransaction,
+) error {
+	// No fund-scoped business day to lock for a fund-less portfolio.
+	if prep.fund != nil {
 		if err := h.lockWorkflowDayForPosting(ctx, dbtx, prep.fund.ID, req.BusinessDate); err != nil {
 			return err
 		}
-
-		complianceResult, err := h.checkCompliance(ctx, req, prep.portfolio, prep.fund, prep.instrument, prep.quantity, prep.price, false, txID)
-		if err != nil {
-			return err
-		}
-		if err := enforceComplianceResult(req, complianceResult); err != nil {
-			return err
-		}
-
-		if req.TransactionType.IsSellLike() && req.InstrumentID != nil {
-			lockedPos, posErr := h.positions.GetForUpdate(ctx, dbtx, req.PortfolioID, *req.InstrumentID)
-			if posErr != nil {
-				return fmt.Errorf("locking position for sell: %w", posErr)
-			}
-			have := decimal.Zero
-			avg := decimal.Zero
-			if lockedPos != nil {
-				have = lockedPos.Quantity
-				avg = lockedPos.AverageCost
-			}
-			if prep.quantity.GreaterThan(have) {
-				return &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationOversell)}
-			}
-			priceBase := prep.price
-			feesBase := req.Fees
-			if req.FxRateToBase != nil {
-				priceBase = priceBase.Mul(*req.FxRateToBase)
-				feesBase = feesBase.Mul(*req.FxRateToBase)
-			}
-			tx.RealisedPnLBase = prep.quantity.Mul(priceBase.Sub(avg)).Sub(feesBase)
-		}
-
-		if err := h.txns.Insert(ctx, dbtx, tx); err != nil {
-			return fmt.Errorf("inserting transaction: %w", err)
-		}
-		if err := h.projector.Apply(ctx, dbtx, tx, +1); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	// 5. Audit. Failure to log does not roll back the post — the audit
-	//    logger is fire-and-forget by contract.
-	_ = h.audit.LogAction(contract.AuditEntry{
-		ActorID:      req.ActorID.String(),
-		Action:       "INVESTMENT_TRANSACTION_POSTED",
-		Module:       "investment",
-		ResourceType: "INVESTMENT_TRANSACTION",
-		ResourceID:   tx.ID.String(),
-		Details: map[string]any{
-			"portfolio_id":     prep.portfolio.ID,
-			"fund_id":          prep.fund.ID,
-			"transaction_type": string(req.TransactionType),
-			"net_amount":       prep.net.String(),
-			"currency":         req.Currency,
-		},
-		BusinessDate: req.BusinessDate,
-	})
+	complianceResult, err := h.checkCompliance(ctx, req, prep.portfolio, prep.fund, prep.instrument, prep.quantity, prep.price, false, tx.ID)
+	if err != nil {
+		return err
+	}
+	if err := enforceComplianceResult(req, complianceResult); err != nil {
+		return err
+	}
 
-	return &PostTransactionResult{Transaction: tx}, nil
+	if req.TransactionType.IsSellLike() && req.InstrumentID != nil {
+		lockedPos, posErr := h.positions.GetForUpdate(ctx, dbtx, req.PortfolioID, *req.InstrumentID)
+		if posErr != nil {
+			return fmt.Errorf("locking position for sell: %w", posErr)
+		}
+		have := decimal.Zero
+		avg := decimal.Zero
+		if lockedPos != nil {
+			have = lockedPos.Quantity
+			avg = lockedPos.AverageCost
+		}
+		if prep.quantity.GreaterThan(have) {
+			return &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationOversell)}
+		}
+		priceBase := prep.price
+		feesBase := req.Fees
+		if req.FxRateToBase != nil {
+			priceBase = priceBase.Mul(*req.FxRateToBase)
+			feesBase = feesBase.Mul(*req.FxRateToBase)
+		}
+		tx.RealisedPnLBase = prep.quantity.Mul(priceBase.Sub(avg)).Sub(feesBase)
+	}
+
+	if err := h.txns.Insert(ctx, dbtx, tx); err != nil {
+		return fmt.Errorf("inserting transaction: %w", err)
+	}
+	if err := h.projector.Apply(ctx, dbtx, tx, +1); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Simulate runs the same validation, workflow, and pre-trade compliance gates
@@ -335,13 +450,18 @@ func (h *PostTransactionHandler) prepareTransaction(
 	if portfolio == nil {
 		return nil, &domain.ErrPortfolioNotFound{PortfolioID: req.PortfolioID.String()}
 	}
-
-	fund, err := h.funds.GetByID(ctx, portfolio.FundID)
-	if err != nil {
-		return nil, fmt.Errorf("loading fund: %w", err)
-	}
-	if fund == nil {
-		return nil, &domain.ErrFundNotFound{FundID: portfolio.FundID.String()}
+	// fund stays nil for a fund-less portfolio ("Bind with Fund: N") — the
+	// rest of this pipeline (workflow gates, compliance, policy) treats a nil
+	// fund as "no fund-scoped state applies" rather than an error.
+	var fund *entity.Fund
+	if portfolio.FundID != nil {
+		fund, err = h.funds.GetByID(ctx, *portfolio.FundID)
+		if err != nil {
+			return nil, fmt.Errorf("loading fund: %w", err)
+		}
+		if fund == nil {
+			return nil, &domain.ErrFundNotFound{FundID: portfolio.FundID.String()}
+		}
 	}
 
 	var instrument *entity.Instrument
@@ -372,16 +492,24 @@ func (h *PostTransactionHandler) prepareTransaction(
 		}
 	}
 
-	if h.workflow == nil {
-		return nil, &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationTradingNotAllowed), Detail: "workflow gate unavailable"}
-	}
-	tradeAllowed, err := h.workflow.IsTradeAllowed(ctx, fund.ID, req.BusinessDate)
-	if err != nil {
-		return nil, fmt.Errorf("checking trade-allowed: %w", err)
-	}
-	txnLocked, err := h.workflow.IsTransactionLocked(ctx, fund.ID, req.BusinessDate)
-	if err != nil {
-		return nil, fmt.Errorf("checking transaction-locked: %w", err)
+	// The business-day workflow state machine is fund-scoped — a fund-less
+	// portfolio has no fund-scoped business day to check against, so its
+	// gates are treated as open/unlocked rather than calling a workflow
+	// service with no fund to key on.
+	tradeAllowed := true
+	txnLocked := false
+	if fund != nil {
+		if h.workflow == nil {
+			return nil, &domain.ErrPostPreconditionFailed{Violation: string(policy.PostViolationTradingNotAllowed), Detail: "workflow gate unavailable"}
+		}
+		tradeAllowed, err = h.workflow.IsTradeAllowed(ctx, fund.ID, req.BusinessDate)
+		if err != nil {
+			return nil, fmt.Errorf("checking trade-allowed: %w", err)
+		}
+		txnLocked, err = h.workflow.IsTransactionLocked(ctx, fund.ID, req.BusinessDate)
+		if err != nil {
+			return nil, fmt.Errorf("checking transaction-locked: %w", err)
+		}
 	}
 
 	quantity := decimal.Zero
@@ -471,9 +599,17 @@ func (h *PostTransactionHandler) checkCompliance(
 	if orderID == uuid.Nil {
 		orderID = h.nextID()
 	}
+	// contractID stays uuid.Nil for a fund-less portfolio — the compliance
+	// engine already treats that as "no fund-scoped rules apply, evaluate
+	// GLOBAL + PORTFOLIO scope only" (see portfolio_v2_compliance_handler.go's
+	// portfolioFundID, which established this same convention).
+	contractID := uuid.Nil
+	if fund != nil {
+		contractID = fund.ID
+	}
 	check := contract.ProposedOrderCheck{
 		PortfolioID:  portfolio.ID,
-		ContractID:   fund.ID,
+		ContractID:   contractID,
 		BusinessDate: req.BusinessDate,
 		Actor:        req.ActorID.String(),
 		OrderID:      orderID,

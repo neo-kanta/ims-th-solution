@@ -45,6 +45,11 @@ describe("normalizePortfolioCreateValues", () => {
     expect(normalized.valuation_currency).toBe("THB");
     expect(normalized.portfolio_type).toBe("LIVE");
   });
+
+  it("uppercases risk_profile to match the DB's LOW/MEDIUM/HIGH/SPECULATIVE check constraint", () => {
+    const normalized = normalizePortfolioCreateValues(values({ risk_profile: "low" }));
+    expect(normalized.risk_profile).toBe("LOW");
+  });
 });
 
 describe("validatePortfolioCreateForm", () => {
@@ -54,16 +59,27 @@ describe("validatePortfolioCreateForm", () => {
     expect(result.errors).toEqual({});
   });
 
-  it("flags every required field as missing on a blank form", () => {
+  it("flags every required field as missing on a blank form (fund_code is not required — bindFund defaults to false)", () => {
     const result = validatePortfolioCreateForm(emptyPortfolioCreateFormValues());
     expect(result.valid).toBe(false);
-    expect(result.errors.fund_code).toBe("required");
+    expect(result.errors.fund_code).toBeUndefined();
     expect(result.errors.portfolio_type).toBe("required");
     expect(result.errors.code).toBe("required");
     expect(result.errors.name).toBe("required");
     expect(result.errors.base_currency).toBe("required");
     expect(result.errors.valuation_currency).toBe("required");
     expect(result.errors.inception_date).toBe("required");
+  });
+
+  it("does not require fund_code when bindFund is false (fund-less portfolio)", () => {
+    const result = validatePortfolioCreateForm(values({ bindFund: false, fund_code: "" }));
+    expect(result.valid).toBe(true);
+    expect(result.errors.fund_code).toBeUndefined();
+  });
+
+  it("still requires fund_code when bindFund is true", () => {
+    const result = validatePortfolioCreateForm(values({ bindFund: true, fund_code: "" }));
+    expect(result.errors.fund_code).toBe("required");
   });
 
   it("rejects a portfolio_type outside LIVE/SIMULATION/MODEL", () => {
@@ -103,7 +119,7 @@ describe("validatePortfolioCreateForm", () => {
 
 describe("buildPortfolioCreateRequest", () => {
   it("builds exactly the required fields when optionals are blank", () => {
-    const body = buildPortfolioCreateRequest(values());
+    const body = buildPortfolioCreateRequest(values({ bindFund: true }));
     expect(body).toEqual({
       fund_code: "TH-FUND-01",
       portfolio_type: "LIVE",
@@ -119,19 +135,26 @@ describe("buildPortfolioCreateRequest", () => {
     expect(body).not.toHaveProperty("risk_profile");
   });
 
+  it("omits fund_code entirely when bindFund is false, even if fund_code text lingers", () => {
+    const body = buildPortfolioCreateRequest(values({ bindFund: false, fund_code: "TH-FUND-01" }));
+    expect(body).not.toHaveProperty("fund_code");
+  });
+
   it("includes optional fields only when non-blank", () => {
     const body = buildPortfolioCreateRequest(
       values({
         description: "  A growth-focused strategy  ",
         strategy_code: "EQUITY_GROWTH",
         benchmark: "SET50",
-        risk_profile: "MODERATE",
+        // A real value from RISK_PROFILES — the DB's
+        // chk_inv_portfolios_risk_profile constraint rejects anything else.
+        risk_profile: "HIGH",
       }),
     );
     expect(body.description).toBe("A growth-focused strategy");
     expect(body.strategy_code).toBe("EQUITY_GROWTH");
     expect(body.benchmark).toBe("SET50");
-    expect(body.risk_profile).toBe("MODERATE");
+    expect(body.risk_profile).toBe("HIGH");
   });
 
   it("never includes style_id or manager_user_id — no typed picker exists for either", () => {

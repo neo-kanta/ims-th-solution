@@ -1,0 +1,6 @@
+info:
+  name: Sync Failures
+  type: folder
+
+request:
+  auth: inherit

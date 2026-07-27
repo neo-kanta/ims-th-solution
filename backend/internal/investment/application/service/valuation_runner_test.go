@@ -41,7 +41,7 @@ func TestValuationRunnerRejectsMissingPriceSnapshot(t *testing.T) {
 		nil,
 		&valuationPortfolioRepo{portfolio: &entity.Portfolio{
 			ID:                portfolioID,
-			FundID:            fundID,
+			FundID:            &fundID,
 			BaseCurrency:      "USD",
 			ValuationCurrency: "USD",
 			HasUnits:          false,
