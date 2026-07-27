@@ -14,10 +14,11 @@ import (
 // gate: an execution without a MATCHED or REVIEWED confirmation blocks
 // transaction closing for the business date.
 type TradeConfirmation struct {
-	ID                uuid.UUID
-	ExecutionID       uuid.UUID
-	DecisionID        uuid.UUID
-	FundID            uuid.UUID
+	ID          uuid.UUID
+	ExecutionID uuid.UUID
+	DecisionID  uuid.UUID
+	// FundID is nil for a confirmation on a fund-less portfolio.
+	FundID            *uuid.UUID
 	PortfolioID       uuid.UUID
 	BusinessDate      time.Time
 	ConfirmedQuantity *decimal.Decimal

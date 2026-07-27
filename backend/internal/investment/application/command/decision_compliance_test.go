@@ -94,7 +94,7 @@ func newDraftDec() *entity.Decision {
 	price := decimal.NewFromFloat(35.5)
 	return &entity.Decision{
 		ID:              uuid.New(),
-		FundID:          uuid.New(),
+		FundID:          func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:     uuid.New(),
 		InstrumentCode:  "PTT",
 		Side:            vo.OrderSideBuy,
@@ -449,7 +449,7 @@ func TestSubmit_FundRequiresReport_NoReport_Rejected(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, newFakeResearchReportRepo(), nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                               d.FundID,
+		ID:                               *d.FundID,
 		RequireResearchReportForDecision: true,
 	}})
 
@@ -477,7 +477,7 @@ func TestSubmit_FundRequiresReport_ReportLinked_Proceeds(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, repRepo, nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                               d.FundID,
+		ID:                               *d.FundID,
 		RequireResearchReportForDecision: true,
 	}})
 	h.SetApprovalSubmitter(submitter)
@@ -498,7 +498,7 @@ func TestSubmit_FundNotRequireReport_NoReport_Proceeds(t *testing.T) {
 	h := NewDecisionCommandHandler(nil, decRepo, newFakeResearchReportRepo(), nil, &recordingAudit{}, nil)
 	h.runTx = func(_ context.Context, fn func(pgx.Tx) error) error { return fn(nil) }
 	h.SetFundRepository(&fakeFundRepo{fund: &entity.Fund{
-		ID:                               d.FundID,
+		ID:                               *d.FundID,
 		RequireResearchReportForDecision: false,
 	}})
 	h.SetApprovalSubmitter(submitter)
@@ -1070,7 +1070,7 @@ func TestValidateCreateDecisionRejectsNonPositiveNumericFields(t *testing.T) {
 	base := func() CreateDecisionRequest {
 		return CreateDecisionRequest{
 			ActorID:        uuid.New(),
-			FundID:         uuid.New(),
+			FundID:         func() *uuid.UUID { v := uuid.New(); return &v }(),
 			PortfolioID:    uuid.New(),
 			BusinessDate:   time.Date(2026, 7, 16, 0, 0, 0, 0, time.UTC),
 			Side:           vo.OrderSideBuy,

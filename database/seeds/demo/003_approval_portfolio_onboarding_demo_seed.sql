@@ -1,17 +1,27 @@
 -- =============================================================================
--- Approval module — PORTFOLIO_ONBOARDING default process config (idempotent)
+-- Approval module — PORTFOLIO_ONBOARDING default process config (development/test only)
 -- =============================================================================
+-- Formerly database/seeds/013_approval_portfolio_onboarding_seed.sql. This
+-- process config is explicitly deactivated below (Option A, deferred) and is
+-- kept only as an inert schema-reference scaffold — it is never reached by a
+-- live approval flow. It depends on the FUND_MANAGER_REVIEWERS and
+-- INVESTMENT_SUPERVISORS approval groups, which are seeded by the always-run
+-- database/seeds/012_approval_process_seed.sql (reference), so the FK to
+-- approval__groups is satisfied in every environment. It is kept here as
+-- demo/dev-only content, not because of an FK dependency on demo data, but
+-- because a dead/deferred scaffold has no reason to exist in production and
+-- this keeps the seed taxonomy simple: this file is only executed when
+-- APP_ENV is development or test (see backend/cmd/seed/sql_seeds.go).
+--
 -- Seeds the default two-stage PORTFOLIO_ONBOARDING approval process so that
 -- any portfolio submitted for onboarding (status PENDING_APPROVAL) has a
--- reachable process config without requiring manual admin setup.
+-- reachable process config without requiring manual admin setup, once this
+-- feature is re-enabled.
 --
 -- Process (COMPANY-global, contract_id NULL):
 --   PORTFOLIO_ONBOARDING
 --     stage 1  GROUP_ANY    FUND_MANAGER_REVIEWERS  (reviewer sign-off)
 --     stage 2  GROUP_ANY    INVESTMENT_SUPERVISORS   (supervisor final approval)
---
--- Groups referenced here are seeded by 012_approval_demo_seed.sql — run
--- that seed before this one.  The seed is safe to re-run (ON CONFLICT DO NOTHING).
 -- =============================================================================
 
 BEGIN;

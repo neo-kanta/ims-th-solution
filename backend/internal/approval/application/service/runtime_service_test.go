@@ -519,6 +519,88 @@ func TestApprove_SubjectAccessDenied(t *testing.T) {
 	}
 }
 
+// TestApprove_SubjectAccessInfraFailure verifies that an INFRASTRUCTURE failure
+// during the subject-access check (e.g. IAM outage, repository error) surfaces
+// as a non-domain error that writeError maps to 5xx. It must NOT be coerced into
+// ErrForbidden (403), which would mask the outage as an authorization decision
+// (MEMORY.md: infrastructure and unexpected errors return 5xx).
+func TestApprove_SubjectAccessInfraFailure(t *testing.T) {
+	repo := newFakeRepo()
+	approver, submitter := uuid.New(), uuid.New()
+	gid := seedGroup(repo, "REVIEWERS", approver)
+	cfg := seedConfig(repo, vo.ProcessInvestmentAnalysisReport, entity.ApprovalProcessStage{
+		StageNumber: 1, ApproverMode: vo.ApproverModeGroupAny, ApprovalGroupID: &gid, IsFinalStage: true,
+	})
+
+	reqID := uuid.New()
+	repo.requests[reqID] = &entity.ApprovalRequest{
+		ID: reqID, RequestNumber: "APR-000001",
+		ProcessType: vo.ProcessInvestmentAnalysisReport, SubjectType: vo.SubjectResearchReport,
+		SubjectID: uuid.New(), SubmitterID: submitter,
+		ProcessConfigID: &cfg.ID,
+		Status:          vo.RequestStatusPendingApproval, CurrentStageNumber: 1,
+	}
+	taskID := uuid.New()
+	repo.tasks[taskID] = &entity.ApprovalTask{
+		ID: taskID, ApprovalRequestID: reqID, StageNumber: 1,
+		AssignedUserID: &approver, Status: vo.TaskStatusPending,
+	}
+
+	svc := newTestRuntime(repo)
+	svc.RegisterSubjectAccessPort(vo.SubjectResearchReport, infraFailingSubjectPort{})
+
+	_, err := svc.ApproveTask(ctx(), taskID, approver, "")
+	if err == nil {
+		t.Fatal("expected error from infra failure, got nil")
+	}
+	// Must NOT be masked as a 403/authorization decision.
+	if errors.Is(err, domain.ErrForbidden) {
+		t.Fatalf("err = %v, want a 5xx-classified infra error, not ErrForbidden", err)
+	}
+	// Must fall through to writeError's default (500): matches none of the
+	// mapped 4xx/409 sentinels.
+	for _, sentinel := range []error{
+		domain.ErrValidation, domain.ErrNotFound, domain.ErrConfigNotFound,
+		domain.ErrConflict, domain.ErrSelfApproval, domain.ErrNotAssigned,
+		domain.ErrDuplicateActiveRequest, domain.ErrTaskNotPending,
+		domain.ErrStaleTask, domain.ErrRequestNotActionable,
+	} {
+		if errors.Is(err, sentinel) {
+			t.Fatalf("infra error unexpectedly classified as %v (would not map to 5xx)", sentinel)
+		}
+	}
+}
+
+// TestGetMyInbox_SubjectAccessInfraFailure verifies that an infrastructure
+// failure during per-row access filtering is surfaced (5xx) rather than being
+// silently swallowed into a truncated inbox.
+func TestGetMyInbox_SubjectAccessInfraFailure(t *testing.T) {
+	repo := newFakeRepo()
+	actor := uuid.New()
+	reqID := uuid.New()
+	taskID := uuid.New()
+	repo.requests[reqID] = &entity.ApprovalRequest{
+		ID: reqID, RequestNumber: "APR-A",
+		SubjectType: vo.SubjectResearchReport, SubjectID: uuid.New(),
+		Status: vo.RequestStatusPendingApproval,
+	}
+	repo.tasks[taskID] = &entity.ApprovalTask{
+		ID: taskID, ApprovalRequestID: reqID,
+		AssignedUserID: &actor, Status: vo.TaskStatusPending,
+	}
+
+	svc := newTestRuntime(repo)
+	svc.RegisterSubjectAccessPort(vo.SubjectResearchReport, infraFailingSubjectPort{})
+
+	_, _, err := svc.GetMyInbox(ctx(), domain.InboxFilter{UserID: actor})
+	if err == nil {
+		t.Fatal("expected infra error to propagate, got nil (inbox silently truncated)")
+	}
+	if errors.Is(err, domain.ErrForbidden) {
+		t.Fatalf("err = %v, want raw infra error, not ErrForbidden", err)
+	}
+}
+
 // 18. TEAM_MINIMUM mode: stage completes only after the minimum stamp count is
 // reached; a single approval is insufficient.
 func TestApprove_TeamMinimum_MinimumStampCount(t *testing.T) {
@@ -709,6 +791,275 @@ func TestRunPostAction_CallbackFailure_AuditRecorded(t *testing.T) {
 		}
 	}
 	t.Fatalf("expected APPROVAL_SYNC_FAILED audit event; got %v", audit.events)
+}
+
+// spySync records every callback invocation without erroring, so a test can
+// assert whether (and how) the subject-sync port was invoked.
+type spySync struct {
+	approvedCalls int
+	rejectedCalls int
+	lastReason    string
+}
+
+func (s *spySync) OnApproved(_ context.Context, _ vo.SubjectType, _ uuid.UUID, _ uuid.UUID) error {
+	s.approvedCalls++
+	return nil
+}
+func (s *spySync) OnRejected(_ context.Context, _ vo.SubjectType, _ uuid.UUID, _ uuid.UUID, reason string) error {
+	s.rejectedCalls++
+	s.lastReason = reason
+	return nil
+}
+
+// TestWithdrawRequest_DoesNotNotifySubjectSync is a CHARACTERIZATION test that
+// documents a real, currently-unresolved gap (recorded in
+// docs/MANAGER/CLAUDE-GOAL-NEXT-ACCOUNT-HANDOFF.md as a new G2 finding, NOT
+// fixed this pass): unlike ApproveTask/RejectTask (runPostAction) and
+// RevokeRequest (notifyRevoked), the shared terminate() helper used by BOTH
+// WithdrawRequest and CancelRequest never invokes the registered SubjectSync
+// callback at all. For a business module whose own dedicated endpoint (e.g.
+// investment's CancelCashRequest) does its own direct bookkeeping instead of
+// relying on this notification, that specific path is fine — but a caller
+// using the GENERIC /approvals/requests/{id}/withdraw or .../cancel endpoint
+// directly (fully authorized: the submitter, or a privileged canceller) can
+// terminate a CASH_TRANSACTION approval request while its
+// investment__portfolio_cash_requests row is NEVER told, leaving it stuck
+// PENDING forever with a now-dead approval_request_id (the cash-specific
+// Cancel endpoint would then itself fail with "already finalised" when tried
+// afterward, since the approval side is already terminal).
+//
+// NOT fixed this pass: the shared subject-sync callback signature only
+// carries Approved bool (see contract.ApprovalDecision), so wiring
+// terminate() to call OnRejected would incorrectly mark a WITHDRAWN cash
+// request as REJECTED rather than CANCELLED (ApplyCashRequestApproval's
+// approved=false path always sets CashRequestStatusRejected — confirmed by
+// TestRejectedCallbackNoTxn). A correct fix needs the callback contract to
+// distinguish withdrawn/cancelled from rejected-by-approver, which is the
+// same class of contract.ApprovalDecision change Kanta explicitly deferred
+// for approver attribution (owner decision D6, 2026-07-27) — this finding
+// should be resolved alongside that decision, not patched ad hoc here.
+func TestWithdrawRequest_DoesNotNotifySubjectSync(t *testing.T) {
+	repo := newFakeRepo()
+	approver, submitter := uuid.New(), uuid.New()
+	gid := seedGroup(repo, "REVIEWERS", approver)
+	seedConfig(repo, vo.ProcessInvestmentAnalysisReport, entity.ApprovalProcessStage{
+		StageNumber: 1, ApproverMode: vo.ApproverModeGroupAny, ApprovalGroupID: &gid, IsFinalStage: true,
+	})
+	svc := newTestRuntime(repo)
+	spy := &spySync{}
+	svc.RegisterSubjectSync(vo.SubjectResearchReport, spy)
+
+	req, err := submitFixture(repo, svc, submitter)
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+
+	if _, err := svc.WithdrawRequest(ctx(), req.ID, submitter); err != nil {
+		t.Fatalf("withdraw: %v", err)
+	}
+
+	// Documents CURRENT behaviour: zero notification. If this assertion ever
+	// starts failing because terminate() now calls OnRejected, that is
+	// progress — update this test to assert the (then-correct) call instead
+	// of treating the failure as a regression, and confirm the fix maps to
+	// CANCELLED/WITHDRAWN semantics rather than REJECTED before doing so.
+	if spy.rejectedCalls != 0 || spy.approvedCalls != 0 {
+		t.Fatalf("expected zero subject-sync notification from Withdraw (known gap); got approved=%d rejected=%d — if this is now wired up, verify the receiving business module maps it to CANCELLED, not REJECTED",
+			spy.approvedCalls, spy.rejectedCalls)
+	}
+}
+
+// succeedingSync always succeeds; used to prove a retry can resolve a
+// previously-failed sync (the real-world case of a transient outage clearing).
+type succeedingSync struct{}
+
+func (succeedingSync) OnApproved(_ context.Context, _ vo.SubjectType, _ uuid.UUID, _ uuid.UUID) error {
+	return nil
+}
+func (succeedingSync) OnRejected(_ context.Context, _ vo.SubjectType, _ uuid.UUID, _ uuid.UUID, _ string) error {
+	return nil
+}
+
+// TestRunPostAction_CallbackFailure_PersistsSyncFailureRecord verifies G2 item
+// 4: a failed subject-sync callback must not be JUST an audit-log line — it
+// must persist a durable, operator-retriable SyncFailure record.
+func TestRunPostAction_CallbackFailure_PersistsSyncFailureRecord(t *testing.T) {
+	repo := newFakeRepo()
+	approver, submitter := uuid.New(), uuid.New()
+	gid := seedGroup(repo, "REVIEWERS", approver)
+	seedConfig(repo, vo.ProcessInvestmentAnalysisReport, entity.ApprovalProcessStage{
+		StageNumber: 1, ApproverMode: vo.ApproverModeGroupAny, ApprovalGroupID: &gid, IsFinalStage: true,
+	})
+	svc := newTestRuntime(repo)
+	svc.RegisterSubjectSync(vo.SubjectResearchReport, failingSync{})
+
+	req, err := submitFixture(repo, svc, submitter)
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	task := pendingTaskFor(repo, req.ID, approver)
+	if _, err := svc.ApproveTask(ctx(), task.ID, approver, ""); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+
+	var found *entity.SyncFailure
+	for _, sf := range repo.syncFailures {
+		if sf.ApprovalRequestID == req.ID {
+			found = sf
+		}
+	}
+	if found == nil {
+		t.Fatal("expected a persisted SyncFailure record for the failed callback")
+	}
+	if found.Status != vo.SyncFailureStatusPending {
+		t.Fatalf("status = %s, want PENDING", found.Status)
+	}
+	if found.AttemptCount != 1 {
+		t.Fatalf("attempt_count = %d, want 1", found.AttemptCount)
+	}
+	if found.Outcome != vo.SyncFailureOutcomeApproved {
+		t.Fatalf("outcome = %s, want APPROVED", found.Outcome)
+	}
+	if found.LastError == "" {
+		t.Fatal("expected a non-empty last_error")
+	}
+}
+
+// TestRetrySyncFailure_Success_MarksResolved verifies a retry that succeeds
+// (the transient outage cleared) flips the record to RESOLVED with an actor
+// attributed, and durably records this even though it happens inside the same
+// transaction as the (successful) callback invocation.
+func TestRetrySyncFailure_Success_MarksResolved(t *testing.T) {
+	repo := newFakeRepo()
+	reqID := uuid.New()
+	repo.requests[reqID] = &entity.ApprovalRequest{
+		ID: reqID, RequestNumber: "APR-001",
+		SubjectType: vo.SubjectResearchReport, SubjectID: uuid.New(),
+		Status: vo.RequestStatusApproved,
+	}
+	sf := &entity.SyncFailure{
+		ID: uuid.New(), ApprovalRequestID: reqID,
+		SubjectType: vo.SubjectResearchReport, SubjectID: repo.requests[reqID].SubjectID,
+		Outcome: vo.SyncFailureOutcomeApproved, AttemptCount: 1, MaxAttempts: 5,
+		LastError: "downstream system unavailable", Status: vo.SyncFailureStatusPending,
+	}
+	repo.syncFailures[sf.ID] = sf
+
+	svc := newTestRuntime(repo)
+	svc.RegisterSubjectSync(vo.SubjectResearchReport, succeedingSync{})
+
+	actor := uuid.New()
+	out, err := svc.RetrySyncFailure(ctx(), sf.ID, actor)
+	if err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if out.Status != vo.SyncFailureStatusResolved {
+		t.Fatalf("status = %s, want RESOLVED", out.Status)
+	}
+	if out.ResolvedBy == nil || *out.ResolvedBy != actor {
+		t.Fatalf("resolved_by = %v, want %s", out.ResolvedBy, actor)
+	}
+	if out.ResolvedAt == nil {
+		t.Fatal("expected resolved_at to be set")
+	}
+	// A second retry must now refuse — already resolved.
+	if _, err := svc.RetrySyncFailure(ctx(), sf.ID, actor); !errors.Is(err, domain.ErrSyncFailureNotRetryable) {
+		t.Fatalf("second retry err = %v, want ErrSyncFailureNotRetryable", err)
+	}
+}
+
+// TestRetrySyncFailure_StillFailing_IncrementsAttemptAndDurablyPersists is the
+// regression test for the exact bug this feature must not have: an attempt
+// that FAILS again must still durably persist the incremented attempt_count
+// (i.e. the transaction wrapping the retry must commit even though the
+// callback itself returned an error — returning the callback error as the
+// transaction's own error would silently roll back the attempt-count write
+// and the bounded retry would never advance).
+func TestRetrySyncFailure_StillFailing_IncrementsAttemptAndDurablyPersists(t *testing.T) {
+	repo := newFakeRepo()
+	reqID := uuid.New()
+	repo.requests[reqID] = &entity.ApprovalRequest{
+		ID: reqID, RequestNumber: "APR-001",
+		SubjectType: vo.SubjectResearchReport, SubjectID: uuid.New(),
+		Status: vo.RequestStatusApproved,
+	}
+	sf := &entity.SyncFailure{
+		ID: uuid.New(), ApprovalRequestID: reqID,
+		SubjectType: vo.SubjectResearchReport, SubjectID: repo.requests[reqID].SubjectID,
+		Outcome: vo.SyncFailureOutcomeApproved, AttemptCount: 1, MaxAttempts: 3,
+		LastError: "downstream system unavailable", Status: vo.SyncFailureStatusPending,
+	}
+	repo.syncFailures[sf.ID] = sf
+
+	svc := newTestRuntime(repo)
+	svc.RegisterSubjectSync(vo.SubjectResearchReport, failingSync{})
+
+	actor := uuid.New()
+
+	out, err := svc.RetrySyncFailure(ctx(), sf.ID, actor)
+	if err == nil {
+		t.Fatal("expected the retry to report the callback failure")
+	}
+	if out == nil {
+		t.Fatal("expected the record to be returned even though the callback failed")
+	}
+	if out.AttemptCount != 2 {
+		t.Fatalf("attempt_count = %d, want 2 (must persist despite the callback failing)", out.AttemptCount)
+	}
+	if out.Status != vo.SyncFailureStatusPending {
+		t.Fatalf("status = %s, want still PENDING (1 attempt remaining)", out.Status)
+	}
+	// Independently verify against the repo, not just the returned pointer —
+	// proves the write actually committed rather than only mutating in memory.
+	persisted, _ := repo.GetSyncFailure(ctx(), sf.ID)
+	if persisted.AttemptCount != 2 {
+		t.Fatalf("persisted attempt_count = %d, want 2", persisted.AttemptCount)
+	}
+
+	// Third and final attempt exhausts MaxAttempts.
+	out, err = svc.RetrySyncFailure(ctx(), sf.ID, actor)
+	if err == nil {
+		t.Fatal("expected the callback to fail again")
+	}
+	if out.Status != vo.SyncFailureStatusExhausted {
+		t.Fatalf("status = %s, want EXHAUSTED after MaxAttempts reached", out.Status)
+	}
+
+	// A fourth retry must refuse — exhausted, not just pending-with-attempts-left.
+	if _, err := svc.RetrySyncFailure(ctx(), sf.ID, actor); !errors.Is(err, domain.ErrSyncFailureNotRetryable) {
+		t.Fatalf("retry after exhaustion err = %v, want ErrSyncFailureNotRetryable", err)
+	}
+}
+
+// TestRetrySyncFailure_NoRegisteredCallback_FailsClosed verifies that a
+// missing subject-sync registration (a wiring gap) is refused rather than
+// silently marked resolved.
+func TestRetrySyncFailure_NoRegisteredCallback_FailsClosed(t *testing.T) {
+	repo := newFakeRepo()
+	reqID := uuid.New()
+	repo.requests[reqID] = &entity.ApprovalRequest{
+		ID: reqID, RequestNumber: "APR-001",
+		SubjectType: vo.SubjectResearchReport, SubjectID: uuid.New(),
+		Status: vo.RequestStatusApproved,
+	}
+	sf := &entity.SyncFailure{
+		ID: uuid.New(), ApprovalRequestID: reqID,
+		SubjectType: vo.SubjectResearchReport, SubjectID: repo.requests[reqID].SubjectID,
+		Outcome: vo.SyncFailureOutcomeApproved, AttemptCount: 1, MaxAttempts: 5,
+		LastError: "downstream system unavailable", Status: vo.SyncFailureStatusPending,
+	}
+	repo.syncFailures[sf.ID] = sf
+
+	svc := newTestRuntime(repo) // no subject sync registered at all
+
+	if _, err := svc.RetrySyncFailure(ctx(), sf.ID, uuid.New()); !errors.Is(err, domain.ErrSyncFailureNotRetryable) {
+		t.Fatalf("err = %v, want ErrSyncFailureNotRetryable", err)
+	}
+	// Must not have consumed an attempt.
+	persisted, _ := repo.GetSyncFailure(ctx(), sf.ID)
+	if persisted.AttemptCount != 1 {
+		t.Fatalf("attempt_count = %d, want unchanged 1", persisted.AttemptCount)
+	}
 }
 
 // ── Subject access port: read and write enforcement ───────────────────────────
@@ -1005,11 +1356,12 @@ func TestCancelApprovalBySubject_InvalidSubjectType_ReturnsValidationError(t *te
 
 // ── Subject access port: missing port, zero actor, generic subject ────────────
 
-// TestSubjectAccessPort_MissingPort_FailsClosed verifies that when no port is
-// registered for a subject type, the engine returns ErrNotFound (fail-closed).
-// ErrNotFound is used instead of ErrForbidden to prevent existence oracle attacks:
-// an attacker must not be able to distinguish "request does not exist" from
-// "request exists but you cannot see it".
+// TestSubjectAccessPort_MissingPort_FailsClosed verifies that a missing
+// subject-access port is treated as infrastructure MISCONFIGURATION — an
+// operator-visible 5xx — not a user-level denial masked as 404/403. A missing
+// port is a global wiring gap: it fails identically for every request of that
+// subject type regardless of whether the request exists, so it is NOT an
+// existence oracle. Fail-closed is preserved — the request is still blocked.
 func TestSubjectAccessPort_MissingPort_FailsClosed(t *testing.T) {
 	repo := newFakeRepo()
 	reqID := uuid.New()
@@ -1022,14 +1374,21 @@ func TestSubjectAccessPort_MissingPort_FailsClosed(t *testing.T) {
 	svc := newBareTestRuntime(repo) // no ports registered
 
 	_, err := svc.GetApprovalRequest(ctx(), reqID, uuid.New())
-	if !errors.Is(err, domain.ErrNotFound) {
-		t.Fatalf("missing port must return ErrNotFound (fail closed), got %v", err)
+	if err == nil {
+		t.Fatal("missing port must return an error (blocked)")
+	}
+	// Must NOT be classified as a user denial (403) or masked as 404 — a wiring
+	// gap is an unexpected/infra error, which writeError maps to 500.
+	if errors.Is(err, domain.ErrForbidden) || errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("missing port must be an infrastructure 5xx (not Forbidden/NotFound), got %v", err)
 	}
 }
 
-// TestSubjectAccessPort_MissingPort_ListFiltersAll verifies that when no port
-// is registered, ListRequests with a ViewerID returns no items (fail closed).
-func TestSubjectAccessPort_MissingPort_ListFiltersAll(t *testing.T) {
+// TestSubjectAccessPort_MissingPort_ListAborts verifies that a missing port
+// makes ListRequests ABORT with an infrastructure error (5xx) rather than
+// silently returning an empty list — a wiring gap must be operator-visible, not
+// hidden as "you have access to nothing".
+func TestSubjectAccessPort_MissingPort_ListAborts(t *testing.T) {
 	repo := newFakeRepo()
 	reqID := uuid.New()
 	repo.requests[reqID] = &entity.ApprovalRequest{
@@ -1040,12 +1399,12 @@ func TestSubjectAccessPort_MissingPort_ListFiltersAll(t *testing.T) {
 
 	svc := newBareTestRuntime(repo)
 
-	results, _, err := svc.ListRequests(ctx(), domain.RequestListFilter{ViewerID: uuid.New()})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	_, _, err := svc.ListRequests(ctx(), domain.RequestListFilter{ViewerID: uuid.New()})
+	if err == nil {
+		t.Fatal("missing port must abort the list with an error, not silently filter all")
 	}
-	if len(results) != 0 {
-		t.Fatalf("missing port must filter all results (fail closed), got %d", len(results))
+	if errors.Is(err, domain.ErrForbidden) {
+		t.Fatalf("missing port is infra (5xx), not a per-row denial, got %v", err)
 	}
 }
 

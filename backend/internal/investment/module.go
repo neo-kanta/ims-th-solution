@@ -43,6 +43,7 @@ type Module struct {
 	executions             *persistence.PostgresExecutionRepository
 	confirmations          *persistence.PostgresTradeConfirmationRepository
 	confirmationImports    *persistence.PostgresTradeConfirmationImportRepository
+	cashRequests           *persistence.PostgresCashRequestRepository
 
 	// Cross-module adapters
 	permissionAdapter *adapter.PermissionCheckerAdapter
@@ -81,6 +82,7 @@ type Module struct {
 	decisionHandler     *handler.DecisionHandler
 	executionHandler    *handler.ExecutionHandler
 	confirmationHandler *handler.TradeConfirmationHandler
+	cashRequestHandler  *handler.CashRequestHandler
 	intradayHandler     *handler.IntradayValuationHandler
 
 	// Middleware-side permission checker (uses the IAM port — its
@@ -130,6 +132,7 @@ func NewModule(
 	m.executions = persistence.NewPostgresExecutionRepository(pool)
 	m.confirmations = persistence.NewPostgresTradeConfirmationRepository(pool)
 	m.confirmationImports = persistence.NewPostgresTradeConfirmationImportRepository(pool)
+	m.cashRequests = persistence.NewPostgresCashRequestRepository(pool)
 
 	// ── Adapters ──────────────────────────────────────────────────────────
 	m.permissionAdapter = adapter.NewPermissionCheckerAdapter(iamPort)
@@ -158,6 +161,11 @@ func NewModule(
 		m.positions, m.cash, m.txns, m.projector,
 		workflow, compliance, m.auditAdapter, nil,
 	)
+	// LIVE cash-approval gate: the staging repo is module-local (no circular
+	// dependency) so it is wired here. The approval submitter/canceller are
+	// injected post-construction in cmd/server/main.go (SetApprovalSubmitter /
+	// SetApprovalCanceller) to avoid a circular construction dependency.
+	m.postTxn.SetCashRequestRepository(m.cashRequests)
 	m.reverseTxn = command.NewReverseTransactionHandler(
 		pool, m.txns, m.projector, workflow, m.auditAdapter, nil,
 	)
@@ -238,6 +246,8 @@ func NewModule(
 	m.confirmationHandler.SetExecutionRepository(m.executions)
 	m.confirmationHandler.SetPortfolioRepository(m.portfolios)
 	m.confirmationHandler.SetPermissionChecker(m.permissionAdapter)
+	m.cashRequestHandler = handler.NewCashRequestHandler(m.portfolios, m.cashRequests, m.postTxn)
+	m.cashRequestHandler.SetPermissionChecker(m.permissionAdapter)
 
 	return m
 }
@@ -517,6 +527,19 @@ func (m *Module) RegisterRoutesV2(r chi.Router) {
 			r.Post("/{portfolioCode}/transactions/{transactionId}/reverse", h.ReverseTransactionByCode)
 		})
 
+		// ── LIVE cash-transaction approval requests (Stage 2) ───────────
+		// Data-scope is enforced per-route via resolvePortfolioByCode(h.pc).
+		// Both routes reuse the LEDGER_POST function permission: only actors
+		// who can post cash movements can view/cancel their pending requests
+		// (no separate cash-request permission is added to the catalog).
+		if crh := m.cashRequestHandler; crh != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(pc, invperm.CodeLedgerPost))
+				r.Get("/{portfolioCode}/cash-requests", crh.ListCashRequestsByCode)
+				r.Post("/{portfolioCode}/cash-requests/{cashRequestId}/cancel", crh.CancelCashRequestByCode)
+			})
+		}
+
 		// ── Decisions (Milestone 5) ────────────────────────────────────
 		if dh := m.decisionHandler; dh != nil {
 			r.Group(func(r chi.Router) {
@@ -615,6 +638,12 @@ func (m *Module) SetApprovalStatusProvider(p contract.ApprovalStatusProvider) {
 	if m.decisionHandler != nil {
 		m.decisionHandler.SetApprovalStatusProvider(p)
 	}
+	// The LIVE cash-approval gate uses the status provider to re-link a cash
+	// request to an approval a prior attempt already submitted (idempotent retry
+	// after a link failure), without creating a second approval request.
+	if m.postTxn != nil {
+		m.postTxn.SetApprovalStatusProvider(p)
+	}
 }
 
 // SetApprovalBatchActor wires the approval batch-action actor into the decision
@@ -646,6 +675,9 @@ func (m *Module) SetApprovalSubmitter(s contract.ApprovalSubmitter) {
 	if m.decisionCmd != nil {
 		m.decisionCmd.SetApprovalSubmitter(s)
 	}
+	if m.postTxn != nil {
+		m.postTxn.SetApprovalSubmitter(s)
+	}
 }
 
 // SetApprovalCanceller connects the approval canceller so that cancelling a
@@ -660,6 +692,9 @@ func (m *Module) SetApprovalCanceller(c contract.ApprovalCanceller) {
 	}
 	if m.decisionCmd != nil {
 		m.decisionCmd.SetApprovalCanceller(c)
+	}
+	if m.postTxn != nil {
+		m.postTxn.SetApprovalCanceller(c)
 	}
 }
 
@@ -785,14 +820,38 @@ func (m *Module) TradeConfirmationGate() contract.TradeConfirmationGate {
 }
 
 // SubjectAccessor returns the contract.SubjectAccessor for the investment
-// module's subject types (RESEARCH_REPORT, INVESTMENT_DECISION). Register it
-// with the approval module via ApprovalModule.RegisterSubjectAccessPort in
-// cmd/server/main.go for each subject type.
+// module's subject types (RESEARCH_REPORT, INVESTMENT_DECISION,
+// COMPLIANCE_RELEASE, CASH_TRANSACTION). Register it with the approval module
+// via ApprovalModule.RegisterSubjectAccessPort in cmd/server/main.go for each
+// subject type.
 func (m *Module) SubjectAccessor(iamPort adapter.IAMPermissionPort) contract.SubjectAccessor {
 	if m == nil || m.research == nil || m.decisions == nil {
 		return nil
 	}
-	return adapter.NewInvestmentSubjectAccessor(m.research, m.decisions, iamPort)
+	acc := adapter.NewInvestmentSubjectAccessor(m.research, m.decisions, iamPort)
+	acc.SetCashRequestRepository(m.cashRequests)
+	return acc
+}
+
+// CashRequestApprovalSubjectCallback returns the callback the Approval Module
+// invokes when a CASH_TRANSACTION approval reaches a final decision. Approved →
+// the real ledger transaction is materialized; rejected → the request is marked
+// REJECTED and no transaction is posted.
+func (m *Module) CashRequestApprovalSubjectCallback() contract.ApprovalSubjectCallback {
+	if m == nil || m.postTxn == nil {
+		return nil
+	}
+	return adapter.NewCashRequestApprovalCallback(m.postTxn)
+}
+
+// CashRequestSubjectValidator returns the approval subject validator for the
+// CASH_TRANSACTION subject type. Verifies the request is still PENDING when the
+// approval engine acts on it (so a cancelled request cannot be approved).
+func (m *Module) CashRequestSubjectValidator() contract.ApprovalSubjectValidator {
+	if m == nil || m.cashRequests == nil {
+		return nil
+	}
+	return adapter.NewCashRequestSubjectValidator(m.cashRequests)
 }
 
 // ContractCatalog returns an implementation of contract.ContractCatalog backed

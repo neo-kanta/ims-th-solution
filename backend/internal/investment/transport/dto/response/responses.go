@@ -34,8 +34,9 @@ type FundResponse struct {
 
 // PortfolioResponse mirrors entity.Portfolio for HTTP transport.
 type PortfolioResponse struct {
-	ID                uuid.UUID  `json:"id"`
-	FundID            uuid.UUID  `json:"fund_id"`
+	ID uuid.UUID `json:"id"`
+	// FundID is omitted for a fund-less portfolio ("Bind with Fund: N").
+	FundID            *uuid.UUID `json:"fund_id,omitempty"`
 	PortfolioType     string     `json:"portfolio_type"`
 	Code              string     `json:"code"`
 	Name              string     `json:"name"`
@@ -93,7 +94,7 @@ type HoldingResponse struct {
 type TransactionResponse struct {
 	ID                    uuid.UUID  `json:"id"`
 	PortfolioID           uuid.UUID  `json:"portfolio_id"`
-	FundID                uuid.UUID  `json:"fund_id"`
+	FundID                *uuid.UUID `json:"fund_id,omitempty"`
 	InstrumentID          *uuid.UUID `json:"instrument_id,omitempty"`
 	TransactionType       string     `json:"transaction_type"`
 	Side                  string     `json:"side,omitempty"`
@@ -282,6 +283,37 @@ type InstrumentListResponse struct {
 
 type TransactionListResponse struct {
 	Items []TransactionResponse `json:"items"`
+	Total int                   `json:"total"`
+	Page  int                   `json:"page"`
+	Limit int                   `json:"limit"`
+}
+
+// CashRequestResponse mirrors entity.PortfolioCashRequest — the mutable staging
+// row for a LIVE-portfolio cash movement awaiting approval. Returned by the
+// pending-list and cancel endpoints, and by POST .../transactions (HTTP 202)
+// when a LIVE cash movement is staged instead of posted.
+type CashRequestResponse struct {
+	ID                uuid.UUID  `json:"id"`
+	PortfolioID       uuid.UUID  `json:"portfolio_id"`
+	FundID            *uuid.UUID `json:"fund_id,omitempty"`
+	TransactionType   string     `json:"transaction_type"`
+	Amount            string     `json:"amount"`
+	Currency          string     `json:"currency"`
+	Fees              string     `json:"fees"`
+	ValueDate         string     `json:"value_date"`
+	Memo              string     `json:"memo,omitempty"`
+	Status            string     `json:"status"`
+	ApprovalRequestID *uuid.UUID `json:"approval_request_id,omitempty"`
+	ResultingTxnID    *uuid.UUID `json:"resulting_txn_id,omitempty"`
+	SubmittedBy       uuid.UUID  `json:"submitted_by"`
+	SubmittedAt       time.Time  `json:"submitted_at"`
+	DecidedBy         *uuid.UUID `json:"decided_by,omitempty"`
+	DecidedAt         *time.Time `json:"decided_at,omitempty"`
+	Version           int        `json:"version"`
+}
+
+type CashRequestListResponse struct {
+	Items []CashRequestResponse `json:"items"`
 	Total int                   `json:"total"`
 	Page  int                   `json:"page"`
 	Limit int                   `json:"limit"`
@@ -487,7 +519,7 @@ func FormatDatePtr(t *time.Time) *string {
 type DecisionResponse struct {
 	ID                                 uuid.UUID  `json:"id"`
 	DecisionNumber                     string     `json:"decision_number"`
-	FundID                             uuid.UUID  `json:"fund_id"`
+	FundID                             *uuid.UUID `json:"fund_id,omitempty"`
 	PortfolioID                        uuid.UUID  `json:"portfolio_id"`
 	InstrumentID                       *uuid.UUID `json:"instrument_id,omitempty"`
 	InstrumentCode                     string     `json:"instrument_code,omitempty"`
@@ -576,7 +608,7 @@ type DecisionListResponse struct {
 type ExecutionResponse struct {
 	ID                 uuid.UUID  `json:"id"`
 	DecisionID         uuid.UUID  `json:"decision_id"`
-	FundID             uuid.UUID  `json:"fund_id"`
+	FundID             *uuid.UUID `json:"fund_id,omitempty"`
 	PortfolioID        uuid.UUID  `json:"portfolio_id"`
 	InstrumentID       *uuid.UUID `json:"instrument_id,omitempty"`
 	InstrumentCode     string     `json:"instrument_code"`
@@ -627,7 +659,7 @@ type TradeConfirmationResponse struct {
 	ID                uuid.UUID  `json:"id"`
 	ExecutionID       uuid.UUID  `json:"execution_id"`
 	DecisionID        uuid.UUID  `json:"decision_id"`
-	FundID            uuid.UUID  `json:"fund_id"`
+	FundID            *uuid.UUID `json:"fund_id,omitempty"`
 	PortfolioID       uuid.UUID  `json:"portfolio_id"`
 	BusinessDate      string     `json:"business_date"`
 	ConfirmedQuantity string     `json:"confirmed_quantity,omitempty"`

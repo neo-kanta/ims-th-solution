@@ -1,0 +1,32 @@
+info:
+  name: retry-sync-failure
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{approval-base-url}}/sync-failures/:syncFailureId/retry"
+  params:
+    - name: syncFailureId
+      value: "{{approval-sync-failure-id}}"
+      type: path
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("approval-sync-failure-id", data.id, { persist: true });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

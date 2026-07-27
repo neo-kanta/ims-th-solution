@@ -56,6 +56,25 @@ describe("resolveDecisionNewPageState", () => {
     expect(state).toEqual({ kind: "loading" });
   });
 
+  it("is 'no-fund' once loaded when the portfolio has no fund bound", () => {
+    const state = resolveDecisionNewPageState({
+      portfolioCode: "PF-NOFUND",
+      loadedPortfolioCode: "PF-NOFUND",
+      error: null,
+      hasFund: false,
+    });
+    expect(state).toEqual({ kind: "no-fund" });
+  });
+
+  it("defaults hasFund to true when omitted, so pre-existing callers stay 'ready'", () => {
+    const state = resolveDecisionNewPageState({
+      portfolioCode: "TH-EQ-01",
+      loadedPortfolioCode: "TH-EQ-01",
+      error: null,
+    });
+    expect(state).toEqual({ kind: "ready" });
+  });
+
   it("maps a 404 error to 'not-found'", () => {
     const state = resolveDecisionNewPageState({
       portfolioCode: "TH-EQ-01",

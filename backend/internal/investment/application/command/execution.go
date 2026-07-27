@@ -132,9 +132,10 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 	// Workflow lock gate — refuse to open an execution while the trading day is
 	// locked (e.g. manager approval lock or EOD). Uses IsTransactionLocked, not
 	// IsTradeAllowed, because execution is an operational act against an already-
-	// approved decision, not a new trade submission.
-	if h.workflow != nil {
-		locked, err := h.workflow.IsTransactionLocked(ctx, d.FundID, d.BusinessDate)
+	// approved decision, not a new trade submission. No fund-scoped lock to
+	// check for a fund-less decision.
+	if h.workflow != nil && d.FundID != nil {
+		locked, err := h.workflow.IsTransactionLocked(ctx, *d.FundID, d.BusinessDate)
 		if err != nil {
 			return nil, fmt.Errorf("checking workflow transaction lock: %w", err)
 		}
@@ -193,11 +194,15 @@ func (h *ExecutionCommandHandler) Create(ctx context.Context, req CreateExecutio
 		} else if d.LimitPrice != nil {
 			price = *d.LimitPrice
 		}
+		contractID := uuid.Nil
+		if d.FundID != nil {
+			contractID = *d.FundID
+		}
 		checkGroupID := uuid.New()
 		result, err := h.compliance.CheckProposedOrder(ctx, contract.ProposedOrderCheck{
 			CheckGroupID: checkGroupID,
 			PortfolioID:  d.PortfolioID,
-			ContractID:   d.FundID,
+			ContractID:   contractID,
 			BusinessDate: d.BusinessDate,
 			Actor:        req.ActorID.String(),
 			OrderID:      d.ID,

@@ -27,6 +27,8 @@ const (
 	CodeCancel      = "APPROVAL_CANCEL"
 	CodeRevoke      = "APPROVAL_REVOKE"
 	CodeAuditView   = "APPROVAL_AUDIT_VIEW"
+	CodeSyncView    = "APPROVAL_SYNC_VIEW"
+	CodeSyncRetry   = "APPROVAL_SYNC_RETRY"
 
 	// Configuration.
 	CodeConfigView    = "APPROVAL_CONFIG_VIEW"
@@ -56,6 +58,8 @@ func (Provider) Permissions() []contract.PermissionDefinition {
 		{Code: CodeCancel, Name: "Approval Cancel", Description: "Cancel an in-flight approval request (privileged)."},
 		{Code: CodeRevoke, Name: "Approval Revoke", Description: "Revoke a previously approved request, reopening the subject for correction."},
 		{Code: CodeAuditView, Name: "Approval Audit View", Description: "View the immutable approval audit timeline."},
+		{Code: CodeSyncView, Name: "Approval Sync Failure View", Description: "View the operator inbox of approval decisions whose business-module sync callback failed."},
+		{Code: CodeSyncRetry, Name: "Approval Sync Failure Retry", Description: "Retry a failed approval subject-sync callback (operator remediation)."},
 
 		{Code: CodeConfigView, Name: "Approval Config View", Description: "Read approval configuration (groups, teams, processes)."},
 		{Code: CodeGroupManage, Name: "Approval Group Manage", Description: "Create and manage approval groups and members."},

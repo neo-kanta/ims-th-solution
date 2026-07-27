@@ -1,7 +1,7 @@
 # IMS Thailand — Project Makefile
 # Quick commands for development, testing, and deployment.
 
-.PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed db-reset \
+.PHONY: dev dev-backend dev-frontend migrate-up migrate-down migrate-new seed seed-demo db-reset \
         contract-check test test-unit test-integration test-e2e test-e2e-backend test-e2e-ci \
         e2e-db-setup lint build docker-build swagger api-client
 
@@ -38,10 +38,16 @@ migrate-new: ## Create new migration pair (usage: make migrate-new module=workfl
 	touch database/migrations/$${timestamp}_$(module)__$(name).down.sql; \
 	echo "Created: database/migrations/$${timestamp}_$(module)__$(name).{up,down}.sql"
 
-seed: ## Load seed data
+seed: ## Load reference/catalog seed data ONLY (production-safe; no demo users)
 	cd backend && go run ./cmd/seed
 
-db-reset: ## Drop + recreate + migrate + seed
+seed-demo: ## Load reference + demo data (ben/green/neo). DEV/TEST ONLY — never run against production
+	# Forces the explicit dev opt-in the seeder requires (INCLUDE_DEMO_SEEDS=true
+	# honored only when APP_ENV is development/test). This target is a developer
+	# convenience for a LOCAL database; production seeding never goes through it.
+	cd backend && INCLUDE_DEMO_SEEDS=true APP_ENV=development go run ./cmd/seed
+
+db-reset: ## Drop + recreate + migrate + seed (dev: includes demo data)
 	@echo "Resetting database..."
 	cd infra && docker compose stop postgres
 	cd infra && docker compose rm -f postgres
@@ -49,7 +55,7 @@ db-reset: ## Drop + recreate + migrate + seed
 	cd infra && docker compose up -d postgres
 	@sleep 3
 	$(MAKE) migrate-up
-	$(MAKE) seed
+	$(MAKE) seed-demo
 
 # =============================
 # Contracts

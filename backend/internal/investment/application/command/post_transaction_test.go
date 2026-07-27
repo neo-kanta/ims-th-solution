@@ -360,7 +360,7 @@ func newPostFixture() *postFixture {
 	businessDate := time.Date(2026, 4, 29, 0, 0, 0, 0, time.UTC)
 	return &postFixture{
 		portfolio: &entity.Portfolio{
-			ID: portfolioID, FundID: fundID, BaseCurrency: "THB", ValuationCurrency: "THB",
+			ID: portfolioID, FundID: &fundID, BaseCurrency: "THB", ValuationCurrency: "THB",
 			Status: vo.PortfolioStatusActive,
 		},
 		fund: &entity.Fund{ID: fundID, BaseCurrency: "THB", Status: vo.FundStatusActive},

@@ -27,6 +27,9 @@ var (
 	ErrNotAssigned = errors.New("approval: you are not assigned to this task")
 	// ErrRequestNotActionable indicates the request is not in a state that accepts actions (409).
 	ErrRequestNotActionable = errors.New("approval: request is not awaiting approval")
+	// ErrSyncFailureNotRetryable indicates a sync-failure record is already
+	// RESOLVED/EXHAUSTED, or has no registered subject-sync callback (409).
+	ErrSyncFailureNotRetryable = errors.New("approval: sync failure is not retryable")
 )
 
 // DomainError is a typed error carrying a sentinel kind plus a human message.

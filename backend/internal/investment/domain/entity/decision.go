@@ -30,8 +30,9 @@ import (
 type Decision struct {
 	ID             uuid.UUID
 	DecisionNumber string
-	FundID         uuid.UUID
-	PortfolioID    uuid.UUID
+	// FundID is nil for a decision on a fund-less portfolio.
+	FundID      *uuid.UUID
+	PortfolioID uuid.UUID
 
 	// InstrumentID and InstrumentCode are nil/empty for BASKET_ORDER, REBALANCE,
 	// and SWITCH headers — the per-instrument detail lives in DecisionLines.

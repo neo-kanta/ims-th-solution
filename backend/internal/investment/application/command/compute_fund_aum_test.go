@@ -35,8 +35,8 @@ func newFundAUMFixture() *fundAUMFixture {
 		BaseCurrency: "THB",
 		Status:       vo.FundStatusActive,
 	}
-	portfolioA := &entity.Portfolio{ID: uuid.New(), FundID: fund.ID, Status: vo.PortfolioStatusActive, BaseCurrency: "THB", ValuationCurrency: "THB"}
-	portfolioB := &entity.Portfolio{ID: uuid.New(), FundID: fund.ID, Status: vo.PortfolioStatusActive, BaseCurrency: "THB", ValuationCurrency: "THB"}
+	portfolioA := &entity.Portfolio{ID: uuid.New(), FundID: &fund.ID, Status: vo.PortfolioStatusActive, BaseCurrency: "THB", ValuationCurrency: "THB"}
+	portfolioB := &entity.Portfolio{ID: uuid.New(), FundID: &fund.ID, Status: vo.PortfolioStatusActive, BaseCurrency: "THB", ValuationCurrency: "THB"}
 
 	bd := time.Date(2026, 5, 7, 0, 0, 0, 0, time.UTC)
 

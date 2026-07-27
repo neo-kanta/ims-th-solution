@@ -31,14 +31,16 @@ import (
 
 // PostTransactionByCode handles POST /api/v2/portfolios/{portfolioCode}/transactions.
 // @Summary Post Portfolio Transaction By Code
-// @Description Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id.
+// @Description Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).
 // @Tags Investment - Portfolios V2
 // @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param portfolioCode path string true "Portfolio code"
+// @Param Idempotency-Key header string false "Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated."
 // @Param request body request.PostTransactionRequest true "Transaction post payload"
-// @Success 201 {object} response.TransactionResponse
+// @Success 201 {object} response.TransactionResponse "Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement)"
+// @Success 202 {object} response.CashRequestResponse "LIVE cash movement staged for approval (pending)"
 // @Failure 400 {object} httputil.ErrorResponse
 // @Failure 401 {object} httputil.ErrorResponse
 // @Failure 403 {object} httputil.ErrorResponse
@@ -59,6 +61,13 @@ func (h *InvestmentHandler) PostTransactionByCode(w http.ResponseWriter, r *http
 	res, err := h.postTxn.Handle(r.Context(), cmdReq)
 	if err != nil {
 		writeDomainError(w, err)
+		return
+	}
+	// A LIVE cash movement is staged for approval, not posted — return 202 with
+	// the pending cash request so the frontend can distinguish "pending
+	// approval" from "posted".
+	if res.Pending {
+		httputil.Accepted(w, response.FromCashRequest(res.CashRequest))
 		return
 	}
 	httputil.Created(w, response.FromTransaction(res.Transaction))

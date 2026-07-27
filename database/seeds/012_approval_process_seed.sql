@@ -1,15 +1,27 @@
 -- =============================================================================
--- Approval module — DEV/DEMO seed (idempotent)
+-- Approval module — process wiring seed (reference — always runs)
 -- =============================================================================
--- Seeds approval groups, members, two process configurations, and one demo
--- delegation so the approval workflow is usable out of the box in development.
--- DEV ONLY — references users from 004_investment_process_assignment_seed.sql
--- (admin / ben / green) and is safe to re-run.
+-- Seeds the approval groups (role shells), the two default process
+-- configurations, and their stages so INVESTMENT_ANALYSIS_REPORT and
+-- INVESTMENT_DECISION submissions have a reachable approval process in every
+-- environment, including production. The admin bootstrap account is also
+-- registered as an INVESTMENT_SUPERVISORS member so production has at least
+-- one eligible final-stage approver out of the box; assigning real
+-- reviewers/supervisors to these groups afterward is an operator action
+-- performed through the application.
+--
+-- Named demo users (ben, green) were previously assigned as members of these
+-- groups directly in this file, along with a demo delegation from ben to
+-- green. That named-demo-identity content has moved to
+-- database/seeds/demo/002_approval_demo_seed.sql, which only runs in
+-- development/test (see backend/cmd/seed). Without it, in production these
+-- groups exist with only the admin supervisor membership until an
+-- administrator assigns real reviewers/supervisors.
 --
 -- Groups:
---   FUND_MANAGER_REVIEWERS : ben (priority 1), green (priority 2)
---   INVESTMENT_SUPERVISORS : admin (priority 1), green (priority 2)
---   TRADING_SUPERVISORS    : green (priority 1)
+--   FUND_MANAGER_REVIEWERS : (no reference members; assign real reviewers)
+--   INVESTMENT_SUPERVISORS : admin (priority 1)
+--   TRADING_SUPERVISORS    : (no reference members; assign real supervisors)
 --
 -- Processes (COMPANY-global, contract_id NULL → no per-fund data-scope needed):
 --   INVESTMENT_ANALYSIS_REPORT
@@ -18,11 +30,6 @@
 --   INVESTMENT_DECISION
 --     stage 1 GROUP_ANY       FUND_MANAGER_REVIEWERS
 --     stage 2 GROUP_ANY       INVESTMENT_SUPERVISORS (final)
---
--- Delegation:
---   ben → green, wildcard (all contracts), 30 days from seed date.
---   Demonstrates the delegate proxy path: green can approve tasks assigned to
---   ben, producing a DELEGATED signature that records both actors.
 -- =============================================================================
 
 BEGIN;
@@ -30,22 +37,18 @@ BEGIN;
 -- ── Groups ───────────────────────────────────────────────────────────────────
 INSERT INTO approval__groups (id, group_code, group_name, remarks, is_active, created_by)
 VALUES
-    ('a9000000-0000-0000-0000-000000000001', 'FUND_MANAGER_REVIEWERS', 'Fund Manager Reviewers', 'Dev seed group', true, 'a0000000-0000-0000-0000-000000000001'),
-    ('a9000000-0000-0000-0000-000000000002', 'INVESTMENT_SUPERVISORS', 'Investment Supervisors', 'Dev seed group', true, 'a0000000-0000-0000-0000-000000000001'),
-    ('a9000000-0000-0000-0000-000000000003', 'TRADING_SUPERVISORS', 'Trading Supervisors', 'Dev seed group', true, 'a0000000-0000-0000-0000-000000000001')
+    ('a9000000-0000-0000-0000-000000000001', 'FUND_MANAGER_REVIEWERS', 'Fund Manager Reviewers', 'Reviewer group for INVESTMENT_ANALYSIS_REPORT / INVESTMENT_DECISION stage 1; assign real reviewers via the application.', true, 'a0000000-0000-0000-0000-000000000001'),
+    ('a9000000-0000-0000-0000-000000000002', 'INVESTMENT_SUPERVISORS', 'Investment Supervisors', 'Supervisor group for INVESTMENT_ANALYSIS_REPORT / INVESTMENT_DECISION final stage.', true, 'a0000000-0000-0000-0000-000000000001'),
+    ('a9000000-0000-0000-0000-000000000003', 'TRADING_SUPERVISORS', 'Trading Supervisors', 'Supervisor group reserved for trading approval processes; assign real supervisors via the application.', true, 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT (group_code) DO NOTHING;
 
 -- ── Group members (APPROVED + active so they are eligible approvers) ──────────
+-- Only the admin bootstrap account is registered here so production has a
+-- working final-stage approver. Real reviewer/supervisor membership for
+-- FUND_MANAGER_REVIEWERS and TRADING_SUPERVISORS is an operator action.
 INSERT INTO approval__group_members (id, group_id, user_id, priority_order, member_type, status, is_active, created_by)
 VALUES
-    -- FUND_MANAGER_REVIEWERS
-    ('a9100000-0000-0000-0000-000000000001', 'a9000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000010', 1, 'MEMBER',     'APPROVED', true, 'a0000000-0000-0000-0000-000000000001'),
-    ('a9100000-0000-0000-0000-000000000002', 'a9000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000011', 2, 'MEMBER',     'APPROVED', true, 'a0000000-0000-0000-0000-000000000001'),
-    -- INVESTMENT_SUPERVISORS
-    ('a9100000-0000-0000-0000-000000000003', 'a9000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 1, 'SUPERVISOR', 'APPROVED', true, 'a0000000-0000-0000-0000-000000000001'),
-    ('a9100000-0000-0000-0000-000000000004', 'a9000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000011', 2, 'SUPERVISOR', 'APPROVED', true, 'a0000000-0000-0000-0000-000000000001'),
-    -- TRADING_SUPERVISORS
-    ('a9100000-0000-0000-0000-000000000005', 'a9000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000011', 1, 'SUPERVISOR', 'APPROVED', true, 'a0000000-0000-0000-0000-000000000001')
+    ('a9100000-0000-0000-0000-000000000003', 'a9000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 1, 'SUPERVISOR', 'APPROVED', true, 'a0000000-0000-0000-0000-000000000001')
 ON CONFLICT (group_id, user_id) DO NOTHING;
 
 -- ── Process config: INVESTMENT_ANALYSIS_REPORT ───────────────────────────────
@@ -72,23 +75,5 @@ VALUES
     ('a9300000-0000-0000-0000-000000000003', 'a9200000-0000-0000-0000-000000000002', 1, 'Reviewer sign-off',  'GROUP_ANY', 'a9000000-0000-0000-0000-000000000001', 1, false, 'STOP'),
     ('a9300000-0000-0000-0000-000000000004', 'a9200000-0000-0000-0000-000000000002', 2, 'Supervisor sign-off','GROUP_ANY', 'a9000000-0000-0000-0000-000000000002', 1, true,  'STOP')
 ON CONFLICT (process_config_id, stage_number) DO NOTHING;
-
--- ── Delegation case ──────────────────────────────────────────────────────────
--- Demo: ben delegates to green for 30 days from seed date.
--- This lets green act as a proxy approver on any task assigned to ben,
--- producing a DELEGATED signature that records both actors.
-INSERT INTO approval__delegations
-    (id, from_user_id, to_user_id, contract_id, active_from, active_until, is_active, remarks, created_by)
-VALUES
-    ('a9400000-0000-0000-0000-000000000001',
-     'a0000000-0000-0000-0000-000000000010',  -- ben (from)
-     'a0000000-0000-0000-0000-000000000011',  -- green (to / delegate)
-     NULL,                                    -- wildcard: applies to all contracts
-     CURRENT_TIMESTAMP,
-     CURRENT_TIMESTAMP + INTERVAL '30 days',
-     true,
-     'Demo delegation: ben is on leave — green acts as proxy for all approvals.',
-     'a0000000-0000-0000-0000-000000000001')
-ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

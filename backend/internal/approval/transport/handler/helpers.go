@@ -111,7 +111,8 @@ func writeError(w http.ResponseWriter, err error) {
 		errors.Is(err, domain.ErrDuplicateActiveRequest),
 		errors.Is(err, domain.ErrTaskNotPending),
 		errors.Is(err, domain.ErrStaleTask),
-		errors.Is(err, domain.ErrRequestNotActionable):
+		errors.Is(err, domain.ErrRequestNotActionable),
+		errors.Is(err, domain.ErrSyncFailureNotRetryable):
 		httputil.Conflict(w, err.Error())
 	default:
 		httputil.InternalError(w, "an unexpected error occurred")

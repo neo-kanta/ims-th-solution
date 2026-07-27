@@ -186,7 +186,7 @@ func (h *DecisionHandler) GetDecision(w http.ResponseWriter, r *http.Request) {
 	}
 	// Data permission: verify the decision's fund is within the caller's
 	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
-	if !hasFundAccess(r.Context(), h.pc, d.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, decisionScopeID(d)) {
 		httputil.Forbidden(w, "no access to this decision")
 		return
 	}
@@ -240,7 +240,8 @@ func (h *DecisionHandler) CreateDecision(w http.ResponseWriter, r *http.Request)
 	}
 
 	d, err := h.cmd.Create(r.Context(), command.CreateDecisionRequest{
-		FundID:           req.FundID,
+		// Legacy V1 route: fund_id is always required in the request body here.
+		FundID:           &req.FundID,
 		PortfolioID:      req.PortfolioID,
 		InstrumentID:     req.InstrumentID,
 		InstrumentCode:   req.InstrumentCode,
@@ -543,7 +544,7 @@ func (h *DecisionHandler) GetDecisionWithLines(w http.ResponseWriter, r *http.Re
 	}
 	// Data permission: verify the decision's fund is within the caller's
 	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
-	if !hasFundAccess(r.Context(), h.pc, d.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, decisionScopeID(d)) {
 		httputil.Forbidden(w, "no access to this decision")
 		return
 	}

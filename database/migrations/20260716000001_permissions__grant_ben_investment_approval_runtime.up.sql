@@ -1,14 +1,23 @@
 -- =============================================================================
--- Ben investment-decision approval runtime permissions
+-- Investment Decision Approver role (production catalog)
 -- =============================================================================
--- Ben is an APPROVED member of FUND_MANAGER_REVIEWERS, but the approval HTTP
--- routes require both generic approval-engine permissions and the investment
--- decision subject permission. Keep these rights in a dedicated approver role
--- so ordinary Investment Decision Operator members do not inherit them.
+-- The approval HTTP routes require both generic approval-engine permissions
+-- and the investment decision subject permission. Keep these rights in a
+-- dedicated approver role so ordinary Investment Decision Operator members do
+-- not inherit them.
 --
 -- This migration grants only inbox/request visibility plus approve/reject for
 -- investment decisions. It does not grant approval configuration, cancellation,
 -- revocation, audit administration, stage-2 access, or self-approval.
+--
+-- This migration creates the role catalog and its rights ONLY. It must never
+-- assign the role to any named identity (demo or otherwise) — production
+-- migration/bootstrap paths must not assign privileges to named identities.
+-- Assigning real users to this role is an operator action performed through
+-- the application after deployment; development/test membership for the demo
+-- user "ben" is seeded by the demo-only seed at
+-- database/seeds/demo/006_ben_investment_decision_approver_seed.sql, gated by
+-- APP_ENV so it never reaches production.
 -- =============================================================================
 
 BEGIN;
@@ -71,59 +80,9 @@ FROM (VALUES
 ON CONFLICT (group_id, permission_code) DO UPDATE
 SET is_granted = true;
 
--- Ben is development/demo data and does not exist in a migration-only fresh
--- database. Assign him when present; seed 019 performs the same idempotent
--- assignment after fresh migrations.
-INSERT INTO permissions_accounts_groups (id, user_id, group_id, assigned_by)
-SELECT
-    'b1000000-0000-0000-0000-000000000041',
-    ben_user.id,
-    'b0000000-0000-0000-0000-000000000041'::uuid,
-    'a0000000-0000-0000-0000-000000000001'::uuid
-FROM iam_users ben_user
-WHERE lower(ben_user.username) = 'ben'
-  AND ben_user.is_active = true
-  AND ben_user.deleted_at IS NULL
-ON CONFLICT (user_id, group_id) DO NOTHING;
-
--- Fail closed if an upgraded database contains an active Ben account but the
--- effective role assignment or any required grant was not established.
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM iam_users
-        WHERE lower(username) = 'ben'
-          AND is_active = true
-          AND deleted_at IS NULL
-    ) AND NOT EXISTS (
-        SELECT 1
-        FROM iam_users ben_user
-        JOIN permissions_accounts_groups account_group
-          ON account_group.user_id = ben_user.id
-        JOIN permissions_groups permission_group
-          ON permission_group.id = account_group.group_id
-        WHERE lower(ben_user.username) = 'ben'
-          AND permission_group.id = 'b0000000-0000-0000-0000-000000000041'::uuid
-          AND permission_group.is_active = true
-          AND permission_group.deleted_at IS NULL
-          AND 5 = (
-              SELECT COUNT(*)
-              FROM permissions_function_rights function_right
-              WHERE function_right.group_id = permission_group.id
-                AND function_right.permission_code IN (
-                    'APPROVAL_VIEW_INBOX',
-                    'APPROVAL_VIEW_REQUEST',
-                    'APPROVAL_APPROVE',
-                    'APPROVAL_REJECT',
-                    'INVESTMENT_DECISION_APPROVE'
-                )
-                AND function_right.is_granted = true
-          )
-    ) THEN
-        RAISE EXCEPTION 'failed to establish Ben investment-decision approval permissions';
-    END IF;
-END
-$$;
+-- Named-identity assignment intentionally removed: production and upgraded
+-- migration paths must never assign this role to a demo or otherwise named
+-- identity. See database/seeds/demo/006_ben_investment_decision_approver_seed.sql
+-- for the development/test-only membership, gated by APP_ENV.
 
 COMMIT;

@@ -1,19 +1,22 @@
--- Remove only Green permission-group memberships created by the matching up
--- migration or seed 021. Pre-existing memberships with different identifiers,
--- function rights, data scopes, approval groups, stages, and maker-checker
--- rules remain unchanged.
+-- =============================================================================
+-- Green/Ben permission-parity copy — retired (documented no-op)
+-- =============================================================================
+-- The up migration no longer assigns anything (see the up.sql header for the
+-- full rationale: production/upgraded-database paths must never assign
+-- privileges to named demo identities). There is nothing for this down
+-- migration to reverse.
+--
+-- This file previously deleted the four Green membership rows the up
+-- migration inserted (by fixed membership id). Those rows are no longer
+-- inserted by the up migration, and any that already exist in an
+-- already-upgraded database from a prior version of this migration are
+-- removed by the separate forward-corrective migration
+-- 20260725000001_permissions__remove_migration_owned_demo_memberships, not by
+-- rollback of this migration.
+-- =============================================================================
 
 BEGIN;
 
-DELETE FROM permissions_accounts_groups account_group
-USING (VALUES
-    ('b1000000-0000-0000-0000-000000000051'::uuid, 'b0000000-0000-0000-0000-000000000011'::uuid),
-    ('b1000000-0000-0000-0000-000000000052'::uuid, 'b0000000-0000-0000-0000-000000000040'::uuid),
-    ('b1000000-0000-0000-0000-000000000053'::uuid, 'b0000000-0000-0000-0000-000000000041'::uuid),
-    ('b1000000-0000-0000-0000-000000000054'::uuid, 'b0000000-0000-0000-0000-000000000042'::uuid)
-) AS owned(membership_id, group_id)
-WHERE account_group.id = owned.membership_id
-  AND account_group.user_id = 'a0000000-0000-0000-0000-000000000011'::uuid
-  AND account_group.group_id = owned.group_id;
+-- Intentionally empty: no schema change to reverse.
 
 COMMIT;

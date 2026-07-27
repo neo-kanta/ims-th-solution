@@ -1,0 +1,44 @@
+# Reference seed manifest — AUTHORITATIVE production seed allow-list.
+#
+# Read by backend/cmd/seed when demo seeding is NOT explicitly enabled
+# (production, and any run without the verified development/test opt-in).
+# In that mode ONLY the *.sql files listed below run.
+#
+# Classification is fail-closed: if a file is not listed here, it does NOT run in
+# production. An unlisted file under demo/ or zz_demo/ is skipped quietly. An
+# unlisted file that is NOT in a demo location is a HARD ERROR at seed time —
+# this catches a new production reference seed that landed (e.g. from a parallel
+# branch) without being added here, before it goes missing in production.
+#
+# When you add a new PRODUCTION reference/catalog seed, add its path here
+# (relative to database/seeds/, forward slashes). Do NOT list demo seeds — place
+# those under a demo/ directory instead.
+#
+# Blank lines and lines beginning with '#' are ignored.
+
+# --- top-level reference / catalog seeds ---
+001_initial_seed.sql
+002_workflow_seed.sql
+003_workflow_settings_seed.sql
+004_investment_process_assignment_seed.sql
+006_investment_reference_seed.sql
+007_investment_permission_seed.sql
+008_permission_management_seed.sql
+009_compliance_rule_seed.sql
+010_market_data_popular_securities_seed.sql
+011_approval_permission_seed.sql
+012_approval_process_seed.sql
+015_approval_compliance_release_seed.sql
+016_notification_permission_seed.sql
+017_integration_permission_seed.sql
+018_investment_decision_execution_permission_seed.sql
+020_cash_transaction_process_seed.sql
+
+# --- investment reference data (asset taxonomy, regions, sectors, styles) ---
+investment/01_asset_classes.sql
+investment/02_asset_subtypes.sql
+investment/03_regions.sql
+investment/04_countries.sql
+investment/05_sectors.sql
+investment/06_fund_categories.sql
+investment/07_investment_styles.sql

@@ -17,11 +17,16 @@
 -- completeness alongside VIEW/MANAGE/SUBMIT/APPROVE since they're the same
 -- decision-lifecycle surface).
 --
--- Group: Investment Decision Operator (new) : ben (member)
+-- Group: Investment Decision Operator (new).
 -- Also grants the same codes directly to the existing Admin group.
 --
--- DEV ONLY — references the admin/ben users from 001_initial_seed.sql /
--- 004_investment_process_assignment_seed.sql.
+-- This file creates the role catalog (group + rights) and the Admin grant
+-- ONLY — reference content that always runs, including in production. Named
+-- demo-identity membership (ben into this group) previously assigned directly
+-- in this file has moved to
+-- database/seeds/demo/005_investment_decision_operator_ben_membership_seed.sql,
+-- which only runs in development/test (see backend/cmd/seed). Assigning real
+-- users to this group in production is an operator action.
 -- =============================================================================
 
 BEGIN;
@@ -79,11 +84,9 @@ WHERE g.name = 'Investment Decision Operator'
 ON CONFLICT (group_id, permission_code) DO UPDATE
 SET is_granted = EXCLUDED.is_granted;
 
--- ── Membership: ben ──────────────────────────────────────────────────────────
-INSERT INTO permissions_accounts_groups (user_id, group_id, assigned_by)
-SELECT 'a0000000-0000-0000-0000-000000000010'::uuid, g.id, 'a0000000-0000-0000-0000-000000000001'::uuid
-FROM permissions_groups g
-WHERE g.name = 'Investment Decision Operator'
-ON CONFLICT (user_id, group_id) DO NOTHING;
+-- Named-identity membership intentionally removed: production and reference
+-- seeds must never assign this role to a demo or otherwise named identity.
+-- See database/seeds/demo/005_investment_decision_operator_ben_membership_seed.sql
+-- for the development/test-only membership, gated by APP_ENV.
 
 COMMIT;

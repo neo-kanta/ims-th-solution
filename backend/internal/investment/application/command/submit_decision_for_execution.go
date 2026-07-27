@@ -110,9 +110,13 @@ func (h *SubmitDecisionForExecutionHandler) Handle(
 	if decision.LimitPrice != nil {
 		price = *decision.LimitPrice
 	}
+	contractID := uuid.Nil
+	if decision.FundID != nil {
+		contractID = *decision.FundID
+	}
 	checkReq := contract.ProposedOrderCheck{
 		PortfolioID:  decision.PortfolioID,
-		ContractID:   decision.FundID,
+		ContractID:   contractID,
 		BusinessDate: decision.BusinessDate,
 		Actor:        req.ActorID.String(),
 		OrderID:      decision.ID,

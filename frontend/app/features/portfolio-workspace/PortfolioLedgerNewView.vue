@@ -31,7 +31,14 @@ import { useI18n, type AppTranslationKey } from "~/composables/useI18n";
 import PortfolioWorkspaceHeader from "./components/PortfolioWorkspaceHeader.vue";
 import { usePortfolioContext } from "./composables/usePortfolioContext";
 import { portfolioApi } from "./services/portfolioApi";
+import { isCashRequestResponse } from "./lib/cashRequestGuard";
 import { canEnterLedgerTransaction, ledgerIntentFor } from "./lib/ledgerGuard";
+import CashRequestsPanel from "./components/CashRequestsPanel.vue";
+import {
+  useCashTicket,
+  CASH_TRANSACTION_TYPES,
+  type CashTransactionType,
+} from "./composables/useCashTicket";
 
 import { useOrderTicket } from "~/features/investment-ledger/composables/useOrderTicket";
 import InstrumentCombobox from "~/features/portfolio-decision/components/InstrumentCombobox.vue";
@@ -39,6 +46,9 @@ import type { ApiInstrument } from "~/features/investment-ledger/services/invest
 
 const props = defineProps<{ portfolioCode: string }>();
 const { t } = useI18n();
+
+type LedgerEntryKind = "SECURITY" | "CASH";
+const kind = ref<LedgerEntryKind>("SECURITY");
 
 const pageTitle = useState<string>("page-title", () => "");
 watch(
@@ -53,20 +63,49 @@ const ctx = usePortfolioContext(() => props.portfolioCode);
 
 const ticket = useOrderTicket({
   simulate: (code, payload) => portfolioApi.simulateTransaction(code, payload),
-  post: (code, payload) => portfolioApi.postTransaction(code, payload),
+  // BUY/SELL is out of the LIVE cash-approval gate's scope (design spec §1)
+  // and must always post immediately — guard against ever receiving a
+  // pending CashRequestResponse here instead of mistyping it as a Transaction.
+  post: async (code, payload) => {
+    const result = await portfolioApi.postTransaction(code, payload);
+    if (isCashRequestResponse(result)) {
+      throw new Error(
+        "Unexpected pending response for a security transaction.",
+      );
+    }
+    return result;
+  },
 });
+
+const cashTicket = useCashTicket();
 
 const selectedInstrument = ref<ApiInstrument | null>(null);
 const opened = ref(false);
 
 function openTicket() {
   if (opened.value) return;
-  ticket.open(props.portfolioCode, {
-    currency: ctx.portfolio.value?.base_currency ?? "",
-  });
+  const currency = ctx.portfolio.value?.base_currency ?? "";
+  ticket.open(props.portfolioCode, { currency });
+  cashTicket.open(props.portfolioCode, { currency });
   selectedInstrument.value = null;
   opened.value = true;
 }
+
+function setKind(next: LedgerEntryKind) {
+  if (kind.value === next) return;
+  kind.value = next;
+  const currency = ctx.portfolio.value?.base_currency ?? "";
+  if (next === "SECURITY") {
+    ticket.open(props.portfolioCode, { currency });
+    selectedInstrument.value = null;
+  } else {
+    cashTicket.open(props.portfolioCode, { currency });
+  }
+}
+
+const cashRequestsPanel = ref<{ reload: () => void | Promise<void> } | null>(
+  null,
+);
 
 onMounted(() => {
   void ctx.reload();
@@ -75,6 +114,7 @@ watch(
   () => props.portfolioCode,
   () => {
     opened.value = false;
+    kind.value = "SECURITY";
     void ctx.reload();
   },
 );
@@ -127,6 +167,50 @@ async function onConfirmPost() {
 }
 
 const verdict = computed(() => ticket.verdict.value);
+
+const cashDraft = cashTicket.draft;
+const cashErrorKeys = computed(() =>
+  Object.keys(cashTicket.validationErrors.value),
+);
+
+function cashFieldMessage(field: string): string | null {
+  if (!cashErrorKeys.value.includes(field)) return null;
+  return t(`portfolio.ledgerNew.cashValidation.${field}` as AppTranslationKey);
+}
+
+function cashTypeLabel(type: CashTransactionType): string {
+  switch (type) {
+    case "CASH_IN":
+      return t("portfolio.ledgerNew.cashTypeCashIn");
+    case "CASH_OUT":
+      return t("portfolio.ledgerNew.cashTypeCashOut");
+    case "FEE":
+      return t("portfolio.ledgerNew.cashTypeFee");
+    case "DIVIDEND":
+      return t("portfolio.ledgerNew.cashTypeDividend");
+  }
+}
+
+function onSimulateCash() {
+  void cashTicket.simulate();
+}
+
+function onRequestPostCash() {
+  cashTicket.requestConfirmation();
+}
+
+function onCancelPostCash() {
+  cashTicket.cancelConfirmation();
+}
+
+async function onConfirmPostCash() {
+  await cashTicket.post();
+  if (cashTicket.stage.value === "pending") {
+    void cashRequestsPanel.value?.reload();
+  }
+}
+
+const cashVerdict = computed(() => cashTicket.verdict.value);
 </script>
 
 <template>
@@ -159,7 +243,30 @@ const verdict = computed(() => ticket.verdict.value);
           {{ intent === "PAPER" ? t("portfolio.ledgerNew.intentPaper") : t("portfolio.ledgerNew.intentOfficial") }}
         </div>
 
-        <form class="portfolio-ledger-new__form" @submit.prevent>
+        <div class="portfolio-ledger-new__kind" role="tablist">
+          <button
+            type="button"
+            class="portfolio-ledger-new__kind-btn"
+            :class="{ 'is-active': kind === 'SECURITY' }"
+            role="tab"
+            :aria-selected="kind === 'SECURITY'"
+            @click="setKind('SECURITY')"
+          >
+            {{ t("portfolio.ledgerNew.kindSecurity") }}
+          </button>
+          <button
+            type="button"
+            class="portfolio-ledger-new__kind-btn"
+            :class="{ 'is-active': kind === 'CASH' }"
+            role="tab"
+            :aria-selected="kind === 'CASH'"
+            @click="setKind('CASH')"
+          >
+            {{ t("portfolio.ledgerNew.kindCash") }}
+          </button>
+        </div>
+
+        <form v-if="kind === 'SECURITY'" class="portfolio-ledger-new__form" @submit.prevent>
           <div class="portfolio-ledger-new__side">
             <button
               type="button"
@@ -331,8 +438,145 @@ const verdict = computed(() => ticket.verdict.value);
             </div>
           </div>
         </form>
+
+        <form v-else class="portfolio-ledger-new__form" @submit.prevent>
+          <div class="portfolio-ledger-new__field">
+            <label class="portfolio-ledger-new__label" for="ledger-new-cash-type">{{ t("portfolio.ledgerNew.cashType") }}</label>
+            <select
+              id="ledger-new-cash-type"
+              :value="cashDraft.transaction_type"
+              class="portfolio-ledger-new__input"
+              @change="cashTicket.setTransactionType(($event.target as HTMLSelectElement).value as CashTransactionType)"
+            >
+              <option v-for="ct in CASH_TRANSACTION_TYPES" :key="ct" :value="ct">
+                {{ cashTypeLabel(ct) }}
+              </option>
+            </select>
+          </div>
+
+          <div class="portfolio-ledger-new__grid">
+            <div class="portfolio-ledger-new__field">
+              <label class="portfolio-ledger-new__label" for="ledger-new-cash-amount">{{ t("portfolio.ledgerNew.amount") }}</label>
+              <input
+                id="ledger-new-cash-amount"
+                :value="cashDraft.gross_amount"
+                type="text"
+                inputmode="decimal"
+                class="portfolio-ledger-new__input"
+                @input="cashTicket.patchDraft({ gross_amount: ($event.target as HTMLInputElement).value })"
+              />
+              <span v-if="cashFieldMessage('gross_amount')" class="portfolio-ledger-new__field-error">{{ cashFieldMessage('gross_amount') }}</span>
+            </div>
+            <div class="portfolio-ledger-new__field">
+              <label class="portfolio-ledger-new__label" for="ledger-new-cash-fees">{{ t("portfolio.ledgerNew.fees") }}</label>
+              <input
+                id="ledger-new-cash-fees"
+                :value="cashDraft.fees"
+                type="text"
+                inputmode="decimal"
+                class="portfolio-ledger-new__input"
+                @input="cashTicket.patchDraft({ fees: ($event.target as HTMLInputElement).value })"
+              />
+              <span v-if="cashFieldMessage('fees')" class="portfolio-ledger-new__field-error">{{ cashFieldMessage('fees') }}</span>
+            </div>
+            <div class="portfolio-ledger-new__field">
+              <label class="portfolio-ledger-new__label" for="ledger-new-cash-currency">{{ t("portfolio.ledgerNew.currency") }}</label>
+              <input
+                id="ledger-new-cash-currency"
+                :value="cashDraft.currency"
+                type="text"
+                maxlength="3"
+                class="portfolio-ledger-new__input portfolio-ledger-new__input--upper"
+                @input="cashTicket.patchDraft({ currency: ($event.target as HTMLInputElement).value.toUpperCase() })"
+              />
+              <span v-if="cashFieldMessage('currency')" class="portfolio-ledger-new__field-error">{{ cashFieldMessage('currency') }}</span>
+            </div>
+            <div class="portfolio-ledger-new__field">
+              <label class="portfolio-ledger-new__label" for="ledger-new-cash-business-date">{{ t("portfolio.ledgerNew.businessDate") }}</label>
+              <input
+                id="ledger-new-cash-business-date"
+                :value="cashDraft.business_date"
+                type="date"
+                class="portfolio-ledger-new__input"
+                @input="cashTicket.patchDraft({ business_date: ($event.target as HTMLInputElement).value })"
+              />
+              <span v-if="cashFieldMessage('business_date')" class="portfolio-ledger-new__field-error">{{ cashFieldMessage('business_date') }}</span>
+            </div>
+          </div>
+
+          <div class="portfolio-ledger-new__field">
+            <label class="portfolio-ledger-new__label" for="ledger-new-cash-reason">{{ t("portfolio.ledgerNew.reason") }}</label>
+            <input
+              id="ledger-new-cash-reason"
+              :value="cashDraft.reason"
+              type="text"
+              class="portfolio-ledger-new__input"
+              @input="cashTicket.patchDraft({ reason: ($event.target as HTMLInputElement).value })"
+            />
+          </div>
+
+          <div class="portfolio-ledger-new__actions">
+            <IMSPermissionGuard permission="INVESTMENT_LEDGER_SIMULATE">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                :disabled="!cashTicket.isValid.value || cashTicket.simulating.value"
+                @click="onSimulateCash"
+              >
+                {{ cashTicket.lastSimulation.value ? t("portfolio.ledgerNew.resimulate") : t("portfolio.ledgerNew.simulate") }}
+              </button>
+            </IMSPermissionGuard>
+
+            <IMSPermissionGuard permission="INVESTMENT_LEDGER_POST">
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                :disabled="!cashTicket.canPost.value"
+                @click="onRequestPostCash"
+              >
+                {{ intent === "PAPER" ? t("portfolio.ledgerNew.postPaper") : t("portfolio.ledgerNew.postOfficial") }}
+              </button>
+            </IMSPermissionGuard>
+          </div>
+
+          <p v-if="cashTicket.simulationError.value" class="portfolio-ledger-new__alert" role="alert">
+            {{ t("portfolio.ledgerNew.simulationFailedLabel") }}: {{ cashTicket.simulationError.value }}
+          </p>
+          <p v-else-if="cashTicket.postError.value" class="portfolio-ledger-new__alert" role="alert">
+            {{ t("portfolio.ledgerNew.postFailedLabel") }}: {{ cashTicket.postError.value }}
+          </p>
+          <p v-else-if="cashTicket.stage.value === 'pending'" class="portfolio-ledger-new__success" role="status">
+            {{ t("portfolio.ledgerNew.pendingApprovalSuccess") }}
+          </p>
+          <p v-else-if="cashTicket.stage.value === 'posted'" class="portfolio-ledger-new__success" role="status">
+            {{ t("portfolio.ledgerNew.postedSuccess") }}
+          </p>
+          <p
+            v-else-if="cashTicket.lastSimulation.value && !cashTicket.isSimulationFresh.value"
+            class="portfolio-ledger-new__hint"
+          >
+            {{ t("portfolio.ledgerNew.staleSimulationHint") }}
+          </p>
+
+          <div v-if="cashTicket.lastSimulation.value" class="portfolio-ledger-new__preview">
+            <div class="portfolio-ledger-new__preview-row">
+              <span>{{ t("portfolio.ledgerNew.verdict") }}</span>
+              <strong :data-verdict="cashVerdict">{{ cashVerdict ?? t("portfolio.terminal.unavailable") }}</strong>
+            </div>
+            <div class="portfolio-ledger-new__preview-row">
+              <span>{{ t("portfolio.ledgerNew.cashImpact") }}</span>
+              <strong>{{ cashTicket.lastSimulation.value.cash?.cash_impact ?? t("portfolio.terminal.unavailable") }}</strong>
+            </div>
+          </div>
+        </form>
       </template>
     </AppCard>
+
+    <CashRequestsPanel
+      v-if="ctx.portfolio.value && ctx.portfolioType.value === 'LIVE'"
+      ref="cashRequestsPanel"
+      :portfolio-code="props.portfolioCode"
+    />
 
     <AppConfirmDialog
       :open="ticket.stage.value === 'confirming'"
@@ -344,6 +588,18 @@ const verdict = computed(() => ticket.verdict.value);
       :loading="ticket.posting.value"
       @cancel="onCancelPost"
       @confirm="onConfirmPost"
+    />
+
+    <AppConfirmDialog
+      :open="cashTicket.stage.value === 'confirming'"
+      :title="t('portfolio.ledgerNew.confirmTitle')"
+      :description="intent === 'OFFICIAL' ? t('portfolio.ledgerNew.confirmDescriptionCashPending') : t('portfolio.ledgerNew.confirmDescriptionPaper')"
+      :confirm-label="intent === 'PAPER' ? t('portfolio.ledgerNew.postPaper') : t('portfolio.ledgerNew.postOfficial')"
+      :cancel-label="t('portfolio.ledgerNew.confirmCancel')"
+      tone="warning"
+      :loading="cashTicket.posting.value"
+      @cancel="onCancelPostCash"
+      @confirm="onConfirmPostCash"
     />
   </section>
 </template>
@@ -396,6 +652,35 @@ const verdict = computed(() => ticket.verdict.value);
   background: var(--alert-success-bg, #dafbe1);
   border-color: var(--alert-success-border, #1a7f37);
   color: var(--alert-success-text, #1a7f37);
+}
+
+.portfolio-ledger-new__kind {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  max-width: 320px;
+  margin-bottom: 14px;
+  background: var(--bg-card-muted, #f6f8fa);
+  border: 1px solid var(--border-subtle, #d0d7de);
+  border-radius: var(--radius-md, 6px);
+  padding: 4px;
+}
+
+.portfolio-ledger-new__kind-btn {
+  border: none;
+  background: transparent;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary, #57606a);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.portfolio-ledger-new__kind-btn.is-active {
+  background: var(--bg-card, #ffffff);
+  color: var(--text-primary, #1f2328);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .portfolio-ledger-new__form {

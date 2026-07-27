@@ -17,6 +17,7 @@ const (
 	ProcessDelegationRequest        ProcessType = "DELEGATION_REQUEST"
 	ProcessPortfolioOnboarding      ProcessType = "PORTFOLIO_ONBOARDING"
 	ProcessComplianceRelease        ProcessType = "COMPLIANCE_RELEASE"
+	ProcessPortfolioCashTransaction ProcessType = "PORTFOLIO_CASH_TRANSACTION"
 )
 
 // ValidProcessType reports whether the value is a recognised process type.
@@ -25,7 +26,8 @@ func ValidProcessType(v ProcessType) bool {
 	case ProcessInvestmentAnalysisReport, ProcessInvestmentDecision,
 		ProcessInvestmentCancellation, ProcessWorkflowOperation,
 		ProcessLeaveRequest, ProcessLeaveCancellation, ProcessDelegationRequest,
-		ProcessPortfolioOnboarding, ProcessComplianceRelease:
+		ProcessPortfolioOnboarding, ProcessComplianceRelease,
+		ProcessPortfolioCashTransaction:
 		return true
 	}
 	return false
@@ -61,6 +63,7 @@ const (
 	SubjectPortfolio          SubjectType = "PORTFOLIO"
 	SubjectFund               SubjectType = "FUND"
 	SubjectComplianceRelease  SubjectType = "COMPLIANCE_RELEASE"
+	SubjectCashTransaction    SubjectType = "CASH_TRANSACTION"
 )
 
 // ValidSubjectType reports whether the value is a recognised subject type.
@@ -68,7 +71,8 @@ func ValidSubjectType(v SubjectType) bool {
 	switch v {
 	case SubjectResearchReport, SubjectInvestmentDecision, SubjectWorkflowOperation,
 		SubjectLeaveRequest, SubjectDelegationRequest,
-		SubjectPortfolio, SubjectFund, SubjectComplianceRelease:
+		SubjectPortfolio, SubjectFund, SubjectComplianceRelease,
+		SubjectCashTransaction:
 		return true
 	}
 	return false
@@ -207,3 +211,46 @@ const (
 	SignatureLabelNormal    SignatureLabel = "NORMAL"
 	SignatureLabelDelegated SignatureLabel = "DELEGATED"
 )
+
+// SyncFailureOutcome is the approval decision that a subject-sync callback
+// failed to deliver to the owning business module.
+type SyncFailureOutcome string
+
+const (
+	SyncFailureOutcomeApproved SyncFailureOutcome = "APPROVED"
+	SyncFailureOutcomeRejected SyncFailureOutcome = "REJECTED"
+	SyncFailureOutcomeRevoked  SyncFailureOutcome = "REVOKED"
+)
+
+// ValidSyncFailureOutcome reports whether the value is recognised.
+func ValidSyncFailureOutcome(v SyncFailureOutcome) bool {
+	switch v {
+	case SyncFailureOutcomeApproved, SyncFailureOutcomeRejected, SyncFailureOutcomeRevoked:
+		return true
+	}
+	return false
+}
+
+// SyncFailureStatus tracks a persisted approval-sync replay record.
+type SyncFailureStatus string
+
+const (
+	// SyncFailureStatusPending is awaiting an operator-triggered retry.
+	SyncFailureStatusPending SyncFailureStatus = "PENDING"
+	// SyncFailureStatusResolved means a retry succeeded; the subject module is
+	// now consistent with the approval decision.
+	SyncFailureStatusResolved SyncFailureStatus = "RESOLVED"
+	// SyncFailureStatusExhausted means MaxAttempts retries all failed; it needs
+	// manual investigation (the failure remains visible, but Retry refuses to
+	// spend another attempt).
+	SyncFailureStatusExhausted SyncFailureStatus = "EXHAUSTED"
+)
+
+// ValidSyncFailureStatus reports whether the value is recognised.
+func ValidSyncFailureStatus(v SyncFailureStatus) bool {
+	switch v {
+	case SyncFailureStatusPending, SyncFailureStatusResolved, SyncFailureStatusExhausted:
+		return true
+	}
+	return false
+}

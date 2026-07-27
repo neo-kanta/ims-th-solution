@@ -134,7 +134,7 @@ func TestGetDecision_AuthorizedFundReturns200(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: allowFund(fundID),
 	}
@@ -152,7 +152,7 @@ func TestGetDecision_CrossFundReturns403(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -170,7 +170,7 @@ func TestGetDecision_NilCheckerFailsClosed(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: nil,
 	}
@@ -188,7 +188,7 @@ func TestGetDecision_GlobalScopeReturns200(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: &fakeV2PermissionChecker{Global: true},
 	}
@@ -206,7 +206,7 @@ func TestGetDecisionWithLines_CrossFundReturns403(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -224,7 +224,7 @@ func TestGetDecisionWithLines_AuthorizedFundReturns200(t *testing.T) {
 	fundID, decisionID := uuid.New(), uuid.New()
 	h := &DecisionHandler{
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: allowFund(fundID),
 	}
@@ -293,7 +293,7 @@ func TestListExecutions_DecisionBranch_CrossFundReturns403(t *testing.T) {
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{}},
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -312,7 +312,7 @@ func TestListExecutions_DecisionBranch_AuthorizedReturns200(t *testing.T) {
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{}},
 		decisions: &stubDecisionRepo{byID: map[uuid.UUID]*entity.Decision{
-			decisionID: {ID: decisionID, FundID: fundID},
+			decisionID: {ID: decisionID, FundID: &fundID},
 		}},
 		pc: allowFund(fundID),
 	}
@@ -330,7 +330,7 @@ func TestGetExecution_AuthorizedFundReturns200(t *testing.T) {
 	fundID, executionID := uuid.New(), uuid.New()
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{
-			executionID: {ID: executionID, FundID: fundID},
+			executionID: {ID: executionID, FundID: &fundID},
 		}},
 		pc: allowFund(fundID),
 	}
@@ -348,7 +348,7 @@ func TestGetExecution_CrossFundReturns403(t *testing.T) {
 	fundID, executionID := uuid.New(), uuid.New()
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{
-			executionID: {ID: executionID, FundID: fundID},
+			executionID: {ID: executionID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -366,7 +366,7 @@ func TestGetExecution_NilCheckerFailsClosed(t *testing.T) {
 	fundID, executionID := uuid.New(), uuid.New()
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{
-			executionID: {ID: executionID, FundID: fundID},
+			executionID: {ID: executionID, FundID: &fundID},
 		}},
 		pc: nil,
 	}
@@ -384,7 +384,7 @@ func TestGetExecution_GlobalScopeReturns200(t *testing.T) {
 	fundID, executionID := uuid.New(), uuid.New()
 	h := &ExecutionHandler{
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{
-			executionID: {ID: executionID, FundID: fundID},
+			executionID: {ID: executionID, FundID: &fundID},
 		}},
 		pc: &fakeV2PermissionChecker{Global: true},
 	}
@@ -437,7 +437,7 @@ func TestListConfirmations_ExecutionBranch_CrossFundReturns403(t *testing.T) {
 	h := &TradeConfirmationHandler{
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{}},
 		executions: &stubExecutionRepo{byID: map[uuid.UUID]*entity.Execution{
-			executionID: {ID: executionID, FundID: fundID},
+			executionID: {ID: executionID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -455,7 +455,7 @@ func TestGetConfirmation_AuthorizedFundReturns200(t *testing.T) {
 	fundID, confirmationID := uuid.New(), uuid.New()
 	h := &TradeConfirmationHandler{
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{
-			confirmationID: {ID: confirmationID, FundID: fundID},
+			confirmationID: {ID: confirmationID, FundID: &fundID},
 		}},
 		pc: allowFund(fundID),
 	}
@@ -473,7 +473,7 @@ func TestGetConfirmation_CrossFundReturns403(t *testing.T) {
 	fundID, confirmationID := uuid.New(), uuid.New()
 	h := &TradeConfirmationHandler{
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{
-			confirmationID: {ID: confirmationID, FundID: fundID},
+			confirmationID: {ID: confirmationID, FundID: &fundID},
 		}},
 		pc: denyAll(),
 	}
@@ -491,7 +491,7 @@ func TestGetConfirmation_NilCheckerFailsClosed(t *testing.T) {
 	fundID, confirmationID := uuid.New(), uuid.New()
 	h := &TradeConfirmationHandler{
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{
-			confirmationID: {ID: confirmationID, FundID: fundID},
+			confirmationID: {ID: confirmationID, FundID: &fundID},
 		}},
 		pc: nil,
 	}
@@ -509,7 +509,7 @@ func TestGetConfirmation_GlobalScopeReturns200(t *testing.T) {
 	fundID, confirmationID := uuid.New(), uuid.New()
 	h := &TradeConfirmationHandler{
 		confirmations: &stubConfirmationRepo{byID: map[uuid.UUID]*entity.TradeConfirmation{
-			confirmationID: {ID: confirmationID, FundID: fundID},
+			confirmationID: {ID: confirmationID, FundID: &fundID},
 		}},
 		pc: &fakeV2PermissionChecker{Global: true},
 	}

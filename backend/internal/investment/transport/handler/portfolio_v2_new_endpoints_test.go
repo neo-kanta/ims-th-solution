@@ -446,7 +446,7 @@ func TestRunValuationByCode_ModelPortfolioReturns422(t *testing.T) {
 	t.Parallel()
 	portfolioID, fundID := uuid.New(), uuid.New()
 	portfolios := &stubPortfolioRepo{byCode: map[string]*entity.Portfolio{
-		"MODEL-A": {ID: portfolioID, Code: "MODEL-A", FundID: fundID, PortfolioType: vo.PortfolioTypeModel},
+		"MODEL-A": {ID: portfolioID, Code: "MODEL-A", FundID: &fundID, PortfolioType: vo.PortfolioTypeModel},
 	}}
 	h := &InvestmentHandler{
 		portfolios: portfolios,
@@ -467,7 +467,7 @@ func TestRunValuationByCode_CrossFundReturns403(t *testing.T) {
 	t.Parallel()
 	portfolioID, fundID := uuid.New(), uuid.New()
 	portfolios := &stubPortfolioRepo{byCode: map[string]*entity.Portfolio{
-		"PORT-A": {ID: portfolioID, Code: "PORT-A", FundID: fundID, PortfolioType: vo.PortfolioTypeLive},
+		"PORT-A": {ID: portfolioID, Code: "PORT-A", FundID: &fundID, PortfolioType: vo.PortfolioTypeLive},
 	}}
 	h := &InvestmentHandler{
 		portfolios: portfolios,

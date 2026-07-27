@@ -404,6 +404,188 @@ const docTemplatev2 = `{
                 }
             }
         },
+        "/portfolios/{portfolioCode}/cash-requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List LIVE cash-movement approval requests for a portfolio, resolved by business code (Portfolio V2). Optional status filter (PENDING/APPROVED/REJECTED/CANCELLED).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "List Portfolio Cash Requests By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cash request status (PENDING, APPROVED, REJECTED, CANCELLED)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CashRequestListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/portfolios/{portfolioCode}/cash-requests/{cashRequestId}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancel a PENDING cash-movement approval request that belongs to the resolved portfolio (Portfolio V2). Only the submitter may cancel; after cancel, approvers can no longer act on it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Investment - Portfolios V2"
+                ],
+                "summary": "Cancel Portfolio Cash Request By Code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Portfolio code",
+                        "name": "portfolioCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cash request UUID",
+                        "name": "cashRequestId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional cancellation reason",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/CancelCashRequestV2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/CashRequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/portfolios/{portfolioCode}/compliance/breaches": {
             "get": {
                 "security": [
@@ -2197,7 +2379,7 @@ const docTemplatev2 = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id.",
+                "description": "Post a buy, sell, cash, or other portfolio transaction into the ledger, resolved by business code (Portfolio V2). Request body must not include fund_id or contract_id. For a LIVE portfolio, a cash movement (CASH_IN/CASH_OUT/FEE/DIVIDEND) is NOT posted immediately — it is staged for approval and returned with HTTP 202 as a pending cash request. MODEL cash movements are rejected (422).",
                 "consumes": [
                     "application/json"
                 ],
@@ -2217,6 +2399,12 @@ const docTemplatev2 = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "Optional idempotency key for a LIVE cash movement. A retry with the same key returns the original pending cash request instead of creating a duplicate. Max 255 chars; a missing key means the request is not deduplicated.",
+                        "name": "Idempotency-Key",
+                        "in": "header"
+                    },
+                    {
                         "description": "Transaction post payload",
                         "name": "request",
                         "in": "body",
@@ -2228,9 +2416,15 @@ const docTemplatev2 = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Posted immediately (SIMULATION cash, or any BUY/SELL/other non-gated movement)",
                         "schema": {
                             "$ref": "#/definitions/TransactionResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "LIVE cash movement staged for approval (pending)",
+                        "schema": {
+                            "$ref": "#/definitions/CashRequestResponse"
                         }
                     },
                     "400": {
@@ -2735,6 +2929,14 @@ const docTemplatev2 = `{
                 }
             }
         },
+        "CancelCashRequestV2Request": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "CancelDecisionRequest": {
             "type": "object",
             "required": [
@@ -2790,6 +2992,82 @@ const docTemplatev2 = `{
                 },
                 "projected_balance": {
                     "type": "string"
+                }
+            }
+        },
+        "CashRequestListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CashRequestResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "CashRequestResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "approval_request_id": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "decided_at": {
+                    "type": "string"
+                },
+                "decided_by": {
+                    "type": "string"
+                },
+                "fees": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "memo": {
+                    "type": "string"
+                },
+                "portfolio_id": {
+                    "type": "string"
+                },
+                "resulting_txn_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                },
+                "value_date": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
@@ -2930,7 +3208,6 @@ const docTemplatev2 = `{
             "required": [
                 "base_currency",
                 "code",
-                "fund_code",
                 "inception_date",
                 "name",
                 "portfolio_type",
@@ -2951,6 +3228,7 @@ const docTemplatev2 = `{
                     "type": "string"
                 },
                 "fund_code": {
+                    "description": "FundCode is optional — an empty value creates a fund-less portfolio\n(the \"Bind with Fund: N\" path). Access to such a portfolio is governed\nby a portfolio_id-scoped permission_data_rights grant instead.",
                     "type": "string",
                     "maxLength": 40
                 },
@@ -3475,6 +3753,7 @@ const docTemplatev2 = `{
                     "type": "string"
                 },
                 "fund_id": {
+                    "description": "FundID is omitted for a fund-less portfolio (\"Bind with Fund: N\").",
                     "type": "string"
                 },
                 "has_units": {

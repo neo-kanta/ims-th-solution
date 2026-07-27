@@ -19,6 +19,17 @@ http:
     type: bearer
     token: "{{token}}"
 
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const body = res.getBody();
+        const data = body?.data || {};
+
+        if (data.id) {
+          bru.setEnvVar("investment-execution-id", data.id, { persist: true });
+        }
+
 settings:
   encodeUrl: true
   timeout: 0

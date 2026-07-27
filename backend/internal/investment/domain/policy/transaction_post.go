@@ -25,6 +25,16 @@ const (
 	PostViolationCurrencyMismatch      PostPreconditionViolation = "CURRENCY_MISMATCH"
 	PostViolationFXMissing             PostPreconditionViolation = "FX_RATE_MISSING"
 	PostViolationFeesNegative          PostPreconditionViolation = "FEES_NEGATIVE"
+	// PostViolationModelLedgerBlocked rejects a cash movement on a MODEL
+	// portfolio. A MODEL portfolio is a target-allocation template with no real
+	// ledger, so cash movements never enter it (confirmed owner policy). This is
+	// enforced in the cash-movement gate in the post pipeline, not in
+	// EvaluatePost, because it depends on portfolio type + transaction type.
+	PostViolationModelLedgerBlocked PostPreconditionViolation = "MODEL_LEDGER_BLOCKED"
+	// PostViolationApprovalUnavailable rejects a LIVE cash movement when the
+	// approval engine (or its staging repository) is not wired. Fail closed —
+	// a LIVE cash movement must never post immediately, bypassing approval.
+	PostViolationApprovalUnavailable PostPreconditionViolation = "APPROVAL_GATE_UNAVAILABLE"
 )
 
 // PostInputs is the validation input for a proposed transaction. The handler
@@ -61,7 +71,9 @@ func EvaluatePost(in PostInputs) PostPreconditionViolation {
 	if in.Portfolio == nil || !in.Portfolio.IsActive() {
 		return PostViolationPortfolioInactive
 	}
-	if in.Fund == nil || !in.Fund.IsActive() {
+	// Fund is nil for a fund-less portfolio ("Bind with Fund: N") — that is a
+	// valid state, not a violation. Only an existing-but-inactive fund is.
+	if in.Fund != nil && !in.Fund.IsActive() {
 		return PostViolationFundInactive
 	}
 	if in.Fees.Sign() < 0 {

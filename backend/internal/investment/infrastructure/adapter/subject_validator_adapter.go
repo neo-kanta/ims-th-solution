@@ -59,6 +59,31 @@ func (v *DecisionSubjectValidator) ValidateSubjectApprovable(ctx context.Context
 	return nil
 }
 
+// CashRequestSubjectValidator implements contract.ApprovalSubjectValidator for
+// the CASH_TRANSACTION subject type. It verifies the cash request is still
+// PENDING — an approver cannot act on a request the submitter already cancelled
+// (or one that was materialized concurrently).
+type CashRequestSubjectValidator struct {
+	repo domain.PortfolioCashRequestRepository
+}
+
+// NewCashRequestSubjectValidator wires the validator.
+func NewCashRequestSubjectValidator(repo domain.PortfolioCashRequestRepository) *CashRequestSubjectValidator {
+	return &CashRequestSubjectValidator{repo: repo}
+}
+
+// ValidateSubjectApprovable implements contract.ApprovalSubjectValidator.
+func (v *CashRequestSubjectValidator) ValidateSubjectApprovable(ctx context.Context, subjectID uuid.UUID) error {
+	c, err := v.repo.GetByID(ctx, subjectID)
+	if err != nil {
+		return err
+	}
+	if c == nil || c.Status != vo.CashRequestStatusPending {
+		return errors.New("cash request is no longer pending approval")
+	}
+	return nil
+}
+
 // ComplianceReleaseSubjectValidator implements contract.ApprovalSubjectValidator
 // for the COMPLIANCE_RELEASE subject type. It verifies the decision is still in
 // PENDING_COMPLIANCE_RELEASE state — not CANCELLED or advanced concurrently.

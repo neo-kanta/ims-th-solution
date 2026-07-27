@@ -8,6 +8,10 @@
  */
 
 export interface PortfolioCreateFormValues {
+  /** Whether this portfolio is bound to a fund ("Bind with Fund: Y/N"). When
+   * false, fund_code is never sent — the backend creates a fund-less
+   * portfolio (fund_id NULL). */
+  bindFund: boolean;
   fund_code: string;
   portfolio_type: string;
   code: string;
@@ -23,6 +27,35 @@ export interface PortfolioCreateFormValues {
 
 export const PORTFOLIO_TYPES = ["LIVE", "SIMULATION", "MODEL"] as const;
 export type PortfolioTypeOption = (typeof PORTFOLIO_TYPES)[number];
+
+/**
+ * Fixed ISO 4217 choices offered in the Create Portfolio currency comboBoxes.
+ * THB/USD are the only currencies present in real seed data today; the rest
+ * are included as plausible near-term options so the field stays a picker
+ * rather than free text. The backend accepts any 3-letter ISO code — this
+ * list is a frontend UX narrowing only, not a backend-enforced allowlist.
+ */
+export const SUPPORTED_CURRENCIES = [
+  "THB",
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "SGD",
+  "HKD",
+  "CNY",
+  "AUD",
+] as const;
+
+/**
+ * risk_profile is NOT free text — the database enforces
+ * `chk_inv_portfolios_risk_profile`: NULL or one of these four values only.
+ * A number (or any other string) fails at INSERT time with a raw Postgres
+ * constraint-violation error, which is why this must be a picker, not an
+ * <input type="number"> (a mistake made and then fixed in this file).
+ */
+export const RISK_PROFILES = ["LOW", "MEDIUM", "HIGH", "SPECULATIVE"] as const;
+export type RiskProfileOption = (typeof RISK_PROFILES)[number];
 
 export type PortfolioCreateFieldError =
   | "required"
@@ -51,6 +84,7 @@ export function normalizePortfolioCreateValues(
   values: PortfolioCreateFormValues,
 ): PortfolioCreateFormValues {
   return {
+    bindFund: values.bindFund,
     fund_code: values.fund_code.trim(),
     portfolio_type: values.portfolio_type.trim().toUpperCase(),
     code: values.code.trim(),
@@ -60,7 +94,7 @@ export function normalizePortfolioCreateValues(
     valuation_currency: values.valuation_currency.trim().toUpperCase(),
     strategy_code: values.strategy_code.trim(),
     benchmark: values.benchmark.trim(),
-    risk_profile: values.risk_profile.trim(),
+    risk_profile: values.risk_profile.trim().toUpperCase(),
     inception_date: values.inception_date.trim(),
   };
 }
@@ -80,7 +114,7 @@ export function validatePortfolioCreateForm(
   const values = normalizePortfolioCreateValues(raw);
   const errors: PortfolioCreateErrors = {};
 
-  if (!values.fund_code) errors.fund_code = "required";
+  if (values.bindFund && !values.fund_code) errors.fund_code = "required";
   if (!values.portfolio_type) {
     errors.portfolio_type = "required";
   } else if (!(PORTFOLIO_TYPES as readonly string[]).includes(values.portfolio_type)) {
@@ -119,7 +153,7 @@ export function validatePortfolioCreateForm(
  * work-package report for this gap).
  */
 export interface PortfolioCreateRequestBody {
-  fund_code: string;
+  fund_code?: string;
   portfolio_type: PortfolioTypeOption;
   code: string;
   name: string;
@@ -143,7 +177,6 @@ export function buildPortfolioCreateRequest(
 ): PortfolioCreateRequestBody {
   const values = normalizePortfolioCreateValues(raw);
   const body: PortfolioCreateRequestBody = {
-    fund_code: values.fund_code,
     portfolio_type: values.portfolio_type as PortfolioTypeOption,
     code: values.code,
     name: values.name,
@@ -151,6 +184,7 @@ export function buildPortfolioCreateRequest(
     valuation_currency: values.valuation_currency,
     inception_date: values.inception_date,
   };
+  if (values.bindFund && values.fund_code) body.fund_code = values.fund_code;
   if (values.description) body.description = values.description;
   if (values.strategy_code) body.strategy_code = values.strategy_code;
   if (values.benchmark) body.benchmark = values.benchmark;
@@ -160,6 +194,7 @@ export function buildPortfolioCreateRequest(
 
 export function emptyPortfolioCreateFormValues(): PortfolioCreateFormValues {
   return {
+    bindFund: false,
     fund_code: "",
     portfolio_type: "",
     code: "",

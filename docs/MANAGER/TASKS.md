@@ -3,7 +3,7 @@ type: manager-task-board
 project: IMS Thailand
 owner: Kanta
 status: active
-last_updated: 2026-07-21
+last_updated: 2026-07-24
 ---
 
 # Manager Tasks
@@ -12,7 +12,521 @@ Only one task may be `IN PROGRESS`. A new AI instance must verify the repository
 before changing a status. Completed work belongs in the completion log, not in
 the active queue.
 
-## P0 - IN PROGRESS - Investment Integration Review and Breaches Browser UAT
+## P0 - IN PROGRESS - Merge-Blocker Remediation Program (IMS-MERGE-BLOCKERS)
+
+Goal: close the source-proven `neo-develop` -> merge-readiness blockers and
+restore one authoritative end-to-end investment lifecycle. The original order
+P0-A (Portfolio V2 data-scope security) -> P0-B (demo migration cleanup) ->
+P0-C (fill validation) -> P0-D (compliance binding auditability) remains
+preserved. The 2026-07-24 end-to-end product/business-flow review expanded this
+same program with P0-E through P0-I below; it did not create a second active
+task. Started 2026-07-21. This supersedes the Breaches-UAT task below as the
+single active manager task; Breaches-UAT is not abandoned, it is queued (see
+its own section) because only one task may be IN PROGRESS.
+
+### Claude `/goal` execution contract (2026-07-24)
+
+Kanta requested a durable, token-aware Claude Code `/goal` package to execute
+this complete remediation program across Claude accounts without relying on
+transcript memory:
+
+- `docs/MANAGER/CLAUDE-GOAL-IMS-REMEDIATION.md` is the ordered outcome
+  contract, work-package backlog, acceptance matrix, validation gate, and
+  copy-paste `/goal` command.
+- `docs/MANAGER/CLAUDE-GOAL-NEXT-ACCOUNT-HANDOFF.md` is the mandatory
+  per-account continuation record. It must be updated before context/account
+  exhaustion and consumed by the next Claude account.
+
+The runbook consolidates P0-B through P0-I plus the latest independent review
+findings: denial-versus-infrastructure error classification, LIVE cash request
+idempotency, durable approval-sync replay, actual approver attribution,
+cash-request cancellation UX, SSR session restore, watchlist scheduling,
+typecheck/CI debt, regulatory human gates, integrated database/browser proof,
+and documentation reconciliation.
+
+This documentation authorizes Claude to investigate and implement the
+owner-approved remediation scope through `/goal`; it does **not** itself
+authorize a commit, push, deployment, production migration/data mutation, or
+an unrecorded business/legal decision. D1 is resolved as `FUND_OPTIONAL`, D2 is
+resolved as `MATCHED CONFIRMATION`, and D3 is resolved as `EXPIRE PENDING`.
+D4 remains human-gated/deferred: the Thai SEC control must stay honestly
+`NOT_CONFIGURED` until a compliance/legal owner approves the product regime
+and effective-dated source-to-rule matrix.
+
+Verified live Git state at start (2026-07-21): branch `neo-develop`, HEAD
+`0ae1adb`, tracking `origin/neo-develop`, `+5 -0` (five unpushed local
+commits, matching `8d43747`..`0ae1adb`). Working tree: exactly 15 paths — 5
+tracked-modified (`docs/api/README.md`, `docs/api/compliance-api.md`,
+`docs/api/portfolio-v2-api-ddd.md`, `docs/api/watchlist-api.md`,
+`tools/bruno/environments/ims-th-local.yml`) and 10 staged-new (`docs/api/`
+generated-doc additions plus two Bruno execution request files under
+`tools/bruno/Investment/Executions/`). No untracked files. Nothing pushed.
+
+**Phase 1 disposition (2026-07-21, read-only reconciliation — zero commits
+created):**
+
+- All 15 working-tree paths are held, not staged into any new commit. This is
+  a correct Phase 1 outcome, not an omission: `docs/api/*` provenance is an
+  external concurrent writer (flagged in the 2026-07-20 Architecture Cleanup
+  session, still unresolved) and the two Bruno execution `.yml` files and the
+  local-environment edit were likewise never authored by a manager session.
+- `tools/bruno/environments/ims-th-local.yml`'s only diff is two local
+  session values (`compliance-breach-id` and `compliance-rule-type-id`
+  populated from a local test run) — machine/session-local state per the
+  owner's explicit instruction not to commit that file when it carries local
+  runtime values. Held.
+- `docs/api/_build_current_api_docs.py` is a clean, self-contained generator
+  (reads `backend/docs/swagger.json` + `v2/v2_swagger.json` + the legacy
+  builder, writes only `docs/api/*.md`) — plausibly reproducible, but
+  authorship/ownership is still unconfirmed (external concurrent writer, per
+  HANDOFF), so it is held pending Kanta's confirmation rather than executed
+  or committed by this session.
+- The generated `docs/api/*.md` diffs read as coherent, accurate
+  documentation-quality improvements (e.g. correcting `portfolio-v2-api-ddd.md`
+  and `watchlist-api.md` from "design/proposal" to "implemented, see current
+  doc"), not a correctness or security concern — but ownership, not quality,
+  is the reason they are held.
+- The two new `tools/bruno/Investment/Executions/*.yml` files are untested,
+  unreviewed Bruno request definitions of unconfirmed origin; held as a
+  separate scope per the owner's instruction, not merged into any commit.
+- The five existing local commits (`8d43747`, `39ab72d`, `09d9421`, `f6c5205`,
+  `0ae1adb`) were reviewed read-only via `git show --stat`: each has a
+  coherent, single-purpose file set matching its message (compliance DTO
+  refactor; investment AUM+FX with matching frontend/i18n/tests/Bruno;
+  generated-contract regeneration only; frontend breach-queue redesign; and
+  manager-doc updates). No scope creep or cross-boundary file found. This
+  reconfirms, without re-running the full gate, the extensive verification
+  already recorded in HANDOFF's "Session: Local Investment Integration
+  Commits" and predecessor sessions.
+
+- [x] Verify live Git state independently (do not trust stale "52 modified
+      files" claim) — confirmed exactly 15 paths, `+5 -0`, no untracked files.
+- [x] Classify all 15 remaining working-tree paths — outcome: hold all 15,
+      create zero new Phase 1 commits (see disposition above).
+- [x] Review the five existing local commits for scope/correctness concerns —
+      no material finding; each commit is single-purpose and evidenced.
+- [ ] Kanta confirms provenance of the `docs/api/*` generator and generated
+      docs, and of the two Bruno execution `.yml` files, before either is
+      committed.
+
+### P0-A - COMPLETE - Portfolio V2 data-scope security
+
+**Committed as `67efe71`** on `neo-develop` (2026-07-21). Not pushed.
+Implemented by `frontier-backend-engineer` in an isolated worktree, verified
+independently by the manager (own `go build`/`go vet`/`go test ./... -count=1`
+run: 81 packages `ok`, zero `FAIL`; `gofmt -l` clean; `git diff --check`
+clean), and reviewed by a separate independent security reviewer given only
+the raw diff and acceptance criteria (not the manager's or implementer's
+conclusions) — **no blocking findings**. One non-blocking hardening
+suggestion was logged (see below) and deliberately deferred, not silently
+dropped.
+
+**Manager process error, caught and corrected before reporting completion:**
+the first `git commit` for this task used no pathspec and therefore committed
+the *entire index* — sweeping in the pre-existing staged `docs/api/*` and
+`tools/bruno/Investment/Executions/*` files that Phase 1 had explicitly
+decided to hold. This was caught immediately (`git show --stat` on the new
+commit showed 18 files, not 8), corrected with `git reset --soft HEAD~1`
+(safe: the commit was unpushed, at the tip, and created by this session
+seconds earlier — nothing else was built on top of it), and redone with an
+explicit `--  <8 files>` pathspec. Final commit contains exactly the 8 files
+in this task's write scope; `git status` afterward reconfirmed the other 15
+paths are back to their exact pre-commit staged/unstaged state.
+
+- [x] `DecisionHandler`, `ExecutionHandler`, `TradeConfirmationHandler` each
+      gained a `pc contract.PermissionChecker` field + `SetPermissionChecker`
+      setter; `module.go` wires `m.permissionAdapter` unconditionally to all
+      three (verified: `permissionAdapter` fails closed even if `iamPort` is
+      nil, per the adapter's own `HasDataPermission`/etc. guard clauses).
+- [x] All 10 `resolvePortfolioByCode(..., nil)` call sites now pass `h.pc`;
+      grep-confirmed zero remaining literal-`nil` invocations anywhere in
+      `internal/investment`.
+- [x] 20 new tests (2 per endpoint: authorized-passes-gate,
+      cross-fund-403) — traced by the independent reviewer against actual
+      source (not just comments) to confirm each assertion could only be
+      reached after the fund-scope check passed.
+- [x] Existing handler tests, full `internal/investment/...` suite, and the
+      full repository `go test ./... -count=1` (81 packages) all still pass.
+- [x] No V1 routes, permission-catalog entries, or generated Swagger/OpenAPI
+      files touched; audit attribution unchanged.
+- [x] Independent review completed with no blocking findings.
+
+**Deferred hardening (logged, not required for this fix):** the shared
+`resolvePortfolioByCode` still silently no-ops when `pc == nil` rather than
+erroring — the "never nil in production" guarantee rests entirely on
+`module.go` always calling the setter, the same class of bug (forgotten
+wiring) that caused the original vulnerability. Both the implementer and
+independent reviewer judged this an acceptable trade-off given the adapter's
+own fail-closed behavior and the now-unconditional wiring, but flagged a
+stricter fail-closed resolver variant (error/500 on nil for write-capable
+handlers) as a good follow-up. Not scheduled; add to Architecture Cleanup if
+Kanta wants it tracked.
+
+### P0-A original finding (preserved for record; superseded by COMPLETE section above)
+
+**Finding (confirmed in current code, 2026-07-21):** `resolvePortfolioByCode`
+(`backend/internal/investment/transport/handler/portfolio_v2_handler.go:46-71`)
+only enforces fund data-scope when its `pc contract.PermissionChecker`
+parameter is non-nil (`if pc != nil && !hasFundAccess(...)`). The correct
+call site is `portfolio_v2_handler.go:31` (`h.resolvePortfolioCode`), which
+passes the handler's real `h.pc`. But **10 call sites across the three other
+V2 handler structs pass a literal `nil`**, permanently disabling the check:
+
+- `portfolio_v2_decision_handler.go:70,106,181,209,248` (`*DecisionHandler`)
+- `portfolio_v2_execution_handler.go:75,146,214` (`*ExecutionHandler`,
+  `CreateExecutionByCode`/`FillExecutionByCode`/`CancelExecutionByCode`)
+- `portfolio_v2_execution_handler.go:261,339` (`*TradeConfirmationHandler`,
+  `RecordConfirmationByCode`/`ResolveConfirmationByCode`)
+
+Root cause confirmed by struct inspection: `DecisionHandler`
+(`decision_handler.go:21-28`), `ExecutionHandler` (`execution_handler.go:16-21`),
+and `TradeConfirmationHandler` have **no `pc`/permission-checker field at
+all** — they are wired post-construction only via
+`SetPortfolioRepository`/`SetDecisionRepository`/etc. in
+`backend/internal/investment/module.go:219-229`. This is not a call-site typo;
+the dependency was never plumbed through. The correct pattern already exists
+twice in the same codebase to copy: `InvestmentHandler` receives its checker
+(`m.permissionAdapter`) through its constructor
+(`module.go:205-217`), and `m.decisionBatchCmd.SetPermissionChecker(iamPort)`
+(`module.go:170`) is an existing post-construction setter for the same kind of
+dependency on a different type.
+
+**Acceptance criteria (all satisfied — see COMPLETE section above for how):**
+
+- [x] `DecisionHandler`, `ExecutionHandler`, and `TradeConfirmationHandler`
+      each gain a `pc contract.PermissionChecker` field and a
+      `SetPermissionChecker` setter (mirroring `decisionBatchCmd`'s existing
+      setter), or an equivalent constructor-injected fix — manager has no
+      preference on setter-vs-constructor as long as production wiring in
+      `module.go` cannot leave `pc` nil.
+- [x] `module.go` wires the real checker (the same `m.permissionAdapter` used
+      by `InvestmentHandler`, or `iamPort` directly — confirm which is
+      correct against `NewPermissionCheckerAdapter`'s semantics) into all
+      three handlers.
+- [x] All 10 `resolvePortfolioByCode(w, r, h.portfolios, nil)` call sites
+      become `resolvePortfolioByCode(w, r, h.portfolios, h.pc)`.
+- [x] Fail closed: confirm (by test, not inspection) that a nil/unwired
+      checker still denies rather than silently passing — i.e. do not
+      "fix" this by leaving `pc != nil` as an opt-in bypass; a production
+      handler must never be constructible with a nil checker in the wiring
+      path, or the resolver must deny when the checker is nil for these
+      write-capable handlers specifically (recheck whether the existing
+      `pc != nil` skip in `resolvePortfolioByCode` itself needs to become
+      fail-closed for these callers, since read-only `InvestmentHandler`
+      routes may have a different historical reason for the nil-skip
+      behavior — investigate before assuming the shared function's
+      contract can change safely for all callers). Resolved by keeping the
+      nil-tolerant resolver contract and relying on unconditional,
+      fail-closed wiring instead — see the Deferred hardening note above.
+- [x] Test authorized same-fund access succeeds and cross-fund access is
+      denied (403, not 404, matching `resolvePortfolioByCode`'s existing
+      `httputil.Forbidden` path) for every one of the 10 endpoints: list/get
+      decisions, create/submit/cancel decision, create/fill/cancel execution,
+      record/resolve confirmation.
+- [x] Cover repository/application layers too if fund-scope is supposed to be
+      enforced beneath the handler as defense in depth — confirm with
+      `hasFundAccess`'s existing definition and existing V1 equivalents
+      before adding redundant checks that could diverge from them. Existing
+      `hasFundAccess`/V1 semantics were sufficient; no redundant check added.
+- [x] Preserve audit attribution — do not change what gets audited, only
+      close the authorization gap.
+- [x] Full backend `go test ./...`, `go vet ./...`, `go build ./...`.
+- [x] Independent read-only review of the diff against this exact finding
+      (not the manager's fix, the raw diff) before a local commit.
+
+**Non-goals:** do not touch V1 (`/api/v1/investment/...`) routes, do not
+change `hasFundAccess`'s allocation-rule semantics, do not add a new
+permission catalog entry unless the existing `INVESTMENT_*`
+permission set is insufficient (investigate first).
+
+**Dispatch:** `frontier-backend-engineer`, single writer, no isolated
+worktree needed (P0-A is the only active writer this session). Independent
+review before commit per the skill's high-risk-change rule (security/data-scope).
+
+### P0-B - ACTIVE CORRECTION - Demo migration/bootstrap cleanup
+
+Claude Account #1 produced an uncommitted four-file candidate patch in
+`.claude/worktrees/agent-aa1dd1dbf78db7268` that removes named `ben`/`green`
+membership blocks from historical migrations `20260716000001/2/3` while
+preserving the production role catalog. A second review rejected the G1
+completion claim because two release-safety requirements remain unmet:
+
+- `backend/cmd/seed` recursively runs every SQL seed under `database/seeds`
+  without an enforced production-environment rejection, so seeds 019/020/021
+  and `zz_demo` are still runnable against production.
+- Editing already-applied historical migrations is inert. Databases that ran
+  the original versions retain their migration-owned demo memberships unless a
+  new forward corrective migration removes the exact owned rows.
+
+The candidate worktree is based on `b813b30`, 11 commits ahead of
+`neo-develop@b0faad1`. Do not merge that branch wholesale. Recreate or apply
+only the reviewed four-file diff from a clean worktree based on the current
+`neo-develop`.
+
+Acceptance criteria:
+
+- [ ] Production migration/bootstrap contains no named demo-user privilege or
+      data-scope assignment.
+- [ ] The seed entry point technically rejects demo seeds in production; a
+      folder name, operator convention, or comment is insufficient.
+- [ ] Reference/catalog seeds and explicit development/test demo seeds have
+      separate, documented execution paths.
+- [ ] A new forward migration removes only the exact historical
+      migration-owned Ben/Green memberships from already-upgraded databases,
+      without deleting production roles, function rights, legitimate
+      administrator-created memberships, or data scopes.
+- [ ] A fresh disposable database proves migration-only state has zero named
+      demo grants while required production role catalogs remain.
+- [ ] An upgrade fixture containing the historical memberships proves the
+      forward migration removes exactly those rows.
+- [ ] Explicit development/test seeding restores the intended synthetic demo
+      behavior idempotently, including the anti-data-scope-escalation guard.
+- [ ] A production-configured seeder invocation fails before executing demo
+      SQL, with an automated test.
+- [ ] Up/down/up lifecycle, `git diff --check`, backend formatting/tests/build,
+      and an independent database/security review pass with no P0/P1.
+- [ ] Integration is performed from current `neo-develop` without merging or
+      cherry-picking unrelated history from the old G1 worktree.
+
+### P0-C - QUEUED - Fill validation
+
+Not started. Starts after P0-A/P0-B integrate cleanly (fill validation may
+touch the same execution handlers/commands P0-A touches — sequence to avoid
+concurrent-writer conflicts on `execution_handler.go` and
+`portfolio_v2_execution_handler.go`).
+
+### P0-D - QUEUED - Compliance binding auditability
+
+Not started. Independent of P0-A/B/C's files (touches compliance binding
+create/deactivate, not investment V2 handlers); could run in parallel with
+P0-B/C in a separate worktree once P0-A is integrated, if Kanta authorizes
+parallel writers.
+
+### 2026-07-24 review expansion and execution order
+
+**Review verdict:** NOT READY - CONTROL AND PRODUCT BLOCKERS. The repository
+contains credible portfolio, approval, permissions, compliance-pipeline,
+ledger-projection, and workflow components, but there is no single
+authoritative route from approved decision -> execution -> confirmation ->
+ledger -> holdings/cash -> valuation -> end-of-day close.
+
+**Current-source evidence that must remain reproducible until fixed:**
+
+- `ExecutionCommandHandler.Fill` updates only the execution row and does not
+  enforce positive/cumulative/ordered bounds, rerun compliance, check the
+  workflow day, transition the decision to `EXECUTED`, or post the ledger.
+- `TradeConfirmationCommandHandler.Record/Resolve` updates confirmation state
+  without settlement or ledger effects.
+- `PostTransactionRequest.SourceDecisionID` and `SourceExecutionID` are
+  optional, so a direct BUY/SELL ledger post can bypass decision approval,
+  execution, and confirmation.
+- Workflow production wiring still constructs
+  `NopInvestmentQueryAdapter`, which always reports zero transactions to
+  manager approval.
+- Fund-less decisions, executions, ledger posts, and reversals skip the
+  fund-scoped workflow gate in the current dirty implementation.
+- The frontend has no create/fill/cancel execution action and no record-
+  confirmation action, while OP-02/OP-03 are marked `fullyAvailable: true`.
+- `regulatory.thai_sec` remains a warning stub and
+  `credit_rating.minimum` still passes by default.
+- Approval subject synchronization happens after approval commit and records
+  callback failure as retryable, but no replay path was found.
+- The server exposes manual watchlist evaluation but starts no watchlist
+  evaluation scheduler.
+- CI typechecks/builds the frontend but does not run Vitest, and its database
+  E2E command selects IAM tests rather than the Portfolio V2 lifecycle suites.
+
+**Safety gate before P0-E through P0-I:** do not layer these changes onto
+Claude's active fund-optional dirty tree. First preserve and review that work,
+resolve the fund-optional policy conflict in P0-H, and obtain Kanta's explicit
+authorization for any commit, migration execution, container/database change,
+push, or deployment. Documentation-only planning is authorized; implementation
+is not authorized by this task-board update.
+
+### P0-E - QUEUED - Authoritative trade-to-ledger lifecycle
+
+**Objective:** remove the two competing financial paths. An approved investment
+must have one idempotent, attributable lifecycle from decision through actual
+financial effect.
+
+**Owner:** investment backend/domain first; DBA review for constraints; frontend
+consumer only after the backend contract is accepted.
+
+**Dependencies:** P0-B, P0-C, and P0-H. P0-D may proceed independently if file
+ownership is isolated.
+
+**Acceptance criteria:**
+
+- [ ] Record an explicit owner-approved lifecycle policy stating which event
+      creates official financial effect: execution fill, matched confirmation,
+      settlement, or another named event. Do not infer this in code.
+- [ ] Require LIVE security BUY/SELL ledger posts to reference and validate an
+      approved decision and eligible execution; reject guessed, missing,
+      cross-portfolio, cancelled, overfilled, or already-posted sources.
+- [ ] Post ledger, holdings, and cash atomically with the authoritative event,
+      or use a durable outbox/idempotent consumer with observable retry status.
+- [ ] Add database FKs/business keys and idempotency for source decision,
+      execution, confirmation, and external broker identity as appropriate.
+- [ ] Define partial-fill, multi-fill, cancellation, correction, reversal, and
+      duplicate-request behavior.
+- [ ] Transition decision/execution/confirmation status consistently and expose
+      one correlated portfolio activity trail.
+- [ ] Prove retry after a timeout or audit/notification failure cannot create a
+      duplicate execution or duplicate ledger effect.
+- [ ] Add Go domain/application/repository tests plus live-Postgres E2E for
+      decision -> approval -> execution/fill -> confirmation/settlement ->
+      ledger/holdings/cash.
+
+**Failure and rollback behavior:** failed compliance, workflow, validation,
+idempotency, persistence, or source-correlation checks create no partial
+financial effect. Reversal is append-only, attributable, and cannot be used to
+bypass a closed day without an explicit audited override permission.
+
+**Non-goals:** do not use the frontend to compensate for missing backend
+invariants; do not keep direct ledger posting as an undocumented alternative
+trade workflow; do not hand-edit generated Swagger or TypeScript contracts.
+
+### P0-F - QUEUED - Real EOD activity integration and workflow enforcement
+
+**Objective:** make the global business-date workflow reflect real investment
+activity and close every mutation path when the day is not open.
+
+**Owner:** workflow backend with an investment-owned query adapter; independent
+workflow/investment reviewer required.
+
+**Dependencies:** lifecycle policy from P0-E and fund-scope decision from P0-H.
+
+**Acceptance criteria:**
+
+- [ ] Replace `NopInvestmentQueryAdapter` in production wiring with a real
+      transaction/execution/confirmation summary for the global business date.
+- [ ] Manager approval cannot accept a zero-transaction attestation when real
+      transactions exist and cannot proceed while required review,
+      confirmation, or reconciliation work is pending.
+- [ ] Execution create/fill/cancel, confirmation record/resolve, ledger post,
+      and reversal all use a positive `IsTradeAllowed` check and a race-safe
+      day-row lock where financial state changes.
+- [ ] Missing workflow day is fail-closed, not interpreted as merely
+      "unlocked."
+- [ ] Replace or explicitly gate the weekend-only holiday adapter before
+      production; Thai business-calendar behavior requires owner/operations
+      approval.
+- [ ] Add concurrency tests proving manager approval/close cannot race a fill,
+      confirmation, ledger post, or reversal.
+- [ ] Add E2E proof for normal open/approve/close/accounting-close paths and
+      every reverse/cancel transition.
+
+### P0-G - QUEUED - Portfolio-type ledger policy and LIVE approval
+
+**Objective:** implement the owner-confirmed portfolio-type policy without
+mutating append-only ledger rows before approval.
+
+**Human decisions required before implementation:**
+
+- [ ] Kanta confirms whether LIVE approval applies only to `CASH_IN`, all cash
+      movements (`CASH_IN`, `CASH_OUT`, fee, dividend), or also security
+      BUY/SELL. This decision must align with P0-E and must not create a second
+      trade-approval path accidentally.
+- [ ] Kanta confirms whether a submitter may edit/cancel a pending LIVE ledger
+      request and what happens when the business day closes while it is
+      pending.
+
+**Acceptance criteria after those decisions:**
+
+- [ ] `SIMULATION` posts eligible paper transactions immediately and marks all
+      outputs non-official.
+- [ ] `MODEL` is rejected by the backend as well as hidden/disabled in the UI;
+      it never receives official ledger, cash, execution, or valuation effects.
+- [ ] `LIVE` uses a separate pending-request entity/table and a configured
+      approval subject/process; no `investment__portfolio_transactions` row or
+      holding/cash effect exists before final approval.
+- [ ] Approval callback is idempotent and replayable; approval committed but
+      subject-sync failed is visible and recoverable.
+- [ ] Rejection, withdrawal, expiry, cancellation, duplicate approval callback,
+      stale workflow day, compliance failure, and permission loss are covered.
+- [ ] Backend/API/database work lands first; generated contracts are then
+      regenerated; frontend implements submit/status/cancel/recovery UX in
+      EN/TH/ZH; integrated browser proof follows.
+
+### P0-H - POLICY RESOLVED; IMPLEMENTATION IN PROGRESS - Fund-optional governance
+
+**Owner decision D1 (Kanta, 2026-07-24):** `FUND_OPTIONAL` supersedes the
+2026-07-15 fund-required decision. Portfolios and their financial activity may
+exist without a fund association. The portfolio is the scope key when no fund
+exists; absence of `fund_id` never bypasses workflow, EOD, compliance,
+approval, valuation, reporting, permissions, or audit.
+
+- [x] Record D1 and mark the earlier fund-required decision superseded.
+- [x] Align durable manager memory with `FUND_OPTIONAL`.
+- [ ] Ensure migrations, backend invariants, permissions, frontend behavior,
+      generated API documentation, and tests all express the same policy.
+- [ ] Prove fund-less LIVE financial activity receives the same mandatory
+      control gates as fund-bound activity.
+
+### P0-I - QUEUED - Complete and honestly label the trader/operator frontend
+
+**Owner:** frontend after P0-E/F/G backend contracts are accepted and generated.
+
+**Acceptance criteria:**
+
+- [ ] Authorized traders can create, fill/partially fill, and cancel executions
+      through real typed endpoints with validation/conflict/retry states.
+- [ ] Authorized operations users can record/import and resolve confirmations.
+- [ ] Portfolio decision detail shows the complete correlated lifecycle and
+      official versus non-official financial effect.
+- [ ] OP-02/OP-03 cannot display `ready` while required mutations or backend
+      contracts are missing; limited capability explains the exact gap.
+- [ ] Rejection, approval-sync failure, compliance unavailable, closed day,
+      stale data, duplicate request, partial fill, mismatch, and empty states
+      have explicit user guidance.
+- [ ] EN/TH/ZH, permission-denied, desktop/tablet/mobile, light/dark,
+      keyboard/accessibility, console, and network behavior receive browser
+      evidence.
+
+### P1 follow-ups required before production readiness
+
+- [ ] Implement durable approval-subject sync retry/replay and operator
+      visibility; notification alone is insufficient.
+- [ ] Standardize audit transaction semantics. Do not return a generic failure
+      after a mutation committed, and do not silently accept missing audit for
+      financial/compliance changes.
+- [ ] Pass actor identity into compliance binding deactivation and persist an
+      immutable create/change/deactivate audit trail.
+- [ ] Complete Thai SEC/BOT and credit-rating controls only after the existing
+      human compliance/legal source-to-rule gate is approved.
+- [ ] Add scheduled watchlist evaluation and periodic/post-trade compliance
+      evaluation with idempotency and stale-provider behavior.
+- [ ] Add frontend Vitest and Portfolio V2 financial lifecycle/database E2E to
+      CI; fix the current Nuxt typecheck baseline instead of excluding it.
+- [ ] Add a unified auditor-facing portfolio timeline across workflow,
+      research, decision, approval, compliance, execution, confirmation,
+      ledger, reversal, valuation, and EOD.
+- [ ] Move application-layer raw SQL into query/repository adapters where it
+      blocks deterministic testing, especially valuation/allocation queries.
+
+### Program-wide verification and release gates
+
+- [ ] Every child task has an exclusive write scope, focused tests, broad tests,
+      `gofmt`/lint/typecheck/build as applicable, `git diff --check`, and a
+      completion report listing exact commands and residual risk.
+- [ ] Database/security/lifecycle changes receive independent review against
+      the raw acceptance contract and integrated diff.
+- [ ] One automated real-Postgres scenario and one authenticated browser
+      scenario prove the full happy path and selected failure paths without
+      manual DB correction.
+- [ ] Generated Swagger and frontend API types are regenerated from source and
+      deterministic.
+- [ ] No unresolved P0 or P1 control finding is relabelled as documentation,
+      demo limitation, or frontend-only risk.
+- [ ] Kanta explicitly approves business policy, migrations, commit scope,
+      push, deployment, and any production action.
+
+Acceptance for the whole program: every priority-ordered fix is evidenced by
+a diff, a passing focused-then-full test gate, and an independent read-only
+review before a local commit; no push; excluded `docs/api/`/Bruno files
+remain preserved untouched throughout.
+
+## P0 - QUEUED - Investment Integration Review and Breaches Browser UAT
 
 Goal: finish review of the local `neo-develop` investment integration without
 pushing or claiming production readiness. Code is separated into scoped
@@ -639,13 +1153,15 @@ correct; two non-blocking findings were logged below under P2 - Architecture
 Cleanup. Full detail in `HANDOFF.md`'s "Session: Independent Review of P1
 Execution Handler Fix and E2E Test (2026-07-15)".
 
-## Owner Decision - Not Planned
+## Superseded Owner Decision - Historical Record
 
 ### Fund-Optional Portfolio Development
 
-Closed by Kanta on 2026-07-15: do not develop the optional-fund feature. Keep
-the current required fund association. This is an explicit non-goal and its
-former seven unchecked items are no longer part of the backlog.
+On 2026-07-15 Kanta said not to develop optional fund association and to keep
+fund association required. **Superseded by Kanta's later explicit D1 decision
+on 2026-07-24: `FUND_OPTIONAL` ("what I want is fundless").** Preserve this
+section only as history; it is not current product direction and must not be
+used to block or reverse fund-less portfolio work.
 
 ## P2 - GATED - Regulation and Restriction
 

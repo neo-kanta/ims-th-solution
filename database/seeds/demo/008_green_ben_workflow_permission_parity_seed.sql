@@ -1,9 +1,12 @@
 -- =============================================================================
--- Green function-permission parity with Ben (idempotent)
+-- Green function-permission parity with Ben (development/test only, idempotent)
 -- =============================================================================
+-- Formerly database/seeds/021_green_ben_workflow_permission_parity_seed.sql.
 -- Green keeps her existing GLOBAL-TECH and BBL-EQUITY data scopes and existing
 -- approval reviewer/supervisor memberships. This seed assigns only the same
--- function-permission groups Ben uses for the requested workflows.
+-- function-permission groups Ben uses for the requested workflows. This file
+-- is only executed when APP_ENV is development or test (see
+-- backend/cmd/seed/sql_seeds.go); it must never reach production.
 -- =============================================================================
 
 BEGIN;
@@ -29,19 +32,26 @@ BEGIN
 END
 $$;
 
-INSERT INTO permissions_accounts_groups (id, user_id, group_id, assigned_by)
+-- NOTE: the membership id is intentionally DB-generated (column default), NOT a
+-- fixed value. Earlier this seed used the fixed ids b1000000-…051..054, which
+-- are exactly the ids forward migration 20260725000001 deletes as
+-- migration-owned artifacts — so a re-run of that migration on a seeded dev DB
+-- would have deleted green's legitimately-seeded demo memberships. Using
+-- generated ids (like the ben seeds) keeps demo data disjoint from the
+-- migration-owned id space and keeps that migration's "never by application
+-- code" invariant true.
+INSERT INTO permissions_accounts_groups (user_id, group_id, assigned_by)
 SELECT
-    expected.membership_id,
     green_user.id,
     permission_group.id,
     'a0000000-0000-0000-0000-000000000001'::uuid
 FROM iam_users green_user
 CROSS JOIN (VALUES
-    ('b1000000-0000-0000-0000-000000000051'::uuid, 'b0000000-0000-0000-0000-000000000011'::uuid, 'Fund Manager'),
-    ('b1000000-0000-0000-0000-000000000052'::uuid, 'b0000000-0000-0000-0000-000000000040'::uuid, 'Investment Decision Operator'),
-    ('b1000000-0000-0000-0000-000000000053'::uuid, 'b0000000-0000-0000-0000-000000000041'::uuid, 'Investment Decision Approver'),
-    ('b1000000-0000-0000-0000-000000000054'::uuid, 'b0000000-0000-0000-0000-000000000042'::uuid, 'Investment Operation Page Access')
-) AS expected(membership_id, group_id, group_name)
+    ('b0000000-0000-0000-0000-000000000011'::uuid, 'Fund Manager'),
+    ('b0000000-0000-0000-0000-000000000040'::uuid, 'Investment Decision Operator'),
+    ('b0000000-0000-0000-0000-000000000041'::uuid, 'Investment Decision Approver'),
+    ('b0000000-0000-0000-0000-000000000042'::uuid, 'Investment Operation Page Access')
+) AS expected(group_id, group_name)
 JOIN permissions_groups permission_group
   ON permission_group.id = expected.group_id
  AND permission_group.name = expected.group_name

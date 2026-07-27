@@ -1,8 +1,11 @@
 -- =============================================================================
--- Ben workflow-approver seed
+-- Ben workflow-approver seed (development/test only)
 -- =============================================================================
--- Grants Ben (username: ben, id: a0000000-...0010) the ability to perform
--- Manager Approval on the workflow day-state machine.
+-- Formerly database/seeds/014_ben_workflow_approver_seed.sql. Grants Ben
+-- (username: ben, id: a0000000-...0010) the ability to perform Manager
+-- Approval on the workflow day-state machine. This file is only executed
+-- when APP_ENV is development or test (see backend/cmd/seed/sql_seeds.go);
+-- it must never reach production.
 --
 -- Two records are required:
 --   1. permissions_accounts_groups — adds Ben to the "Fund Manager" group
@@ -18,7 +21,7 @@
 --      (Admin users bypass this check; non-admins must be listed here.)
 --
 -- Idempotent: safe to run multiple times.
--- Depends on: 002 (Fund Manager group), 004 (Ben user).
+-- Depends on: 002 (Fund Manager group), demo/001 (Ben user).
 -- =============================================================================
 
 BEGIN;

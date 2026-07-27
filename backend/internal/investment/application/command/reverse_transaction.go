@@ -130,15 +130,18 @@ func (h *ReverseTransactionHandler) Handle(
 	}
 
 	err = withTransaction(ctx, h.pool, func(dbtx pgx.Tx) error {
-		// Cross-check workflow lock at insert-time. FORCE_POST may bypass.
-		locked, lockErr := h.workflow.IsTransactionLocked(ctx, original.FundID, req.BusinessDate)
-		if lockErr != nil {
-			return fmt.Errorf("re-checking transaction lock: %w", lockErr)
-		}
-		if locked && !req.AllowForcePost {
-			return &domain.ErrPostPreconditionFailed{
-				Violation: "TRANSACTION_LOCKED",
-				Detail:    "reversal requires force-post when day is locked",
+		// Cross-check workflow lock at insert-time. FORCE_POST may bypass. No
+		// fund-scoped lock to check for a fund-less transaction.
+		if original.FundID != nil {
+			locked, lockErr := h.workflow.IsTransactionLocked(ctx, *original.FundID, req.BusinessDate)
+			if lockErr != nil {
+				return fmt.Errorf("re-checking transaction lock: %w", lockErr)
+			}
+			if locked && !req.AllowForcePost {
+				return &domain.ErrPostPreconditionFailed{
+					Violation: "TRANSACTION_LOCKED",
+					Detail:    "reversal requires force-post when day is locked",
+				}
 			}
 		}
 

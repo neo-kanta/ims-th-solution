@@ -140,7 +140,12 @@ func (r *PostgresPortfolioRepository) List(ctx context.Context, filter domain.Po
 		if len(filter.AccessibleFundIDs) == 0 {
 			return []*entity.Portfolio{}, 0, nil
 		}
-		conds = append(conds, fmt.Sprintf("fund_id = ANY($%d)", idx))
+		// The same accessible-scope list carries both fund-scoped and
+		// portfolio-scoped grants (IAM's GetUserDataPermissions coalesces
+		// contract_id/fund_id/portfolio_id into one flat string list), so a
+		// fund-less portfolio the caller has a direct portfolio-scoped grant
+		// on must also match here via its own id.
+		conds = append(conds, fmt.Sprintf("(fund_id = ANY($%d) OR id = ANY($%d))", idx, idx))
 		args = append(args, filter.AccessibleFundIDs)
 		idx++
 	}

@@ -64,7 +64,7 @@ import (
 // enforcement).
 func scopedPortfolio(code string, portfolioID, fundID uuid.UUID) *stubPortfolioRepo {
 	return &stubPortfolioRepo{byCode: map[string]*entity.Portfolio{
-		code: {ID: portfolioID, Code: code, FundID: fundID},
+		code: {ID: portfolioID, Code: code, FundID: &fundID},
 	}}
 }
 

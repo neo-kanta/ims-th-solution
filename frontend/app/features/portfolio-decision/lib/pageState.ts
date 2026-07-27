@@ -32,6 +32,7 @@ export type DecisionNewPageState =
   | { kind: "loading" }
   | { kind: "not-found" }
   | { kind: "permission-denied"; message: string }
+  | { kind: "no-fund" }
   | { kind: "error"; message: string }
   | { kind: "ready" };
 
@@ -44,12 +45,20 @@ export interface DecisionNewPageStateInput {
    * new code's data. */
   loadedPortfolioCode: string | null | undefined;
   error: string | null;
+  /** Whether the loaded portfolio is bound to a fund. A fund-less portfolio
+   * ("Bind with Fund: N" at creation) cannot trade — the backend rejects
+   * decision creation with a 422 — so this surfaces as a dedicated state
+   * instead of letting the user hit that error cold. Defaults to true when
+   * omitted, so pre-existing callers that never had fund-less portfolios in
+   * mind keep behaving exactly as before. */
+  hasFund?: boolean;
 }
 
 export function resolveDecisionNewPageState(
   input: DecisionNewPageStateInput,
 ): DecisionNewPageState {
   if (input.loadedPortfolioCode && input.loadedPortfolioCode === input.portfolioCode) {
+    if (input.hasFund === false) return { kind: "no-fund" };
     return { kind: "ready" };
   }
   if (input.error) {

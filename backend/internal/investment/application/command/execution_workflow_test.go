@@ -73,7 +73,7 @@ func approvedDecision() *entity.Decision {
 	qty := decimal.NewFromFloat(100)
 	return &entity.Decision{
 		ID:             uuid.New(),
-		FundID:         uuid.New(),
+		FundID:         func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:    uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,
@@ -200,8 +200,8 @@ func TestCreateExecution_ComplianceBlock_Blocked(t *testing.T) {
 	if checker.lastIn.PortfolioID != d.PortfolioID {
 		t.Errorf("expected compliance request portfolio_id %s, got %s", d.PortfolioID, checker.lastIn.PortfolioID)
 	}
-	if checker.lastIn.ContractID != d.FundID {
-		t.Errorf("expected compliance request contract_id (legacy fund_id) %s, got %s", d.FundID, checker.lastIn.ContractID)
+	if checker.lastIn.ContractID != *d.FundID {
+		t.Errorf("expected compliance request contract_id (legacy fund_id) %s, got %s", *d.FundID, checker.lastIn.ContractID)
 	}
 }
 

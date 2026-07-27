@@ -148,6 +148,32 @@ func FromTransaction(t *entity.PortfolioTransaction) TransactionResponse {
 	}
 }
 
+// FromCashRequest converts an entity.PortfolioCashRequest into its HTTP DTO.
+func FromCashRequest(c *entity.PortfolioCashRequest) CashRequestResponse {
+	if c == nil {
+		return CashRequestResponse{}
+	}
+	return CashRequestResponse{
+		ID:                c.ID,
+		PortfolioID:       c.PortfolioID,
+		FundID:            c.FundID,
+		TransactionType:   string(c.TransactionType),
+		Amount:            c.Amount.String(),
+		Currency:          c.Currency,
+		Fees:              c.Fees.String(),
+		ValueDate:         FormatDate(c.ValueDate),
+		Memo:              c.Memo,
+		Status:            string(c.Status),
+		ApprovalRequestID: c.ApprovalRequestID,
+		ResultingTxnID:    c.ResultingTxnID,
+		SubmittedBy:       c.SubmittedBy,
+		SubmittedAt:       c.SubmittedAt,
+		DecidedBy:         c.DecidedBy,
+		DecidedAt:         c.DecidedAt,
+		Version:           c.Version,
+	}
+}
+
 // FromCashBalance converts an entity.CashBalance into a CashBalanceResponse.
 func FromCashBalance(b *entity.CashBalance) CashBalanceResponse {
 	if b == nil {

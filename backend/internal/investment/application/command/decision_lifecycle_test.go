@@ -65,7 +65,7 @@ func TestBatchApprove_PermissionBeforeDisclosure(t *testing.T) {
 
 	authorizedDecision := &entity.Decision{
 		ID:                uuid.New(),
-		FundID:            authorizedCID,
+		FundID:            &authorizedCID,
 		DecisionNumber:    "DEC-ALLOWED",
 		ApprovalRequestID: &approvalReqID,
 		Status:            vo.DecisionLifecyclePendingApproval,
@@ -75,7 +75,7 @@ func TestBatchApprove_PermissionBeforeDisclosure(t *testing.T) {
 	}
 	unauthorizedDecision := &entity.Decision{
 		ID:                uuid.New(),
-		FundID:            unauthorizedCID,
+		FundID:            &unauthorizedCID,
 		DecisionNumber:    "DEC-DENIED",
 		ApprovalRequestID: &approvalReqID,
 		Status:            vo.DecisionLifecyclePendingApproval,
@@ -142,7 +142,7 @@ func buildDraftDecisionWithReport(t *testing.T) (
 
 	d = &entity.Decision{
 		ID:               uuid.New(),
-		FundID:           cid,
+		FundID:           &cid,
 		PortfolioID:      uuid.New(),
 		InstrumentCode:   "PTT",
 		Side:             vo.OrderSideBuy,
@@ -184,7 +184,7 @@ func TestSubmitDecision_NoReport_Skips_ReferenceCheck(t *testing.T) {
 	// We inject a runTx bypass (same package) so the test doesn't need a DB.
 	d := &entity.Decision{
 		ID:             uuid.New(),
-		FundID:         uuid.New(),
+		FundID:         func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:    uuid.New(),
 		InstrumentCode: "PTT",
 		Side:           vo.OrderSideBuy,
@@ -218,7 +218,7 @@ func TestSubmitDecision_NoReport_Skips_ReferenceCheck(t *testing.T) {
 func TestCancel_CancelsActiveApproval(t *testing.T) {
 	d := &entity.Decision{
 		ID:              uuid.New(),
-		FundID:          uuid.New(),
+		FundID:          func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:     uuid.New(),
 		InstrumentCode:  "PTT",
 		Side:            vo.OrderSideBuy,

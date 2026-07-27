@@ -100,7 +100,7 @@ func complianceStatusDecision(status contract.ComplianceStatus) *entity.Decision
 	price := decimal.NewFromInt(35)
 	return &entity.Decision{
 		ID:             uuid.New(),
-		FundID:         uuid.New(),
+		FundID:         func() *uuid.UUID { v := uuid.New(); return &v }(),
 		PortfolioID:    uuid.New(),
 		InstrumentCode: "PTT",
 		BusinessDate:   time.Date(2026, 7, 17, 0, 0, 0, 0, time.UTC),

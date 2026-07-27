@@ -117,7 +117,7 @@ func TestRunPreTradeCheckByCode_ResolvesPortfolioCode(t *testing.T) {
 	fundID := uuid.New()
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -147,13 +147,15 @@ func TestRunPreTradeCheckByCode_NilFundID_PassesNilContractID(t *testing.T) {
 
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: uuid.Nil, Code: "PF-NOFUND",
+		ID: portfolioID, FundID: nil, Code: "PF-NOFUND",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
 	repo := &stubPortfolioRepo{byCode: map[string]*entity.Portfolio{"PF-NOFUND": p}}
 	comp := &fakePortfolioCompliance{}
-	h := newComplianceV2Handler(repo, comp, uuid.Nil)
+	// A fund-less portfolio's data-permission scope is its own id, not
+	// uuid.Nil — see portfolioScopeID in investment_handler.go.
+	h := newComplianceV2Handler(repo, comp, portfolioID)
 
 	w := serveCompliancePreTrade(h, "PF-NOFUND", validPreTradeBody())
 
@@ -196,7 +198,7 @@ func TestRunPreTradeCheckByCode_ValidationError_400(t *testing.T) {
 	fundID := uuid.New()
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -221,7 +223,7 @@ func TestRunPreTradeCheckByCode_InvalidOrderID_400(t *testing.T) {
 	fundID := uuid.New()
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -253,7 +255,7 @@ func TestRunPreTradeCheckByCode_InfraError_500(t *testing.T) {
 	fundID := uuid.New()
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -276,7 +278,7 @@ func TestListRulesByCode_ResolvesPortfolioCode(t *testing.T) {
 	fundID := uuid.New()
 	portfolioID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -314,7 +316,7 @@ func TestBindRuleByCode_ResolvesPortfolioAndRule(t *testing.T) {
 	portfolioID := uuid.New()
 	ruleInstanceID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}
@@ -362,7 +364,7 @@ func TestDeactivateRuleBindingByCode_ResolvesPortfolioAndBinding(t *testing.T) {
 	ruleInstanceID := uuid.New()
 	bindingID := uuid.New()
 	p := &entity.Portfolio{
-		ID: portfolioID, FundID: fundID, Code: "TH-EQ-01",
+		ID: portfolioID, FundID: &fundID, Code: "TH-EQ-01",
 		BaseCurrency: "THB", ValuationCurrency: "THB",
 		Status: vo.PortfolioStatusActive, InceptionDate: time.Now(),
 	}

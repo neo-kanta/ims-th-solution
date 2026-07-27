@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
 	"github.com/neo-kanta/ims-th-solution/backend/internal/investment/application/command"
@@ -85,8 +86,9 @@ func resolvePortfolioByCode(
 	// hasFundAccess itself fails closed when pc is nil (denies rather than
 	// skipping the check) — do not special-case pc==nil here, or a handler
 	// that's accidentally left unwired in production would silently allow
-	// cross-fund access instead of denying it.
-	if !hasFundAccess(r.Context(), pc, p.FundID) {
+	// cross-fund access instead of denying it. portfolioScopeID falls back to
+	// the portfolio's own id for a fund-less portfolio.
+	if !hasFundAccess(r.Context(), pc, portfolioScopeID(p)) {
 		httputil.Forbidden(w, "no access to this portfolio")
 		return nil, false
 	}
@@ -376,10 +378,6 @@ func (h *InvestmentHandler) CreatePortfolioV2(w http.ResponseWriter, r *http.Req
 	}
 
 	fundCode := strings.TrimSpace(req.FundCode)
-	if fundCode == "" {
-		httputil.BadRequest(w, "fund_code is required")
-		return
-	}
 	code := strings.TrimSpace(req.Code)
 	name := strings.TrimSpace(req.Name)
 	if code == "" || name == "" {
@@ -401,6 +399,15 @@ func (h *InvestmentHandler) CreatePortfolioV2(w http.ResponseWriter, r *http.Req
 		httputil.BadRequest(w, "invalid portfolio_type (expected LIVE, SIMULATION, or MODEL)")
 		return
 	}
+	// risk_profile is optional (empty means "not set"), but when supplied
+	// must be one of the values chk_inv_portfolios_risk_profile enforces at
+	// the DB layer — validated here so a bad value returns a clean 400
+	// instead of a raw Postgres constraint-violation error.
+	riskProfile := vo.RiskProfile(strings.ToUpper(strings.TrimSpace(req.RiskProfile)))
+	if riskProfile != "" && !riskProfile.IsValid() {
+		httputil.BadRequest(w, "invalid risk_profile (expected LOW, MEDIUM, HIGH, or SPECULATIVE)")
+		return
+	}
 	inception, err := parseDate(req.InceptionDate)
 	if err != nil {
 		httputil.BadRequest(w, "invalid inception_date")
@@ -408,21 +415,28 @@ func (h *InvestmentHandler) CreatePortfolioV2(w http.ResponseWriter, r *http.Req
 	}
 
 	// Resolve fund_code -> fund_id server-side. Never trust a client-supplied
-	// fund_id per docs/MANAGER/MEMORY.md's V2 request-body rule.
-	fund, err := h.funds.GetByCode(r.Context(), fundCode)
-	if err != nil {
-		httputil.InternalError(w, err.Error())
-		return
-	}
-	if fund == nil {
-		httputil.NotFound(w, "fund not found")
-		return
-	}
-	// Data permission: verify the caller can access the resolved fund before
-	// creating anything under it.
-	if !hasFundAccess(r.Context(), h.pc, fund.ID) {
-		httputil.Forbidden(w, "no access to target fund")
-		return
+	// fund_id per docs/MANAGER/MEMORY.md's V2 request-body rule. fund_code is
+	// optional — an empty value creates a fund-less portfolio ("Bind with
+	// Fund: N"); access to it is governed by a portfolio_id-scoped
+	// permission_data_rights grant instead of a fund-scoped one.
+	var fundID *uuid.UUID
+	if fundCode != "" {
+		fund, err := h.funds.GetByCode(r.Context(), fundCode)
+		if err != nil {
+			httputil.InternalError(w, err.Error())
+			return
+		}
+		if fund == nil {
+			httputil.NotFound(w, "fund not found")
+			return
+		}
+		// Data permission: verify the caller can access the resolved fund
+		// before creating anything under it.
+		if !hasFundAccess(r.Context(), h.pc, fund.ID) {
+			httputil.Forbidden(w, "no access to target fund")
+			return
+		}
+		fundID = &fund.ID
 	}
 
 	taxMethod := vo.TaxLotMethod(req.TaxLotMethod)
@@ -431,7 +445,7 @@ func (h *InvestmentHandler) CreatePortfolioV2(w http.ResponseWriter, r *http.Req
 	}
 
 	p, err := h.portfolioCmd.Create(r.Context(), command.CreatePortfolioRequest{
-		FundID:            fund.ID,
+		FundID:            fundID,
 		PortfolioType:     portfolioType,
 		Code:              code,
 		Name:              name,
@@ -442,7 +456,7 @@ func (h *InvestmentHandler) CreatePortfolioV2(w http.ResponseWriter, r *http.Req
 		StyleID:           req.StyleID,
 		ManagerUserID:     req.ManagerUserID,
 		Benchmark:         req.Benchmark,
-		RiskProfile:       vo.RiskProfile(req.RiskProfile),
+		RiskProfile:       riskProfile,
 		InceptionDate:     inception,
 		HasUnits:          req.HasUnits,
 		TaxLotMethod:      taxMethod,
@@ -508,7 +522,11 @@ func (h *InvestmentHandler) PatchPortfolioByCode(w http.ResponseWriter, r *http.
 		ActorID: actor,
 	}
 	if req.RiskProfile != nil {
-		rp := vo.RiskProfile(*req.RiskProfile)
+		rp := vo.RiskProfile(strings.ToUpper(strings.TrimSpace(*req.RiskProfile)))
+		if rp != "" && !rp.IsValid() {
+			httputil.BadRequest(w, "invalid risk_profile (expected LOW, MEDIUM, HIGH, or SPECULATIVE)")
+			return
+		}
 		cmdReq.RiskProfile = &rp
 	}
 	updated, err := h.portfolioCmd.Update(r.Context(), cmdReq)

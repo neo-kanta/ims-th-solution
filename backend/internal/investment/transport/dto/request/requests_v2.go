@@ -30,6 +30,13 @@ type CreateDecisionV2Request struct {
 	Rationale        string     `json:"rationale"`
 }
 
+// CancelCashRequestV2Request is the JSON body for
+// POST /api/v2/portfolios/{portfolioCode}/cash-requests/{cashRequestId}/cancel.
+// The reason is optional and appended to the request memo for the audit trail.
+type CancelCashRequestV2Request struct {
+	Reason string `json:"reason"`
+}
+
 // CreateExecutionV2Request is the JSON body for
 // POST /api/v2/portfolios/{portfolioCode}/decisions/{decisionId}/executions.
 type CreateExecutionV2Request struct {
@@ -57,7 +64,10 @@ type RecordConfirmationV2Request struct {
 // docs/MANAGER/MEMORY.md's V2 request-body rule) and verifies the caller has
 // data-permission on the resolved fund before creating the portfolio.
 type CreatePortfolioV2Request struct {
-	FundCode          string     `json:"fund_code"          validate:"required,max=40"`
+	// FundCode is optional — an empty value creates a fund-less portfolio
+	// (the "Bind with Fund: N" path). Access to such a portfolio is governed
+	// by a portfolio_id-scoped permission_data_rights grant instead.
+	FundCode          string     `json:"fund_code"          validate:"omitempty,max=40"`
 	PortfolioType     string     `json:"portfolio_type"     validate:"required,oneof=LIVE SIMULATION MODEL"`
 	Code              string     `json:"code"               validate:"required,max=40"`
 	Name              string     `json:"name"               validate:"required,max=255"`

@@ -97,7 +97,7 @@ func (h *ExecutionHandler) ListExecutions(w http.ResponseWriter, r *http.Request
 			httputil.NotFound(w, "decision not found")
 			return
 		}
-		if !hasFundAccess(r.Context(), h.pc, decision.FundID) {
+		if !hasFundAccess(r.Context(), h.pc, decisionScopeID(decision)) {
 			httputil.Forbidden(w, "no access to this decision")
 			return
 		}
@@ -175,7 +175,7 @@ func (h *ExecutionHandler) GetExecution(w http.ResponseWriter, r *http.Request) 
 	}
 	// Data permission: verify the execution's fund is within the caller's
 	// accessible scope. hasFundAccess denies when h.pc is nil (fail closed).
-	if !hasFundAccess(r.Context(), h.pc, e.FundID) {
+	if !hasFundAccess(r.Context(), h.pc, executionScopeID(e)) {
 		httputil.Forbidden(w, "no access to this execution")
 		return
 	}

@@ -2,9 +2,23 @@ package contract
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 )
+
+// ErrSubjectAccessDenied is the sentinel a SubjectAccessor returns to signal a
+// GENUINE object-level access denial: the actor legitimately lacks data or
+// function permission, or the subject does not exist. The approval engine maps
+// an error that wraps this sentinel to 403 Forbidden (fail-closed).
+//
+// Return this — wrapped with %w and a caller-safe message — ONLY for real
+// denials. For infrastructure or unexpected failures (a nil dependency, a
+// repository or IAM error, a context timeout/cancellation), return the RAW
+// underlying error WITHOUT wrapping this sentinel, so the approval engine
+// surfaces a 5xx and operators see the outage instead of it being masked as a
+// 403.
+var ErrSubjectAccessDenied = errors.New("subject access denied")
 
 // ApprovalSubmission is the cross-module payload used by business modules
 // (e.g. investment) to push a subject into the generic approval workflow.
@@ -123,7 +137,10 @@ type ApprovalSubjectValidator interface {
 // fund_id, portfolio_id). The implementation may use any data within its own
 // bounded context to make the authorisation decision.
 //
-// All methods return nil for allow, non-nil for deny. Register via
+// Return nil to allow. To deny, return an error that wraps
+// ErrSubjectAccessDenied (see that sentinel's docs) — the engine maps it to
+// 403. Return a RAW (non-wrapping) error for infrastructure failures so the
+// engine can surface a 5xx instead of a spurious 403. Register via
 // Module.RegisterSubjectAccessPort in cmd/server/main.go after both modules
 // are constructed.
 type SubjectAccessor interface {
